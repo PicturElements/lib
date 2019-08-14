@@ -1,0 +1,27 @@
+html(lang="en")
+	head
+		title=self.title
+		meta(charset="UTF-8")
+		meta(name="viewport", content="width=device-width, initial-scale=1.0")
+		meta(http-equiv="X-UA-Compatible", content="ie=edge")
+		link(rel="stylesheet" href="https://fonts.googleapis.com/css?family=Catamaran:400,500")
+		link(rel="stylesheet" href="/style/dashboard.css")
+		each style in self.styles
+			link(rel="stylesheet" href=style.src)
+	body
+		main.column
+			.cell#content
+			.row.shrink
+				#meta.cell.shrink
+					h1
+						| #{self.meta.name}
+						span=self.meta.version
+					p=self.meta.description
+				#alerts.cell
+					.scroll-box(class=self.alerts.length ? null : "no-content")
+						each alert in self.alerts
+							.alert(class=alert.type)=alert.text
+						span.no-content-msg No alerts to report
+		each script in self.scripts
+			- const type = script.extension == "mjs" ? "module" : null
+			script(type=type src=script.src)

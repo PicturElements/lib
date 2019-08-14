@@ -1,0 +1,124 @@
+@import "./utils";
+
+html,
+body {
+	height: 100%;
+}
+
+body {
+	display: flex;
+	background: $main-back;
+	font-family: "Catamaran", sans-serif;
+	color: $main-col;
+	letter-spacing: 0.025em;
+	margin: 0;
+}
+
+main {
+	margin: $gap;
+}
+
+.column {
+	display: flex;
+	flex-grow: 1;
+	flex-direction: column;
+
+	> * + * {
+		margin-top: $gap;
+	}
+}
+
+.row {
+	display: flex;
+	flex-grow: 1;
+
+	> * + * {
+		margin-left: $gap;
+	}
+}
+
+.cell {
+	background: $card-back;
+	border-radius: 3px;
+	box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.05);
+	padding: 8px;
+	flex-grow: 1;
+}
+
+.shrink {
+	flex-grow: 0;
+}
+
+.no-content {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+.no-content-msg {
+	color: $main-col-lighter;
+}
+
+:not(.no-content) > .no-content-msg {
+	display: none;
+}
+
+#meta {
+	padding: 8px 12px;
+
+	h1 {
+		margin: 0;
+		line-height: 1;
+
+		span {
+			font-size: 60%;
+			margin-left: 4px;
+			font-weight: 400;
+			color: $secondary-col;
+		}
+	}
+
+	p {
+		margin: 0.5em 0 0;
+	}
+}
+
+// Alerts
+#alerts {
+	display: flex;
+
+	.scroll-box {
+		width: 100%;
+		overflow: auto;
+		max-height: 200px;
+	}
+}
+
+.alert {
+	background: $main-back-lighter;
+	padding: 3px 8px 2px;
+	border-left: 3px solid;
+	border-radius: 2px;
+
+	+ .alert {
+		margin-top: 1px;
+	}
+
+	&.info {
+		background: $info-back;
+		color: $info-col;
+		border-left-color: $info-col-lighter;
+	}
+
+	&.warning {
+		background: $warning-back;
+		color: $warning-col;
+		border-left-color: $warning-col-lighter;
+	}
+
+	&.error {
+		background: $error-back;
+		color: $error-col;
+		border-left-color: $error-col-lighter;
+	}
+}

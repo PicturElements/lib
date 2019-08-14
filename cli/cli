@@ -1,0 +1,45 @@
+#!/usr/bin/env node
+const path = require("path");
+
+// CLIs
+const init = require("./init");
+const tst = require("./tst");
+
+const HOME_DIR = path.join(__dirname, "..");
+
+function run() {
+	const [execPath, binPath, cmd, ...args] = process.argv,
+		inArgs = [],
+		options = {
+			keyOptions: [],
+			kvOptions: {}
+		};
+
+	if (process.cwd().indexOf(HOME_DIR) == -1)
+		return console.log(`WARNING: refusing to run qlib outside its home directory ${HOME_DIR}`);
+
+	for (const arg of args) {
+		if (arg.indexOf("--") == 0) {
+			const kv = arg.substr(2).split(/\s*=\s*/);
+
+			if (kv.length == 1)
+				options.keyOptions.push(kv[0]);
+			else
+				options.kvOptions[kv[0]] = kv[1];
+		} else
+			inArgs.push(arg);
+	}
+
+	switch (cmd) {
+		case "init":
+			init(options, ...inArgs);
+			break;
+		case "tst":
+			tst(options, ...inArgs);
+			break;
+		default:
+			console.log("Please use a valid command");
+	}
+}
+
+run();

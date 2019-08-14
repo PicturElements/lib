@@ -1,0 +1,40 @@
+{
+  "name": "lib",
+  "version": "1.0.0",
+  "description": "A centralized collection of libraries",
+  "main": "server.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PicturElements/lib.git"
+  },
+  "keywords": [
+    "library",
+    "collection"
+  ],
+  "author": "PicturElements",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/PicturElements/lib/issues"
+  },
+  "homepage": "https://github.com/PicturElements/lib#readme",
+  "dependencies": {
+    "chokidar": "^2.1.5",
+    "express": "^4.16.4",
+    "jshint": "^2.10.2",
+    "pug": "^2.0.3",
+    "webpack": "^4.29.6"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.5.5",
+    "@babel/preset-env": "^7.5.5",
+    "babel-jest": "^24.8.0",
+    "jest-cli": "^24.8.0"
+  },
+  "bin": {
+    "qlib": "./cli/cli"
+  }
+}
