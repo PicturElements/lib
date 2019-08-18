@@ -26,7 +26,7 @@
   "dependencies": {},
   "devDependencies": {},
   "qlib": {
-    "pushes": 4,
+    "pushes": 3,
     "expose": {
       "scripts": [
         "index.mjs"
