@@ -9,7 +9,7 @@ const requestFrame = typeof requestAnimationFrame == "undefined" ? func => {
 	func(getTime());
 } : requestAnimationFrame;
 
-export default {
+export {
 	getTime,
 	requestFrame
 };

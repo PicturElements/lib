@@ -1,15 +1,21 @@
 import { unescape } from "./str";
 
 const regexSources = {
-	// /[^\n\s\\[.]+|\[(?:(["'`])((?:[^\\]|\\.)*?)\1|((?:[^\\\]]*|\\.)+?))\]/g
-	path: "[^\\n\\s\\\\[.]+|\\[(?:([\"'`])((?:[^\\\\]|\\\\.)*?)\\1|((?:[^\\\\\\]]*|\\\\.)+?))\\]",
-	// /([^\n\s\\[.]+(?:\.[^\n\s\\[.]+|\[(?:(["'`])(?:[^\\]|\\.)*?\2|(?:[^\\\]]*|\\.)+?)\])*)/g
-	match: "([^\\n\\s\\\\[.]+(?:\\.[^\\n\\s\\\\[.]+|\\[(?:([\"'`])(?:[^\\\\]|\\\\.)*?\\2|(?:[^\\\\\\]]*|\\\\.)+?)\\])*)"
+	// /[$a-z0-9_-]+|\[(?:(["'`])((?:[^\\]|\\.)*?)\1|((?:[^\\\]]*|\\.)+?))\]"/gi
+	path: "[$a-z0-9_-]+|\\[(?:([\"'`])((?:[^\\\\]|\\\\.)*?)\\1|((?:[^\\\\\\]]*|\\\\.)+?))\\]",
+	// /([$a-z0-9_-]+(?:\.[$a-z0-9_-]+?|\[(?:(["'`])(?:[^\\]|\\.)*?\2|(?:[^\\\]]*|\\.)+?)\])*)/gi
+	match: "([$a-z0-9_-]+(?:\\.[$a-z0-9_-]+|\\[(?:([\"'`])(?:[^\\\\]|\\\\.)*?\\2|(?:[^\\\\\\]]*|\\\\.)+?)\\])*)",
+	// /[$a-z0-9_-]/gi
+	normalPropertyChars: "[$a-z0-9_-]",
+	// /[^$a-z0-9_-]/
+	abnormalPropertyChars: "[^$a-z0-9_-]"
 };
 
 const regexes = {
-	path: new RegExp(regexSources.path, "g"),
-	match: new RegExp(regexSources.math, "g")
+	path: new RegExp(regexSources.path, "gi"),
+	match: new RegExp(regexSources.match, "gi"),
+	normalPropertyChars: new RegExp(regexSources.normalPropertyChars, "gi"),
+	hasAbnormalPropertyChar: new RegExp(regexSources.abnormalPropertyChars, "i")
 };
 
 // /\[((?:[^\\[\]]*(?:\\.)?)*)\]|\.?((?:[^\\[\].]*(?:\\.)?)*)/g
@@ -21,7 +27,7 @@ const regexes = {
 // 1: String quote character (within bracket notation)
 // 2: String within quotes (within bracket notation) - will be unescaped by splitPath
 // 3: String within bracket notation without quotes - will be unescaped by splitPath
-const pathRegex = new RegExp(regexSources.path, "g"),
+const pathRegex = new RegExp(regexSources.path, "gi"),
 	splitCache = {};
 
 export default function splitPath(path) {

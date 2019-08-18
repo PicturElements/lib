@@ -2,7 +2,7 @@ import splitPath from "./split-path";
 import get from "./get";
 import { resolveVal } from "./resolve-val";
 
-const splitRegex = new RegExp(`\\$${splitPath.regexSources.match}`, "g");
+const splitRegex = new RegExp(`\\$${splitPath.regexSources.match}`, "gi");
 
 export default function basicInterpolate(str, data, def) {
 	if (typeof str != "string")

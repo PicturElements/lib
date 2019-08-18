@@ -8,7 +8,7 @@ import { isObject } from "util";
 // TODO: fix lvl
 
 // Note: this function mutates the target data
-export function infill(target, source, configOrRuntime) {
+export default function infill(target, source, configOrRuntime) {
 	if (source === undefined)
 		return target;
 

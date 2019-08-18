@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/utils",
-  "version": "1.0.0",
+  "version": "1.0.6",
   "description": "Collection of small and versatile utility functions",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/PicturElements/lib.git"
+    "url": "git+https://github.com/PicturElements/lib.git",
+    "directory": "pkg/utils"
   },
   "keywords": [
     "util",
