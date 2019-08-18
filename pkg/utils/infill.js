@@ -1,8 +1,10 @@
 import forEach from "./for-each";
 import map from "./map";
-import { isObj } from "./is";
+import {
+	isObj,
+	isObject
+} from "./is";
 import parseStr from "./parse-str";
-import { isObject } from "util";
 
 // TODO: check where null should be a valid default value
 // TODO: fix lvl
