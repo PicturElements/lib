@@ -22,10 +22,11 @@
   "bugs": {
     "url": "https://github.com/PicturElements/lib/issues"
   },
-  "homepage": "https://github.com/PicturElements/lib/pkg/utils#readme",
+  "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/utils#readme",
   "dependencies": {},
   "devDependencies": {},
   "qlib": {
+    "pushes": 4,
     "expose": {
       "scripts": [
         "index.mjs"
