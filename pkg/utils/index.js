@@ -14,7 +14,7 @@ export * from "./ts-str";
 
 export { default as basicInterpolate } from "./basic-interpolate";
 export { default as clone } from "./clone";
-export { default as coerceMut } from "./concat-mut";
+export { default as concatMut } from "./concat-mut";
 export { default as filterMut } from "./filter-mut";
 export { default as forEach } from "./for-each";
 export { default as forEachDeep } from "./for-each-deep";
