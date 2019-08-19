@@ -1,0 +1,45 @@
+{
+  "name": "@qtxr/bc",
+  "version": "1.0.0",
+  "description": "Base classes that provide basic and standard functionality to any class that extends them",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node ../server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PicturElements/lib.git",
+    "directory": "pkg/bc"
+  },
+  "keywords": [
+    "base class",
+    "extensible",
+    "standard"
+  ],
+  "author": "qtxr",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/PicturElements/lib/issues"
+  },
+  "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/bc#readme",
+  "dependencies": {
+    "@qtxr/utils": "^1.0.6"
+  },
+  "devDependencies": {},
+  "qlib": {
+    "pushes": 1,
+    "expose": {
+      "scripts": [
+        "index.mjs"
+      ],
+      "styles": []
+    },
+    "ui": [
+      {
+        "type": "console",
+        "config": {}
+      }
+    ]
+  }
+}
