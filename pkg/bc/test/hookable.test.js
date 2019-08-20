@@ -3,7 +3,7 @@ import Hookable from "../hookable";
 it("correctly instantiates", () => {
 	// Basic class stuff
 	expect(_ => Hookable()).toThrow();
-	const inst = new Hookable()
+	const inst = new Hookable();
 	expect(inst).toBeInstanceOf(Hookable);
 	expect(inst.hasOwnProperty("hooks")).toBe(true);
 	expect(_ => delete inst.hooks).toThrow(TypeError);
@@ -15,7 +15,8 @@ beforeAll(() => {
 
 describe("instance methods", () => {
 	const nh = hooks => new Hookable(hooks),
-		fn = _ => _;
+		fn = _ => _,
+		fn2 = _ => _;
 
 	describe("hook", () => {
 		it("throws if name and/or handler is invalid", () => {
@@ -28,7 +29,7 @@ describe("instance methods", () => {
 		it("successfully hooks with (name, handler)", () => {
 			const inst = nh().hook("test", fn);
 			expect(inst.hooks.hasOwnProperty("test")).toBe(true);
-			expect(inst.hooks.last).toStrictEqual({
+			expect(inst.hooks.last).toMatchObject({
 				handler: fn,
 				nickname: null,
 				namespace: null,
@@ -39,7 +40,7 @@ describe("instance methods", () => {
 		it("successfully hooks with (name, handler, ttl)", () => {
 			const inst = nh().hook("test", fn, 2);
 			expect(inst.hooks.hasOwnProperty("test")).toBe(true);
-			expect(inst.hooks.last).toStrictEqual({
+			expect(inst.hooks.last).toMatchObject({
 				handler: fn,
 				nickname: null,
 				namespace: null,
@@ -50,7 +51,7 @@ describe("instance methods", () => {
 		it("successfully hooks with (name, handler, nickname)", () => {
 			const inst = nh().hook("test", fn, "nick");
 			expect(inst.hooks.hasOwnProperty("test")).toBe(true);
-			expect(inst.hooks.last).toStrictEqual({
+			expect(inst.hooks.last).toMatchObject({
 				handler: fn,
 				nickname: "nick",
 				namespace: null,
@@ -61,7 +62,7 @@ describe("instance methods", () => {
 		it("successfully hooks with (name, handler, null, namespace)", () => {
 			const inst = nh().hook("test", fn, null, "ns");
 			expect(inst.hooks.hasOwnProperty("test")).toBe(true);
-			expect(inst.hooks.last).toStrictEqual({
+			expect(inst.hooks.last).toMatchObject({
 				handler: fn,
 				nickname: null,
 				namespace: "ns",
@@ -72,7 +73,7 @@ describe("instance methods", () => {
 		it("successfully hooks with (name, handler, nickname, namespace)", () => {
 			const inst = nh().hook("test", fn, "nick", "ns");
 			expect(inst.hooks.hasOwnProperty("test")).toBe(true);
-			expect(inst.hooks.last).toStrictEqual({
+			expect(inst.hooks.last).toMatchObject({
 				handler: fn,
 				nickname: "nick",
 				namespace: "ns",
@@ -83,7 +84,7 @@ describe("instance methods", () => {
 		it("successfully hooks with (name, handler, nickname, namespace, ttl)", () => {
 			const inst = nh().hook("test", fn, "nick", "ns", 2);
 			expect(inst.hooks.hasOwnProperty("test")).toBe(true);
-			expect(inst.hooks.last).toStrictEqual({
+			expect(inst.hooks.last).toMatchObject({
 				handler: fn,
 				nickname: "nick",
 				namespace: "ns",
@@ -104,7 +105,7 @@ describe("instance methods", () => {
 		it("hooks with namespace as first parameter", () => {
 			const inst = nh().hookNS("ns", "test", fn, 2);
 			expect(inst.hooks.hasOwnProperty("test")).toBe(true);
-			expect(inst.hooks.last).toStrictEqual({
+			expect(inst.hooks.last).toMatchObject({
 				handler: fn,
 				nickname: null,
 				namespace: "ns",
@@ -171,7 +172,7 @@ describe("instance methods", () => {
 	});
 	
 	describe("unhook", () => {
-		it("unhooks based on handler ref and deletes partition when empty", () => {
+		it("unhooks based on handler refer5ence and deletes partition when empty", () => {
 			const inst = nh()
 				.hook("test", fn)
 				.hook("test", fn)
@@ -190,12 +191,58 @@ describe("instance methods", () => {
 
 			expect(inst.hooks.test.length).toBe(3);
 			inst.unhook("test", "nick");
-			expect(inst.hooks.test.length).toBe(1);
+			expect(inst.hooks.test).toMatchObject([{
+				nickname: null
+			}]);
+		});
+
+		it("unhooks strictly based on handler reference and nickname", () => {
+			const inst = nh()
+				.hook("test", fn, "nick")
+				.hook("test", fn2, "nick")
+				.hook("test", fn, "nick2")
+				.hook("test", fn2, "nick2");
+
+			expect(inst.hooks.test.length).toBe(4);
+			inst.unhook("test", fn, "nick");
+			expect(inst.hooks.test.length).toBe(3);
+			expect(inst.hooks.test).toMatchObject([
+				{
+					handler: fn2,
+					nickname: "nick"
+				}, {
+					handler: fn,
+					nickname: "nick2"
+				}, {
+					handler: fn2,
+					nickname: "nick2"
+				}
+			]);
 		});
 
 		it("doesn't attempt to unhook nonexistent hooks or reserved fields", () => {
 			expect(_ => nh().unhook("test")).not.toThrow();
 			expect(_ => nh().unhook("last")).not.toThrow();
+		});
+
+		it("supports singular unhooking with Hook instances", () => {
+			const inst = nh()
+				.hook("test", fn, "first")
+				.hook("test", fn, "second")
+				.hook("test", fn, "third");
+
+			expect(inst.hooks.test.length).toBe(3);
+			inst.unhook(inst.hooks.last);
+			expect(inst.hooks.test.length).toBe(2);
+			expect(inst.hooks.test).toMatchObject([
+				{
+					handler: fn,
+					nickname: "first"
+				}, {
+					handler: fn,
+					nickname: "second"
+				}
+			]);
 		});
 	});
 	
@@ -248,7 +295,7 @@ describe("instance methods", () => {
 	});
 	
 	describe("clearHooksNS", () => {
-		it("only removes namespaces hooks", () => {
+		it("only removes namespaced hooks", () => {
 			const inst = nh(),
 				defaultHooksLen = Object.keys(inst.hooks).length;
 
@@ -262,6 +309,19 @@ describe("instance methods", () => {
 			inst.clearHooksNS("ns");
 			expect(Object.keys(inst.hooks).length - defaultHooksLen).toBe(1);
 			expect(inst.hooks.test[0].nickname).toBe("nick");
+		});
+	});
+
+	describe("Hook", () => {
+		it("unhook", () => {
+			const inst = nh()
+				.hook("test", fn)
+				.hook("test", fn)
+				.hook("test", fn);
+
+			expect(inst.hooks.test.length).toBe(3);
+			inst.hooks.last.unhook();
+			expect(inst.hooks.test.length).toBe(2);
 		});
 	});
 });

@@ -70,19 +70,28 @@ export default class Hookable {
 		return this;
 	}
 
-	unhook(name, handler, nickname) {
+	unhook(nameOrHook, handler, nickname) {
+		const name = nameOrHook instanceof Hook ? nameOrHook.partitionName : nameOrHook;
+
 		if (typeof handler == "string") {
 			nickname = handler;
 			handler = null;
 		}
 
-		const hooks = this.hooks[name];
+		const hooks = this.hooks[name],
+			matchFully = typeof handler == "function" && typeof nickname == "string";
 
 		if (!Array.isArray(hooks) || reservedFields.hasOwnProperty(name))
 			return this;
 
 		filterMut(hooks, hook => {
-			return !(hook.handler == handler || (nickname && hook.nickname == nickname));
+			if (hook == nameOrHook)
+				return false;
+
+			if (matchFully)
+				return !(hook.handler == handler && (nickname && hook.nickname == nickname));
+			else
+				return !(hook.handler == handler || (nickname && hook.nickname == nickname));
 		});
 
 		if (!hooks.length)
@@ -94,11 +103,11 @@ export default class Hookable {
 	callHooks(name, ...args) {
 		const hooks = this.hooks[name];
 
-		if (!Array.isArray(hooks) || reservedFields.hasOwnProperty())
+		if (!Array.isArray(hooks) || reservedFields.hasOwnProperty(name))
 			return this;
 
 		filterMut(hooks, hook => {
-			if (!hook.ttl)
+			if (hook.ttl <= 0)
 				return false;
 
 			hook.handler.call(this, this, ...args);
@@ -136,6 +145,21 @@ export default class Hookable {
 	}
 }
 
+class Hook {
+	constructor(owner, partitionName, handler, nickname, namespace, ttl) {
+		this.owner = owner;
+		this.partitionName = partitionName;
+		this.handler = handler;
+		this.nickname = nickname;
+		this.namespace = namespace;
+		this.ttl = ttl;
+	}
+
+	unhook() {
+		this.owner.unhook(this);
+	}
+}
+
 function addHook(inst, paramMap, args) {
 	const {
 		name,
@@ -153,12 +177,14 @@ function addHook(inst, paramMap, args) {
 	const hooks = inst.hooks.hasOwnProperty(name) ? inst.hooks[name] : [];
 	inst.hooks[name] = hooks;
 
-	const hook = {
+	const hook = new Hook(
+		inst,
+		name,
 		handler,
 		nickname,
 		namespace,
 		ttl
-	};
+	);
 
 	inst.hooks.last = hook;
 	hooks.push(hook);
