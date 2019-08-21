@@ -12,12 +12,12 @@ const hookParams = [
 	{ name: "name", type: "string", required: true },
 	{ name: "handler", type: "function", required: true },
 	{ name: "nickname", type: "string", default: null },
-	{ name: "namespace", type: "string", default: null },
+	{ name: "namespace", type: ["string", "symbol"], default: null },
 	{ name: "ttl", type: "number", default: Infinity },
 ];
 
 const hookNSParams = [
-	{ name: "namespace", type: "string", required: true },
+	{ name: "namespace", type: ["string", "symbol"], required: true },
 	{ name: "name", type: "string", required: true },
 	{ name: "handler", type: "function", required: true },
 	{ name: "nickname", type: "string", default: null },

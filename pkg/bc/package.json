@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/bc",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Base classes that provide basic and standard functionality to any class that extends them",
   "main": "index.js",
   "scripts": {
@@ -28,7 +28,7 @@
   },
   "devDependencies": {},
   "qlib": {
-    "pushes": 2,
+    "pushes": 3,
     "expose": {
       "scripts": [
         "index.mjs"
