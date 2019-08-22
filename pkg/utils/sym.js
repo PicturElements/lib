@@ -13,7 +13,7 @@ function sym(prefix) {
 }
 
 const setSymbol = typeof Symbol == "undefined" ? (obj, symbol, value = null) => {
-	if (isSymbol(symbol))
+	if (!isSymbol(symbol))
 		return warnSymbolSet(symbol, obj);
 
 	if (hasOwn(obj, symbol, true))
@@ -27,7 +27,7 @@ const setSymbol = typeof Symbol == "undefined" ? (obj, symbol, value = null) => 
 
 	return obj;
 } : (obj, symbol, value = null) => {
-	if (isSymbol(symbol))
+	if (!isSymbol(symbol))
 		return warnSymbolSet(symbol, obj);
 
 	obj[symbol] = value;
