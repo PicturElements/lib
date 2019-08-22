@@ -3,7 +3,7 @@ import clone from "./clone";
 import { genFuncParamsStr } from "./ts-str";
 import { isObj } from "./is";
 
-// Resolves arguments using a "lacuna" technique:
+// Resolves arguments using a "lacuna" algorithm:
 // It steps through the parameter signature array and tries to match the next
 // argument with the type provided from the parameter object
 // It matches as follows:
@@ -19,6 +19,11 @@ import { isObj } from "./is";
 // and the next argument is lined up for matching
 // If there is no match and the parameter is set as required, an error will be thrown
 // with a description of the proper parameter signature
+//
+// Note that this implementation preserves argument order, so for examplw a function
+// that takes arguments on the form (number, string, number, string)
+// won't accept (number, number, string string)
+// In this case, resolveArgs would 
 
 export default function resolveArgs(args, signature, funcName = "func") {
 	const argsOut = {

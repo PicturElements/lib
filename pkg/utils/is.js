@@ -1,4 +1,7 @@
-import { symbolIteratorKey } from "./_constants";
+import {
+	symbolIteratorKey,
+	polyfillPrefixes
+} from "./_constants";
 
 const docAll = typeof document == "undefined" ? [] : document.all;
 
@@ -30,6 +33,12 @@ function isInstance(val) {
 function isConstructor(val) {
 	return val !== null && val !== undefined && val.prototype != null && val.prototype.constructor == val;
 }
+
+const isSymbol = typeof Symbol == "undefined" ? candidate => {
+	return typeof candidate == "string" && candidate.indexOf(polyfillPrefixes.symbol) == 0;
+} : candidate => {
+	return typeof candidate == "symbol";
+};
 
 const isIterable = typeof Symbol == "undefined" ? candidate => {
 	if (candidate === docAll || typeof candidate == "string")
@@ -67,6 +76,20 @@ function isArrayLike(candidate) {
 	return candidate.length == 0 && Object.keys(candidate).length == 0;
 }
 
+const isSetLike = typeof Set == "undefined" ? _ => false : candidate => {
+	return candidate instanceof Set;
+};
+
+function isArrResolvable(candidate) {
+	if (isArrayLike(candidate))
+		return true;
+
+	if (typeof Set != "undefined" && candidate instanceof Set)
+		return true;
+
+	return false;
+}
+
 export {
 	isDirectInstanceof,
 	isNativeSimpleObject,
@@ -74,6 +97,9 @@ export {
 	isObject,
 	isInstance,
 	isConstructor,
+	isSymbol,
 	isIterable,
-	isArrayLike
+	isArrayLike,
+	isSetLike,
+	isArrResolvable
 };

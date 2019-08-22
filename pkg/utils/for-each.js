@@ -1,5 +1,9 @@
 import { symbolIteratorKey } from "./_constants";
-import { isArrayLike, isDirectInstanceof } from "./is";
+import {
+	isArrayLike,
+	isDirectInstanceof,
+	isSetLike
+} from "./is";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
@@ -88,7 +92,7 @@ export default function forEach(obj, callback, options){
 
 	if (obj[symbolIteratorKey] && (options.iterable || !isArrayLike(obj))) {
 		const iterator = obj[symbolIteratorKey](),
-			isSetLike = options.isSetLike || (typeof Set != "undefined" && obj instanceof Set),
+			setLike = options.isSetLike || isSetLike(obj),
 			stack = [];
 		let item = null;
 
@@ -97,7 +101,7 @@ export default function forEach(obj, callback, options){
 			if (item.done)
 				break;
 
-			const kv = !isSetLike && Array.isArray(item.value) ?
+			const kv = !setLike && Array.isArray(item.value) ?
 				item.value :
 				[item.value, item.value];
 
@@ -129,7 +133,7 @@ export default function forEach(obj, callback, options){
 				// The keys are already own property names,
 				// but in browsers where Symbol isn't supported we still
 				// need to check for bad keys
-				if (hasOwn(obj, keys[i]) && callback(obj[k], k, obj) == jmpT) {
+				if (hasOwn(obj, keys[i], options.overSymbols) && callback(obj[k], k, obj) == jmpT) {
 					if (shouldContinue(options))
 						continue;
 					return brk(options);
@@ -165,6 +169,20 @@ export default function forEach(obj, callback, options){
 						continue;
 					return brk(options);
 				}
+			}
+		}
+	}
+
+	if (options.overSymbols && typeof Symbol != "undefined") {
+		const symbols = Object.getOwnPropertySymbols(obj);
+
+		for (let i = 0, l = symbols.length; i < l; i++) {
+			const sym = symbols[i];
+
+			if (callback(obj[sym], sym, obj) == jmpT) {
+				if (shouldContinue(options))
+					continue;
+				return brk(options);
 			}
 		}
 	}
@@ -301,5 +319,6 @@ const forEachTemplates = composeOptionsTemplates({
 	reverse: true,
 	iterable: true,
 	isSetLike: true,
-	sparse: true
+	sparse: true,
+	overSymbols: true
 });

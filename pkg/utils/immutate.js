@@ -1,4 +1,7 @@
-import { isNativeSimpleObject, isArrayLike } from "./is";
+import {
+	isNativeSimpleObject,
+	isArrayLike
+} from "./is";
 import forEach from "./for-each";
 import mkAccessor from "./mk-accessor";
 

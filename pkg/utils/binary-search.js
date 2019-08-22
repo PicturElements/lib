@@ -143,11 +143,12 @@ function findClosest(arr, comparator, options) {
 				// | if abs !equal         | if absolute is equal, compare directly
 				if ((sa != ra && sa < ra) || (sa == ra && stepProx > refProx))
 					return dispatch(stepPoint, stepProx);
-				//    | either flag exclusively         | Check over/underflow to implement error handling
-			} else if (((options.reverse ^ underflow) && options.lower) || ((options.reverse ^ overflow) && options.upper))
+			// Handle disallowed underflow
+			} else if ((options.reverse ^ underflow) && options.lower)
 				return dispatch(-1, 0);
-			else if ((refProx < 0 && options.upper) || (refProx > 0 && options.lower))
-				return dispatch(stepPoint, comparator(arr[stepPoint]));
+			// Handle disallowed overflow
+			else if ((options.reverse ^ overflow) && options.upper)
+				return dispatch(-1, 0);
 
 			return dispatch(start, refProx);
 		}

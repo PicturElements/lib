@@ -1,5 +1,6 @@
 import {
 	coerceToObj,
+	coerceToObjArrResolvable,
 	coerceNum
 } from "../coerce";
 
@@ -21,6 +22,28 @@ describe("coerceToObj", () => {
 
 	it("creates a new plain object if no appropriate arguments are supplied", () => {
 		expect(coerceToObj(null, null)).toStrictEqual({});
+	});
+});
+
+describe("coerceToObjArrResolvable", () => {
+	const obj = {},
+		arr = [];
+
+	it("ignores the source if the input data is an object", () => {
+		expect(coerceToObjArrResolvable(obj, [])).toBe(obj);
+		expect(coerceToObjArrResolvable(arr, {})).toBe(arr);
+		expect(coerceToObjArrResolvable(obj, null)).toBe(obj);
+		expect(coerceToObjArrResolvable(arr, null)).toBe(arr);
+	});
+
+	it("creates a new object of the correct type from the source object", () => {
+		expect(coerceToObjArrResolvable(null, new Set())).toStrictEqual([]);
+		expect(coerceToObjArrResolvable(null, [])).toStrictEqual([]);
+		expect(coerceToObjArrResolvable(null, {})).toStrictEqual({});
+	});
+
+	it("creates a new plain object if no appropriate arguments are supplied", () => {
+		expect(coerceToObjArrResolvable(null, null)).toStrictEqual({});
 	});
 });
 

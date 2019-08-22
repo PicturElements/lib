@@ -1,5 +1,4 @@
 // ====== Merge sort ======
-
 function mergesort(arr, indexArr, comparator) {
 	if (typeof indexArr == "function" || indexArr === undefined) {
 		// if indexArr is a function, you're attempting to run a standard sort

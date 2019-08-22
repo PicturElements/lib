@@ -16,6 +16,11 @@ const nested = [
 	],
 	PROPERTY_COUNT = 21;
 
+it("fails silently if the object or callback is invalid", () => {
+	expect(_ => forEachDeep(null, _ => _)).not.toThrow();
+	expect(_ => forEachDeep({})).not.toThrow();
+});
+
 it("iterates over all properties in nested arrays and objects", () => {
 	const callback = jest.fn();
 	forEachDeep(nested, callback);

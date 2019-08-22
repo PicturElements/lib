@@ -43,3 +43,9 @@ it("correctly inserts falsy values", () => {
 	expect(basicInterpolate("$arr[2]", DATA)).toBe("undefined");
 	expect(basicInterpolate("$arr[3]", DATA)).toBe("null");
 });
+
+it("returns an empty string in the input is not a string", () => {
+	expect(basicInterpolate(null)).toBe("");
+	expect(basicInterpolate({})).toBe("");
+	expect(basicInterpolate(12345)).toBe("");
+});

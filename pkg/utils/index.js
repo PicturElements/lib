@@ -11,6 +11,7 @@ export * from "./sort";
 export * from "./str";
 export * from "./time";
 export * from "./ts-str";
+export * from "./sym";
 
 export { default as basicInterpolate } from "./basic-interpolate";
 export { default as clone } from "./clone";
@@ -43,4 +44,3 @@ export { default as parseStrStr } from "./parse-str-str";
 export { default as QNDSet } from "./qnd-set";
 export { default as resolveArgs } from "./resolve-args";
 export { default as splitPath } from "./split-path";
-export { default as sym } from "./sym";

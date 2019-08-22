@@ -390,4 +390,23 @@ describe("handles continues correctly", () => {
 		// 4 * ARR[4] - 3, because on the third loop the inner loop is broken after one iteration
 		expect(innerCount).toBe(13);
 	});
+
+	test("continues nested forEach fully", () => {
+		let outerCount = 0,
+			innerCount = 0;
+
+		forEach(ARR, (_, idx) => {
+			outerCount++;
+
+			return forEach(ARR, _ => {
+				if (idx == 2)
+					return forEach.CONTINUE_ALL;
+
+				innerCount++;
+			});
+		});
+
+		expect(outerCount).toBe(3);
+		expect(innerCount).toBe(8);	// 2 * ARR[4]
+	});
 });

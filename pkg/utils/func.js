@@ -1,6 +1,6 @@
 import forEachDeep from "./for-each-deep";
 import { resolveVal } from "./resolve-val";
-import sym from "./sym";
+import { sym } from "./sym";
 
 function call(func, ...args) {
 	if (typeof func == "function")

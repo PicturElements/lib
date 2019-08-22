@@ -1,4 +1,4 @@
-import getConstructorName from "./get-constructor-name";
+import getFunctionName from "./get-function-name";
 
 // generate a function parameter string reminiscent of a
 // TypeScript parameter signature
@@ -27,7 +27,7 @@ function genTypeStr(type) {
 		return type;
 	
 	if (typeof type == "function")
-		return getConstructorName(type);
+		return getFunctionName(type);
 
 	if (type && type.constructor == Array)
 		return type.map(genTypeStr).join(" | ");

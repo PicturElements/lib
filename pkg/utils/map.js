@@ -1,8 +1,12 @@
 import forEach from "./for-each";
-import { isObj, isArrayLike } from "./is";
+import {
+	isObj,
+	isArrayLike,
+	isArrResolvable
+} from "./is";
 
 export default function map(obj, callback, options, out) {
-	out = isObj(out) ? out : isArrayLike(obj) ? [] : {};
+	out = isObj(out) ? out : isArrResolvable(obj) ? [] : {};
 	const isArrLike = isArrayLike(out);
 
 	if (typeof callback != "function")

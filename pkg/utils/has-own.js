@@ -1,24 +1,26 @@
+import { polyfillPrefixes } from "./_constants";
+
 const oHOP = Object.prototype.hasOwnProperty;
 
 // Polyfill aware hasOwnProperty
 // By default it doesn't count symbol keys as valid own property keys
-// so to enable that please use the allowSymbol flag
+// so to enable that please use the allowSymbols flag
 
-const polyfillHasOwn = (obj, k, allowSymbol) => {
+const polyfillHasOwn = (obj, k, allowSymbols) => {
 	if (!oHOP.call(obj, k))
 		return false;
 	
-	if (allowSymbol || k[0] != "@")
+	if (allowSymbols || k[0] != "@")
 		return true;
 
-	return k.indexOf("@Polyfill:Symbol - ") != 0;
+	return k.indexOf(polyfillPrefixes.symbol) != 0;
 };
 
-const defaultHasOwn = (obj, k, allowSymbol) => {
+const defaultHasOwn = (obj, k, allowSymbols) => {
 	if (!oHOP.call(obj, k))
 		return false;
 
-	return !!allowSymbol || typeof k != "symbol";
+	return !!allowSymbols || typeof k != "symbol";
 };
 
 const hasOwn = typeof Symbol == "undefined" ? polyfillHasOwn : defaultHasOwn;

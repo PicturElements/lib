@@ -1,4 +1,4 @@
-import sym from "./sym";
+import { sym } from "./sym";
 
 const memoizeKey = sym("memoize");
 
