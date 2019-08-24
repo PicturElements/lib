@@ -1,109 +1,242 @@
-const pathComponentClassifiers = {
-		".": null,
-		"..": "upDir",
-		"/": null
-	},
-	// Capturing groups:
-	// 1: Protocol (definitely domain)
-	// 2: period-separated part (signifies file extension or domain)
-	// 3: Port (definitely domain)
-	// 4: Characters continuing the URL after the domain
-	domainRegex = /^(https?:\/\/)?(?:[^.:\\/\s]+?|\\.)((?:\.(?:[^.:\\/\s]+?|\\.)+)*)(:\d{1,5})?(?=(\/)|$)/,
-	queryRegex = /\?([^#]+)/,
-	querySplitRegex = /(\w+)(?:&|$|=((?:[^\\&=]+|\\.)+))/g,
-	hashRegex = /#([^?]+)/,
-	absoluteRegex = /^(?:\/|https?:\/\/)/;
+const weakmapSupported = typeof WeakMap != "undefined",
+	URL_MAP = weakmapSupported ? new WeakMap() : {
+		map: {},
+		set(value, inst) {
+			this.map[inst._uuid] = value;
+			return this;
+		},
+		get(inst) {
+			return this.map[inst._uuid];
+		},
+		has(inst) {
+			return this.map.hasOwnProperty(inst._uuid);
+		},
+		delete(inst) {
+			return this.has(inst) ? delete this.map[inst._uuid] : false;
+		}
+	};
+
+const URL_PARSERS = [
+	{
+		key: "protocol",
+		regex: /^([^\s]+?:)\/\//,
+		capture: 1
+	}, {
+		key: "hostname",
+		regex: /^(?:localhost|[a-z0-9-]+(?:\.[a-z0-9-]+)+)/
+	}, {
+		key: "port",
+		regex: /^:([^\s\/]+)/,
+		capture: 1
+	}, {
+		key: "pathname",
+		regex: /^[^?#]+/
+	}, {
+		key: "search",
+		regex: /\?[^#]+/
+	}, {
+		key: "hash",
+		regex: /#[^?]+/
+	}
+];
+
+const INVALID_PARAM_TYPES = {
+	symbol: true,
+	function: true,
+	object: true,
+	undefined: true
+};
+
+let uuid = 0;
 
 export default class URL {
-	constructor(url, noParse) {
-		this.valid = true;
-		this.error = null;
-		this.domain = "";
-		this.path = [];
-		this.query = "";
-		this.queryDict = {};
-		this.hash = "";
-		this.raw = null;
-		this.source = url;
-		this.absolute = false;
-		this.stepUp = 0;
-
-		if (!noParse) {
-			const parsed = parseUrl(url);
-
-			if (parsed.valid)
-				URL.cache[url] = this;
-			else
-				sendError(`Invalid URL '${url}'. Error: ${parsed.error}`);
-
-			Object.assign(this, parsed);
+	constructor(url) {
+		if (!weakmapSupported) {
+			Object.defineProperty(this, "_uuid", {
+				value: uuid++
+			});
 		}
 
-		this.applyProperties();
+		URL_MAP.set(this, {
+			hash: "",
+			hostname: "",
+			href: "",
+			origin: "",
+			path: [],
+			pathname: "",
+			port: "",
+			protocol: "",
+			search: "",
+			searchParams: {},
+			stepUp: 0
+		});
+
+		if (url)
+			this.parse(url);
+	}
+
+	get hash() {
+		return URL_MAP.get(this).hash;
+	}
+
+	set hash(hash) {
+		hash = coerceStr(hash);
+		if (hash && hash[0] != "#")
+			hash = `#${hash}`;
+
+		URL_MAP.get(this).hash = hash;
+	}
+
+	get host() {
+		const data = URL_MAP.get(this);
+		return data.port ? `${data.hostname}:${data.port}` : data.hostname;
+	}
+
+	set host(host) {
+		host = coerceStr(host);
+		const split = host.split(":");
+
+		this.hostname = split[0];
+		if (split.length > 1)
+			this.port = split[1];
+	}
+
+	get hostname() {
+		return URL_MAP.get(this).hostname;
+	}
+
+	set hostname(hostname) {
+		URL_MAP.get(this).hostname = coerceStr(hostname);
+	}
+
+	get href() {
+		const data = URL_MAP.get(this);
+		let href = "";
+
+		if (data.protocol)
+			href += `${data.protocol}//`;
+
+		href += (data.hostname + this.pathname);
+		
+		if (data.search)
+			href += data.search;
+
+		if (data.hash)
+			href += data.hash;
+
+		return href;
+	}
+
+	set href(url) {
+		this.parse(url);
+	}
+
+	get origin() {
+		return "not implemented";
+		// return URL_MAP.get(this).origin;
+	}
+
+	set origin(origin) {
+		console.warn("origin is read-only");
+	}
+
+	get pathname() {
+		const path = URL_MAP.get(this).path;
+		let pathname = "";
+
+		for (let i = 0, l = path.length; i < l; i++)
+			pathname += `/${path[i].value}`;
+
+		return pathname;
+	}
+
+	set pathname(pathname) {
+		const data = URL_MAP.get(this),
+			path = parsePath(coerceStr(pathname)),
+			collapsed = collapsePath(path, data);
+
+		data.stepUp = collapsed.stepUp;
+		data.path = collapsed.path;
+	}
+
+	get port() {
+		return URL_MAP.get(this).port;
+	}
+
+	set port(port) {
+		URL_MAP.get(this).port = coerceStr(port);
+	}
+
+	get protocol() {
+		return URL_MAP.get(this).protocol;
+	}
+
+	set protocol(protocol) {
+		protocol = coerceStr(protocol);
+		if (protocol && protocol[protocol.length - 1] != ":")
+			protocol = `${protocol}:`;
+
+		URL_MAP.get(this).protocol = protocol;
+	}
+
+	get search() {
+		return URL_MAP.get(this).search;
+	}
+
+	set search(search) {
+		const data = URL_MAP.get(this);
+		search = coerceStr(search);
+		if (search && search[0] != "?")
+			search = `?${search}`;
+		
+		data.search = search;
+		data.searchParams = searchToParams(search);
+	}
+
+	get searchParams() {
+		return URL_MAP.get(this).searchParams;
+	}
+
+	set searchParams(params) {
+		const data = URL_MAP.get(this),
+			newParams = {};
+
+		if (params && params.constructor == Object) {
+			for (const k in params) {
+				if (!params.hasOwnProperty(k) || INVALID_PARAM_TYPES.hasOwnProperty(typeof params[k]))
+					continue;
+
+				newParams[k] = params[k];
+			}
+
+			data.search = paramsToSearch(newParams);
+			data.searchParams = newParams;
+		} else if (params === null) {
+			data.search = paramsToSearch({});
+			data.searchParams = {};
+		}
 	}
 
 	clone() {
-		const cloned = new URL(null, true);
+		const cloned = new URL(null),
+			tData = URL_MAP.get(this),
+			cData = URL_MAP.get(cloned);
 
-		for (const k in this) {
-			if (!this.hasOwnProperty(k))
+		for (const k in tData) {
+			if (!tData.hasOwnProperty(k))
 				continue;
 
-			const item = this[k];
+			const item = tData[k];
 			
 			if (Array.isArray(item))
-				cloned[k] = item.slice();
+				cData[k] = item.slice().map(v => Object.assign({}, v));
 			else if (item && typeof item == "object")
-				cloned[k] = Object.assign({}, item);
+				cData[k] = Object.assign({}, item);
 			else
-				cloned[k] = item;
+				cData[k] = item;
 		}
 
 		return cloned;
-	}
-
-	// Generate additional data from 
-	applyProperties(tasks = {}) {
-		for (const k in tasks) {
-			if (!tasks.hasOwnProperty(k))
-				continue;
-
-			const instruction = tasks[k];
-
-			switch (k) {
-				case "setQuery":
-					this.query = typeof instruction == "string" ? instruction : this.query;
-					this.queryDict = dictFromQuery(this.query);
-					break;
-				case "setQueryDict":
-					this.queryDict = instruction;
-					this.query = queryFromDict(this.queryDict);
-					break;
-				case "setHash":
-					this.hash = instruction || null;
-					break;
-			}
-		}
-
-		const source = this.source;
-		this.absolute = (this.stepUp == 0 && Boolean(this.domain)) || (typeof source == "string" && absoluteRegex.test(source));
-
-		const path = this.path;
-		let raw = this.domain;
-
-		for (let i = 0, l = path.length; i < l; i++) {
-			if (i > 0 || this.absolute)
-				raw += "/";
-
-			raw += path[i].value;
-		}
-
-		if (this.query)
-			raw += `?${this.query}`;
-		if (this.hash)
-			raw += `#${this.hash}`;
-
-		this.raw = raw;
 	}
 
 	join(...paths) {
@@ -115,15 +248,23 @@ export default class URL {
 	}
 
 	str() {
-		return this.raw;
+		return this.href;
 	}
 
 	toString() {
-		return this.raw;
+		return this.href;
 	}
 
-	static isAbsolute(url) {
-		return coerceUrl(url);
+	parse(url) {
+		url = typeof url == "string" ? url.trim() : "";
+
+		for (let i = 0, l = URL_PARSERS.length; i < l; i++) {
+			const parser = URL_PARSERS[i],
+				otomy = stringotomy(parser.regex, url, parser.capture);
+				
+			this[parser.key] = otomy.extracted;
+			url = otomy.rest;
+		}
 	}
 
 	static join(...paths) {
@@ -131,22 +272,20 @@ export default class URL {
 	}
 
 	static jn(...paths) {
+		if (!paths.length)
+			return URL.NULL;
+
 		let outInstance = null,
 			path = [],
 			hash = "";
-		const queryDict = {};
+		const searchParams = {};
 
 		// Validate / collect data 
 		for (let i = 0, l = paths.length; i < l; i++) {
 			const url = coerceUrl(paths[i]);
 
-			if (!url.valid) {
-				sendError("Cannot join path: invalid component");
-				return URL.NULL;
-			}
-
-			if (url.absolute && i > 0) {
-				sendError(`Cannot join path: interspersed absolute path '${url.raw}'`);
+			if (i > 0 && isAbsolute(this)) {
+				sendError(`Cannot join path: interspersed absolute path '${url.href}'`);
 				return URL.NULL;
 			}
 
@@ -157,33 +296,29 @@ export default class URL {
 
 			if (url.hash)
 				hash = url.hash;
-			Object.assign(queryDict, url.queryDict);
+			
+			Object.assign(searchParams, url.searchParams);
 		}
 
 		if (!outInstance)
 			return URL.NULL;
 
+		// Join paths
 		for (let i = 0, l = paths.length; i < l; i++) {
-			const p = paths[i].path;
+			const p = URL_MAP.get(paths[i]).path;
 
 			for (let j = 0, l2 = p.length; j < l2; j++)
 				path.push(p[j]);
 		}
 
-		// Inject some specific information from the first path section
-		// not specifically involved in the join
-		const firstPath = paths[0];
-		outInstance.absolute = firstPath.absolute;
-		outInstance.domain = firstPath.domain;
-		outInstance.source = firstPath.source;
+		const collapsed = collapsePath(path, outInstance),
+			outData = URL_MAP.get(outInstance);
 
-		outInstance.path = path;
-		collapsePath(outInstance);
-		outInstance.applyProperties({
-			setQueryDict: queryDict,
-			setHash: hash
-		});
-		outInstance.source = outInstance.raw;
+		outData.path = collapsed.path;
+		outData.stepUp = collapsed.stepUp;
+		outData.search = paramsToSearch(searchParams);
+		outData.searchParams = searchParams;
+		outData.hash = hash;
 
 		return outInstance;
 	}
@@ -193,78 +328,50 @@ URL.cache = {};
 URL.throw = false;
 URL.NULL = new URL("");
 
-function parseUrl(url) {
-	const pathRegex = /\/|(?:[^\\/\s]+?|\\.)+|\.{1,2}/g, // /\/|(\.?(?:[^.\\/\s]+?|\\.)+)+|\.{1,2}/g,
-		payload = {
-			valid: true,
-			error: null,
-			domain: "",
-			path: [],
-			query: "",
-			queryDict: {},
-			hash: "",
-			stepUp: 0
+function coerceStr(val) {
+	return encodeURI((typeof val == "string" ? val : "").trim());
+}
+
+function stringotomy(regex, str, capture = 0) {
+	const ex = regex.exec(str);
+	if (!ex) {
+		return {
+			extracted: "",
+			rest: str
 		};
-
-	if (typeof url != "string") {
-		payload.valid = false;
-		payload.error = "Supplied URL is not a string";
-		return payload;
 	}
 
-	const domainEx = domainRegex.exec(url);
-	// If protocol or port exists, or there are valid characters
-	// after a file-like substring, treat as domain
-	if (domainEx && (domainEx[1] || domainEx[3] || (domainEx[2] && domainEx[4]))) {
-		payload.domain = domainEx[0];
-		url = url.substr(domainEx[0].length);
-	}
+	return {
+		extracted: ex[capture] || "",
+		rest: str.substr(0, ex.index) + str.substr(ex.index + ex[0].length)
+	};
+}
 
-	const queryEx = queryRegex.exec(url);
-	if (queryEx) {
-		const qs = queryEx[1];
-		payload.query = qs;
-		payload.queryDict = dictFromQuery(qs);
-		url = url.replace(queryRegex, "");
-	}
+const pathComponentClassifiers = {
+	".": null,
+	"..": "upDir",
+	"/": null
+};
 
-	const hashEx = hashRegex.exec(url);
-	if (hashEx) {
-		payload.hash = hashEx[1];
-		url = url.replace(hashRegex, "");
-	}
+function parsePath(path) {
+	path = path.split("/");
+	const pathOut = [];
 
-	const path = [];
-	let idx = 0;
+	for (let i = 0, l = path.length; i < l; i++) {
+		const component = path[i];
+		if (!component)
+			continue;
 
-	while (true) {
-		const ex = pathRegex.exec(url);
-		if (!ex || ex.index != idx)
-			break;
-
-		const match = ex[0];
-
-		if (pathComponentClassifiers.hasOwnProperty(match)) {
-			const classifier = pathComponentClassifiers[match];
-
+		if (pathComponentClassifiers.hasOwnProperty(component)) {
+			const classifier = pathComponentClassifiers[component];
+	
 			if (classifier)
-				path.push(mkPathComponent(classifier, match));
+				pathOut.push(mkPathComponent(classifier, component));
 		} else
-			path.push(mkPathComponent("component", match));
-
-		idx += ex[0].length;
+			pathOut.push(mkPathComponent("component", component));
 	}
 
-	if (idx != url.length) {
-		payload.valid = false;
-		payload.error = "Path contains invalid characters";
-		return payload;
-	}
-
-	payload.path = path;
-
-	collapsePath(payload);
-	return payload;
+	return pathOut;
 }
 
 function mkPathComponent(type, value) {
@@ -274,8 +381,12 @@ function mkPathComponent(type, value) {
 	};
 }
 
-function collapsePath(payload) {
-	const path = payload.path;
+function isAbsolute(dataOrInstance) {
+	const data = dataOrInstance instanceof URL ? URL_MAP.get(dataOrInstance) : dataOrInstance;
+	return Boolean(data.hostname);
+}
+
+function collapsePath(path, dataOrInstance) {
 	let stepUp = 0;
 
 	for (let i = path.length - 1; i >= 0; i--) {
@@ -293,13 +404,16 @@ function collapsePath(payload) {
 		}
 	}
 
-	if (stepUp && payload.absolute !== true) {
+	if (stepUp && !isAbsolute(dataOrInstance)) {
 		const pad = repeatPathComponent("upDir", "..", stepUp);
-		payload.path = pad.concat(path);
-		payload.stepUp = stepUp;
-	}
+		path = pad.concat(path);
+	} else
+		stepUp = 0;
 
-	return payload;
+	return {
+		path,
+		stepUp
+	};
 }
 
 function repeatPathComponent(type, value, count) {
@@ -329,35 +443,37 @@ function sendError(msg) {
 }
 
 // Generating functions
-function queryFromDict(dict) {
-	let query = "";
+function paramsToSearch(dict) {
+	let search = "";
 
 	for (const k in dict) {
 		if (!dict.hasOwnProperty(k))
 			continue;
 
-		if (query)
-			query += "&";
+		if (search)
+			search += "&";
 
-		query += k;
+		search += k;
 
 		if (dict[k] !== undefined)
-			query += `=${dict[k]}`;
+			search += `=${dict[k]}`;
 	}
 
-	return query;
+	return search ? `?${search}` : "";
 }
 
-function dictFromQuery(query) {
-	const queryDict = {};
+const searchSplitRegex = /(\w+)(?:&|$|=((?:[^\\&=]+|\\.)+))/g;
+
+function searchToParams(search) {
+	const searchDict = {};
 
 	while (true) {
-		const kvPair = querySplitRegex.exec(query);
+		const kvPair = searchSplitRegex.exec(search);
 		if (!kvPair)
 			break;
 
-		queryDict[kvPair[1]] = kvPair[2];
+		searchDict[kvPair[1]] = kvPair[2];
 	}
 
-	return queryDict;
+	return searchDict;
 }
