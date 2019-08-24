@@ -17,7 +17,7 @@ it("correctly matches types", () => {
 		[true,		[],		Array],
 		[false,		[],		[]]
 	].forEach(([match, val, type]) => {
-		// console.log(val, type);
+		console.log(val, type);
 		expect(matchType(val, type, false)).toBe(match);
 	});
 });
