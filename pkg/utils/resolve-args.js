@@ -69,7 +69,7 @@ export default function resolveArgs(args, signature, funcName = "func", useArr =
 	return argsOut;
 }
 
-resolveArgs.wrap((signature, func, funcName = "func") => {
+resolveArgs.wrap = (signature, func, funcName = "func") => {
 	const wrapped = function() {
 		return func.apply(
 			this,
@@ -81,4 +81,4 @@ resolveArgs.wrap((signature, func, funcName = "func") => {
 	wrapped.rawSignature = signature;
 
 	return wrapped;
-});
+};
