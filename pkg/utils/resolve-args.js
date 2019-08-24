@@ -2,6 +2,7 @@ import matchType from "./match-type";
 import clone from "./clone";
 import { genFuncParamsStr } from "./ts-str";
 import { isObj } from "./is";
+import getFunctionName from "./get-function-name";
 
 // Resolves arguments using a "lacuna" algorithm:
 // It steps through the parameter signature array and tries to match the next
@@ -20,33 +21,36 @@ import { isObj } from "./is";
 // If there is no match and the parameter is set as required, an error will be thrown
 // with a description of the proper parameter signature
 //
-// Note that this implementation preserves argument order, so for examplw a function
+// Note that this implementation preserves argument order, so for example a function
 // that takes arguments on the form (number, string, number, string)
-// won't accept (number, number, string string)
-// In this case, resolveArgs would 
+// won't accept (number, number, string string) fully
+// In this case, resolveArgs would resolve the first number, fail to match the first string,
+// resovlve the second number, and finally resolve the first string in the arguments
+// The second argument string would become a rest argument
+// { rest: [str2], num1: num1, num2: num2, str1: str1, str2: -- }
 
-export default function resolveArgs(args, signature, funcName = "func") {
-	const argsOut = {
+export default function resolveArgs(args, signature, funcName = "func", useArr = false) {
+	const argsOut = useArr ? [] : {
 			rest: []
 		},
 		aLen = args.length,
 		sLen = signature.length;
-	let i = 0,
-		ptr = 0;
+	let ptr = 0;
 
-	for (i; i < sLen; i++) {
+	for (let i = 0; i < sLen; i++) {
 		const sgn = signature[i],
 			arg = args[ptr],
-			def = sgn.default;
+			def = sgn.default,
+			key = useArr ? i : sgn.name;
 		
 		if (matchType(arg, sgn.type)) {
-			argsOut[sgn.name] = arg;
+			argsOut[key] = arg;
 			ptr++;
 		} else {
 			if (arg == null)
 				ptr++;
 
-			argsOut[sgn.name] = isObj(def) ? clone(def) : def;
+			argsOut[key] = isObj(def) ? clone(def) : def;
 
 			if (sgn.required) {
 				const err = new Error(`Failed to resolve arguments: '${sgn.name}' is a required parameter\n\n${genFuncParamsStr(funcName, signature, true)}\n`);
@@ -57,8 +61,24 @@ export default function resolveArgs(args, signature, funcName = "func") {
 		}
 	}
 
+	const rest = useArr ? argsOut : argsOut.rest;
+
 	while (ptr < aLen)
-		argsOut.rest.push(args[ptr++]);
+		rest.push(args[ptr++]);
 
 	return argsOut;
 }
+
+resolveArgs.wrap((signature, func, funcName = "func") => {
+	const wrapped = function() {
+		return func.apply(
+			this,
+			resolveArgs(arguments, signature, funcName, true)
+		);
+	};
+
+	wrapped.signature = genFuncParamsStr(getFunctionName(func) || funcName, signature, true);
+	wrapped.rawSignature = signature;
+
+	return wrapped;
+});

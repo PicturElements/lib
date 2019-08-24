@@ -5,7 +5,7 @@ export default function matchType(val, type, defaultMatch = true) {
 		return typeof val == type;
 	else if (typeof type == "function") {
 		if (isConstructor(type))
-			return typeof val == "object" ? val instanceof type : val.constructor == type;
+			return typeof val == "object" ? val instanceof type : Boolean(val) && val.constructor == type;
 			
 		return Boolean(type(val));
 	} else if (type && type.constructor == Array) {
