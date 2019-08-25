@@ -30,10 +30,12 @@ describe("instance methods", () => {
 			const inst = nh().hook("test", fn);
 			expect(inst.hooks.hasOwnProperty("test")).toBe(true);
 			expect(inst.hooks.last).toMatchObject({
-				handler: fn,
-				nickname: null,
-				namespace: null,
-				ttl: Infinity
+				data: {
+					originalHandler: fn,
+					nickname: null,
+					namespace: null,
+					ttl: Infinity
+				}
 			});
 		});
 
@@ -41,10 +43,12 @@ describe("instance methods", () => {
 			const inst = nh().hook("test", fn, 2);
 			expect(inst.hooks.hasOwnProperty("test")).toBe(true);
 			expect(inst.hooks.last).toMatchObject({
-				handler: fn,
-				nickname: null,
-				namespace: null,
-				ttl: 2
+				data: {
+					originalHandler: fn,
+					nickname: null,
+					namespace: null,
+					ttl: 2
+				}
 			});
 		});
 
@@ -52,10 +56,12 @@ describe("instance methods", () => {
 			const inst = nh().hook("test", fn, "nick");
 			expect(inst.hooks.hasOwnProperty("test")).toBe(true);
 			expect(inst.hooks.last).toMatchObject({
-				handler: fn,
-				nickname: "nick",
-				namespace: null,
-				ttl: Infinity
+				data: {
+					originalHandler: fn,
+					nickname: "nick",
+					namespace: null,
+					ttl: Infinity
+				}
 			});
 		});
 
@@ -63,10 +69,12 @@ describe("instance methods", () => {
 			const inst = nh().hook("test", fn, null, "ns");
 			expect(inst.hooks.hasOwnProperty("test")).toBe(true);
 			expect(inst.hooks.last).toMatchObject({
-				handler: fn,
-				nickname: null,
-				namespace: "ns",
-				ttl: Infinity
+				data: {
+					originalHandler: fn,
+					nickname: null,
+					namespace: "ns",
+					ttl: Infinity
+				}
 			});
 		});
 
@@ -74,10 +82,12 @@ describe("instance methods", () => {
 			const inst = nh().hook("test", fn, "nick", "ns");
 			expect(inst.hooks.hasOwnProperty("test")).toBe(true);
 			expect(inst.hooks.last).toMatchObject({
-				handler: fn,
-				nickname: "nick",
-				namespace: "ns",
-				ttl: Infinity
+				data: {
+					originalHandler: fn,
+					nickname: "nick",
+					namespace: "ns",
+					ttl: Infinity
+				}
 			});
 		});
 
@@ -85,10 +95,12 @@ describe("instance methods", () => {
 			const inst = nh().hook("test", fn, "nick", "ns", 2);
 			expect(inst.hooks.hasOwnProperty("test")).toBe(true);
 			expect(inst.hooks.last).toMatchObject({
-				handler: fn,
-				nickname: "nick",
-				namespace: "ns",
-				ttl: 2
+				data: {
+					originalHandler: fn,
+					nickname: "nick",
+					namespace: "ns",
+					ttl: 2
+				}
 			});
 		});
 
@@ -106,10 +118,12 @@ describe("instance methods", () => {
 			const inst = nh().hookNS("ns", "test", fn, 2);
 			expect(inst.hooks.hasOwnProperty("test")).toBe(true);
 			expect(inst.hooks.last).toMatchObject({
-				handler: fn,
-				nickname: null,
-				namespace: "ns",
-				ttl: 2
+				data: {
+					originalHandler: fn,
+					nickname: null,
+					namespace: "ns",
+					ttl: 2
+				}
 			});
 		});
 
@@ -192,7 +206,9 @@ describe("instance methods", () => {
 			expect(inst.hooks.test.length).toBe(3);
 			inst.unhook("test", "nick");
 			expect(inst.hooks.test).toMatchObject([{
-				nickname: null
+				data: {
+					nickname: null
+				}
 			}]);
 		});
 
@@ -208,14 +224,20 @@ describe("instance methods", () => {
 			expect(inst.hooks.test.length).toBe(3);
 			expect(inst.hooks.test).toMatchObject([
 				{
-					handler: fn2,
-					nickname: "nick"
+					data: {
+						originalHandler: fn2,
+						nickname: "nick"
+					}
 				}, {
-					handler: fn,
-					nickname: "nick2"
+					data: {
+						originalHandler: fn,
+						nickname: "nick2"
+					}
 				}, {
-					handler: fn2,
-					nickname: "nick2"
+					data: {
+						originalHandler: fn2,
+						nickname: "nick2"
+					}
 				}
 			]);
 		});
@@ -236,11 +258,15 @@ describe("instance methods", () => {
 			expect(inst.hooks.test.length).toBe(2);
 			expect(inst.hooks.test).toMatchObject([
 				{
-					handler: fn,
-					nickname: "first"
+					data: {
+						originalHandler: fn,
+						nickname: "first"
+					}
 				}, {
-					handler: fn,
-					nickname: "second"
+					data: {
+						originalHandler: fn,
+						nickname: "second"
+					}
 				}
 			]);
 		});
@@ -260,7 +286,7 @@ describe("instance methods", () => {
 			expect(func.mock.calls.every(c => c.value == 6));
 		});
 
-		it("correctly calls hooks with a set ttl the correct amount of times before discarding the data", () => {
+		it("correctly calls hooks with a set ttl the correct amount of times before discarding them", () => {
 			const fns = [jest.fn(), jest.fn(), jest.fn()];
 			
 			const inst = nh()
@@ -275,6 +301,17 @@ describe("instance methods", () => {
 				expect(fns[i].mock.calls.length).toBe(i);
 			
 			expect(inst.hooks.test).toBe(undefined);
+		});
+
+		it("correctly guards hooks", () => {
+			let sum = 0;
+			const inst = nh().hook("test", (inst, num) => sum += num, (inst, num) => num % 2 == 1);
+
+			[0, 1, 2, 3, 4].forEach(num => {
+				inst.callHooks("test", num);
+			});
+
+			expect(sum).toBe(4);	// 1 + 3
 		});
 	});
 	
@@ -313,7 +350,7 @@ describe("instance methods", () => {
 	});
 
 	describe("Hook", () => {
-		it("unhook", () => {
+		test("unhook", () => {
 			const inst = nh()
 				.hook("test", fn)
 				.hook("test", fn)
@@ -322,6 +359,26 @@ describe("instance methods", () => {
 			expect(inst.hooks.test.length).toBe(3);
 			inst.hooks.last.unhook();
 			expect(inst.hooks.test.length).toBe(2);
+		});
+
+		test("handlers and guards can be updated", () => {
+			const hook = nh().hook("test", fn, fn2).hooks.last,
+				testFn = _ => _;
+			
+			expect(hook.handler).toBe(fn);
+			expect(hook.guard).toBe(fn2);
+
+			hook.handler = "not a function";
+			expect(hook.handler).toBe(fn);
+
+			hook.guard = "not a function";
+			expect(hook.guard).toBe(fn2);
+
+			hook.handler = testFn;
+			expect(hook.handler).toBe(testFn);
+
+			hook.guard = testFn;
+			expect(hook.guard).toBe(testFn);
 		});
 	});
 });
