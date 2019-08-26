@@ -23,7 +23,10 @@ const URL_PARSERS = [
 		capture: 1
 	}, {
 		key: "hostname",
-		regex: /^(?:localhost|[a-z0-9-]+(?:\.[a-z0-9-]+)+)/
+		guard(inst, otomy) {
+			return Boolean(inst.protocol);
+		},
+		regex: /^[^\/]+/
 	}, {
 		key: "port",
 		regex: /^:([^\s\/]+)/,
@@ -262,8 +265,12 @@ export default class URL {
 			const parser = URL_PARSERS[i],
 				otomy = stringotomy(parser.regex, url, parser.capture);
 				
-			this[parser.key] = otomy.extracted;
-			url = otomy.rest;
+			if (typeof parser.guard == "function" && !parser.guard(this, otomy))
+				this[parser.key] = "";
+			else {
+				this[parser.key] = otomy.extracted;
+				url = otomy.rest;
+			}
 		}
 	}
 

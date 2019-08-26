@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/url",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Small URL parse/utility library",
   "main": "index.js",
   "scripts": {
@@ -27,7 +27,7 @@
   "dependencies": {},
   "devDependencies": {},
   "qlib": {
-    "pushes": 2,
+    "pushes": 3,
     "expose": {
       "scripts": [
         "index.mjs"
