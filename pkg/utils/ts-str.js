@@ -27,7 +27,7 @@ function genTypeStr(type) {
 		return type;
 	
 	if (typeof type == "function")
-		return getFunctionName(type);
+		return getFunctionName(type) || "fn()";
 
 	if (type && type.constructor == Array)
 		return type.map(genTypeStr).join(" | ");
