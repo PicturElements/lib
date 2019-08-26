@@ -1,0 +1,48 @@
+{
+  "name": "@qtxr/request",
+  "version": "1.0.0",
+  "description": "Collection of libraries for efficient, clean, and intuitive web requests",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node ../server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PicturElements/lib.git",
+    "directory": "pkg/request"
+  },
+  "keywords": [
+    "xhr",
+    "requests",
+    "assets",
+    "hooks"
+  ],
+  "author": "qtxr",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/PicturElements/lib/issues"
+  },
+  "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/request#readme",
+  "dependencies": {
+    "@qtxr/bc": "^1.2.0",
+    "@qtxr/url": "^1.0.1",
+    "@qtxr/utils": "^1.2.0"
+  },
+  "devDependencies": {},
+  "qlib": {
+    "pushes": 1,
+    "expose": {
+      "scripts": [
+        "index.mjs"
+      ],
+      "styles": []
+    },
+    "ui": [
+      {
+        "type": "console",
+        "config": {}
+      }
+    ]
+  }
+}
