@@ -141,6 +141,24 @@ export default class Hookable {
 	}
 }
 
+function addHook(inst, paramMap, args) {
+	const data = resolveArgs(args, paramMap, {
+			allowSingleSource: true
+		}),
+		partitionName = data.partitionName;
+
+	if (reservedFields.hasOwnProperty(partitionName))
+		return console.warn(`Cannot set hooks at '${partitionName}' because it's a reserved field`);
+
+	const hooks = inst.hooks.hasOwnProperty(partitionName) ? inst.hooks[partitionName] : [];
+	inst.hooks[partitionName] = hooks;
+
+	const hook = new Hook(inst, data);
+	inst.hooks.last = hook;
+	hooks.push(hook);
+	return hook;
+}
+
 class Hook {
 	constructor(owner, data) {
 		this.owner = owner;
@@ -225,20 +243,4 @@ class Hook {
 		else
 			return handler == this.data.originalHandler || (Boolean(nickname) && nickname == this.data.nickname);
 	}
-}
-
-function addHook(inst, paramMap, args) {
-	const data = resolveArgs(args, paramMap, "hook"),
-		partitionName = data.partitionName;
-
-	if (reservedFields.hasOwnProperty(partitionName))
-		return console.warn(`Cannot set hooks at '${partitionName}' because it's a reserved field`);
-
-	const hooks = inst.hooks.hasOwnProperty(partitionName) ? inst.hooks[partitionName] : [];
-	inst.hooks[partitionName] = hooks;
-
-	const hook = new Hook(inst, data);
-	inst.hooks.last = hook;
-	hooks.push(hook);
-	return hook;
 }
