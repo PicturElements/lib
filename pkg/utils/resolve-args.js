@@ -5,7 +5,12 @@ import {
 	isObj,
 	isObject
 } from "./is";
+import {
+	composeOptionsTemplates,
+	createOptionsObject
+} from "./options";
 import getFunctionName from "./get-function-name";
+
 
 // Resolves arguments using a simple "lacuna" algorithm:
 // It steps through the parameter signature array and tries to match the next
@@ -45,7 +50,9 @@ import getFunctionName from "./get-function-name";
 // Simply returns an array of all arguments in the order specified by the signature
 // Rest arguments are appended to the end of the array
 
-export default function resolveArgs(args, signature, options = {}) {
+export default function resolveArgs(args, signature, options) {
+	options = createOptionsObject(options, resolveArgsTemplates);
+
 	if (!Array.isArray(args))
 		throw new Error("Failed to resolve arguments: no arguments supplied");
 
@@ -103,14 +110,18 @@ export default function resolveArgs(args, signature, options = {}) {
 }
 
 resolveArgs.wrap = (signature, func, options) => {
+	options = Object.assign(
+		{},
+		createOptionsObject(options, resolveArgsTemplates),
+		{
+			returnArgList: true
+		}
+	);
+
 	const wrapped = function() {
 		return func.apply(
 			this,
-			resolveArgs(arguments, signature,
-				Object.assign({}, options, {
-					returnArgList: true
-				})
-			)
+			resolveArgs(arguments, signature, options)
 		);
 	};
 
@@ -119,3 +130,8 @@ resolveArgs.wrap = (signature, func, options) => {
 
 	return wrapped;
 };
+
+const resolveArgsTemplates = composeOptionsTemplates({
+	allowSingleSource: true,
+	returnArgList: true
+});

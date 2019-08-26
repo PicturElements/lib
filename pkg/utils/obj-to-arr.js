@@ -15,7 +15,7 @@ export default function objToArr(...args) {
 		order,
 		processor,
 		allowNonexistent
-	} = resolveArgs(args, objToArrParamSignature, "objToArr");
+	} = resolveArgs(args, objToArrParamSignature);
 
 	order = order || obj._order;
 
