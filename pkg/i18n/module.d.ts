@@ -1,0 +1,1 @@
+declare module "@qtxr/i18n";
