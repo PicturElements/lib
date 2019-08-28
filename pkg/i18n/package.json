@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/i18n",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "Compact, powerful, fast, and intuitive internationali(z|s)ation library",
   "main": "index.js",
   "scripts": {
@@ -30,7 +30,7 @@
   },
   "devDependencies": {},
   "qlib": {
-    "pushes": 3,
+    "pushes": 4,
     "expose": {
       "scripts": [
         "index.mjs"

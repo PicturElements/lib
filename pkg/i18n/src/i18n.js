@@ -8,7 +8,7 @@ import {
 	sym,
 	setSymbol
 } from "@qtxr/utils";
-import { Hookable } from "@qtxr/bc/hookable";
+import { Hookable } from "@qtxr/bc";
 import { AssetLoader } from "@qtxr/request";
 import IETF, { coerceIETF } from "./ietf";
 import {
