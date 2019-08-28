@@ -18,11 +18,6 @@ import {
 } from "./lang";
 import langStdLib from "./lang-std-lib";
 
-const DEF_I18N_SETTINGS = {
-	baseUrl: process.env.NODE_ENV == "production" ? "/dist/text" : "/text",
-	sitemapPath: "sitemap"
-};
-
 const RESERVED_KEYS = {
 	default: 1,
 	requires: 1
@@ -65,7 +60,7 @@ class I18NManager extends Hookable {
 		this.locale = locale ? coerceIETF(locale) : new IETF("en");
 		this.requestedLocale = this.locale;
 		this.locales = [];
-		this.settings = Object.assign({}, DEF_I18N_SETTINGS, settings);
+		this.settings = Object.assign({}, I18NManager.DEF_SETTINGS, settings);
 		this.store = {};
 		this.addedAssets = {};
 		this.sitemap = null;
@@ -225,9 +220,7 @@ class I18NManager extends Hookable {
 			newLocale = true;
 		}
 
-		const now = performance.now();
 		supplementPartitionData(this.store, data, ietf.value, !newLocale);
-		console.log(performance.now() - now);
 
 		setOwnership(this.store, ietf.value);
 		shareOwnership(this.store);
@@ -252,7 +245,6 @@ class I18NManager extends Hookable {
 		};
 
 		const dependencyTree = await this.loader.fetchModule(fileName, settings, lazy);
-		console.log(dependencyTree);
 		
 		if (dependencyTree) {
 			applyLocales(dependencyTree);
@@ -291,7 +283,16 @@ class I18NManager extends Hookable {
 		if (!locale.equals(oldLocale))
 			this.callHooks("localechange");
 	}
+
+	static setDefaultSettings(settings) {
+		Object.assign(I18NManager.DEF_SETTINGS, settings);
+	}
 }
+
+I18NManager.DEF_SETTINGS = {
+	baseUrl: (process && process.env && process.env.NODE_ENV == "production") ? "/dist/text" : "/text",
+	sitemapPath: "sitemap"
+};
 
 // Initializes a base locale partition (e.g. en, en_uk)
 // and creates a reference table. The reference table contains
@@ -438,10 +439,4 @@ function shareOwnership(store) {
 	}
 }
 
-const I18N = new I18NManager("en");
-
-export default I18N;
-
-export {
-	I18NManager
-};
+export default I18NManager;

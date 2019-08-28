@@ -1,1 +1,1 @@
-export { default } from "./src/i18n";
+export { default } from "./src/i18n-manager";
