@@ -589,9 +589,8 @@ const XHR = new XHRManager();
 
 XHRManager.default = XHR;
 
-export default XHR;
-
 export {
+	XHR,
 	XHRManager,
 	XHRState,
 	encodeData,
