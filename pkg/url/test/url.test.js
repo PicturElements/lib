@@ -1,4 +1,4 @@
-import URL from "../";
+import URL from "../src/url";
 
 it("Correctly parses a URL", () => {
 	const url = new URL("https://www.google.com/search#test?q=testing&test");
