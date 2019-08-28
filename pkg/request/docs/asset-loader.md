@@ -32,13 +32,13 @@ Processes asset node data. By default, this is an identity processor
 ## Fetching methods
 The following methods are the core fetch methods. They accept at most four arguments. These arguments are resolved internally with `@qtxr/utils/resolveArg`, so arguments may be safely omitted. Alternatively, a single argument object may be passed with the keys corresponding to the respective argument. These methods accept a `processors` object as the last argument. These processors temporarily override the current processors.
 
-### prefetch (fileName, settings, lazy, processors)
+### prefetch `(fileName, settings, lazy, processors)`
 Prefetched assets have precedence over fetched assets. No new fetches are made before all queued prefetches have completed. A promise is returned that resolves to the fetched data.
 
-### fetch (fileName, settings, lazy, processors)
+### fetch `(fileName, settings, lazy, processors)`
 Fetch an asset. A promise is returned that resolves to the fetched data.
 
-### fetchModule (fileName, settings, lazy, processors)
+### fetchModule `(fileName, settings, lazy, processors)`
 Fetch a module. A promise is returned that resolves to an asset node with dependencies.
 
 ### Asset node

@@ -1,2 +1,2 @@
-export * from "./xhr";
-export { default as AssetLoader } from "./asset-loader";
+export * from "./src/xhr";
+export { default as AssetLoader } from "./src/asset-loader";

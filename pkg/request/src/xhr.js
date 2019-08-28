@@ -588,7 +588,6 @@ XHRState.NULL = new XHRState();
 const XHR = new XHRManager();
 
 XHRManager.default = XHR;
-window.XHR = XHR;
 
 export default XHR;
 
