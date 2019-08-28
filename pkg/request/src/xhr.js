@@ -4,7 +4,7 @@ import {
 	isObject
 } from "@qtxr/utils";
 import URL from "@qtxr/url";
-import Hookable from "@qtxr/bc/hookable";
+import { Hookable } from "@qtxr/bc";
 
 const finalizeable = {
 	success: true,
