@@ -1,1 +1,1 @@
-export { default as Hookable } from "./hookable";
+export { default as Hookable } from "./src/hookable";

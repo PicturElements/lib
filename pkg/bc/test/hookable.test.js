@@ -1,4 +1,4 @@
-import Hookable from "../hookable";
+import Hookable from "../src/hookable";
 
 it("correctly instantiates", () => {
 	// Basic class stuff

@@ -4,6 +4,8 @@ import {
 	isObject
 } from "@qtxr/utils";
 
+// TODO: in first major version, rename nickname to identifier
+
 const reservedFields = {
 	last: true
 };
@@ -142,9 +144,7 @@ export default class Hookable {
 }
 
 function addHook(inst, paramMap, args) {
-	const data = resolveArgs(args, paramMap, {
-			allowSingleSource: true
-		}),
+	const data = resolveArgs(args, paramMap, "allowSingleSource"),
 		partitionName = data.partitionName;
 
 	if (reservedFields.hasOwnProperty(partitionName))
