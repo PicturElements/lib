@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/uc",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Collection of utility classes",
   "main": "index.js",
   "scripts": {
@@ -29,7 +29,7 @@
   },
   "devDependencies": {},
   "qlib": {
-    "pushes": 1,
+    "pushes": 2,
     "expose": {
       "scripts": [
         "index.mjs"
