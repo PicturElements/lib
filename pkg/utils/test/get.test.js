@@ -1,6 +1,6 @@
-import get from "../get";
-import mkAccessor from "../mk-accessor";
-import { isObj } from "../is";
+import get from "../src/get";
+import mkAccessor from "../src/mk-accessor";
+import { isObj } from "../src/is";
 
 const getData = _ => ({
 		num: 42,

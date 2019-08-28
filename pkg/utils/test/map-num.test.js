@@ -1,4 +1,4 @@
-import mapNum from "../map-num";
+import mapNum from "../src/map-num";
 
 it("correctly maps and wraps data", () => {
 	expect(mapNum({ z: 3 }, "axes2d", [1, 2]))

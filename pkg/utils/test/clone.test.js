@@ -1,4 +1,4 @@
-import clone from "../clone";
+import clone from "../src/clone";
 
 const DATA = {
 	num: 42,

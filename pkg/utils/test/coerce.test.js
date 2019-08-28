@@ -2,7 +2,7 @@ import {
 	coerceToObj,
 	coerceToObjArrResolvable,
 	coerceNum
-} from "../coerce";
+} from "../src/coerce";
 
 describe("coerceToObj", () => {
 	const obj = {},

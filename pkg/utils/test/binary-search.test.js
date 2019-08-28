@@ -4,7 +4,7 @@ import {
 	binaryHas,
 	binaryFind,
 	findClosest,
-} from "../binary-search";
+} from "../src/binary-search";
 
 const ARR_LEN = 5000,
 	ARR_SAMPLES = ARR_LEN * 10,

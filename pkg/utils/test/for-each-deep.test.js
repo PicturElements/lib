@@ -1,4 +1,4 @@
-import forEachDeep from "../for-each-deep";
+import forEachDeep from "../src/for-each-deep";
 
 const nested = [
 		{

@@ -1,4 +1,4 @@
-import filterMut from "../filter-mut";
+import filterMut from "../src/filter-mut";
 
 it("removes interspersed values from an array", () => {
 	const arr = [2, 1, 3, 1, 1, 1, 4, 5, 6, 1, 1, 7, 1, 8, 9, 1, 1, 1],

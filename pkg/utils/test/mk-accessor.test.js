@@ -1,4 +1,4 @@
-import mkAccessor from "../mk-accessor";
+import mkAccessor from "../src/mk-accessor";
 
 it("creates a valid, split-path compatible path", () => {
 	expect(mkAccessor([])).toBe("");

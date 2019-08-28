@@ -1,4 +1,4 @@
-import immutate from "../immutate";
+import immutate from "../src/immutate";
 
 const getData = _ => ({
 	a: 1,

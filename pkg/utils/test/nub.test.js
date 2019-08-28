@@ -1,4 +1,4 @@
-import nub from "../nub";
+import nub from "../src/nub";
 
 it("correctly nubs arrays", () => {
 	expect(nub([1, 2, 3, 1, 2, 4, 5, 6, 3, 5, 7])).toStrictEqual([1, 2, 3, 4, 5, 6, 7]);

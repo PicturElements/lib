@@ -7,7 +7,7 @@ import {
 	isConstructor,
 	isIterable,
 	isArrayLike
-} from "../is";
+} from "../src/is";
 
 test("isDirectInstanceof", () => {
 	expect([] instanceof Object).toBe(true);

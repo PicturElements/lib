@@ -4,7 +4,7 @@ import {
 	numLen,
 	isPowerOf2,
 	isPowerOf2i64
-} from "../num";
+} from "../src/num";
 
 test("round", () => {
 	expect(round(0)).toBe(0);

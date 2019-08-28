@@ -1,5 +1,5 @@
-import hasOwn from "../has-own";
-import { polyfillPrefixes } from "../_constants";
+import hasOwn from "../src/has-own";
+import { polyfillPrefixes } from "../src/_constants";
 
 const OBJ = {
 	a: 1,

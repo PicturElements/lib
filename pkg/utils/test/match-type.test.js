@@ -1,4 +1,4 @@
-import matchType from "../match-type";
+import matchType from "../src/match-type";
 
 it("correctly matches types", () => {
 	[

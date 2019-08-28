@@ -1,4 +1,4 @@
-import getConstructorName from "../get-constructor-name";
+import getConstructorName from "../src/get-constructor-name";
 
 it("returns null for invalid constructors", () => {
 	expect(getConstructorName(null)).toBe(null);

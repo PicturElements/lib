@@ -1,4 +1,4 @@
-import map from "../map";
+import map from "../src/map";
 
 it("corectly maps", () => {
 	const m = map([1, 2, 3], v => v * 2);

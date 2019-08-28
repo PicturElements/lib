@@ -1,4 +1,4 @@
-import infill from "../infill";
+import infill from "../src/infill";
 
 it("works with no modifiers", () => {
 	expect(infill({

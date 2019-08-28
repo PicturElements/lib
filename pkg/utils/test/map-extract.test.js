@@ -1,4 +1,4 @@
-import mapExtract from "../map-extract";
+import mapExtract from "../src/map-extract";
 
 const MAP = {
 	a: "a1",

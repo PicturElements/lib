@@ -1,4 +1,4 @@
-import getFunctionName from "../get-function-name";
+import getFunctionName from "../src/get-function-name";
 
 it("returns null for invalid values", () => {
 	expect(getFunctionName(null)).toBe(null);

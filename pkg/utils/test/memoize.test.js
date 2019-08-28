@@ -1,4 +1,4 @@
-import memoize from "../memoize";
+import memoize from "../src/memoize";
 
 describe("displays idempotent properties with identical arguments and returns correct values", () => {
 	const summarizer = (...args) => args.reduce((sum, v) => sum + v);

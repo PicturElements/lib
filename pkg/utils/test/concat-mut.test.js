@@ -1,4 +1,4 @@
-import concatMut from "../concat-mut";
+import concatMut from "../src/concat-mut";
 
 it("concatenates arrays into with an existing array", () => {
 	const arr = [1, 2, 3],

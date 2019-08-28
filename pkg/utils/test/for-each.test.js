@@ -1,4 +1,4 @@
-import forEach from "../for-each";
+import forEach from "../src/for-each";
 
 const DATA = {
 		num: 42,

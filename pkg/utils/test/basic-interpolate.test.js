@@ -1,4 +1,4 @@
-import basicInterpolate from "../basic-interpolate";
+import basicInterpolate from "../src/basic-interpolate";
 
 const DATA = {
 	num: 42,

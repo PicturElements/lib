@@ -1,4 +1,4 @@
-import forEachNoPrivate from "../for-each-no-private";
+import forEachNoPrivate from "../src/for-each-no-private";
 
 const objWithPrivateKeys = {
 	a: 1,
