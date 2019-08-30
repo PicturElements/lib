@@ -1,0 +1,47 @@
+{
+  "name": "@qtxr/form",
+  "version": "1.0.0",
+  "description": "Flexible, pluggable, and modular form library",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node ../server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PicturElements/lib.git",
+    "directory": "pkg/form"
+  },
+  "keywords": [
+    "form",
+    "forms",
+    "input"
+  ],
+  "author": "qtxr",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/PicturElements/lib/issues"
+  },
+  "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/form#readme",
+  "dependencies": {
+    "@qtxr/bc": "^1.2.1",
+    "@qtxr/evt": "^1.0.0",
+    "@qtxr/utils": "^1.4.0"
+  },
+  "devDependencies": {},
+  "qlib": {
+    "pushes": 1,
+    "expose": {
+      "scripts": [
+        "index.mjs"
+      ],
+      "styles": []
+    },
+    "ui": [
+      {
+        "type": "console",
+        "config": {}
+      }
+    ]
+  }
+}
