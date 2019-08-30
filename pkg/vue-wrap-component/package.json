@@ -1,0 +1,44 @@
+{
+  "name": "@qtxr/vue-wrap-component",
+  "version": "1.0.0",
+  "description": "Component wrapping library for Vue components",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node ../server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PicturElements/lib.git",
+    "directory": "pkg/vue-wrap-component"
+  },
+  "keywords": [
+    "vue",
+    "wrap",
+    "component",
+    "sfc"
+  ],
+  "author": "qtxr",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/PicturElements/lib/issues"
+  },
+  "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/vue-wrap-component#readme",
+  "dependencies": {},
+  "devDependencies": {},
+  "qlib": {
+    "pushes": 1,
+    "expose": {
+      "scripts": [
+        "index.mjs"
+      ],
+      "styles": []
+    },
+    "ui": [
+      {
+        "type": "console",
+        "config": {}
+      }
+    ]
+  }
+}

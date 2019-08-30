@@ -1,0 +1,1 @@
+declare module "@qtxr/vue-wrap-component";
