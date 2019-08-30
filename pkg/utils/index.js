@@ -1,5 +1,6 @@
 export * from "./src/binary-search";
 export * from "./src/coerce";
+export * from "./src/convert";
 export * from "./src/dom";
 export * from "./src/func";
 export * from "./src/is";
