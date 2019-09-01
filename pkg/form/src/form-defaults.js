@@ -205,9 +205,9 @@ function mkRangeValidator(min, max, shortMsg = "Text too short. Minimum: $min", 
 
 		if (typeof msg == "string") {
 			return basicInterpolate(msg, {
-				"min": min,
-				"max": max,
-				"len": val.length
+				min,
+				max,
+				len: val.length
 			});
 		}
 	};

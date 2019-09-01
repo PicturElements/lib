@@ -19,13 +19,17 @@ export default class Form extends Hookable {
 		let hooks = hooksOrPreset,
 			preset = null;
 
-		if (typeof hooksOrPreset == "string") {
-			if (!Form.presets.hasOwnProperty(hooksOrPreset))
-				throw new Error(`Invalid preset '${hooksOrPreset}'`);
+		if (isPreset(hooksOrPreset)) {
+			if (typeof hooksOrPreset == "string") {
+				if (!Form.presets.hasOwnProperty(hooksOrPreset))
+					throw new Error(`Invalid preset '${hooksOrPreset}'`);
 
-			preset = Form.presets[hooksOrPreset];
+				preset = Form.presets[hooksOrPreset];
+			} else
+				preset = hooksOrPreset;
+
 			hooks = resolveVal(preset.hooks, this) || {};
-			options = resolveVal(preset.options, this) || {};
+			options = Object.assign({}, resolveVal(preset.options, this), options);
 		}
 
 		this.inputs = {};
@@ -35,16 +39,10 @@ export default class Form extends Hookable {
 		this.valid = true;
 		this.changed = false;
 		// Only validate required inputs
-		// Invalid non-required inputs will be marked as
-		// valid
+		// Invalid non-required inputs will be marked as valid
 		this.validateRequiredOnly = false;
 
-		if (hooks) {
-			for (const k in hooks) {
-				if (hooks.hasOwnProperty(k))
-					this.hook(k, hooks[k]);
-			}
-		}
+		this.hookAll(hooks);
 
 		for (const k in options) {
 			if (this.hasOwnProperty(k) && options.hasOwnProperty(k))
@@ -55,13 +53,13 @@ export default class Form extends Hookable {
 	connect(name, options) {
 		options = Form.normalizeOptions(options);
 
-		if (!options) {
-			console.error("Invalid input options");
+		if (!name || typeof name != "string") {
+			console.error("Invalid input name");
 			return this;
 		}
 
-		if (this.inputs.hasOwnProperty(name)) {
-			console.error(`Input by name '${name}' is already specified`);
+		if (!options) {
+			console.error("Invalid input options");
 			return this;
 		}
 		
@@ -72,7 +70,8 @@ export default class Form extends Hookable {
 		);
 
 		this.inputs[name] = input;
-		this.keys.push(name);
+		if (!this.inputs.hasOwnProperty(name))
+			this.keys.push(name);
 		return this;
 	}
 
@@ -239,3 +238,10 @@ Form.presets = {
 Form.validators = {
 	notNull: (val, inp, inps) => val === null ? "Please select a value" : null
 };
+
+function isPreset(candidate) {
+	if (typeof candidate == "string")
+		return true;
+
+	return Boolean(candidate) && candidate.hasOwnProperty("hooks") && candidate.hasOwnProperty("options");
+}
