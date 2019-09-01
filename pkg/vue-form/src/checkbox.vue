@@ -4,7 +4,7 @@
 			@click="trigger")
 			slot(name="icon" v-bind="input")
 				.icon {{ input.value ? "&times;" : "" }}
-		.label(v-if="label" @click="trigger") {{ label }}
+		.label(v-if="resolve(label)" @click="trigger") {{ resolve(label) }}
 </template>
 
 <script>
@@ -19,6 +19,12 @@
 		methods: {
 			trigger() {
 				Form.trigger(this.$props.input, !this.$props.input.value);
+			},
+			resolve(val) {
+				if (typeof val == "function")
+					return val(this.form, this);
+
+				return val;
 			}
 		},
 		props: {

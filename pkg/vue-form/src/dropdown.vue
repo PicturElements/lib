@@ -16,7 +16,7 @@
 		.dropdown-list(:style="listStyle"
 			ref="list"
 			@mousedown.stop="desktopCollapse")
-			template(v-for="(option, idx) in input.options")
+			template(v-for="(option, idx) in resolve(input.options)")
 				.dropdown-option(v-if="idx != activeIndex"
 					@mousedown="trigger(option)"
 					@click="triggerCollapse(option)")
@@ -143,6 +143,12 @@
 
 				this.$data.activeIndex = idx;
 				this.$data.activeOption = options[idx] || {};
+			},
+			resolve(val) {
+				if (typeof val == "function")
+					return val(this.form, this);
+
+				return val;
 			}
 		},
 		props: {

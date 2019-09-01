@@ -1,9 +1,9 @@
 <template lang="pug">
 	.input-wrapper.inp-input(:class="validationState")
 		input(:value="input.value"
-			:type="input.type"
-			:placeholder="input.placeholder || placeholder"
-			:name="input.name"
+			:type="resolve(input.type)"
+			:placeholder="resolve(input.placeholder || placeholder)"
+			:name="resolve(input.name)"
 			@keydown="check"
 			@input="trigger")
 		.validation-msg(:class="validationMsg ? 'active' : null") {{ validationMsg }}
@@ -24,6 +24,12 @@
 			},
 			check(evt) {
 				Form.check(this.$props.input, evt, evt.target.value);
+			},
+			resolve(val) {
+				if (typeof val == "function")
+					return val(this.form, this);
+
+				return val;
 			}
 		},
 		props: {

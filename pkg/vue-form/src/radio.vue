@@ -1,6 +1,6 @@
 <template lang="pug">
 	.radio.inp-radio(:class="validationState")
-		.radio-section(v-for="(option, idx) in input.options"
+		.radio-section(v-for="(option, idx) in resolve(input.options)"
 			:class="{ active: idx == activeIndex }")
 			.radio-top.f.ac
 				button.radio-option(@click="trigger(option)")
@@ -55,6 +55,12 @@
 
 				this.$data.activeIndex = idx;
 				this.$data.activeOption = options[idx] || {};
+			},
+			resolve(val) {
+				if (typeof val == "function")
+					return val(this.form, this);
+
+				return val;
 			}
 		},
 		props: {
