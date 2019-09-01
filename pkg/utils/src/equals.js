@@ -27,7 +27,7 @@ function eq(a, b) {
 		
 	// if a is null/undefined, that means b cannot be
 	// the same, as that should've passed a === b
-	if (a == null || typeof a != typeof b)
+	if (a == null || b == null || typeof a != typeof b)
 		return false;
 
 	switch (typeof a) {
