@@ -1,10 +1,11 @@
 <template lang="pug">
-	.input-wrapper.inp-checkbox(:class="validationState")
-		button.checkbox(:class="{ checked: input.value }"
+	.input-wrapper.inp-checkbox.f.ac.fs90(:class="validationState")
+		button.checkbox(
+			:class="{ checked: input.value }"
 			@click="trigger")
 			slot(name="icon" v-bind="input")
 				.icon {{ input.value ? "&times;" : "" }}
-		.label(v-if="resolve(label)" @click="trigger") {{ resolve(label) }}
+		.label(v-if="res(input.label || label)" @click="trigger") {{ res(input.label || label) }}
 </template>
 
 <script>
@@ -18,11 +19,11 @@
 		}),
 		methods: {
 			trigger() {
-				Form.trigger(this.$props.input, !this.$props.input.value);
+				Form.trigger(this.input, !this.input.value);
 			},
-			resolve(val) {
+			res(val) {
 				if (typeof val == "function")
-					return val(this.form, this);
+					return val.call(this, this.form);
 
 				return val;
 			}
@@ -32,9 +33,9 @@
 			label: String
 		},
 		beforeMount() {
-			this.$props.input.hook("update", inp => {
-				this.$data.validationState = inp.validationState;
-				this.$data.validationMsg = inp.validationMsg || this.$data.validationMsg;
+			this.input.hook("update", inp => {
+				this.validationState = inp.validationState;
+				this.validationMsg = inp.validationMsg || this.validationMsg;
 			});
 		}
 	}

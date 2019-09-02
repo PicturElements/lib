@@ -2,7 +2,8 @@
 	.dropdown.inp-dropdown(:class="[ expanded ? 'open' : null, validationState ]"
 		ref="dropdownBox")
 		button.mobi-focus(@click="expand")
-		textarea.focus-probe(@focus="focusExpand"
+		textarea.focus-probe(
+			@focus="focusExpand"
 			@click="expand"
 			@blur="desktopCollapse")
 		.collapse-target(@click="collapse")
@@ -10,14 +11,17 @@
 			slot(name="icon" v-bind="$data")
 				.icon {{ expanded ? "-" : "+" }}
 			.dropdown-option-inner
-				span.placeholder(v-if="activeIndex == -1") {{ placeholder }}
+				span.placeholder(v-if="activeIndex == -1")
+					| {{ input.placeholder || placeholder }}
 				slot(v-else
-					v-bind="wrapOption(activeOption)") {{ getLabel(activeOption) }}
+					v-bind="wrapOption(activeOption)")
+					| {{ getLabel(activeOption) }}
 		.dropdown-list(:style="listStyle"
 			ref="list"
 			@mousedown.stop="desktopCollapse")
-			template(v-for="(option, idx) in resolve(input.options)")
-				.dropdown-option(v-if="idx != activeIndex"
+			template(v-for="(option, idx) in options")
+				.dropdown-option(
+					v-if="idx != activeIndex"
 					@mousedown="trigger(option)"
 					@click="triggerCollapse(option)")
 					.dropdown-option-inner
@@ -28,7 +32,10 @@
 </template>
 
 <script>
-	import { requestFrame } from "@qtxr/utils";
+	import {
+		equals,
+		requestFrame
+	} from "@qtxr/utils";
 	import Form from "@qtxr/form";
 	
 	const PADDING = 30,
@@ -44,12 +51,13 @@
 			listStyle: null,
 			updateLoopInitialized: false,
 			validationMsg: null,
-			validationState: "ok"
+			validationState: "ok",
+			options: []
 		}),
 		methods: {
 			nop() {},
 			trigger(val) {
-				Form.trigger(this.$props.input, val);
+				Form.trigger(this.input, val);
 			},
 			getLabel(option) {
 				const label = (option && option.hasOwnProperty("label")) ? option.label : option;
@@ -66,7 +74,6 @@
 				return option;
 			},
 			toggleExpansion(expanded) {
-				console.log(expanded);
 				expanded = typeof expanded == "boolean" ? expanded : !this.expanded;
 
 				if (expanded)
@@ -87,22 +94,22 @@
 				this.collapse();
 			},
 			expand() {
-				this.$data.expanded = true;
+				this.expanded = true;
 				this.initUpdateLoop();
 			},
 			collapse(evt) {
-				this.$data.expanded = false;
+				this.expanded = false;
 			},
 			initUpdateLoop() {
-				if (!this.$data.updateLoopInitialized) {
-					this.$data.updateLoopInitialized = true;
+				if (!this.updateLoopInitialized) {
+					this.updateLoopInitialized = true;
 					this.updateFixedList();
 				}
 			},
 			updateFixedList() {
-				if (!this.$data.expanded || this.isMobile()) {
-					this.$data.listStyle = null;
-					this.$data.updateLoopInitialized = false;
+				if (!this.expanded || this.isMobile()) {
+					this.listStyle = null;
+					this.updateLoopInitialized = false;
 					return;
 				}
 
@@ -118,7 +125,7 @@
 					placeBottom = bottomAvailable > (topAvailable * BOTTOM_BIAS) || sHeight < bottomAvailable,
 					maxHeight = placeBottom ? bottomAvailable : topAvailable;
 
-				this.$data.listStyle = {
+				this.listStyle = {
 					position: "fixed",
 					top: placeBottom ? `${bcr.top + bcr.height - bBottom}px` : null,
 					bottom: placeBottom ? null : `${window.innerHeight - bcr.top - bTop}px`,
@@ -130,40 +137,40 @@
 				requestFrame(_ => this.updateFixedList());
 			},
 			updateSelection() {
-				const options = this.$props.input.options;
+				const options = this.res(this.input.options);
 				let idx = options.findIndex(option => {
-					return option == this.$props.input.value;
+					return equals(option, this.input.value);
 				});
 
 				// Makes a default index if no index was found:
 				// 0 with non-empty array
 				// -1 with empty array
-				if (this.$props.autoSet)
+				if (this.input.autoSet)
 					idx = Math.max(idx, Math.min(options.length - 1, 0));
 
-				this.$data.activeIndex = idx;
-				this.$data.activeOption = options[idx] || {};
+				this.activeIndex = idx;
+				this.activeOption = options[idx] || {};
+				this.options = options;
 			},
-			resolve(val) {
+			res(val) {
 				if (typeof val == "function")
-					return val(this.form, this);
+					return val.call(this, this.form);
 
 				return val;
 			}
 		},
 		props: {
 			input: Object,
-			autoSet: Boolean,
 			placeholder: String
 		},
 		beforeMount() {
 			this.updateSelection();
-			if (this.$data.activeIndex != -1)
-				Form.trigger(this.$props.input, this.$data.activeOption);
+			if (this.activeIndex != -1)
+				Form.trigger(this.input, this.activeOption);
 			
-			this.$props.input.hook("update", inp => {
-				this.$data.validationState = inp.validationState;
-				this.$data.validationMsg = inp.validationMsg || this.$data.validationMsg;
+			this.input.hook("update", inp => {
+				this.validationState = inp.validationState;
+				this.validationMsg = inp.validationMsg || this.validationMsg;
 			});
 		},
 		beforeUpdate() {

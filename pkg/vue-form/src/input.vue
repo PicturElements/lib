@@ -1,9 +1,10 @@
 <template lang="pug">
 	.input-wrapper.inp-input(:class="validationState")
-		input(:value="input.value"
-			:type="resolve(input.type)"
-			:placeholder="resolve(input.placeholder || placeholder)"
-			:name="resolve(input.name)"
+		input(
+			:value="input.value"
+			:type="res(input.type)"
+			:placeholder="res(input.placeholder || placeholder)"
+			:name="res(input.name)"
 			@keydown="check"
 			@input="trigger")
 		.validation-msg(:class="validationMsg ? 'active' : null") {{ validationMsg }}
@@ -20,14 +21,14 @@
 		}),
 		methods: {
 			trigger(evt) {
-				Form.trigger(this.$props.input, evt.target.value);
+				Form.trigger(this.input, evt.target.value);
 			},
 			check(evt) {
-				Form.check(this.$props.input, evt, evt.target.value);
+				Form.check(this.input, evt, evt.target.value);
 			},
-			resolve(val) {
+			res(val) {
 				if (typeof val == "function")
-					return val(this.form, this);
+					return val.call(this, this.form);
 
 				return val;
 			}
@@ -37,9 +38,9 @@
 			placeholder: String
 		},
 		beforeMount() {
-			this.$props.input.hook("update", inp => {
-				this.$data.validationState = inp.validationState;
-				this.$data.validationMsg = inp.validationMsg || this.$data.validationMsg;
+			this.input.hook("update", inp => {
+				this.validationState = inp.validationState;
+				this.validationMsg = inp.validationMsg || this.validationMsg;
 			});
 		}
 	}

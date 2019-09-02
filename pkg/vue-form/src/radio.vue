@@ -1,17 +1,19 @@
 <template lang="pug">
 	.radio.inp-radio(:class="validationState")
-		.radio-section(v-for="(option, idx) in resolve(input.options)"
+		.radio-section(v-for="(option, idx) in options"
 			:class="{ active: idx == activeIndex }")
 			.radio-top.f.ac
 				button.radio-option(@click="trigger(option)")
 				.label(@click="trigger(option)")
-					slot(name="label" v-bind="wrapOption(option)") {{ getLabel(option) }}
+					slot(name="label" v-bind="wrapOption(option)")
+						| {{ getLabel(option) }}
 			.radio-custom-content-wrapper(v-if="$scopedSlots['custom-content']")
 				.radio-custom-content
 					slot(name="custom-content" v-bind="wrapOption(option)")
 </template>
 
 <script>
+	import { equals } from "@qtxr/utils";
 	import Form from "@qtxr/form";
 	
 	export default {
@@ -20,11 +22,12 @@
 			activeIndex: -1,
 			activeOption: {},
 			validationMsg: null,
-			validationState: "ok"
+			validationState: "ok",
+			options: []
 		}),
 		methods: {
 			trigger(val) {
-				Form.trigger(this.$props.input, val);
+				Form.trigger(this.input, val);
 				this.updateSelection();
 			},
 			getLabel(option) {
@@ -42,39 +45,39 @@
 				return option;
 			},
 			updateSelection() {
-				const options = this.$props.input.options;
+				const options = this.res(this.input.options);
 				let idx = options.findIndex(option => {
-					return option == this.$props.input.value;
+					return equals(option, this.input.value);
 				});
 
 				// Makes a default index if no index was found:
 				// 0 with non-empty array
 				// -1 with empty array
-				if (this.$props.autoSet)
+				if (this.input.autoSet)
 					idx = Math.max(idx, Math.min(options.length - 1, 0));
 
-				this.$data.activeIndex = idx;
-				this.$data.activeOption = options[idx] || {};
+				this.activeIndex = idx;
+				this.activeOption = options[idx] || {};
+				this.options = options;
 			},
-			resolve(val) {
+			res(val) {
 				if (typeof val == "function")
-					return val(this.form, this);
+					return val.call(this, this.form);
 
 				return val;
 			}
 		},
 		props: {
-			input: Object,
-			autoSet: Boolean
+			input: Object
 		},
 		beforeMount() {
 			this.updateSelection();
-			if (this.$data.activeIndex != -1)
-				Form.trigger(this.$props.input, this.$data.activeOption);
+			if (this.activeIndex != -1)
+				Form.trigger(this.input, this.activeOption);
 			
-			this.$props.input.hook("update", inp => {
-				this.$data.validationState = inp.validationState;
-				this.$data.validationMsg = inp.validationMsg || this.$data.validationMsg;
+			this.input.hook("update", inp => {
+				this.validationState = inp.validationState;
+				this.validationMsg = inp.validationMsg || this.validationMsg;
 			});
 		},
 		beforeUpdate() {
