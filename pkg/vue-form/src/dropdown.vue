@@ -135,8 +135,12 @@
 			},
 			updateSelection() {
 				const options = this.res(this.input.options);
+
+				if (options.hasOwnProperty(this.activeIndex) && this.input.comparator(option[this.activeIndex], this.input.value))
+					return;
+
 				let idx = options.findIndex(option => {
-					return this.input.comparator(options, this.input.value);
+					return this.input.comparator(option, this.input.value);
 				});
 
 				// Makes a default index if no index was found:
