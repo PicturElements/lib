@@ -14,17 +14,6 @@
 
 <script>
 	import Form from "@qtxr/form";
-
-	function mkComparator(precursor, targ) {
-		switch (typeof precursor) {
-			case "string":
-				return val => Boolean(val && targ) || val[precursor] == targ[precursor];
-			case "function":
-				return val => precursor(val, targ);
-			default:
-				return val => val == targ;
-		}
-	}
 	
 	export default {
 		name: "Radio",
@@ -55,9 +44,10 @@
 				return option;
 			},
 			updateSelection() {
-				const options = this.res(this.input.options),
-					comparator = mkComparator(this.input.comparator, this.input.value);
-				let idx = options.findIndex(comparator);
+				const options = this.res(this.input.options);
+				let idx = options.findIndex(option => {
+					return this.input.comparator(options, this.input.value);
+				});
 
 				// Makes a default index if no index was found:
 				// 0 with non-empty array
