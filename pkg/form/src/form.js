@@ -10,6 +10,9 @@ import Input, {
 	TRIGGER,
 	SELF_TRIGGER
 } from "./input";
+import Checkbox from "./checkbox";
+import Dropdown from "./dropdown";
+import Radio from "./radio";
 import defaults from "./form-defaults";
 
 export default class Form extends Hookable {
@@ -58,20 +61,22 @@ export default class Form extends Hookable {
 			return this;
 		}
 
-		if (!options) {
+		if (!options || typeof options != "object") {
 			console.error("Invalid input options");
 			return this;
 		}
-		
-		const input = new Input(
-			name,
-			options,
-			this
-		);
 
-		this.inputs[name] = input;
+		const constr = Form.getInputConstructor(options),
+			input = new constr(
+				name,
+				options,
+				this
+			);
+
 		if (!this.inputs.hasOwnProperty(name))
 			this.keys.push(name);
+		
+		this.inputs[name] = input;
 		return this;
 	}
 
@@ -183,11 +188,11 @@ export default class Form extends Hookable {
 			};
 		}
 
-		return createOptionsObject(
+		return Object.assign({}, createOptionsObject(
 			options,
 			Form.defaults,
 			`Form has no default input '${options}'`
-		);
+		));
 	}
 
 	// Standard function to modify input options
@@ -214,6 +219,35 @@ export default class Form extends Hookable {
 		}
 
 		return options;
+	}
+
+	static getInputType(optionsOrInput) {
+		if (!optionsOrInput)
+			return "text";
+
+		switch (optionsOrInput.type) {
+			case "checkbox":
+				return "checkbox";
+			case "dropdown":
+				return "dropdown";
+			case "radio":
+				return "radio";
+			default:
+				return optionsOrInput.type || "text";
+		}
+	}
+
+	static getInputConstructor(optionsOrInput) {
+		switch (this.getInputType(optionsOrInput)) {
+			case "checkbox":
+				return Checkbox;
+			case "dropdown":
+				return Dropdown;
+			case "radio":
+				return Radio;
+			default:
+				return Input;
+		}
 	}
 }
 

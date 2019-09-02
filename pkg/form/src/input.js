@@ -1,4 +1,7 @@
-import { sym } from "@qtxr/utils";
+import {
+	sym,
+	hasOwn
+} from "@qtxr/utils";
 import { Hookable } from "@qtxr/bc";
 import { isValidKey, isValidWord } from "@qtxr/evt";
 
@@ -8,7 +11,8 @@ const UPDATE = sym("update"),
 	SELF_TRIGGER = sym("selfTrigger");
 
 export default class Input extends Hookable {
-	constructor(name, options, form) {
+	constructor(name, options, form, allowedKeys = {}) {
+		options = options || {};
 		super();
 
 		this.name = name;
@@ -20,11 +24,9 @@ export default class Input extends Hookable {
 		this.validationMsg = null;
 		this.validationState = "ok";
 
-		if (options) {
-			for (const k in options) {
-				if (options.hasOwnProperty(k) && k !== "hooks")
-					this[k] = options[k];
-			}
+		for (const k in options) {
+			if ((hasOwn(this, k) || hasOwn(allowedKeys, k)) && hasOwn(options, k) && k !== "hooks")
+				this[k] = options[k];
 		}
 
 		this.hookAll(options.hooks);

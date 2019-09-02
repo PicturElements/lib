@@ -146,7 +146,7 @@ const defaults = {
 		value: false
 	},
 	dropdown: {
-		type: "dropwdown",
+		type: "dropdown",
 		value: null,
 		validate(val) {
 			if (val === null)
