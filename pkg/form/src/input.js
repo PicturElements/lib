@@ -15,14 +15,29 @@ export default class Input extends Hookable {
 		options = options || {};
 		super();
 
+		// Constants (during runtime)
 		this.name = name;
-		this.initialized = false;
 		this.required = true;
-		this.value = null;
 		this.type = "text";
+
+		// State
+		this.initialized = false;
+		this.value = null;
 		this.valid = true;
 		this.validationMsg = null;
 		this.validationState = "ok";
+
+		// Handlers
+		this.checkKey = null;
+		this.checkWord = null;
+		this.validate = null;
+		this.process = null;
+		this.trigger = null;
+		this.update = null;
+		this.extract = null;
+
+		// Propagation data
+		this.propagate = null;
 
 		for (const k in options) {
 			if ((hasOwn(this, k) || hasOwn(allowedKeys, k)) && hasOwn(options, k) && k !== "hooks")
@@ -47,7 +62,7 @@ export default class Input extends Hookable {
 	[TRIGGER](value) {
 		if (value !== null) {
 			if (typeof this.process == "function")
-				this.value = this.process(value);
+				this.value = this.process(value, this, this.form.inputs);
 			else
 				this.value = value;
 		}
@@ -64,7 +79,7 @@ export default class Input extends Hookable {
 
 	[SELF_TRIGGER](value) {
 		if (typeof this.trigger == "function")
-			this.trigger(value);
+			this.trigger(value, this, this.form.inputs);
 
 		this[UPDATE]();
 		this.form.propagate(this.propagate);

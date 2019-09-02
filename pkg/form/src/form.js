@@ -1,4 +1,5 @@
 import {
+	equals,
 	resolveVal,
 	isObject,
 	composeOptionsTemplates,
@@ -108,7 +109,7 @@ export default class Form extends Hookable {
 		};
 
 		if (Array.isArray(targets))
-			targets.forforEach(send);
+			targets.forEach(send);
 		else if (targets && typeof targets == "object") {
 			for (const k in targets)
 				send(k);
@@ -147,7 +148,7 @@ export default class Form extends Hookable {
 
 		this.forEach((inp, name) => {
 			if (typeof inp.extract == "function") {
-				const extracted = inp.extract(inp.value, inp, out);
+				const extracted = inp.extract(inp.value, inp, out, this.inputs);
 
 				if (extracted !== undefined)
 					out[name] = extracted;
@@ -269,8 +270,34 @@ Form.presets = {
 	}
 };
 
+// value, input, inputs
 Form.validators = {
-	notNull: (val, inp, inps) => val === null ? "Please select a value" : null
+	notNull: val => val === null ? "Please select a value" : null
+};
+
+// value, input, inputs
+Form.processors = {
+
+};
+
+// value, input, inputs
+Form.triggers = {
+
+};
+
+// input, inputs
+Form.updaters = {
+
+};
+
+// value, input, output, inputs
+Form.extractors = {
+
+};
+
+// value, target value
+Form.comparators = {
+	deep: equals
 };
 
 function isPreset(candidate) {
