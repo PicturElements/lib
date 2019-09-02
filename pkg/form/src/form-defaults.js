@@ -6,13 +6,13 @@ const emailRegex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\
 
 const defaults = {
 	firstName: {
-		checkKey: nameRegex,
 		value: "",
+		checkKey: nameRegex,
 		validate: mkRangeValidator(1, 20, "Please specify a first name", "Name too long. Maximum: $max characters"),
 	},
 	lastName: {
-		checkKey: nameRegex,
 		value: "",
+		checkKey: nameRegex,
 		validate: mkRangeValidator(1, 20, "Please specify a last name", "Name too long. Maximum: $max characters"),
 	},
 	email: {
@@ -34,8 +34,8 @@ const defaults = {
 		validate: mkRangeValidator(1, Infinity, "Please specify a city")
 	},
 	state: {
-		checkKey: "word",
 		value: "",
+		checkKey: "word",
 		checkWord(str) {
 			return str.length <= 2;
 		},
@@ -142,9 +142,11 @@ const defaults = {
 		validate: mkRangeValidator(1, Infinity, "This field cannot be empty")
 	},
 	checkbox: {
+		type: "checkbox",
 		value: false
 	},
 	dropdown: {
+		type: "dropwdown",
 		value: null,
 		validate(val) {
 			if (val === null)
@@ -152,6 +154,7 @@ const defaults = {
 		}
 	},
 	radio: {
+		type: "radio",
 		value: null,
 		validate(val) {
 			if (val === null)
