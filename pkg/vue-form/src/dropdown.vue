@@ -136,7 +136,7 @@
 			updateSelection() {
 				const options = this.res(this.input.options);
 
-				if (options.hasOwnProperty(this.activeIndex) && this.input.comparator(option[this.activeIndex], this.input.value))
+				if (options.hasOwnProperty(this.activeIndex) && this.input.comparator(options[this.activeIndex], this.input.value))
 					return;
 
 				let idx = options.findIndex(option => {
