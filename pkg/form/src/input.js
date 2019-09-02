@@ -47,6 +47,7 @@ export default class Input extends Hookable {
 		this.hookAll(options.hooks);
 		this.checkKey = mkChecker(this.checkKey, "check");
 		this.checkWord = mkChecker(this.checkWord, "validate");
+		this.comparator = mkComparator(this.comparator);
 
 		this.form = form;
 		this.default = this.value;
@@ -131,6 +132,17 @@ function mkChecker(checker, checkerKey) {
 	}
 
 	return null;
+}
+
+function mkComparator(precursor) {
+	switch (typeof precursor) {
+		case "string":
+			return (val, targ) => Boolean(val && targ) && val[precursor] == targ[precursor];
+		case "function":
+			return (val, targ) => precursor(val, targ);
+		default:
+			return (val, targ) => val == targ;
+	}
 }
 
 export {
