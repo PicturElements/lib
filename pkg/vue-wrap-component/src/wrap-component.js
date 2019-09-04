@@ -154,34 +154,22 @@ ComponentWrapper.exporters = {
 	}
 };
 
+// By default, data already specified in fields cannot
+// be overwritten but are free to be extended
 function mkInjectorExporter(name, data, wrapper) {
 	return function() {
 		let outObj = {};
 			
 		if (typeof data == "function")
 			outObj = data.call(this);
-		else if (isObject(data)) {
-			outObj = clone(data, {
-				cloneSymbols: true
-			});
-		}
+		else if (isObject(data))
+			outObj = clone(data, "cloneSymbols");
 
 		const injectors = wrapper.exporterInjectors,
 			injectorData = injectors[name];
 
-		if (injectors.hasOwnProperty(name) && injectorData) {
-			for (const k in injectorData) {
-				if (!injectorData.hasOwnProperty(k))
-					continue;
-
-				if (outObj.hasOwnProperty(k)) {
-					console.warn(`Tried overriding property '${k}' (in ${name})`);
-					continue;
-				}
-
-				outObj[k] = injectorData[k];
-			}
-		}
+		if (injectors.hasOwnProperty(name) && injectorData)
+			inject(outObj, injectorData);
 
 		if (ComponentWrapper.exporters.hasOwnProperty(name))
 			ComponentWrapper.exporters[name](outObj, wrapper, this);
