@@ -9,7 +9,7 @@ export default function queryMatch(val, matcher, options) {
 
 	switch (typeof matcher) {
 		case "function":
-			return matcher(val, options);
+			return Boolean(matcher(val, options));
 	}
 
 	switch (matcher && matcher.constructor) {

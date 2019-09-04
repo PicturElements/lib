@@ -48,7 +48,7 @@ export default function query(list, q, options) {
 			const val = srcArr[j],
 				idx = indices[j] || j,
 				matchCount = matchCounts[j] || 0, 
-				match = val && queryMatch(val[key], q[srcKey], options);
+				match = Boolean(val) && queryMatch(val[key], q[srcKey], options);
 
 			// If the last key has been reached and there's no match,
 			// there there can be no matched result even with lazy
@@ -56,7 +56,7 @@ export default function query(list, q, options) {
 			if (match || lazy && (matchCount || i < keys.length - 1)) {
 				matchesBuffer.push(val);
 				indicesBuffer.push(idx);
-				matchCountsBuffer.push(matchCount + 1);
+				matchCountsBuffer.push(matchCount + (+match));
 			}
 		}
 
