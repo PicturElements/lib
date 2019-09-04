@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/utils",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Collection of small and versatile utility functions",
   "main": "index.js",
   "scripts": {
@@ -26,7 +26,7 @@
   "dependencies": {},
   "devDependencies": {},
   "qlib": {
-    "pushes": 19,
+    "pushes": 20,
     "expose": {
       "scripts": [
         "index.mjs"

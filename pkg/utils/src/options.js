@@ -31,10 +31,10 @@ function composeOptionsTemplates(...templates) {
 function createOptionsObject(optionsPrecursor, templates, err) {
 	switch (typeof optionsPrecursor) {
 		case "string":
-			return templates[optionsPrecursor] || (
-					console.error(err || `'${optionsPrecursor}' is not a valid option`) ||
-					blankOptions
-				);
+			return templates[optionsPrecursor] || tryBundle(optionsPrecursor, templates) || (
+				console.error(err || `'${optionsPrecursor}' is not a valid option`) ||
+				blankOptions
+			);
 		case "object":
 			return optionsPrecursor ? optionsPrecursor : blankOptions;
 		default:
