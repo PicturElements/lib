@@ -1,7 +1,7 @@
-import queryObj from "../src/query-obj";
+import query from "../src/query";
 
 it("correctly queries objects", () => {
-	const matched = queryObj([
+	const matched = query([
 		{
 			a: 1,
 			b: 3,

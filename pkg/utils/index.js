@@ -45,6 +45,9 @@ export { default as parseFloatStr } from "./src/parse-float-str";
 export { default as parseStr } from "./src/parse-str";
 export { default as parseStrStr } from "./src/parse-str-str";
 export { default as QNDSet } from "./src/qnd-set";
-export { default as queryObj } from "./src/query-obj";
+export { default as query } from "./src/query";
 export { default as resolveArgs } from "./src/resolve-args";
 export { default as splitPath } from "./src/split-path";
+
+// Backwards compatibility
+export { default as queryObj } from "./src/query";

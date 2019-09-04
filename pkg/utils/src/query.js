@@ -1,9 +1,15 @@
 import { isArrayLike } from "./is";
 import hasOwn from "./has-own";
-import equals from "./equals";
+import queryMatch from "./query-match";
+import {
+	composeOptionsTemplates,
+	createOptionsObject
+} from "./options";
 
-export default function queryObj(list, obj) {
-	if (!isArrayLike(list) || !obj || typeof obj != "object") {
+export default function query(list, q, options) {
+	options = createOptionsObject(options, queryTemplates);
+
+	if (!isArrayLike(list) || !q || typeof q != "object") {
 		return {
 			matches: [],
 			indices: [],
@@ -15,8 +21,8 @@ export default function queryObj(list, obj) {
 		indices = [],
 		iterations = 0;
 
-	for (const k in obj) {
-		if (!hasOwn(obj, k))
+	for (const k in q) {
+		if (!hasOwn(q, k))
 			continue;
 
 		const srcArr = iterations ? matches : list,
@@ -27,7 +33,7 @@ export default function queryObj(list, obj) {
 			const val = srcArr[i],
 				idx = indices[i] || i;
 
-			if (val && equals(obj[k], val[k])) {
+			if (val && queryMatch(val[k], q[k], options)) {
 				matchesBuffer.push(val);
 				indicesBuffer.push(idx);
 			}
@@ -44,7 +50,7 @@ export default function queryObj(list, obj) {
 
 	// Would be cleaner to populate these arrays
 	// before running the main loop
-	if (!iterations) {
+	if (!iterations && q) {
 		for (let i = 0, l = list.length; i < l; i++) {
 			indices.push(i);
 			matches.push(list[i]);
@@ -57,3 +63,8 @@ export default function queryObj(list, obj) {
 		iterations
 	};
 }
+
+const queryTemplates = composeOptionsTemplates({
+	smart: true,
+	deep: true
+});

@@ -15,9 +15,12 @@ function composeOptionsTemplates(...templates) {
 			if (!Object.hasOwnProperty.call(tmpl, k))
 				continue;
 
-			template[k] = isObject(tmpl[k]) ? tmpl[k] : {
-				[k]: tmpl[k]
-			};
+			template[k] = Object.freeze(
+				isObject(tmpl[k]) ?
+				tmpl[k] : {
+					[k]: tmpl[k]
+				}
+			);
 		}
 	}
 
