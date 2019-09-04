@@ -198,7 +198,7 @@ function useXhr(wrapper, used, path) {
 		}),
 		state = {
 			loaded: false,
-			loading: true,
+			loading: false,
 			error: false,
 			msg: ""
 		};
