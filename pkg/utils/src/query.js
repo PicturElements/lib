@@ -80,6 +80,19 @@ export default function query(list, q, options) {
 		}
 	}
 
+	if (options.bundle) {
+		const out = [];
+
+		for (let i = 0, l = matches; i < l; i++) {
+			out.push({
+				match: matches[i],
+				matchCount: matchCounts[i]
+			});
+		}
+
+		return out;
+	}
+
 	return {
 		matches,
 		indices,
@@ -116,8 +129,5 @@ const queryTemplates = composeOptionsTemplates({
 	smart: true,
 	deepEquality: true,
 	lazy: true,
-	lazySmart: {
-		smart: true,
-		lazy: true
-	}
+	bundle: true
 });
