@@ -23,7 +23,7 @@ export default function queryMatch(val, matcher, options) {
 }
 
 function plainMatch(val, matcher, options) {
-	if (!options.deep)
+	if (!options.deepEquality)
 		return val === matcher;
 
 	return equals(val, matcher);
