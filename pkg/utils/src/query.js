@@ -83,7 +83,7 @@ export default function query(list, q, options) {
 	if (options.bundle) {
 		const out = [];
 
-		for (let i = 0, l = matches; i < l; i++) {
+		for (let i = 0, l = matches.length; i < l; i++) {
 			out.push({
 				match: matches[i],
 				matchCount: matchCounts[i]
