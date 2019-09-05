@@ -46,6 +46,7 @@ it("correctly queries objects", () => {
 			}
 		],
 		indices: [1, 5],
+		matchCounts: [2, 2],
 		iterations: 2
 	});
 });

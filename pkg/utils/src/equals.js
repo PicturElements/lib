@@ -15,7 +15,7 @@ function equals(valA, valB, options) {
 }
 
 function eq(a, b) {
-	if (eqRuntime.comparator && typeof eqRuntime.comparator == "function") {
+	if (typeof eqRuntime.comparator == "function") {
 		const cmp = eqRuntime.comparator(a, b);
 
 		if (typeof cmp == "boolean")

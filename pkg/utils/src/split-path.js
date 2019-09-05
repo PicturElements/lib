@@ -38,7 +38,7 @@ export default function splitPath(path) {
 		return path;
 
 	if (typeof path != "string" && typeof path != "number")
-		return "";
+		return [];
 
 	let out = [];
 	path = String(path);
