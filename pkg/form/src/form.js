@@ -181,7 +181,7 @@ export default class Form extends Hookable {
 
 	val(accessor) {
 		const path = splitPath(accessor),
-			val = this.inputs.hasOwnProperty(path[0]) ? this.inputs[path[0]].val : null;
+			val = this.inputs.hasOwnProperty(path[0]) ? this.inputs[path[0]].value : null;
 
 		return get(val, path, null, {
 			pathOffset: 1
