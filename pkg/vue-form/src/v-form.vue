@@ -16,6 +16,17 @@
 						template(v-slot:icon="inp")
 							slot(:name="`${cell.input.name}-icon`" v-bind="inp")
 								slot(name="checkbox-icon" v-bind="inp")
+				template(v-if="cell.input.type == 'count'")
+					Count(
+						:class="cell.class.input"
+						:input="cell.input"
+						:symbols="cell.symbols")
+						template(v-slot:down-symbol="inp")
+							slot(:name="`${cell.input.name}-down-symbol`" v-bind="{ input: inp, symbols: cell.symbols}")
+								slot(name="count-down-symbol" v-bind="{ input: inp, symbols: cell.symbols}")
+						template(v-slot:up-symbol="inp")
+							slot(:name="`${cell.input.name}-up-symbol`" v-bind="{ input: inp, symbols: cell.symbols}")
+								slot(name="count-up-symbol" v-bind="{ input: inp, symbols: cell.symbols}")
 				template(v-else-if="cell.input.type == 'dropdown'")
 					Dropdown(
 						:class="cell.class.input"
@@ -51,6 +62,7 @@
 
 	import Input from "./input";
 	import Checkbox from "./checkbox";
+	import Count from "./count";
 	import Dropdown from "./dropdown";
 	import Radio from "./radio";
 
@@ -150,6 +162,7 @@
 		components: {
 			Input,
 			Checkbox,
+			Count,
 			Dropdown,
 			Radio
 		},
