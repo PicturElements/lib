@@ -5,7 +5,7 @@
 		input.f-grow(
 			type="tel" 
 			:value="count"
-			@keydown="checkKey"
+			@keydown="check"
 			@change="change")
 		button.count-btn.f.c.up.nshrink(@click="up")
 			slot(name="up-symbol") {{ res(symbols.up) || "+" }}
