@@ -2,6 +2,8 @@ import {
 	equals,
 	resolveVal,
 	isObject,
+	splitPath,
+	get,
 	composeOptionsTemplates,
 	createOptionsObject
 } from "@qtxr/utils";
@@ -175,6 +177,15 @@ export default class Form extends Hookable {
 
 	trigger() {
 		this.forEach(inp => inp[TRIGGER](inp.value));
+	}
+
+	val(accessor) {
+		const path = splitPath(accessor),
+			val = this.inputs.hasOwnProperty(path[0]) ? this.inputs[path[0]].val : null;
+
+		return get(val, path, null, {
+			pathOffset: 1
+		});
 	}
 
 	static trigger(input, ...args) {
