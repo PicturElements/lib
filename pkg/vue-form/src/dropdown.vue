@@ -1,5 +1,5 @@
 <template lang="pug">
-	.dropdown.inp-dropdown(:class="[ expanded ? 'open' : null, validationState ]"
+	.input-wrapper.dropdown.inp-dropdown(:class="[ expanded ? 'open' : null, validationState ]"
 		ref="dropdownBox")
 		button.mobi-focus(@click="expand")
 		textarea.focus-probe(
@@ -32,8 +32,8 @@
 </template>
 
 <script>
+	import Form, { Dropdown } from "@qtxr/form";
 	import { requestFrame } from "@qtxr/utils";
-	import Form from "@qtxr/form";
 	
 	const PADDING = 30,
 		BOTTOM_BIAS = 0.4;
@@ -161,7 +161,7 @@
 			}
 		},
 		props: {
-			input: Object,
+			input: Dropdown,
 			placeholder: String
 		},
 		beforeMount() {

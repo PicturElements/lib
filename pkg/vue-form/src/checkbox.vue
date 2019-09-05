@@ -1,15 +1,15 @@
 <template lang="pug">
-	.input-wrapper.inp-checkbox.f.ac.fs90(:class="validationState")
+	.input-wrapper.checkbox.inp-checkbox.f.ac.fs90(:class="validationState")
 		button.checkbox(
 			:class="{ checked: input.value }"
 			@click="trigger")
 			slot(name="icon" v-bind="input")
 				.icon {{ input.value ? "&times;" : "" }}
-		.label(v-if="res(input.label || label)" @click="trigger") {{ res(input.label || label) }}
+		.label(v-if="res(label)" @click="trigger") {{ res(label) }}
 </template>
 
 <script>
-	import Form from "@qtxr/form";
+	import Form, { Checkbox } from "@qtxr/form";
 
 	export default {
 		name: "Checkbox",
@@ -29,7 +29,7 @@
 			}
 		},
 		props: {
-			input: Object,
+			input: Checkbox,
 			label: String
 		},
 		beforeMount() {

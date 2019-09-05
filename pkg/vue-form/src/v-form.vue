@@ -12,7 +12,7 @@
 					Checkbox(
 						:class="cell.class.input"
 						:input="cell.input"
-						:label="res(cell.input.label)")
+						:label="cell.label")
 						template(v-slot:icon="inp")
 							slot(:name="`${cell.input.name}-icon`" v-bind="inp")
 								slot(name="checkbox-icon" v-bind="inp")

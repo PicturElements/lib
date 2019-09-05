@@ -1,5 +1,5 @@
 <template lang="pug">
-	.input-wrapper.inp-input(:class="validationState")
+	.input-wrapper.input.inp-input(:class="validationState")
 		input(
 			:value="input.value"
 			:type="res(input.type)"
@@ -11,7 +11,7 @@
 </template>
 
 <script>
-	import Form from "@qtxr/form";
+	import Form, { Input } from "@qtxr/form";
 
 	export default {
 		name: "Input",
@@ -34,7 +34,7 @@
 			}
 		},
 		props: {
-			input: Object,
+			input: Input,
 			placeholder: String
 		},
 		beforeMount() {

@@ -1,5 +1,5 @@
 <template lang="pug">
-	.radio.inp-radio(:class="validationState")
+	.input-wrapper.radio.inp-radio(:class="validationState")
 		.radio-section(v-for="(option, idx) in options"
 			:class="{ active: idx == activeIndex }")
 			.radio-top.f.ac
@@ -13,7 +13,7 @@
 </template>
 
 <script>
-	import Form from "@qtxr/form";
+	import Form, { Radio } from "@qtxr/form";
 	
 	export default {
 		name: "Radio",
@@ -71,7 +71,7 @@
 			}
 		},
 		props: {
-			input: Object
+			input: Radio
 		},
 		beforeMount() {
 			this.updateSelection();
