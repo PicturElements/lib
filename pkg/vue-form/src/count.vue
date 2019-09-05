@@ -18,10 +18,10 @@
 		name: "Count",
 		methods: {
 			up() {
-				this.fitCount(this.$props.count + 1);
+				this.fitCount(this.input.value + 1);
 			},
 			down() {
-				this.fitCount(this.$props.count - 1);
+				this.fitCount(this.input.value - 1);
 			},
 			change(evt) {
 				this.fitCount(Number(evt.target.value) || 0);
