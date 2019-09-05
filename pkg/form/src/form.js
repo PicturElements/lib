@@ -6,12 +6,15 @@ import {
 	createOptionsObject
 } from "@qtxr/utils";
 import { Hookable } from "@qtxr/bc";
+
+// Inputs
 import Input, {
 	CHECK,
 	TRIGGER,
 	SELF_TRIGGER
 } from "./input";
 import Checkbox from "./checkbox";
+import Count from "./count";
 import Dropdown from "./dropdown";
 import Radio from "./radio";
 import defaults from "./form-defaults";
@@ -166,12 +169,12 @@ export default class Form extends Hookable {
 			inp.value = inp.hasOwnProperty("default") ? inp.default : "";
 		});
 
-		this.forEach(inp => inp[TRIGGER](inp.value, true));
+		this.forEach(inp => inp[TRIGGER](inp.value));
 		this.changed = false;
 	}
 
 	trigger() {
-		this.forEach(inp => inp[TRIGGER](inp.value, true));
+		this.forEach(inp => inp[TRIGGER](inp.value));
 	}
 
 	static trigger(input, ...args) {
@@ -229,6 +232,8 @@ export default class Form extends Hookable {
 		switch (optionsOrInput.type) {
 			case "checkbox":
 				return "checkbox";
+			case "count":
+				return "count";
 			case "dropdown":
 				return "dropdown";
 			case "radio":
@@ -242,6 +247,8 @@ export default class Form extends Hookable {
 		switch (this.getInputType(optionsOrInput)) {
 			case "checkbox":
 				return Checkbox;
+			case "count":
+				return Count;
 			case "dropdown":
 				return Dropdown;
 			case "radio":
@@ -257,10 +264,12 @@ Form.defaults = composeOptionsTemplates(defaults);
 Form.presets = {
 	std: {
 		hooks: {
-			trigger(f) {
+			trigger(form) {
 				let valid = true;
-				f.forEach(inp => valid &= (inp.required === false || (inp.initialized && inp.valid)));
-				f.valid = !!valid;
+				form.forEach(inp => {
+					valid &= (inp.required === false || (inp.initialized && inp.valid));
+				});
+				form.valid = !!valid;
 			}
 		},
 		options: {

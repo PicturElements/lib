@@ -35,6 +35,7 @@ export default class Input extends Hookable {
 		this.trigger = null;
 		this.update = null;
 		this.extract = null;
+		this.comparator = null;
 
 		// Propagation data
 		this.propagate = null;
@@ -61,6 +62,7 @@ export default class Input extends Hookable {
 	}
 
 	[TRIGGER](value) {
+		// If value is null, don't update internal value
 		if (value !== null) {
 			if (typeof this.process == "function")
 				this.value = this.process(value, this, this.form.inputs);

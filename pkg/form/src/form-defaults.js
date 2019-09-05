@@ -1,5 +1,10 @@
 import { basicInterpolate } from "@qtxr/utils";
 
+// When adding defaults, remember this:
+// https://stackoverflow.com/questions/21177489/selectionstart-selectionend-on-input-type-number-no-longer-allowed-in-chrome
+// If not absolutely necessary, use text, search, password, tel, or url types or else checkWord
+// will not work properly
+
 const emailRegex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/i,
 	dateRegex = /^(\d{1,2})\s*\/\s*(\d{2})$/,
 	nameRegex = /[^\d,./\\"=@#$%^&*(){}[\]!?|~<>;]/;
@@ -70,12 +75,12 @@ const defaults = {
 		checkWord(str) {
 			return str.replace(/\s/g, "").length <= 19;
 		},
-		validate(str) {
-			str = str.replace(/\s/g, "");
+		validate(val) {
+			val = val.replace(/\s/g, "");
 
-			if (!/^\d{13,19}$/.test(str))
+			if (!/^\d{13,19}$/.test(val))
 				return "Card numbers are between 13 and 19 digits in length";
-			else if (!luhn(str))
+			else if (!luhn(val))
 				return "This is not a valid card number";
 		},
 		extract(value) {
@@ -86,8 +91,8 @@ const defaults = {
 		type: "tel",
 		value: "",
 		checkKey: /[\d/\s]/,
-		validate(str) {
-			const ex = dateRegex.exec(str);
+		validate(val) {
+			const ex = dateRegex.exec(val);
 
 			if (!ex)
 				return "Dates follow this syntax: MM/YY";
@@ -121,8 +126,8 @@ const defaults = {
 		checkWord(str) {
 			return str.length <= 4;
 		},
-		validate(str) {
-			if (!/^\d{3,4}$/.test(str))
+		validate(val) {
+			if (!/^\d{3,4}$/.test(val))
 				return "CVV numbers are between 3 and 4 digits in length";
 		}
 	},
@@ -160,6 +165,13 @@ const defaults = {
 			if (val === null)
 				return "Please select a value";
 		}
+	},
+	count: {
+		type: "count",
+		value: 0,
+		min: 0,
+		max: 100,
+		checkWord: "int"
 	}
 };
 
