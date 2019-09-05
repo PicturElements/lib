@@ -4,7 +4,7 @@
 			slot(name="down-symbol") {{ res(symbols.down) || "-" }}
 		input.f-grow(
 			type="tel" 
-			:value="count"
+			:value="input.value"
 			@keydown="check"
 			@change="change")
 		button.count-btn.f.c.up.nshrink(@click="up")
