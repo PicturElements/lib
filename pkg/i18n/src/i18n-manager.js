@@ -248,6 +248,7 @@ class I18NManager extends Hookable {
 		
 		if (dependencyTree) {
 			applyLocales(dependencyTree);
+			this.callHooks("localeloaded");
 			return dependencyTree.item;
 		}
 
