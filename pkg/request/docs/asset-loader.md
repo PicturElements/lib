@@ -92,7 +92,7 @@ This method runs buffered async tasks. This is called internally automatically a
 ---
 
 ## Fetch response node
-Fetch responses have the following structure:
+Fetch response nodes have the following structure:
 
 	{
 		payload			// response data; null if fetch failed
@@ -106,7 +106,7 @@ Fetch responses have the following structure:
 ---
 
 ## Asset node
-An asset node has the following structure and default values:
+Asset nodes have the following structure and default values:
 
 	{
 		item: dependent			// loaded dependent asset
