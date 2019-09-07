@@ -319,6 +319,8 @@ export default class AssetLoader {
 				callback(node, rootNode);
 		};
 
+		traverse(rootNode);
+
 		return true;
 	}
 }
