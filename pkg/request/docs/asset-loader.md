@@ -25,7 +25,7 @@ Below are the default processors the library uses.
 
 * **fileName** `(loader, fileName) -> fileName`
   
-  Processes file names so that all assets are requested in a uniform way. By default, this is an identity processor (returns its input). The file name may also be any valid URI
+  Processes file names so that all assets are requested in a uniform way. By default, this is an identity processor (returns its input). The file name may also be any valid URI. Please also note that this function should be idempotent, as AssetLoader may need to process file names multiple times. For similar reasons, and for consistency in general, it's recommended that this processor is never overwritten. This is because it's used internally to identify enqueued assets
 * **prefetchResponse** `(loader, fileName, response: response node) -> response: any`
   
   Processes response data from prefetch. The response argument is parsed response data straight from the XHR loader wrapped in a response node. The returned value from this is passed as the resolved value. By default, this is an identity processor that warns if an asset wasn't properly loaded
@@ -70,6 +70,9 @@ Requests a callback to be called whenever the loader is idle, i.e. not buffering
 ### untilIdle
 Returns a promise that resolves once the loader is idle, primarily meant to be used with `await` for sleep functionality. The resolved value is the time, in milliseconds, that has elapsed between invocation and resolve.
 
+### isEnqueued `(fileName) -> boolean`
+Returns true if a request is currently enqueued with the same file name. fileName will be processed within this function 
+
 ---
 
 ## Internal methods
@@ -88,6 +91,9 @@ The callback must return a promise that resolves to the return value. This value
 
 ### resumeAsync
 This method runs buffered async tasks. This is called internally automatically and it's unlikely that third parties should need to use it.
+
+### _logEnqueue `(fileName)`
+Sets the supplied file name as an enqueued asset. The supplied file name will not be processed. 
 
 ---
 

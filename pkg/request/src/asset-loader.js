@@ -45,17 +45,10 @@ export default class AssetLoader {
 		this.assetsMap = {};
 		this.xhrManager = manager || new XHRManager();
 		this.processors = Object.assign({}, DEFAULT_PROCESSORS, processors);
+		this.enqueuedAssets = {};
 	}
 
 	prefetch(...args) {
-		if (this.asyncBufferActive) {
-			return this.bufferAsync(
-				"prefetch",
-				this.prefetch.bind(this),
-				args
-			);
-		}
-
 		let {
 			fileName,
 			settings,
@@ -64,6 +57,16 @@ export default class AssetLoader {
 		} = resolveArgs(args, fetchParams, "allowSingleSource");
 
 		fileName = this.process("fileName", processors, fileName)();
+
+		this._logEnqueue(fileName);
+
+		if (this.asyncBufferActive) {
+			return this.bufferAsync(
+				"prefetch",
+				this.prefetch.bind(this),
+				args
+			);
+		}
 
 		const prefetch = new Promise(resolve => {
 			this._fetch(fileName, settings, lazy, processors)
@@ -80,14 +83,6 @@ export default class AssetLoader {
 	}
 
 	fetch(...args) {
-		if (this.asyncBufferActive) {
-			return this.bufferAsync(
-				"fetch",
-				this.fetch.bind(this),
-				args
-			);
-		}
-
 		let {
 			fileName,
 			settings,
@@ -96,6 +91,16 @@ export default class AssetLoader {
 		} = resolveArgs(args, fetchParams, "allowSingleSource");
 
 		fileName = this.process("fileName", processors, fileName)();
+
+		this._logEnqueue(fileName);
+
+		if (this.asyncBufferActive) {
+			return this.bufferAsync(
+				"fetch",
+				this.fetch.bind(this),
+				args
+			);
+		}
 
 		return new Promise(resolve => {
 			this._fetch(fileName, settings, lazy, processors)
@@ -108,6 +113,17 @@ export default class AssetLoader {
 	}
 
 	async fetchModule(...args) {
+		let {
+			fileName,
+			settings,
+			lazy,
+			processors
+		} = resolveArgs(args, fetchParams, "allowSingleSource");
+
+		fileName = this.process("fileName", processors, fileName)();
+
+		this._logEnqueue(fileName);
+
 		if (this.asyncBufferActive) {
 			return this.bufferAsync(
 				"fetch",
@@ -115,13 +131,6 @@ export default class AssetLoader {
 				args
 			);
 		}
-
-		const {
-			fileName,
-			settings,
-			lazy,
-			processors
-		} = resolveArgs(args, fetchParams, "allowSingleSource");
 
 		const flatTreeMap = {};
 		let cached = true;
@@ -173,9 +182,9 @@ export default class AssetLoader {
 		const nde = await fetch(fileName, true, null);
 
 		if (!nde)
-			return responseNodeError();
+			return mkResponseNodeError();
 
-		return responseNodeSuccess(nde, cached);
+		return mkResponseNodeSuccess(nde, cached);
 	}
 
 	_fetch(fileName, settings = null, lazy = true, processors = null) {
@@ -184,25 +193,32 @@ export default class AssetLoader {
 		return new Promise(resolve => {
 			if (lazy && this.assetsMap.hasOwnProperty(fileName)) {
 				return resolve(
-					responseNodeSuccess(this.assetsMap[fileName], true)
+					mkResponseNodeSuccess(this.assetsMap[fileName], true)
 				);
 			}
 
 			this.xhrManager.use(xhrSettings)
 				.get(fileName)
 				.success(d => {
+					delete this.enqueuedAssets[fileName];
+
 					if (!this.assetsMap.hasOwnProperty(fileName))
 						this.assets.push(fileName);
 					this.assetsMap[fileName] = d;
 
 					resolve(
-						responseNodeSuccess(d, false)
+						mkResponseNodeSuccess(d, false)
 					);
 				})
-				.fail(_ => resolve(
-					responseNodeError()
-				));
+				.fail(_ => {
+					delete this.enqueuedAssets[fileName];
+					resolve(mkResponseNodeError());
+				});
 		});
+	}
+
+	_logEnqueue(fileName) {
+		this.enqueuedAssets[fileName] = true;
 	}
 
 	requestIdle(callback, ...args) {
@@ -224,6 +240,11 @@ export default class AssetLoader {
 	untilIdle() {
 		const startTime = getTime();
 		return this.requestIdle(_ => getTime() - startTime);
+	}
+
+	isEnqueued(fileName, processors) {
+		fileName = this.process("fileName", processors, fileName)();
+		return this.enqueuedAssets.hasOwnProperty(fileName);
 	}
 
 	bufferAsync(queue, callback, args = []) {
@@ -317,7 +338,7 @@ function mkAssetNode(loader, fileName, dependent, processors) {
 	return node;
 }
 
-function responseNodeError() {
+function mkResponseNodeError() {
 	return {
 		payload: null,
 		cached: false,
@@ -327,7 +348,7 @@ function responseNodeError() {
 	};
 }
 
-function responseNodeSuccess(payload, cached) {
+function mkResponseNodeSuccess(payload, cached) {
 	return {
 		payload,
 		cached,
