@@ -75,10 +75,10 @@ Returns a promise that resolves once the loader is idle, primarily meant to be u
 ## Internal methods
 The below methods are primarily meant to be used internally, but can also be used by third parties:
 
-### _fetch(fileName, settings?: object, lazy?: boolean, processors?: object) -> promise<response node>
+### _fetch `(fileName, settings?: object, lazy?: boolean, processors?: object) -> promise<response node>`
 The internal interface used to fetch data. Calling this method directly will not buffer requests if the async buffer is active; nor will arguments be resolved automatically.
 
-### bufferAsync(bufferPartition: string, callback(...args) -> promise, ...args) -> promise<callback return>
+### bufferAsync `(bufferPartition: string, callback(...args) -> promise, ...args) -> promise<callback return>`
 This method buffers fetches for later use. The bufferPartition may be any of the following:
 
 * prefetch - buffer to prefetch queue, where prefetching will be done sequentially until the queue is empty
