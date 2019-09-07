@@ -6,7 +6,8 @@ import {
 	isObject,
 	coerceToObj,
 	sym,
-	setSymbol
+	setSymbol,
+	inject
 } from "@qtxr/utils";
 import { Hookable } from "@qtxr/bc";
 import { AssetLoader } from "@qtxr/request";
@@ -17,6 +18,7 @@ import {
 	resolveRefTrace
 } from "./lang";
 import langStdLib from "./lang-std-lib";
+import mkSTDLib from "./mk-std-lib";
 
 const RESERVED_KEYS = {
 	default: 1,
@@ -29,30 +31,8 @@ const NULL_GET = Object.freeze({
 
 const LOCALE_SYM = sym("locale"),
 	REF_TABLE_SYM = sym("reference table"),
+	REF_LOOKUP_SYM = sym("reference lookup"),
 	OWNER_SYM = sym("owner");
-
-class STDLib {
-	constructor(lib) {
-		this.lib = Object.assign({}, lib);
-	}
-
-	add(key, func) {
-		if (!key || typeof key != "string")
-			return console.warn(`Cannot add STDLib function: ${key} is not a valid key`);
-
-		if (typeof func != "function")
-			return console.warn("Cannot add STDLib function: no function supplied");
-
-		this.lib[key] = func;
-	}
-
-	delete(key) {
-		if (this.lib.hasOwnProperty(key))
-			return delete this.lib[key];
-
-		return false;
-	}
-}
 
 class I18NManager extends Hookable {
 	constructor(locale, settings) {
@@ -64,23 +44,23 @@ class I18NManager extends Hookable {
 		this.store = {};
 		this.addedAssets = {};
 		this.sitemap = null;
-		this.stdLib = new STDLib(this.settings.stdLib || langStdLib);
+		this.stdLib = mkSTDLib(langStdLib, this.settings.stdLib);
 
 		this.loader = new AssetLoader({
 			fileName: (loader, fileName) => coerceToJSONFileName(fileName),
-			fetchResponse: (loader, response, fileName) => {
+			fetchResponse: (loader, fileName, response) => {
 				if (!response)
 					console.error(`Failed to load locale data at ${fileName}`);
 
 				return response;
 			},
-			xhrSettings: (loader, settings) => {
+			xhrSettings: (loader, fileName, settings) => {
 				return Object.assign({
 					baseUrl: this.settings.baseUrl
 				}, settings);
 			},
-			dependencies: (loader, dependent) => dependent.requires,
-			assetNode: (loader, node, dependent, fileName) => {
+			dependencies: (loader, fileName, dependent) => dependent.payload.requires,
+			assetNode: (loader, fileName, node, dependent) => {
 				const name = stripJSONExtension(fileName),
 					ex = /^(?:(.+?)\.)?(.+?)?$/.exec(name);
 				
@@ -93,10 +73,11 @@ class I18NManager extends Hookable {
 
 		if (this.settings.sitemapPath) {
 			this.loader.prefetch(this.settings.sitemapPath, this.settings, {
-				prefetchResponse: (loader, response, fileName) => {
-					this.sitemap = response;
-					if (!this.sitemap)
+				prefetchResponse: (loader, fileName, response) => {
+					if (!response.success)
 						return;
+
+					this.sitemap = response.payload;
 
 					for (const k in this.sitemap) {
 						if (!this.sitemap.hasOwnProperty(k))
@@ -158,7 +139,7 @@ class I18NManager extends Hookable {
 		return resolveFormat(parsedFormat, {
 			formatTrace,
 			parsedFormat,
-			store: Object.assign(baseStore, this.stdLib.lib, vars),
+			store: new this.stdLib(baseStore, vars),
 			manager: this,
 			ietf
 		});
@@ -220,10 +201,11 @@ class I18NManager extends Hookable {
 			newLocale = true;
 		}
 
-		supplementPartitionData(this.store, data, ietf.value, !newLocale);
+		const inData = formatLocaleData(data);
 
-		setOwnership(this.store, ietf.value);
-		shareOwnership(this.store);
+		supplementPartitionData(this.store, data, ietf.value, !newLocale);
+		setOwnership(inData, ietf.value);
+		shareOwnership(this.store, inData, ietf.value);
 
 		console.log("Registered", fileName);
 		this.addedAssets[fileName] = data;
@@ -235,22 +217,24 @@ class I18NManager extends Hookable {
 		if (lazy && this.addedAssets.hasOwnProperty(fileName))
 			return this.addedAssets[fileName];
 
-		// This has to be tail recursive as dependents have
-		// to be registered before their dependencies
-		const applyLocales = dependent => {
-			for (let i = 0, l = dependent.dependencies.length; i < l; i++)
-				applyLocales(dependent.dependencies[i]);
+		if (this.loader.isEnqueued(fileName))
+			return null;
 
-			this.registerLocale(dependent, true);
-		};
+		const tree = await this.loader.fetchModule(fileName, settings, lazy);
 
-		const dependencyTree = await this.loader.fetchModule(fileName, settings, lazy);
-		
-		if (dependencyTree) {
-			applyLocales(dependencyTree);
+		if (tree.success && !tree.cached) {
+			// This has to be tail recursive as dependents have
+			// to be registered before their dependencies
+			AssetLoader.traverse(tree.payload, dependent => {
+				this.registerLocale(dependent, true);
+			}, true);
 			this.callHooks("localeloaded");
-			return dependencyTree.item;
+			
+			return tree.payload.item;
 		}
+
+		if (!tree.success)
+			console.error(`Failed to load ${fileName}`);
 
 		return null;
 	}
@@ -258,23 +242,25 @@ class I18NManager extends Hookable {
 	loadFragment(fileName, settings = null, lazy = true) {
 		fileName = coerceToJSONFileName(fileName);
 
-		return new Promise(resolve => {
-			const name = stripJSONExtension(fileName);
+		return this.loader.requestIdle(_ => {
+			return new Promise(resolve => {
+				const name = stripJSONExtension(fileName);
 
-			if (name.indexOf(".") > -1)
-				return resolve(null);
+				if (name.indexOf(".") > -1)
+					return resolve(null);
 
-			let locale = this.requestedLocale;
+				let locale = this.requestedLocale;
 
-			if (this.sitemap && this.sitemap.hasOwnProperty(name))
-				locale = IETF.findOptimalLocale(this.requestedLocale, this.sitemap[name]);
+				if (this.sitemap && this.sitemap.hasOwnProperty(name))
+					locale = IETF.findOptimalLocale(this.requestedLocale, this.sitemap[name]);
 
-			this.loadLocale(`${name}.${locale.value}`, settings, lazy)
-				.then(d => {
-					this.callHooks("fragmentloaded");
-					this.callHooks(`fragmentloaded:${name}`);
-					resolve(d);
-				});
+				this.loadLocale(`${name}.${locale.value}`, settings, lazy)
+					.then(d => {
+						this.callHooks("fragmentloaded");
+						this.callHooks(`fragmentloaded:${name}`);
+						resolve(d);
+					});
+			});
 		});
 	}
 
@@ -307,6 +293,7 @@ I18NManager.DEF_SETTINGS = {
 function initLocalePartition(data, dependencies, locale) {
 	const partition = {};
 	setSymbol(partition, REF_TABLE_SYM, []);
+	setSymbol(partition, REF_LOOKUP_SYM, {});
 	setSymbol(partition, LOCALE_SYM, locale);
 
 	if (data.default)
@@ -324,24 +311,66 @@ function extendReferenceTable(partition, locale) {
 	if (!partition || !ietf.valid || partition[LOCALE_SYM] == locale)
 		return false;
 
-	const refTable = partition[REF_TABLE_SYM];
-	if (refTable.indexOf(ietf.value) == -1) {
-		refTable.push(ietf.value);
+	const refLookup = partition[REF_LOOKUP_SYM],
+		refLocale = ietf.value;
+
+	if (!refLookup.hasOwnProperty(refLocale)) {
+		refLookup[refLocale] = true;
+		partition[REF_TABLE_SYM].push(refLocale);
 		return true;
 	}
 
 	return false;
 }
 
-function coerceToJSONFileName(fileName) {
-	if (/\.json$/.test(fileName))
-		return fileName;
+function formatLocaleData(data) {
+	const outData = {};
 
-	return `${fileName}.json`;
+	if (!data || data.constructor != Object) {
+		console.warn("Cannot format locale data: data is not an object");
+		return outData;
+	}
+
+	for (const k in data) {
+		if (!data.hasOwnProperty(k) || RESERVED_KEYS.hasOwnProperty(k))
+			continue;
+
+		if (!isObj(data[k])) {
+			console.warn(`Cannot initialize locale data at ${k}: data is not an object`);
+			continue;
+		}
+			
+		outData[k] = data[k];
+	}
+
+	return outData;
 }
 
-function stripJSONExtension(fileName) {
-	return fileName.replace(/\.json$/, "");
+function setOwnership(inData, locale) {
+	const set = target => {
+		for (const k in target) {
+			if (!target.hasOwnProperty(k) || !isObj(target[k]))
+				continue;
+
+			setSymbol(target[k], OWNER_SYM, locale);
+			set(target[k]);
+		}
+	};
+
+	set(inData);
+}
+
+function shareOwnership(store, inData, locale) {
+	for (const k in store) {
+		if (!store.hasOwnProperty(k) || k == locale)
+			continue;
+
+		const partition = store[k];
+
+		inject(partition, inData, {
+			injectSymbols: true
+		});
+	}
 }
 
 function supplementPartitionData(store, inData, locale, onlyForNewFragments) {
@@ -405,39 +434,15 @@ function supplementPartitionData(store, inData, locale, onlyForNewFragments) {
 	}
 }
 
-function setOwnership(store, locale) {
-	const set = target => {
-		for (const k in target) {
-			if (!target.hasOwnProperty(k) || !isObj(target[k]))
-				continue;
+function coerceToJSONFileName(fileName) {
+	if (/\.json$/.test(fileName))
+		return fileName;
 
-			setSymbol(target[k], OWNER_SYM, locale);
-			set(target[k]);
-		}
-	};
-
-	set(store[locale]);
+	return `${fileName}.json`;
 }
 
-function shareOwnership(store) {
-	for (const k in store) {
-		if (!store.hasOwnProperty(k))
-			continue;
-
-		const partition = store[k],
-			refTable = partition[REF_TABLE_SYM];
-
-		for (let i = 0, l = refTable.length; i < l; i++) {
-			const refPartition = store[refTable[i]];
-			if (!refPartition)
-				continue;
-
-			for (const k2 in refPartition) {
-				if (refPartition.hasOwnProperty(k2) && !partition.hasOwnProperty(k2))
-					partition[k2] = refPartition[k2];
-			}
-		}
-	}
+function stripJSONExtension(fileName) {
+	return fileName.replace(/\.json$/, "");
 }
 
 export default I18NManager;

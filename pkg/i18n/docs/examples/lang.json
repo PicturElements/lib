@@ -1,4 +1,7 @@
 {
 	"test": "[a.b]{@test: %.routes.checkout%}{@test2: %orRegister%}{I'm the default}",
-	"test2": "[a.b == $upper(a.b)]{ a.b is upper case }{ a.b is not all upper case }"
+	"test2": "[a.b == $upper(a.b)]{ a.b is upper case }{ a.b is not all upper case }",
+	"test3": {
+		"tst": "[%.test% == 'white']{yes}{no}"
+	}
 }
