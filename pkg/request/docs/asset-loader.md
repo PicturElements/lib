@@ -61,8 +61,8 @@ Fetch a module and all its dependencies. Returns an error object if any asset fa
 ## Other methods
 Below are miscellaneous (utility) methods: 
 
-### #traverse `(rootNode: asset node, callback(node, name, rootNode)) -> success`
-Traverses an assetNode and its dependencies. It only visits each node once, to properly handle circular references. Gracefully fails if the provided assetNode isn't an asset node or if the callback is not a function and returns `false`. Otherwise returns `true`.
+### #traverse `(rootNode: asset node, callback(node, name, rootNode), tail?: boolean) -> success`
+Traverses an assetNode and its dependencies. It only visits each node once, to properly handle circular references. Gracefully fails if the provided assetNode isn't an asset node or if the callback is not a function and returns `false`. Otherwise returns `true`. If the `tail` flag is truthy, the traversal is tail recursive.
 
 ### requestIdle `(callback: function, ...args)`
 Requests a callback to be called whenever the loader is idle, i.e. not buffering prefetches. Returns a promise that resolves to the returned value from the callback.
