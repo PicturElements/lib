@@ -331,7 +331,7 @@ function responseNodeSuccess(payload, cached) {
 	return {
 		payload,
 		cached,
-		success: false,
+		success: true,
 		// Internal data; do not modify
 		isResponseNode: true
 	};
