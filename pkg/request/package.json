@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/request",
-  "version": "1.0.5",
+  "version": "2.0.0",
   "description": "Collection of libraries for efficient, clean, and intuitive web requests",
   "main": "index.js",
   "scripts": {
@@ -31,7 +31,7 @@
   },
   "devDependencies": {},
   "qlib": {
-    "pushes": 4,
+    "pushes": 5,
     "expose": {
       "scripts": [
         "index.mjs"
