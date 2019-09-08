@@ -7,7 +7,8 @@ import {
 	coerceToObj,
 	sym,
 	setSymbol,
-	inject
+	inject,
+	isEnv
 } from "@qtxr/utils";
 import { Hookable } from "@qtxr/bc";
 import { AssetLoader } from "@qtxr/request";
@@ -276,11 +277,6 @@ class I18NManager extends Hookable {
 	}
 }
 
-I18NManager.DEF_SETTINGS = {
-	baseUrl: (process && process.env && process.env.NODE_ENV == "production") ? "/dist/text" : "/text",
-	sitemapPath: "sitemap"
-};
-
 // Initializes a base locale partition (e.g. en, en_uk)
 // and creates a reference table. The reference table contains
 // locale data that describe which partition to seek supplementary data
@@ -444,5 +440,10 @@ function coerceToJSONFileName(fileName) {
 function stripJSONExtension(fileName) {
 	return fileName.replace(/\.json$/, "");
 }
+
+I18NManager.DEF_SETTINGS = {
+	baseUrl: isEnv("production") ? "/dist/text" : "/text",
+	sitemapPath: "sitemap"
+};
 
 export default I18NManager;
