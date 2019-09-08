@@ -48,21 +48,21 @@ class I18NManager extends Hookable {
 		this.stdLib = mkSTDLib(langStdLib, this.settings.stdLib);
 
 		this.loader = new AssetLoader({
-			fileName: (loader, fileName) => coerceToJSONFileName(fileName),
-			fetchResponse: (loader, fileName, response) => {
+			path: (loader, path) => coerceToJSONFileName(path),
+			fetchResponse: (loader, path, response) => {
 				if (!response)
-					console.error(`Failed to load locale data at ${fileName}`);
+					console.error(`Failed to load locale data at ${path}`);
 
 				return response;
 			},
-			xhrSettings: (loader, fileName, settings) => {
+			xhrSettings: (loader, path, settings) => {
 				return Object.assign({
 					baseUrl: this.settings.baseUrl
 				}, settings);
 			},
-			dependencies: (loader, fileName, dependent) => dependent.payload.requires,
-			assetNode: (loader, fileName, node, dependent) => {
-				const name = stripJSONExtension(fileName),
+			dependencies: (loader, path, dependent) => dependent.payload.requires,
+			assetNode: (loader, path, node, dependent) => {
+				const name = stripJSONExtension(path),
 					ex = /^(?:(.+?)\.)?(.+?)?$/.exec(name);
 				
 				if (ex) {
@@ -74,7 +74,7 @@ class I18NManager extends Hookable {
 
 		if (this.settings.sitemapPath) {
 			this.loader.prefetch(this.settings.sitemapPath, this.settings, {
-				prefetchResponse: (loader, fileName, response) => {
+				prefetchResponse: (loader, path, response) => {
 					if (!response.success)
 						return;
 
@@ -121,13 +121,13 @@ class I18NManager extends Hookable {
 			null :
 			isObject(vars) ? vars : { x: vars };
 
-		const path = splitPath(format),
+		const p = splitPath(format),
 			partition = this.getPartition(ietf);
 		let formatTrace = null,
 			outFormat = format;
 		
 		if (typeof format == "string") {
-			formatTrace = resolveRefTrace(partition, path);
+			formatTrace = resolveRefTrace(partition, p);
 			outFormat = formatTrace.data;
 		}
 			
@@ -189,12 +189,12 @@ class I18NManager extends Hookable {
 		const ietf = coerceIETF(node.locale),
 			data = node.item,
 			dependencies = node.dependencies,
-			fileName = node.fileName;
+			path = node.path;
 		let newLocale = false;
 
 		if (!isObj(data) || !ietf.valid)
 			return console.warn(`Failed to register locale '${ietf.value}' because it's not an object or the IETF code is invalid`);
-		if (this.addedAssets.hasOwnProperty(fileName) && !force)
+		if (this.addedAssets.hasOwnProperty(path) && !force)
 			return console.warn(`Refused to add locale '${ietf.value}' because it's already defined. Use the force flag`);
 
 		if (!this.store.hasOwnProperty(ietf.value)) {
@@ -208,20 +208,20 @@ class I18NManager extends Hookable {
 		setOwnership(inData, ietf.value);
 		shareOwnership(this.store, inData, ietf.value);
 
-		console.log("Registered", fileName);
-		this.addedAssets[fileName] = data;
+		console.log("Registered", path);
+		this.addedAssets[path] = data;
 	}
 
-	async loadLocale(fileName, settings = true, lazy = true) {
-		fileName = coerceToJSONFileName(fileName);
+	async loadLocale(path, settings = true, lazy = true) {
+		path = coerceToJSONFileName(path);
 
-		if (lazy && this.addedAssets.hasOwnProperty(fileName))
-			return this.addedAssets[fileName];
+		if (lazy && this.addedAssets.hasOwnProperty(path))
+			return this.addedAssets[path];
 
-		if (this.loader.isEnqueued(fileName))
+		if (this.loader.isEnqueued(path))
 			return null;
 
-		const tree = await this.loader.fetchModule(fileName, settings, lazy);
+		const tree = await this.loader.fetchModule(path, settings, lazy);
 
 		if (tree.success && !tree.cached) {
 			// This has to be tail recursive as dependents have
@@ -235,17 +235,17 @@ class I18NManager extends Hookable {
 		}
 
 		if (!tree.success)
-			console.error(`Failed to load ${fileName}`);
+			console.error(`Failed to load ${path}`);
 
 		return null;
 	}
 
-	loadFragment(fileName, settings = null, lazy = true) {
-		fileName = coerceToJSONFileName(fileName);
+	loadFragment(path, settings = null, lazy = true) {
+		path = coerceToJSONFileName(path);
 
 		return this.loader.requestIdle(_ => {
 			return new Promise(resolve => {
-				const name = stripJSONExtension(fileName);
+				const name = stripJSONExtension(path);
 
 				if (name.indexOf(".") > -1)
 					return resolve(null);
@@ -430,15 +430,15 @@ function supplementPartitionData(store, inData, locale, onlyForNewFragments) {
 	}
 }
 
-function coerceToJSONFileName(fileName) {
-	if (/\.json$/.test(fileName))
-		return fileName;
+function coerceToJSONFileName(path) {
+	if (/\.json$/.test(path))
+		return path;
 
-	return `${fileName}.json`;
+	return `${path}.json`;
 }
 
-function stripJSONExtension(fileName) {
-	return fileName.replace(/\.json$/, "");
+function stripJSONExtension(path) {
+	return path.replace(/\.json$/, "");
 }
 
 I18NManager.DEF_SETTINGS = {
