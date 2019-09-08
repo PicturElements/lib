@@ -90,6 +90,13 @@ function isArrResolvable(candidate) {
 	return false;
 }
 
+function isEnv(env, def = "production") {
+	if (typeof process == "undefined")
+		return env == def;
+
+	return process.env.NODE_ENV == env;
+}
+
 export {
 	isDirectInstanceof,
 	isNativeSimpleObject,
@@ -101,5 +108,6 @@ export {
 	isIterable,
 	isArrayLike,
 	isSetLike,
-	isArrResolvable
+	isArrResolvable,
+	isEnv
 };
