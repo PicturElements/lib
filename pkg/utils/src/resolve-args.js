@@ -3,14 +3,14 @@ import clone from "./clone";
 import { genFuncParamsStr } from "./ts-str";
 import {
 	isObj,
-	isObject
+	isObject,
+	isArrayLike
 } from "./is";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./options";
 import getFunctionName from "./get-function-name";
-
 
 // Resolves arguments using a simple "lacuna" algorithm:
 // It steps through the parameter signature array and tries to match the next
@@ -37,23 +37,44 @@ import getFunctionName from "./get-function-name";
 // The second argument string would become a rest argument
 // { rest: [str2], num1: num1, num2: num2, str1: str1, str2: -- }
 //
-// options:
-// allowSingleSource	- allow a single source argument object to be passed and used as the argument data
-// returnArgList		- return as an array of arguments
+// resolveArgs options:
+// allowSingleSource
+// returnArgList
 //
 // allowSingleSource:
 // If this flag is truthy and the first argument is an object, resolveArgs will
 // use that as the source for its arguments. Type chacking and output remain the same
-// Surplus arguments are returned as rest arguments
+// Surplus arguments are returned as rest arguments. Will fail if the first parameter signature
+// parameter can match an object, as the arguments then become ambiguous
 //
 // returnArgList:
-// Simply returns an array of all arguments in the order specified by the signature
+// resolveArgs returns an array of all arguments in the order specified by the signature
 // Rest arguments are appended to the end of the array
+//
+// Signature parameter options:
+// name
+// required
+// default
+// coalesce
+//
+// name:
+// Parameter name
+//
+// required:
+// Makes parameter required. If there's no correct match, an error will be thrown
+//
+// default:
+// Default value used if an argument doesn't match. Defaults to undefined
+//
+// coalesce:
+// If truthy, arguments will be added to an array as long as the type matcher matches.
+// The array will be used as the named argument. Default values are still supported, but
+// are added to the array instead of the outbound arguments
 
 export default function resolveArgs(args, signature, options) {
 	options = createOptionsObject(options, resolveArgsTemplates);
 
-	if (!Array.isArray(args))
+	if (!isArrayLike(args))
 		throw new Error("Failed to resolve arguments: no arguments supplied");
 
 	if (!Array.isArray(signature))
@@ -81,9 +102,21 @@ export default function resolveArgs(args, signature, options) {
 			key = options.returnArgList ? i : sgn.name;
 		
 		if (matchType(arg, sgn.type)) {
-			argsOut[key] = arg;
+			if (sgn.coalesce) {
+				argsOut[key] = argsOut[key] || [];
+				argsOut[key].push(arg);
+				i--;
+			} else
+				argsOut[key] = arg;
+
 			argPtr++;
 		} else {
+			if (sgn.coalesce && (argsOut[key] || !sgn.required)) {
+				if (!argsOut[key])
+					argsOut[key] = [];
+				continue;
+			}
+
 			if (arg == null)
 				argPtr++;
 
@@ -109,7 +142,7 @@ export default function resolveArgs(args, signature, options) {
 	return argsOut;
 }
 
-resolveArgs.wrap = (signature, func, options) => {
+resolveArgs.wrap = (func, signature, options) => {
 	options = Object.assign(
 		{},
 		createOptionsObject(options, resolveArgsTemplates),
