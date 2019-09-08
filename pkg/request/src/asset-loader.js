@@ -9,28 +9,33 @@ import { XHRManager } from "./xhr";
 // Additionally, temporary processors can be passed in to any
 // non-buffer related method call as the last argument
 const DEFAULT_PROCESSORS = {
-	fileName: (loader, fileName) => fileName,
-	prefetchResponse(loader, fileName, response) {
+	path: (loader, path) => path,
+	prefetchResponse(loader, path, response) {
 		if (!response.success)
-			console.error(`Failed to prefetch data at ${fileName}`);
+			console.error(`Failed to prefetch data at ${path}`);
 
 		return response;
 	},
-	fetchResponse(loader, fileName, response) {
+	fetchResponse(loader, path, response) {
 		if (!response.success)
-			console.error(`Failed to fetch data at ${fileName}`);
+			console.error(`Failed to fetch data at ${path}`);
 
 		return response;
 	},
-	xhrSettings: (loader, fileName, settings) => settings || {},
-	dependencies: (loader, fileName, dependent) => dependent.payload.dependencies,
-	assetNode: (loader, fileName, node, dependent) => node
+	xhrSettings: (loader, path, settings) => settings || {},
+	dependencies: (loader, path, dependent) => dependent.payload.dependencies,
+	assetNode: (loader, path, node, dependent) => node
 };
 
 const fetchParams = [
-	{ name: "fileName", type: "string", required: true },
+	{ name: "path", type: "string", required: true },
 	{ name: "settings", type: Object, default: null },
 	{ name: "lazy", type: "boolean", default: true },
+	{ name: "processors", type: Object, default: null }
+];
+
+const isParams = [
+	{ name: "keys", type: a => !isObject(a), coalesce: true },
 	{ name: "processors", type: Object, default: null }
 ];
 
@@ -45,20 +50,25 @@ export default class AssetLoader {
 		this.assetsMap = {};
 		this.xhrManager = manager || new XHRManager();
 		this.processors = Object.assign({}, DEFAULT_PROCESSORS, processors);
-		this.enqueuedAssets = {};
+		this.track = {
+			requested: {},
+			enqueued: {},
+			successful: {},
+			failed: {}
+		};
 	}
 
 	prefetch(...args) {
 		let {
-			fileName,
+			path,
 			settings,
 			lazy,
 			processors
 		} = resolveArgs(args, fetchParams, "allowSingleSource");
 
-		fileName = this.process("fileName", processors, fileName)();
+		path = this.process("path", processors, path)();
 
-		this._logEnqueue(fileName);
+		this._logPath(path);
 
 		if (this.asyncBufferActive) {
 			return this.bufferAsync(
@@ -69,10 +79,10 @@ export default class AssetLoader {
 		}
 
 		const prefetch = new Promise(resolve => {
-			this._fetch(fileName, settings, lazy, processors)
+			this._fetch(path, settings, lazy, processors)
 				.then(response => {
 					resolve(
-						this.process("prefetchResponse", processors, fileName)(response)
+						this.process("prefetchResponse", processors, path)(response)
 					);
 					this.resumeAsync();
 				});
@@ -84,15 +94,15 @@ export default class AssetLoader {
 
 	fetch(...args) {
 		let {
-			fileName,
+			path,
 			settings,
 			lazy,
 			processors
 		} = resolveArgs(args, fetchParams, "allowSingleSource");
 
-		fileName = this.process("fileName", processors, fileName)();
+		path = this.process("path", processors, path)();
 
-		this._logEnqueue(fileName);
+		this._logPath(path);
 
 		if (this.asyncBufferActive) {
 			return this.bufferAsync(
@@ -103,10 +113,10 @@ export default class AssetLoader {
 		}
 
 		return new Promise(resolve => {
-			this._fetch(fileName, settings, lazy, processors)
+			this._fetch(path, settings, lazy, processors)
 				.then(response => {
 					resolve(
-						this.process("fetchResponse", processors, fileName)(response)
+						this.process("fetchResponse", processors, path)(response)
 					);
 				});
 		});
@@ -114,15 +124,15 @@ export default class AssetLoader {
 
 	async fetchModule(...args) {
 		let {
-			fileName,
+			path,
 			settings,
 			lazy,
 			processors
 		} = resolveArgs(args, fetchParams, "allowSingleSource");
 
-		fileName = this.process("fileName", processors, fileName)();
+		path = this.process("path", processors, path)();
 
-		this._logEnqueue(fileName);
+		this._logPath(path);
 
 		if (this.asyncBufferActive) {
 			return this.bufferAsync(
@@ -135,10 +145,10 @@ export default class AssetLoader {
 		const flatTreeMap = {};
 		let cached = true;
 
-		const fetch = async name => {
-			name = this.process("fileName", processors, name)();
+		const fetch = async p => {
+			p = this.process("path", processors, p)();
 
-			const response = await this.fetch(name, settings, lazy, processors);
+			const response = await this.fetch(p, settings, lazy, processors);
 			if (!response.success)
 				return null;
 
@@ -146,11 +156,11 @@ export default class AssetLoader {
 			cached = cached && response.cached;
 
 			const dependent = response.payload,
-				node = mkAssetNode(this, name, dependent, processors);
+				node = mkAssetNode(this, p, dependent, processors);
 
-			flatTreeMap[name] = node;
+			flatTreeMap[p] = node;
 
-			const dependencies = this.process("dependencies", processors, name)(response);
+			const dependencies = this.process("dependencies", processors, p)(response);
 
 			if (!Array.isArray(dependencies))
 				return node;
@@ -161,7 +171,7 @@ export default class AssetLoader {
 					continue;
 				}
 
-				const dependencyName = this.process("fileName", processors, dependencies[i])();
+				const dependencyName = this.process("path", processors, dependencies[i])();
 
 				if (flatTreeMap.hasOwnProperty(dependencyName)) {
 					node.dependencies.push(flatTreeMap[dependencyName]);
@@ -179,7 +189,7 @@ export default class AssetLoader {
 			return node;
 		};
 
-		const nde = await fetch(fileName, true, null);
+		const nde = await fetch(path, true, null);
 
 		if (!nde)
 			return mkResponseNodeError();
@@ -187,38 +197,42 @@ export default class AssetLoader {
 		return mkResponseNodeSuccess(nde, cached);
 	}
 
-	_fetch(fileName, settings = null, lazy = true, processors = null) {
-		const xhrSettings = this.process("xhrSettings", processors, fileName)(settings);
+	_fetch(path, settings = null, lazy = true, processors = null) {
+		const xhrSettings = this.process("xhrSettings", processors, path)(settings);
 
 		return new Promise(resolve => {
-			if (lazy && this.assetsMap.hasOwnProperty(fileName)) {
+			if (lazy && this.assetsMap.hasOwnProperty(path)) {
 				return resolve(
-					mkResponseNodeSuccess(this.assetsMap[fileName], true)
+					mkResponseNodeSuccess(this.assetsMap[path], true)
 				);
 			}
 
 			this.xhrManager.use(xhrSettings)
-				.get(fileName)
+				.get(path)
 				.success(d => {
-					delete this.enqueuedAssets[fileName];
+					delete this.track.enqueued[path];
+					delete this.track.failed[path];
+					this.track.successful[path] = true;
 
-					if (!this.assetsMap.hasOwnProperty(fileName))
-						this.assets.push(fileName);
-					this.assetsMap[fileName] = d;
+					if (!this.assetsMap.hasOwnProperty(path))
+						this.assets.push(path);
+					this.assetsMap[path] = d;
 
 					resolve(
 						mkResponseNodeSuccess(d, false)
 					);
 				})
 				.fail(_ => {
-					delete this.enqueuedAssets[fileName];
+					delete this.track.enqueued[path];
+					this.track.failed[path] = true;
 					resolve(mkResponseNodeError());
 				});
 		});
 	}
 
-	_logEnqueue(fileName) {
-		this.enqueuedAssets[fileName] = true;
+	_logPath(path) {
+		this.track.requested[path] = true;
+		this.track.enqueued[path] = true;
 	}
 
 	requestIdle(callback, ...args) {
@@ -242,9 +256,44 @@ export default class AssetLoader {
 		return this.requestIdle(_ => getTime() - startTime);
 	}
 
-	isEnqueued(fileName, processors) {
-		fileName = this.process("fileName", processors, fileName)();
-		return this.enqueuedAssets.hasOwnProperty(fileName);
+	isRequested(path, processors) {
+		path = this.process("path", processors, path)();
+		return this.track.requested.hasOwnProperty(path);
+	}
+
+	isEnqueued(path, processors) {
+		path = this.process("path", processors, path)();
+		return this.track.enqueued.hasOwnProperty(path);
+	}
+
+	isSuccessful(path, processors) {
+		path = this.process("path", processors, path)();
+		return this.track.successful.hasOwnProperty(path);
+	}
+
+	isFailed(path, processors) {
+		path = this.process("path", processors, path)();
+		return this.track.failed.hasOwnProperty(path);
+	}
+
+	isAny(path, ...args) {
+		const {
+			keys,
+			processors
+		} = resolveArgs(args, isParams);
+
+		path = this.process("path", processors, path)();
+		testTracking(path, this.track, keys).some(Boolean);
+	}
+
+	isAll(path, ...args) {
+		const {
+			keys,
+			processors
+		} = resolveArgs(args, isParams);
+
+		path = this.process("path", processors, path)();
+		testTracking(path, this.track, keys).every(Boolean);
 	}
 
 	bufferAsync(queue, callback, args = []) {
@@ -284,13 +333,13 @@ export default class AssetLoader {
 		}
 	}
 
-	process(type, processors, fileName) {
+	process(type, processors, path) {
 		return (...args) => {
 			processors = isObject(processors) ? processors : this.processors;
 
 			const processor = processors[type] || this.processors[type];
 			if (typeof processor == "function")
-				return processor(this, fileName, ...args);
+				return processor(this, path, ...args);
 	
 			return null;
 		};
@@ -327,19 +376,19 @@ export default class AssetLoader {
 
 let assetNodeId = 0;
 
-function mkAssetNode(loader, fileName, dependent, processors) {
+function mkAssetNode(loader, path, dependent, processors) {
 	const node = {
 		item: dependent,
 		dependencies: [],
 		locale: null,
 		name: null,
-		fileName: fileName,
+		path: path,
 		// Internal data; do not modify
 		isAssetNode: true,
 		id: assetNodeId++
 	};
 
-	loader.process("assetNode", processors, fileName)(node, dependent);
+	loader.process("assetNode", processors, path)(node, dependent);
 
 	return node;
 }
@@ -362,4 +411,19 @@ function mkResponseNodeSuccess(payload, cached) {
 		// Internal data; do not modify
 		isResponseNode: true
 	};
+}
+
+function testTracking(path, trackers, keys) {
+	const result = [];
+
+	for (let i = keys.length - 1; i >= 0; i--) {
+		const key = typeof keys[i] == "string" ? keys[i].toLowerCase() : null;
+
+		if (!trackers.hasOwnProperty(key))
+			continue;
+
+		result.push(trackers[key].hasOwnProperty(path));
+	} 
+
+	return result;
 }
