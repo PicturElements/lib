@@ -6,7 +6,8 @@ import {
 	isInstance,
 	isConstructor,
 	isIterable,
-	isArrayLike
+	isArrayLike,
+	isEnv
 } from "../src/is";
 
 test("isDirectInstanceof", () => {
@@ -89,4 +90,8 @@ test("isArrayLike", () => {
 	expect(isArrayLike(null)).toBe(false);
 	expect(isArrayLike("")).toBe(true);
 	expect(isArrayLike(console.log)).toBe(false);
+});
+
+test("isEnv", () => {
+	expect(isEnv("test")).toBe(true);
 });
