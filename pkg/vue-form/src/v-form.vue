@@ -12,7 +12,7 @@
 					Checkbox(
 						:class="cell.class.input"
 						:input="cell.input"
-						:label="cell.label")
+						:label="res(cell.label)")
 						template(v-slot:icon="inp")
 							slot(:name="`${cell.input.name}-icon`" v-bind="inp")
 								slot(name="checkbox-icon" v-bind="inp")
@@ -20,13 +20,13 @@
 					Count(
 						:class="cell.class.input"
 						:input="cell.input"
-						:symbols="cell.symbols")
+						:symbols="res(cell.symbols)")
 						template(v-slot:down-symbol="inp")
-							slot(:name="`${cell.input.name}-down-symbol`" v-bind="{ input: inp, symbols: cell.symbols}")
-								slot(name="count-down-symbol" v-bind="{ input: inp, symbols: cell.symbols}")
+							slot(:name="`${cell.input.name}-down-symbol`" v-bind="inp")
+								slot(name="count-down-symbol" v-bind="inp")
 						template(v-slot:up-symbol="inp")
-							slot(:name="`${cell.input.name}-up-symbol`" v-bind="{ input: inp, symbols: cell.symbols}")
-								slot(name="count-up-symbol" v-bind="{ input: inp, symbols: cell.symbols}")
+							slot(:name="`${cell.input.name}-up-symbol`" v-bind="inp")
+								slot(name="count-up-symbol" v-bind="inp")
 				template(v-else-if="cell.input.type == 'dropdown'")
 					Dropdown(
 						:class="cell.class.input"
@@ -78,7 +78,7 @@
 				const out = [];
 
 				if (depth > 1)
-					throw new RangeError("Form construction failed: input data nested past 1 level");
+					throw new RangeError("Form construction failed: input data nested past one level");
 
 				for (let i = 0, l = inps.length; i < l; i++) {
 					const cell = inps[i];
