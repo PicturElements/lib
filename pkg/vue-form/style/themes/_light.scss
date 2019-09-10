@@ -1,0 +1,39 @@
+// colors
+$input-color: #1e2021;
+$input-focus-color: #1e2021;
+$input-error-color: #9a3131;
+$input-autofill-color: #276a9e;
+
+// backgrounds
+$input-background: white;
+$input-focus-background: #eee;
+$input-error-background: #ffe1e1;
+$input-autofill-background: #edf7ff;
+
+$input-border-width: 1px;
+$input-border-style: solid;
+$input-border-color: #dadada;
+$input-border: $input-border-width $input-border-style $input-border-color;
+
+$input-focus-border-width: 1px;
+$input-focus-border-style: solid;
+$input-focus-border-color: #1e2021;
+$input-focus-border: $input-focus-border-width $input-focus-border-style $input-focus-border-color;
+
+$input-autofill-border-width: 1px;
+$input-autofill-border-style: solid;
+$input-autofill-border-color: #74b4e6;
+$input-autofill-border: $input-autofill-border-width $input-autofill-border-style $input-autofill-border-color;
+
+$input-error-border-width: 1px;
+$input-error-border-style: solid;
+$input-error-border-color: #e02929;
+$input-error-border: $input-error-border-width $input-error-border-style $input-error-border-color;
+
+// misc variables
+
+// dropdown
+$dropdown-height: 30px;
+$dropdown-padding: 10px;
+$dropdown-mobile-padding: 30px;
+$dropdown-separator-border: 1px solid rgba(128, 128, 128, 0.25);

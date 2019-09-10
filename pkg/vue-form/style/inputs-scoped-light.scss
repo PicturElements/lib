@@ -1,0 +1,7 @@
+@import "./utils.scss";
+@import "./themes/light.scss";
+@import "./inputs/all.scss";
+
+.v-form.light {
+	@include all;
+}

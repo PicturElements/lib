@@ -1,0 +1,47 @@
+@mixin count {
+	.inp-count {
+		height: 30px;
+		width: 100px;
+		border: $input-border;
+		border-radius: 3px;
+	
+		.count-btn {
+			width: 30px;
+			height: 100%;
+			user-select: none;
+			border: none;
+			outline: none;
+			background: transparent;
+			cursor: pointer;
+	
+			&:active {
+				background: $input-focus-background;
+				color: inherit;
+			}
+	
+			&.down {
+				border-right: inherit;
+			}
+	
+			&.up {
+				border-left: inherit;
+			}
+		}
+	
+		input {
+			width: 30px;
+			border: none;
+			padding: 0 5px;
+			text-align: center;
+			background: transparent;
+			font-size: 85%;
+			outline: none;
+			margin: 0;
+			cursor: text;
+	
+			&:focus {
+				background: $input-focus-background;
+			}
+		}
+	}
+}

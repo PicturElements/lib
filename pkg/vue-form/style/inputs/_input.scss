@@ -1,0 +1,44 @@
+@mixin input {
+	.inp-input {
+		input {
+			width: 100%;
+			padding: 6px 8px;
+			background: transparent;
+			border: $input-border;
+			font-size: 95%;
+			outline: none;
+	
+			&:focus {
+				border: $input-focus-border;
+			}
+	
+			@include autofill($input-autofill-background, $input-autofill-color, $input-autofill-border);
+		}
+	
+		.validation-msg {
+			display: none;
+			position: absolute;
+			bottom: 100%;
+			left: 0;
+			width: 100%;
+			font-size: 80%;
+			padding: 3px 7px;
+			background: $input-focus-border-color;
+			color: $input-background;
+		}
+	
+		&.error {
+			input {
+				&:not(:focus) {
+					background: $input-error-background;
+					border: $input-error-border;
+					@include autofill($input-error-background, $input-error-color, $input-error-border);
+				}
+	
+				&:focus + .validation-msg {
+					display: block;
+				}
+			}
+		}
+	}
+}

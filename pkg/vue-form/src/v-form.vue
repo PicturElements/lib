@@ -1,5 +1,5 @@
 <template lang="pug">
-	.form
+	.v-form
 		.input-row(v-for="row in processedRows")
 			.input-box(v-for="cell in row" :class="cell.class.box")
 				p.title(
@@ -16,7 +16,7 @@
 						template(v-slot:icon="inp")
 							slot(:name="`${cell.input.name}-icon`" v-bind="inp")
 								slot(name="checkbox-icon" v-bind="inp")
-				template(v-if="cell.input.type == 'count'")
+				template(v-else-if="cell.input.type == 'count'")
 					Count(
 						:class="cell.class.input"
 						:input="cell.input"

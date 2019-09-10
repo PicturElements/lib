@@ -1,0 +1,13 @@
+@import "./input.scss";
+@import "./checkbox.scss";
+@import "./count.scss";
+@import "./dropdown.scss";
+@import "./radio.scss";
+
+@mixin all {
+	@include input;
+	@include checkbox;
+	@include count;
+	@include dropdown;
+	@include radio;
+}

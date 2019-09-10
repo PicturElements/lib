@@ -1,0 +1,139 @@
+@mixin dropdown {
+	.inp-dropdown {
+		position: relative;
+		width: 100%;
+		height: $dropdown-height;
+		max-width: 100%;
+		border: $input-border;
+		outline: none;
+		text-align: left;
+		padding: 0;
+		background: $input-background;
+		user-select: none;
+	
+		.mobi-focus,
+		.focus-probe {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			border: none;
+			outline: none;
+			opacity: 0;
+			cursor: pointer;
+		}
+	
+		.mobi-focus {
+			display: none;
+		}
+	
+		.dropdown-option {
+			line-height: $dropdown-height;
+			height: $dropdown-height;
+			padding: 0 $dropdown-padding;
+			white-space: nowrap;
+			cursor: pointer;
+	
+			&.dropdown-active-option {
+				padding-right: $dropdown-height + $dropdown-padding;
+	
+				> .icon {
+					position: absolute;
+					top: 0;
+					right: 0;
+					height: 100%;
+				}
+			}
+	
+			&.selected .dropdown-option-inner {
+				opacity: 0.5;
+			}
+	
+			+ .dropdown-option {
+				border-top: $dropdown-separator-border;
+			}
+	
+			.dropdown-option-inner {
+				height: 100%;
+			}
+	
+			.placeholder {
+				opacity: 0.6;
+				font-style: italic;
+			}
+		}
+	
+		.dropdown-list {
+			display: none;
+			position: absolute;
+			box-sizing: content-box;
+			border: inherit;
+			background: inherit;
+			overflow: auto;
+		}
+	
+		&:not(.open):not(.error) {
+			background: transparent !important;
+		}
+	
+		&.open {
+			.focus-probe {
+				height: 0;
+			}
+	
+			.dropdown-list {
+				display: block;
+				z-index: 100000;
+			}
+		}
+	
+		&.error {
+			&:not(.open) {
+				background: $input-error-background;
+				border: $input-error-border;
+	
+				.placeholder {
+					opacity: 1;
+				}
+			}
+		}
+	}
+	
+	@include mobile {
+		.inp-dropdown {
+			&.open {
+				.collapse-target {
+					position: fixed;
+					top: 0;
+					left: 0;
+					width: 100%;
+					height: 100%;
+					background: inherit;
+					opacity: 0.8;
+					z-index: 100000;
+				}
+	
+				.dropdown-list {
+					position: fixed;
+					top: 50%;
+					left: $dropdown-mobile-padding;
+					right: $dropdown-mobile-padding;
+					width: auto;
+					max-height: 90%;
+					max-height: calc(100% - #{$dropdown-mobile-padding * 2});
+					transform: translateY(-50%);
+					z-index: 100001;
+				}
+			}
+	
+			.mobi-focus {
+				display: block;
+			}
+	
+			.focus-probe {
+				display: none;
+			}
+		}
+	}
+}
