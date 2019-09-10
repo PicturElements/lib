@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/vue-form",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Powerful Vue forms based on @qtxr/form",
   "main": "index.js",
   "scripts": {
@@ -28,7 +28,7 @@
   },
   "devDependencies": {},
   "qlib": {
-    "pushes": 20,
+    "pushes": 21,
     "expose": {
       "scripts": [
         "index.mjs"

@@ -1,13 +1,13 @@
 <template lang="pug">
 	.input-wrapper.count.inp-count.f
-		button.count-btn.f.c.down.nshrink(@click="down")
+		button.count-btn.down.f.c.nshrink(@click="down")
 			slot(name="down-symbol") {{ res(symbols.down) || "-" }}
 		input.f-grow(
 			type="tel" 
 			:value="input.value"
 			@keydown="check"
 			@change="change")
-		button.count-btn.f.c.up.nshrink(@click="up")
+		button.count-btn.up.f.c.nshrink(@click="up")
 			slot(name="up-symbol") {{ res(symbols.up) || "+" }}
 </template>
 
