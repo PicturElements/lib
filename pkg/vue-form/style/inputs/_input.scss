@@ -32,6 +32,7 @@
 				&:not(:focus) {
 					background: $input-error-background;
 					border: $input-error-border;
+					color: $input-error-color;
 					@include autofill($input-error-background, $input-error-color, $input-error-border);
 				}
 	
