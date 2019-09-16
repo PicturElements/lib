@@ -61,7 +61,6 @@ export default class Color {
 		return new Color(Color.HSLAtoRGBA(hsla), this.space);
 	}
 
-
 	// %%%%%%%%%% STATIC HELPERS %%%%%%%%%%
 	static stringify(rgbaOrColor, type) {
 		const c = (rgbaOrColor instanceof Color) ? rgbaOrColor.rgba : coerceToRGBA(rgbaOrColor);
@@ -86,8 +85,6 @@ export default class Color {
 			}
 			case "rgb":
 				return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
-			case "rgba":
-			/* fall through */
 			default:
 				return `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${c[3]})`;
 		}
@@ -589,7 +586,6 @@ function parseGradientStop(stopFmt) {
 	return stopArr || currentStop;
 }
 
-
 // %%%%%%%%%% COLOR PARSING HELPERS %%%%%%%%%%
 // ========== HEX ==========
 // Assumes string is well formed
@@ -685,7 +681,6 @@ function parseCMYKHelper(str) {
 	return paramsData.params;
 }
 
-
 // %%%%%%%%%% COLOR PARSING HELPERS %%%%%%%%%%
 
 // Creates an object of numeric parameters
@@ -750,7 +745,6 @@ function coerceParse(arrOrStr) {
 
 	return parsed.rgba;
 }
-
 
 // %%%%%%%%%% COLOR CNVERSION HELPERS %%%%%%%%%%
 // ========== HSL(A) ==========
