@@ -92,11 +92,12 @@ const browserHints = [
 		["Marshmallow", new Version("6.0.1")],
 		["Nougat", new Version("7.1.2")],
 		["Oreo", new Version("8.1")],
-		["Android P", new Version("9")],
-		["Android Q", new Version("10000")]
+		["Pie", new Version("9")],
+		["Android 10", new Version("10")],
+		["Future Android Version", new Version("1000")]
 	];
 
-class Agent {
+export default class Agent {
 	constructor(agent) {
 		this.parse(agent);
 	}
@@ -278,5 +279,3 @@ function getVersionNickname(versionStr, nickArr) {
 
 	return last;
 }
-
-export default Agent;
