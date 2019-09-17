@@ -315,7 +315,7 @@ Form.extractors = {
 
 };
 
-// value, target value
+// value, reference value
 Form.comparators = {
 	deep: equals
 };

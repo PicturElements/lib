@@ -35,7 +35,7 @@ export default class Input extends Hookable {
 		this.trigger = null;
 		this.update = null;
 		this.extract = null;
-		this.comparator = null;
+		this.compare = null;
 
 		// Propagation data
 		this.propagate = null;
@@ -48,7 +48,7 @@ export default class Input extends Hookable {
 		this.hookAll(options.hooks);
 		this.checkKey = mkChecker(this.checkKey, "check");
 		this.checkWord = mkChecker(this.checkWord, "validate");
-		this.comparator = mkComparator(this.comparator);
+		this.compare = mkComparator(this.compare);
 
 		this.form = form;
 		this.default = this.value;
@@ -64,10 +64,17 @@ export default class Input extends Hookable {
 	[TRIGGER](value) {
 		// If value is null, don't update internal value
 		if (value !== null) {
+			const oldVal = this.value;
+
 			if (typeof this.process == "function")
 				this.value = this.process(value, this, this.form.inputs);
 			else
 				this.value = value;
+
+			if (!this.compare(oldVal, this.value)) {
+				this.form.callHooks("change", oldVal, this.value);
+				this.callHooks("change", oldVal, this.value);
+			}
 		}
 
 		this.initialized = true;
@@ -139,11 +146,11 @@ function mkChecker(checker, checkerKey) {
 function mkComparator(precursor) {
 	switch (typeof precursor) {
 		case "string":
-			return (val, targ) => Boolean(val && targ) && val[precursor] == targ[precursor];
+			return (a, b) => Boolean(a && b) && a[precursor] == b[precursor];
 		case "function":
-			return (val, targ) => precursor(val, targ);
+			return (a, b) => precursor(a, b);
 		default:
-			return (val, targ) => val == targ;
+			return (a, b) => a == b;
 	}
 }
 
