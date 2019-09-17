@@ -111,8 +111,9 @@
 								input: cellProcessed.class
 							} : cellProcessed.class || {};
 						}
-
-						form.connect(cellProcessed.name, cellProcessed.opt);
+						
+						if (!form.inputs.hasOwnProperty(cellProcessed.name))
+							form.connect(cellProcessed.name, cellProcessed.opt);
 						cellProcessed.input = form.inputs[cellProcessed.name];
 
 						out.push(depth ? cellProcessed : [cellProcessed]);
