@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/form",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "Flexible, pluggable, and modular form library",
   "main": "index.js",
   "scripts": {
@@ -30,7 +30,7 @@
   },
   "devDependencies": {},
   "qlib": {
-    "pushes": 10,
+    "pushes": 11,
     "expose": {
       "scripts": [
         "index.mjs"

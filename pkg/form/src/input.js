@@ -72,7 +72,7 @@ export default class Input extends Hookable {
 				this.value = value;
 
 			if (!this.compare(oldVal, this.value)) {
-				this.form.callHooks("change", oldVal, this.value);
+				this.form.callHooks("change", this, oldVal, this.value);
 				this.callHooks("change", oldVal, this.value);
 			}
 		}
