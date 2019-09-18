@@ -17,7 +17,7 @@ Every processor receives the following arguments:
 
   The path for the current requested resource. For the path processor, this may not be a formatted name, but for any other processor this argument is the processed name from the path processor
 
-* **arguments `any[]`**
+* **arguments `...any[]`**
   
   Any number of applicable arguments
 
@@ -61,7 +61,7 @@ Fetch a module and all its dependencies. Returns an error object if any asset fa
 ## Other methods
 Below are miscellaneous (utility) methods: 
 
-### #traverse `(rootNode: asset node, callback(node, name, rootNode), tail?: boolean) -> success`
+### #traverse `(rootNode: asset node, callback(node, rootNode, depth: number), tail?: boolean) -> success`
 Traverses an assetNode and its dependencies. It only visits each node once, to properly handle circular references. Gracefully fails if the provided assetNode isn't an asset node or if the callback is not a function and returns `false`. Otherwise returns `true`. If the `tail` flag is truthy, the traversal is tail recursive.
 
 ### requestIdle `(callback: function, ...args)`
@@ -83,10 +83,10 @@ Returns true if there's a request that's successfully completed with the path. T
 Returns true if there's a request that's currently failed with the path. The path will be processed within this function.
 
 ### isAny `(path, ...keys: string[], processors?: object) -> boolean`
-Applies tests for `requested`, `enqueued`, `successful`, and `failed` (analogous with the functions above) Returns true if any test returns true. The path will be processed within this function.
+Applies tests for `requested`, `enqueued`, `successful`, and `failed` (analogous with the functions above). Returns true if any test returns true. The path will be processed within this function.
 
 ### isAll `(path, ...keys: string[], processors?: object) -> boolean`
-Applies tests for `requested`, `enqueued`, `successful`, and `failed` (analogous with the functions above) Returns true if all tests return true. The path will be processed within this function.
+Applies tests for `requested`, `enqueued`, `successful`, and `failed` (analogous with the functions above). Returns true if all tests return true. The path will be processed within this function.
 
 ---
 
@@ -94,7 +94,7 @@ Applies tests for `requested`, `enqueued`, `successful`, and `failed` (analogous
 The below methods are primarily meant to be used internally, but can also be used by third parties:
 
 ### _fetch `(path, settings?: object, lazy?: boolean, processors?: object) -> promise<response node>`
-The internal interface used to fetch data. Calling this method directly will not buffer requests if the async buffer is active; nor will arguments be resolved automatically.
+The internal interface used to fetch data. Calling this method directly will not buffer requests if the async buffer is active, nor will arguments be resolved automatically.
 
 ### bufferAsync `(bufferPartition: string, callback(...args) -> promise, ...args) -> promise<callback return>`
 This method buffers fetches for later use. The bufferPartition may be any of the following:

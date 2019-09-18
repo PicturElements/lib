@@ -148,6 +148,9 @@ export default class AssetLoader {
 		const fetch = async p => {
 			p = this.process("path", processors, p)();
 
+			if (flatTreeMap.hasOwnProperty(p))
+				return flatTreeMap[p];
+
 			const response = await this.fetch(p, settings, lazy, processors);
 			if (!response.success)
 				return null;
@@ -156,11 +159,11 @@ export default class AssetLoader {
 			cached = cached && response.cached;
 
 			const dependent = response.payload,
-				node = mkAssetNode(this, p, dependent, processors);
+				node = mkAssetNode(this, p, dependent, processors),
+				dependencies = this.process("dependencies", processors, p)(response, node),
+				requests = [];
 
 			flatTreeMap[p] = node;
-
-			const dependencies = this.process("dependencies", processors, p)(response);
 
 			if (!Array.isArray(dependencies))
 				return node;
@@ -171,14 +174,13 @@ export default class AssetLoader {
 					continue;
 				}
 
-				const dependencyName = this.process("path", processors, dependencies[i])();
+				requests.push(fetch(dependencies[i]));
+			}
 
-				if (flatTreeMap.hasOwnProperty(dependencyName)) {
-					node.dependencies.push(flatTreeMap[dependencyName]);
-					continue;
-				}
+			const responses = await Promise.all(requests);
 
-				const dependency = await fetch(dependencyName);
+			for (let i = 0, l = responses.length; i < l; i++) {
+				const dependency = responses[i];
 
 				if (!dependency)
 					return null;
@@ -189,7 +191,7 @@ export default class AssetLoader {
 			return node;
 		};
 
-		const nde = await fetch(path, true, null);
+		const nde = await fetch(path);
 
 		if (!nde)
 			return mkResponseNodeError();
@@ -351,9 +353,9 @@ export default class AssetLoader {
 
 		const visited = {};
 
-		const traverse = node => {
+		const traverse = (node, depth) => {
 			if (!tail)
-				callback(node, rootNode);
+				callback(node, rootNode, depth);
 
 			for (let i = 0, l = node.dependencies.length; i < l; i++) {
 				const child = node.dependencies[i];
@@ -361,14 +363,14 @@ export default class AssetLoader {
 					continue;
 
 				visited[child.id] = true;
-				traverse(child);
+				traverse(child, depth + 1);
 			}
 
 			if (tail)
-				callback(node, rootNode);
+				callback(node, rootNode, depth);
 		};
 
-		traverse(rootNode);
+		traverse(rootNode, 0);
 
 		return true;
 	}
