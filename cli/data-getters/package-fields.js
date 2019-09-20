@@ -20,7 +20,7 @@ const getPackageFields = _ => ([
 		value: "",
 		validate: input => /^[a-z0-9-._~()'!*:@,;\/]+$/i.test(input),
 		process: input => coerceFilePath(input),
-		precedence: 10
+		precedence: 0
 	}, {
 		name: "scripts",
 		value: {
@@ -44,7 +44,7 @@ const getPackageFields = _ => ([
 	}, {
 		name: "author",
 		value: "qtxr",
-		precedence: 10
+		precedence: 0
 	}, {
 		name: "license",
 		value: "MIT",
@@ -71,17 +71,22 @@ const getPackageFields = _ => ([
 		name: "qlib",
 		fields: [
 			{
+				name: "pushes",
+				value: 0,
+				precedence: -1
+			},
+			{
 				name: "expose",
 				fields: [
 					{
 						name: "scripts",
-						value: ["index.mjs"],
-						process: input => splitOnComma(input).map(f => coerceFilePath(f, "mjs")),
+						value: ["connect/feed.js"],
+						process: input => splitOnComma(input).map(f => coerceFilePath(f, "js")),
 						precedence: 0
 					}, {
 						name: "styles",
 						value: [],
-						process: input => splitOnComma(input).map(f => coerceFilePath(f, "scss")),
+						process: input => splitOnComma(input).map(f => coerceFilePath(f, "css")),
 						precedence: 0
 					}
 				]

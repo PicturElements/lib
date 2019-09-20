@@ -1,5 +1,13 @@
+// Utilities pertinent to CLI, the file system, and OS in general
+
 const fs = require("fs");
-const cp = require('child_process');
+const path = require("path");
+const cp = require("child_process");
+const {
+	promisify,
+	tryify,
+	findByKey
+} = require("../utils");
 
 function ask(rl, question) {
 	return new Promise(resolve => {
@@ -12,194 +20,141 @@ function ask(rl, question) {
 const statParamMap = { err: 0, stats: 1 };
 function stat(...args) {
 	return promisify(
-		fs.stat, statParamMap, "stats",
-		args
-	);
+		fs.stat, statParamMap, "stats"
+	)(args);
 }
 
 const mkdirParamMap = { err: 0 };
 function mkdir(...args) {
 	return promisify(
-		fs.mkdir, mkdirParamMap, null,
-		args
-	);
+		fs.mkdir, mkdirParamMap, null
+	)(args);
 }
 
 const rmdirParamMap = { err: 0 };
 function rmdir(...args) {
 	return promisify(
-		fs.rmdir, rmdirParamMap, null,
-		args
-	);
+		fs.rmdir, rmdirParamMap, null
+	)(args);
 }
 
-const writeFileParamMap = { err: 0 };
+const readdirParamMap = { err: 0, files: 1 };
+function readdir(...args) {
+	return promisify(
+		fs.readdir, readdirParamMap, "files"
+	)(args);
+}
+
 function writeFile(...args) {
 	return promisify(
-		fs.writeFile, writeFileParamMap, "err",
-		[...args, (err) => !err]
-	);
+		fs.writeFile, null, null, 
+		(resolve, err) => resolve(!err)
+	)(args);
 }
 
 const execParamMap = { err: 0, stdout: 1, stderr: 2 };
 function exec(...args) {
 	return promisify(
-		cp.exec, execParamMap, "stdout",
-		args
-	);
-}
-
-function execCwd(cmd, options, callback) {
-	options = Object.assign({
-		cwd: process.cwd()
-	}, options);
-
-	return exec(cmd, options, callback);
+		cp.exec, execParamMap, "stdout"
+	)(args);
 }
 
 const spawnParamMap = { process: 0 };
 function spawn(...args) {
 	return promisify(
 		cp.spawn, spawnParamMap, "process",
-		args
-	);
+		{
+			mode: "manual",
+			callback(resolve, process) {
+				process.on("exit", (code, signal) => {
+					resolve({
+						code,
+						signal
+					});
+				});
+			}
+		}
+	)(args);
 }
 
-// This function assumes that the last parameter
-// in the supplied function is a callback,
-// and similarly that the last item in the
-// rest parameters is a callback that will be used
-// in promisify itself instead of being passed to
-// the function. If this last parameter is null,
-// it will also be cut from the argument list
-function promisify(func, paramNamesOrParamMap, returnKeyOrReturnIndex, args) {
-	const lastArg = args[args.length - 1];
-	let callback = null;
+function exists(url) {
+	return promisify(
+		fs.access, null, null,
+		(resolve, err) => resolve(!err)
+	)([url, fs.constants.F_OK]);
+}
 
-	if (typeof lastArg == "function" || lastArg === null)
-		callback = args.splice(-1)[0];
+// Intended to open a descriptor for R/W and prevent race conditions, as
+// specified here: https://nodejs.org/api/fs.html#fs_fs_access_path_mode_callback
+async function findFileDescriptor(...paths) {
+	for (const url of paths) {
+		const descriptor = await getFileDescriptor(url);
 
+		if (descriptor > -1)
+			return descriptor;
+	}
+
+	return -1;
+}
+
+function getFileDescriptor(url, flags = "r", mode = 0o666) {
 	return new Promise(resolve => {
-		func(...args, (...a) => {
-			if (typeof callback == "function")
-				resolve(callback(...a));
-			else if (isObject(paramNamesOrParamMap)) {	// Parameter name/index map
-				if (a[paramNamesOrParamMap.err])
-					return resolve(null);
-
-				const retIndex = typeof returnKeyOrReturnIndex == "string" ? paramNamesOrParamMap[returnKeyOrReturnIndex] : returnKeyOrReturnIndex;
-				resolve(a[retIndex]);
-			} else {									// Parameter name list
-				const namedArgs = nameArgs(a, paramNamesOrParamMap);
-
-				if (namedArgs.err)
-					return resolve(null);
-				
-				resolve(namedArgs[returnKeyOrReturnIndex]);
-			}
-		});
+		fs.open(url, flags, mode, (err, descriptor) => resolve(err ? -1 : descriptor));
 	});
+}
+
+function closeFile(descriptor) {
+	return new Promise(resolve => {
+		fs.close(descriptor, err => resolve(!err));
+	});
+}
+
+async function readFile(...paths) {
+	const descriptor = await findFileDescriptor(...paths);
+
+	if (descriptor == -1)
+		return null;
+
+	const buffer = await readFileHelper(descriptor);
+	await closeFile(descriptor);
+	return buffer;
+}
+
+async function readFileUTF(...paths) {
+	const descriptor = await findFileDescriptor(...paths);
+	
+	if (descriptor == -1)
+		return null;
+	
+	const data = await readFileHelper(descriptor, "utf8");
+	await closeFile(descriptor);
+	return data;
+}
+
+// Recommended: supply a file descriptor as the accessor
+function readFileHelper(accessor, encoding = null) {
+	return new Promise(resolve => {
+		if (typeof accessor == "number" && accessor < 0)
+			return resolve(null);
+
+		fs.readFile(accessor, encoding, (err, data) => resolve(err ? null : data));
+	});
+}
+
+async function readJSON(...paths) {
+	return JSON.parse(await readFileUTF(...paths)) || {};
+}
+
+async function readJSONNull(...paths) {
+	return JSON.parse(await readFileUTF(...paths)) || null;
+}
+
+async function writeJSON(pth, data, indentStr = "\t") {
+	return writeFile(pth, JSON.stringify(data, null, indentStr));
 }
 
 function chdir(dir) {
 	return tryify(process.chdir, dir);
-}
-
-function tryify(func, ...args) {
-	try {
-		func(...args);
-		return true;
-	} catch (e) {
-		console.log(e);
-		return false;
-	}
-}
-
-function nameArgs(args, argNames) {
-	const len = Math.min(args.length, argNames),
-		out = {};
-
-	for (let i = 0; i < len; i++)
-		out[argNames[i]] = args[i];
-
-	return out;
-}
-
-function isObject(val) {
-	return !!val && Object.getPrototypeOf(val) == Object.prototype;
-}
-
-function resolveVal(val, ...args) {
-	if (typeof val == "function")
-		return val(...args);
-
-	return val;
-}
-
-function coerceNum(num, def) {
-	return typeof num == "number" && !isNaN(num) ? num : def;
-}
-
-// Returns a short string from input as a preview
-function shortPrint(val, maxArrLen = 3, useArrBrackets = true) {
-	switch (typeof val) {
-		case "string":
-			return `"${val}"`;
-		case "boolean":
-		case "number":
-		case "bigint":
-		case "undefined":
-			return String(val);
-		case "symbol":
-			return "Symbol()";
-		case "function":
-			return `function val.name(){}`;
-		case "object":
-			if (val == null)
-				return "null";
-
-			if (isObject(val))
-				return `{ ${shortPrint(Object.keys(val), maxArrLen, false)} }`;
-			else if (Array.isArray(val)) {
-				const arr = val.slice(0, maxArrLen).map(v => shortPrint(v, 1));
-
-				if (arr.length < val.length)
-					arr.push("...");
-
-				return useArrBrackets ? `[${arr.join(", ")}]` : arr.join(", ");
-			} else
-				return val.constructor.name;
-	}
-
-	return "";
-}
-
-function repeat(str, count = 0) {
-	str = String(str);
-	count = Number(count) || 0;
-
-	if (count < 0)
-		throw new RangeError("Invalid count value");
-
-	if (!count)
-		return "";
-	
-	let out = "";
-
-	// Pretty much completely ripped off the left-pad implementation
-	// https://github.com/left-pad/left-pad/blob/master/index.js
-	// because it's pretty elegant
-	while (true) {
-		if (count & 1)
-			out += str;
-
-		count >>= 1;
-
-		if (count)
-			str += str;
-		else
-			return out;
-	}
 }
 
 function logNL(str) {
@@ -209,23 +164,11 @@ function logNL(str) {
 		console.log(s);
 }
 
-function coerceFilePath(path, extension = "js") {
-	if (/\.\w+$/.test(path))
-		return path;
+function coerceFilePath(pth, extension = "js") {
+	if (/\.\w+$/.test(pth))
+		return pth;
 
-	return `${path}.${extension}`;
-}
-
-function findByKey(keys, dict) {
-	if (!Array.isArray(keys))
-		return null;
-
-	for (const key of keys) {
-		if (dict.hasOwnProperty(key))
-			return dict[key];
-	}
-
-	return null;
+	return `${pth}.${extension}`;
 }
 
 function calcPrecedence(inp, nameMap, def) {
@@ -256,27 +199,48 @@ function calcPrecedenceFromCLIOptions(options, nameMap, def) {
 	return def;
 }
 
+function error(msg) {
+	console.log("\x1b[37m\x1b[41m%s\x1b[0m", msg);
+}
+
+function join(...paths) {
+	return path.join(...paths);
+}
+
+function joinDir(...paths) {
+	return path.join(__dirname, "..", ...paths);
+}
+
+async function findUrl(...urls) {
+	for (const url of urls) {
+		if (await exists(url))
+			return url;
+	}
+
+	return null;
+}
+
 module.exports = {
 	ask,
 	stat,
 	mkdir,
 	rmdir,
+	readdir,
 	writeFile,
 	exec,
-	execCwd,
 	spawn,
-	promisify,
+	exists,
+	readFile,
+	readJSON,
+	readJSONNull,
+	writeJSON,
 	chdir,
-	tryify,
-	nameArgs,
-	isObject,
-	resolveVal,
-	coerceNum,
-	shortPrint,
-	repeat,
 	logNL,
 	coerceFilePath,
-	findByKey,
 	calcPrecedence,
-	calcPrecedenceFromCLIOptions
+	calcPrecedenceFromCLIOptions,
+	error,
+	join,
+	joinDir,
+	findUrl
 };

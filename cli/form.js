@@ -1,13 +1,15 @@
 const NestedReadlineInterface = require("./nested-readline-interface");
 const {
 	ask,
-	resolveVal,
-	shortPrint,
-	coerceNum,
-	isObject,
 	calcPrecedence,
 	calcPrecedenceFromCLIOptions
 } = require("./utils");
+const {
+	resolveVal,
+	shortPrint,
+	coerceNum,
+	isObject
+} = require("../utils");
 
 const FIELDMAP_SRC_SYMBOL = Symbol("fieldMap source"),
 	DEF_PRECEDENCE = 10,
@@ -26,7 +28,7 @@ const FIELDMAP_SRC_SYMBOL = Symbol("fieldMap source"),
 	}
 
 // Important: this class follows the same function parameter rules
-// as JSONWriter. Check ./json-writer.js for more details
+// as JSONForm. Check ./json-form.js for more details
 
 module.exports = class Form {
 	constructor(fields, config, runtime) {

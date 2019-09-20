@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 const path = require("path");
 
-// CLIs
-const init = require("./init");
-const tst = require("./tst");
+// CLI handlers
+const init = require("./handlers/init");
+const i18n = require("./handlers/i18n");
+
+const tst = require("./handlers/test");
+const tstcli = require("./handlers/tstcli");
+const git = require("./handlers/git");
 
 const HOME_DIR = path.join(__dirname, "..");
 
@@ -11,12 +15,13 @@ function run() {
 	const [execPath, binPath, cmd, ...args] = process.argv,
 		inArgs = [],
 		options = {
+			execPath,
+			binPath,
+			args,
+			argv: process.argv,
 			keyOptions: [],
 			kvOptions: {}
 		};
-
-	if (process.cwd().indexOf(HOME_DIR) == -1)
-		return console.log(`WARNING: refusing to run qlib outside its home directory ${HOME_DIR}`);
 
 	for (const arg of args) {
 		if (arg.indexOf("--") == 0) {
@@ -30,16 +35,37 @@ function run() {
 			inArgs.push(arg);
 	}
 
+	// Global scoped commands
 	switch (cmd) {
 		case "init":
-			init(options, ...inArgs);
-			break;
-		case "tst":
-			tst(options, ...inArgs);
-			break;
-		default:
-			console.log("Please use a valid command");
+			return init(options, ...inArgs);
+		case "i18n":
+			return i18n(options, ...inArgs);
 	}
+
+	// Lib scoped commands
+	if (process.cwd().indexOf(HOME_DIR) == -1)
+		return console.log(`WARNING: refusing to run qlib outside its home directory ${HOME_DIR}`);
+
+	switch (cmd) {
+		// Aliases
+		case "push":
+			return alias(git, options, cmd, inArgs);
+		case "test":
+			return tst(options, ...inArgs);
+		case "tst":
+			return tstcli(options, ...inArgs);
+		case "git":
+			return git(options, ...inArgs);
+		default:
+			return console.log("Please use a valid command");
+	}
+}
+
+function alias(handler, options, cmd, inArgs) {
+	inArgs = [cmd, ...inArgs];
+	options.args = [cmd, ...options.args];
+	return handler(options, ...inArgs);
 }
 
 run();

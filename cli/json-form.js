@@ -1,9 +1,11 @@
 const Form = require("./form");
 const {
-	writeFile,
+	writeFile
+} = require("./utils");
+const {
 	isObject,
 	repeat
-} = require("./utils");
+} = require("../utils");
 
 // JSON field structure:
 // {
@@ -19,21 +21,21 @@ const {
 // Unless specified, all functions will be passed the following parameters:
 // input value, field, writer
 
-module.exports = class JSONWriter extends Form {
+module.exports = class JSONForm extends Form {
 	constructor(fields, config, runtime) {
 		super(fields, config, runtime);
 	}
 
-	serialize(indentChar, custom) {
-		return custom ? structuredSerialize(this.fields, indentChar, true) : JSON.stringify(this.extract(), null, indentChar);
+	serialize(indentStr, custom) {
+		return custom ? structuredSerialize(this.fields, indentStr, true) : JSON.stringify(this.extract(), null, indentStr);
 	}
 
-	async write(url, indentChar, custom) {
-		return await writeFile(url, this.serialize(indentChar, custom));
+	async write(url, indentStr, custom) {
+		return await writeFile(url, this.serialize(indentStr, custom));
 	}
 };
 
-function structuredSerialize(fieldsOrItem, indentChar = "\t", isFieldArray = false) {
+function structuredSerialize(fieldsOrItem, indentStr = "\t", isFieldArray = false) {
 	const serialize = (item, indent = 0) => {
 		switch (typeof item) {
 			case "string":
@@ -58,10 +60,10 @@ function structuredSerialize(fieldsOrItem, indentChar = "\t", isFieldArray = fal
 						const serialized = serialize(elem, indent + 1);
 
 						if (serialized !== undefined)
-							out.push(repeat(indentChar, indent + 1) + serialized);
+							out.push(repeat(indentStr, indent + 1) + serialized);
 					}
 
-					return `[\n${out.join(",\n")}\n${repeat(indentChar, indent)}]`;
+					return `[\n${out.join(",\n")}\n${repeat(indentStr, indent)}]`;
 				}
 				
 				if (isObject(item)) {
@@ -71,13 +73,13 @@ function structuredSerialize(fieldsOrItem, indentChar = "\t", isFieldArray = fal
 						const serialized = serialize(item[k], indent + 1);
 
 						if (serialized !== undefined)
-							out.push(`${repeat(indentChar, indent + 1)}"${k}": ${serialized}`);
+							out.push(`${repeat(indentStr, indent + 1)}"${k}": ${serialized}`);
 					}
 
 					if (!out.length)
 						return "{}";
 
-					return `{\n${out.join(",\n")}\n${repeat(indentChar, indent)}}`;
+					return `{\n${out.join(",\n")}\n${repeat(indentStr, indent)}}`;
 				}
 
 				return "{}";
@@ -95,14 +97,14 @@ function structuredSerialize(fieldsOrItem, indentChar = "\t", isFieldArray = fal
 			else {
 				const serialized = serialize(field.value, indent + 1);
 				if (serialized !== undefined)
-					out.push(`${repeat(indentChar, indent + 1)}"${field.name}": ${serialized}\n`);
+					out.push(`${repeat(indentStr, indent + 1)}"${field.name}": ${serialized}\n`);
 			}
 		}
 
 		if (!out.length)
 			return "{}";
 
-		return `{\n${out.join(",\n")}\n${repeat(indentChar, indent)}}`;
+		return `{\n${out.join(",\n")}\n${repeat(indentStr, indent)}}`;
 	};
 
 	if (isFieldArray)

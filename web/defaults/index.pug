@@ -14,9 +14,9 @@ html(lang="en")
 			.row.shrink
 				#meta.cell.shrink
 					h1
-						| #{self.meta.name}
-						span=self.meta.version
-					p=self.meta.description
+						| #{self.package.name}
+						span=self.package.version
+					p=self.package.description
 				#alerts.cell
 					.scroll-box(class=self.alerts.length ? null : "no-content")
 						each alert in self.alerts
