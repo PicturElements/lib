@@ -29,10 +29,10 @@
   },
   "devDependencies": {},
   "qlib": {
-    "pushes": 1,
+    "pushes": 2,
     "expose": {
       "scripts": [
-        "index.mjs"
+        "connect/feed.js"
       ],
       "styles": []
     },
