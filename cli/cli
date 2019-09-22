@@ -4,6 +4,7 @@ const path = require("path");
 // CLI handlers
 const init = require("./handlers/init");
 const i18n = require("./handlers/i18n");
+const webp = require("./handlers/webp");
 
 const tst = require("./handlers/test");
 const tstcli = require("./handlers/tstcli");
@@ -41,28 +42,31 @@ function run() {
 			return init(options, ...inArgs);
 		case "i18n":
 			return i18n(options, ...inArgs);
+		case "webp":
+			return webp(options, ...inArgs);
 	}
 
 	// Lib scoped commands
 	if (process.cwd().indexOf(HOME_DIR) == -1)
-		return console.log(`WARNING: refusing to run qlib outside its home directory ${HOME_DIR}`);
+		return console.log(`WARNING: refusing to run this qlib command outside the home directory (${HOME_DIR})`);
 
 	switch (cmd) {
-		// Aliases
-		case "push":
-			return alias(git, options, cmd, inArgs);
 		case "test":
 			return tst(options, ...inArgs);
+
 		case "tst":
 			return tstcli(options, ...inArgs);
+
 		case "git":
 			return git(options, ...inArgs);
-		default:
-			return console.log("Please use a valid command");
+		case "push":
+			return alias(options, git, cmd, inArgs);
 	}
+
+	return console.log("Please use a valid command");
 }
 
-function alias(handler, options, cmd, inArgs) {
+function alias(options, handler, cmd, inArgs) {
 	inArgs = [cmd, ...inArgs];
 	options.args = [cmd, ...options.args];
 	return handler(options, ...inArgs);

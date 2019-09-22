@@ -2,7 +2,9 @@ const webpack = require("webpack");
 const {
 	join,
 	exists,
-	readJSON
+	readJSON,
+	success,
+	error
 } = require("../cli/utils");
 
 const BUNDLE_EXT_MAP = {
@@ -49,11 +51,11 @@ async function buildExposedPartition(pkgName, exposeType, locals) {
 
 		webpack(options, (err, stats) => {
 			if (err || stats.hasErrors()) {
-				console.log("ERROR: ", err);
+				error("ERROR: ", err);
 				resolve(false);
 			} else {
 				resolve(true);
-				console.log(`${exposeType}@${pkgName}: built ${count} file${count == 1 ? "" : "s"} (${Date.now() - startTime} ms)`);
+				success(`${exposeType}@${pkgName}: built ${count} file${count == 1 ? "" : "s"} (${Date.now() - startTime} ms)`);
 			}
 		});
 	});

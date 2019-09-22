@@ -153,6 +153,42 @@ async function writeJSON(pth, data, indentStr = "\t") {
 	return writeFile(pth, JSON.stringify(data, null, indentStr));
 }
 
+async function collectFileTree(root, filter, terse) {
+	async function collect(dirPath) {
+		const dir = {},
+			files = await readdir(dirPath);
+		let matched = false;
+
+		if (!files)
+			return null;
+
+		for (const file of files) {
+			const workingPath = path.join(dirPath, file),
+				s = await stat(workingPath);
+			let item = null;
+
+			if (!s)
+				return;
+
+			if (s.isDirectory())
+				item = await collect(workingPath);
+			else if (typeof filter != "function")
+				item = workingPath;
+			else if (filter(file, workingPath))
+				item = workingPath;
+
+			if (item) {
+				dir[file] = item;
+				matched = true;
+			}
+		}
+
+		return !terse || matched ? dir : null;
+	}
+
+	return await collect(root);
+}
+
 function chdir(dir) {
 	return tryify(process.chdir, dir);
 }
@@ -199,8 +235,20 @@ function calcPrecedenceFromCLIOptions(options, nameMap, def) {
 	return def;
 }
 
-function error(msg) {
-	console.log("\x1b[37m\x1b[41m%s\x1b[0m", msg);
+function info(...logs) {
+	console.log("\x1b[1m\x1b[36m%s\x1b[0m", logs.map(String).join(" "));
+}
+
+function success(...logs) {
+	console.log("\x1b[1m\x1b[32m%s\x1b[0m", logs.map(String).join(" "));
+}
+
+function warn(...logs) {
+	console.log("\x1b[1m\x1b[33m%s\x1b[0m", logs.map(String).join(" "));
+}
+
+function error(...logs) {
+	console.log("\x1b[1m\x1b[37m\x1b[41m%s\x1b[0m", logs.map(String).join(" "));
 }
 
 function join(...paths) {
@@ -234,11 +282,15 @@ module.exports = {
 	readJSON,
 	readJSONNull,
 	writeJSON,
+	collectFileTree,
 	chdir,
 	logNL,
 	coerceFilePath,
 	calcPrecedence,
 	calcPrecedenceFromCLIOptions,
+	info,
+	success,
+	warn,
 	error,
 	join,
 	joinDir,

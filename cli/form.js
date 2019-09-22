@@ -25,7 +25,7 @@ const FIELDMAP_SRC_SYMBOL = Symbol("fieldMap source"),
 		detailed: 5,
 		t: 10,
 		terse: 10
-	}
+	};
 
 // Important: this class follows the same function parameter rules
 // as JSONForm. Check ./json-form.js for more details

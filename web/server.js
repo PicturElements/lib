@@ -3,33 +3,30 @@ const chokidar = require("chokidar");
 const path = require("path");
 const express = require("express");
 const {
-	exists,
 	join,
 	joinDir,
 	readdir,
 	stat,
-	spawn
+	spawn,
+	info
 } = require("../cli/utils");
+const { BuildStamp } = require("../utils");
 const { buildExposedAtPkg } = require("./expose");
+const routes = require("./routes");
 
 // Server
 const app = express();
 const PORT = 1234;
 
-// Views
-const renderPkgPage = require("./views/pkg");
-const renderErrorPage = require("./views/error");
-
-let buildCount = 0;
+const scssStamp = new BuildStamp(),
+	pkgStamp = new BuildStamp();
 
 // Build
 chokidar
 	.watch("style/scss/*.scss")
 	.on("change", _ => {
-		const date = new Date();
-
 		console.log(
-			`Compiling SCSS @${date.getHours()}:${date.getMinutes()} ${date.getMonth() + 1}/${date.getDate()} - build ${++buildCount}`
+			`Compiling SCSS ${scssStamp.verbose()}`
 		);
 
 		spawn("sass", ["--update", "./_style/scss:./_style/css"], { stdio: "inherit" });
@@ -37,21 +34,16 @@ chokidar
 
 chokidar
 	.watch("pkg")
-	.on("change", p => {
+	.on("change", async p => {
 		const pkgName = p.split(path.sep)[1];
-		buildExposedAtPkg(pkgName);
+		console.log();
+		await buildExposedAtPkg(pkgName);
+		info(`from ${p} ${pkgStamp.verbose()}`);
 	});
 
 // Routes
-app.get("/:page?", async (req, res) => {
-	const pageName = req.params.page;
-
-	if (pageName && await exists(join("pkg", pageName)))
-		renderPkgPage(req, res, pageName);
-	else
-		renderErrorPage(req, res, pageName);
-});
-
+routes(app);
+app.use("/media", express.static(joinDir("web/media")));
 app.use("/style", express.static(joinDir("web/style/css")));
 app.use("/bundles", express.static(joinDir("web/bundles")));
 app.use("/pkg", express.static(joinDir("pkg")));
@@ -82,5 +74,5 @@ app.listen(PORT, _ => console.log(`Visit port ${PORT}.`));
 		count++;
 	}
 
-	console.log(`Finished building exposed files for ${count} packages (${Date.now() - startTime} ms)`);
+	info(`Finished building exposed files for ${count} packages (${Date.now() - startTime} ms)`);
 })();

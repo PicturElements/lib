@@ -8,7 +8,8 @@ body {
   font-family: "Catamaran", sans-serif;
   color: #30353a;
   letter-spacing: 0.025em;
-  margin: 0; }
+  margin: 0;
+  }
 
 main {
   margin: 15px; }
@@ -54,9 +55,10 @@ main {
     line-height: 1; }
     #meta h1 span {
       font-size: 60%;
-      margin-left: 4px;
+      margin-left: 0.5em;
       font-weight: 400;
-      color: #12529e; }
+      color: #12529e;
+      }
   #meta p {
     margin: 0.5em 0 0; }
 
