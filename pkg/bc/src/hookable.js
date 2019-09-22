@@ -3,6 +3,8 @@ import {
 	resolveArgs,
 	isObject
 } from "@qtxr/utils";
+import Hook from "./hook";
+import { queryFilterMut } from "../../utils";
 
 // TODO: in first major version, rename nickname to identifier
 
@@ -13,7 +15,7 @@ const reservedFields = {
 const hookParams = [
 	{ name: "partitionName", type: "string", required: true },
 	{ name: "handler", type: "function", required: true },
-	{ name: "nickname", type: "string", default: null },
+	{ name: "nickname", type: ["string", "symbol"], default: null },
 	{ name: "namespace", type: ["string", "symbol"], default: null },
 	{ name: "ttl", type: "number", default: Infinity },
 	{ name: "guard", type: "function", default: null }
@@ -25,6 +27,26 @@ const hookNSParams = [
 	{ name: "handler", type: "function", required: true },
 	{ name: "nickname", type: ["string", "symbol"], default: null },
 	{ name: "ttl", type: "number", default: Infinity },
+	{ name: "guard", type: "function", default: null }
+];
+
+const unhookParams = [
+	{ name: "instance", type: Hook, default: null },
+	{ name: "partitionName", type: "string", default: null},
+	{ name: "handler", type: "function", default: null },
+	{ name: "nickname", type: ["string", "symbol"], default: null },
+	{ name: "namespace", type: ["string", "symbol"], default: null },
+	{ name: "ttl", type: "number", default: null },
+	{ name: "guard", type: "function", default: null }
+];
+
+const unhookNSParams = [
+	{ name: "namespace", type: ["string", "symbol"], required: true },
+	{ name: "instance", type: Hook, default: null },
+	{ name: "partitionName", type: "string", default: null },
+	{ name: "handler", type: "function", default: null },
+	{ name: "nickname", type: ["string", "symbol"], default: null },
+	{ name: "ttl", type: "number", default: null },
 	{ name: "guard", type: "function", default: null }
 ];
 
@@ -74,24 +96,13 @@ export default class Hookable {
 		return this;
 	}
 
-	unhook(nameOrHook, handler, nickname) {
-		const partitionName = nameOrHook instanceof Hook ? nameOrHook.partitionName : nameOrHook;
+	unhook(...args) {
+		removeHook(this, unhookParams, args);
+		return this;
+	}
 
-		if (typeof handler == "string") {
-			nickname = handler;
-			handler = null;
-		}
-
-		const hooks = this.hooks[partitionName];
-
-		if (!Array.isArray(hooks) || reservedFields.hasOwnProperty(partitionName))
-			return this;
-
-		filterMut(hooks, hook => !hook.is(nameOrHook, handler, nickname));
-
-		if (!hooks.length)
-			delete this.hooks[partitionName];
-
+	unhookNS(...args) {
+		removeHook(this, unhookNSParams, args);
 		return this;
 	}
 
@@ -128,18 +139,33 @@ export default class Hookable {
 	}
 
 	clearHooksNS(ns) {
+		this.forEachHookPartition((partition, key) => {
+			filterMut(partition, h => h.namespace != ns);
+
+			if (!partition.length)
+				delete this.hooks[key];
+		});
+		
+		return this;
+	}
+
+	forEachHookPartition(callback) {
+		if (!callback)
+			return;
+
 		for (const k in this.hooks) {
 			if (!this.hooks.hasOwnProperty(k) || reservedFields.hasOwnProperty(k))
 				continue;
 
-			const hooks = this.hooks[k];
-			filterMut(hooks, h => h.namespace != ns);
-
-			if (!hooks.length)
-				delete this.hooks[k];
+			callback(this.hooks[k], k, this.hooks);
 		}
+	}
 
-		return this;
+	getHookPartition(partitionName) {
+		if (!this.hooks.hasOwnProperty(partitionName) || reservedFields.hasOwnProperty(partitionName))
+			return null;
+
+		return this.hooks[partitionName];
 	}
 }
 
@@ -159,88 +185,39 @@ function addHook(inst, paramMap, args) {
 	return hook;
 }
 
-class Hook {
-	constructor(owner, data) {
-		this.owner = owner;
-		this.data = data;
+const ignoredQueryKeys = {
+	rest: true
+};
 
-		this.handler = this.data.handler;
-		this.guard = this.data.guard;
+function removeHook(inst, paramMap, args) {
+	const data = resolveArgs(args, paramMap, "allowSingleSource");
+
+	if (data.instance) {
+		inst.forEachHookPartition((partition, key) => {
+			filterMut(partition, hook => hook != data.instance);
+
+			if (!partition.length)
+				delete inst.hooks[key];
+		});
+
+		return;
 	}
 
-	set handler(func) {
-		if (typeof func != "function")
-			return;
+	if (data.partitionName) {
+		const partition = inst.getHookPartition(data.partitionName);
 
-		this.data.handler = func.bind(this.owner, this.owner);
-		this.data.originalHandler = func;
-	}
+		if (partition)
+			filterPartition(partition, data.partitionName);
+	} else
+		inst.forEachHookPartition(filterPartition);
 
-	get handler() {
-		return this.data.originalHandler;
-	}
+	function filterPartition(partition, key) {
+		queryFilterMut(partition, data, "invert", {
+			noNullish: true,
+			guard: parsedKey => !ignoredQueryKeys.hasOwnProperty(parsedKey.key)
+		});
 
-	set guard(func) {
-		if (typeof func != "function")
-			return;
-
-		this.data.guard = func.bind(this.owner, this.owner);
-		this.data.originalGuard = func;
-	}
-
-	get guard() {
-		return this.data.originalGuard;
-	}
-
-	get partitionName() {
-		return this.data.partitionName;
-	}
-
-	get nickname() {
-		return this.data.nickname;
-	}
-
-	get namespace() {
-		return this.data.namespace;
-	}
-
-	get ttl() {
-		return this.data.ttl;
-	}
-
-	get spent() {
-		return this.data.ttl == 0;
-	}
-
-	handle(args) {
-		// this and first argument is bound as hook.owner 
-		return this.data.handler.apply(null, args);
-	}
-
-	proceed(args) {
-		if (typeof this.data.guard != "function")
-			return true;
-
-		// this and first argument is bound as hook.owner 
-		return Boolean(this.data.guard.apply(null, args));
-	}
-
-	unhook() {
-		this.owner.unhook(this);
-	}
-
-	decTTL() {
-		this.data.ttl = Math.max(this.data.ttl - 1, 0);
-		return this.data.ttl;
-	}
-
-	is(nameOrHook, handler, nickname) {
-		if (nameOrHook instanceof Hook)
-			return nameOrHook == this;
-
-		if (typeof handler == "function" && typeof nickname == "string")
-			return handler == this.data.originalHandler && (Boolean(nickname) && nickname == this.data.nickname);
-		else
-			return handler == this.data.originalHandler || (Boolean(nickname) && nickname == this.data.nickname);
+		if (!partition.length)
+			delete inst.hooks[key];
 	}
 }
