@@ -1,30 +1,57 @@
-import equals from "./equals";
+import parsePropStr from "./parse-prop-str";
+import propMatch from "./prop-match";
+import { isObj } from "./is";
+import {
+	composeOptionsTemplates,
+	createOptionsObject
+} from "./options";
+import hasOwn from "./has-own";
 
-export default function queryMatch(val, matcher, options) {
-	if (val == null)
+export default function queryMatch(item, q, options) {
+	options = createOptionsObject(options, queryMatchTemplates);
+
+	if (!isObj(item) || !isObj(q))
 		return false;
 
-	if (!options.smart)
-		return plainMatch(val, matcher, options);
+	const guard = typeof options.guard == "function" ? options.guard : null;
+	let matchCount = 0,
+		queryCount = 0;
 
-	switch (typeof matcher) {
-		case "function":
-			return Boolean(matcher(val, options));
+	for (const k in q) {
+		if (!hasOwn(q, k) || options.noNullish && q[k] == null)
+			continue;
+
+		const parsedQueryKey = parsePropStr(k);
+
+		if (guard && !guard(parsedQueryKey, item, q))
+			continue;
+
+		let {
+			key,
+			srcKey,
+			lazy,
+			strict
+		} = parsedQueryKey;
+
+		lazy = (options.lazy && !strict) || (!options.lazy && lazy);
+
+		const match = propMatch(item[key], q[srcKey], options);
+
+		if (!lazy && !match)
+			return false;
+
+		if (match)
+			matchCount++;
+
+		queryCount++;
 	}
 
-	switch (matcher && matcher.constructor) {
-		case RegExp:
-			if (typeof val == "string")
-				return matcher.test(val);
-			break;
-	}
-
-	return plainMatch(val, matcher, options);
+	return !queryCount || !!matchCount;
 }
 
-function plainMatch(val, matcher, options) {
-	if (!options.deepEquality)
-		return val === matcher;
-
-	return equals(val, matcher);
-}
+const queryMatchTemplates = composeOptionsTemplates({
+	smart: true,
+	deepEquality: true,
+	lazy: true,
+	noNullish: true
+});

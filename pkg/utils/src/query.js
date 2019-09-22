@@ -1,6 +1,7 @@
+import parsePropStr from "./parse-prop-str";
+import propMatch from "./prop-match";
 import { isArrayLike } from "./is";
-import hasOwn from "./has-own";
-import queryMatch from "./query-match";
+import { keys as objKeys } from "./obj";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
@@ -17,7 +18,10 @@ export default function query(list, q, options) {
 		};
 	}
 
-	const keys = Object.keys(q);
+	const guard = typeof options.guard == "function" ? options.guard : null,
+		keys = objKeys(q),
+		keyLen = keys.length;
+
 	// Separate arrays are used because
 	// mainly this function deals with filtering
 	// and wrapping data would be less intuitive
@@ -26,16 +30,18 @@ export default function query(list, q, options) {
 		matchCounts = [],
 		iterations = 0;
 
-	for (let i = 0, l = keys.length; i < l; i++) {
-		if (!hasOwn(q, keys[i]))
+	for (let i = 0; i < keyLen; i++) {
+		if (options.noNullish && q[keys[i]] == null)
 			continue;
+		
+		const parsedQueryKey = parsePropStr(keys[i]);
 
 		let {
 			key,
 			srcKey,
 			lazy,
 			strict
-		} = processKey(keys[i]);
+		} = parsedQueryKey;
 
 		lazy = (options.lazy && !strict) || (!options.lazy && lazy);
 
@@ -47,16 +53,17 @@ export default function query(list, q, options) {
 		for (let j = 0, l2 = srcArr.length; j < l2; j++) {
 			const val = srcArr[j],
 				idx = indices[j] || j,
-				matchCount = matchCounts[j] || 0, 
-				match = Boolean(val) && queryMatch(val[key], q[srcKey], options);
+				matchCount = matchCounts[j] || 0,
+				guardPass = guard && !guard(parsedQueryKey, q, val),
+				match = Boolean(val) && propMatch(val[key], q[srcKey], options);
 
 			// If the last key has been reached and there's no match,
 			// there there can be no matched result even with lazy
 			// matching if there have been no previous matches
-			if (match || lazy && (matchCount || i < keys.length - 1)) {
+			if (match || (lazy || guardPass) && (matchCount || i < keyLen - 1)) {
 				matchesBuffer.push(val);
 				indicesBuffer.push(idx);
-				matchCountsBuffer.push(matchCount + (+match));
+				matchCountsBuffer.push(matchCount + Number(match && guardPass));
 			}
 		}
 
@@ -101,33 +108,10 @@ export default function query(list, q, options) {
 	};
 }
 
-function processKey(key) {
-	const lastIdx = key.length - 1,
-		ret = {
-			key,
-			srcKey: key,
-			lazy: false,
-			strict: false
-		};
-
-	switch (key[lastIdx]) {
-		case "?":
-			ret.key = key.substr(0, lastIdx);
-			ret.lazy = true;
-			break;
-		
-		case "!":
-			ret.key = key.substr(0, lastIdx);
-			ret.strict = true;
-			break;
-	}
-
-	return ret;
-}
-
 const queryTemplates = composeOptionsTemplates({
 	smart: true,
 	deepEquality: true,
 	lazy: true,
-	bundle: true
+	bundle: true,
+	noNullish: true
 });
