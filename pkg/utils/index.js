@@ -45,6 +45,7 @@ export { default as parseFloatStr } from "./src/parse-float-str";
 export { default as parsePropStr } from "./src/parse-prop-str";
 export { default as parseStr } from "./src/parse-str";
 export { default as parseStrStr } from "./src/parse-str-str";
+export { default as parseTreeStr } from "./src/parse-tree-str";
 export { default as QNDSet } from "./src/qnd-set";
 export { default as query } from "./src/query";
 export { default as queryFilterMut } from "./src/query-filter-mut";
