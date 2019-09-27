@@ -124,7 +124,7 @@ class ComponentWrapper {
 		if (this.endpoints.hasOwnProperty(name))
 			throw new Error(`Cannot supply '${name}': ComponentWrapper aready has an endpoint with this name`);
 
-		if (supplier.hasOwnProperty("init") && typeof supplier.init == "function") {
+		if (hasInit(supplier)) {
 			return (...args) => {
 				supplier = Object.assign(supplier);
 				supplier.use = supplier.init(...args);
@@ -134,6 +134,15 @@ class ComponentWrapper {
 		}
 		
 		this.endpoints[name] = supplier;
+		return this;
+	}
+
+	static autoSupply() {
+		for (const k in suppliers) {
+			if (suppliers.hasOwnProperty(k) && hasInit(suppliers[k]))
+				this.supply(k);
+		}
+
 		return this;
 	}
 }
@@ -211,6 +220,10 @@ function nestHook(target, key, hook) {
 		};
 	} else 
 		target[key] = hook;
+}
+
+function hasInit(supplier) {
+	return supplier.hasOwnProperty("init") && typeof supplier.init == "function";
 }
 
 export default wc;
