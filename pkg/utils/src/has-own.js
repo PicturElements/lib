@@ -4,7 +4,11 @@ const oHOP = Object.prototype.hasOwnProperty;
 
 // Polyfill aware hasOwnProperty
 // By default it doesn't count symbol keys as valid own property keys
-// so to enable that please use the allowSymbols flag
+// so to enable that please use the allowSymbols flag. This is done
+// because the most common use case of hasOwnProperty is within contexts
+// where keys are given programmatically. Since generally it's not possible
+// to enumerate symbols, it makes the most sense to ignore polyfilled
+// symbols that may be enumerable.
 
 const polyfillHasOwn = (obj, k, allowSymbols) => {
 	if (!oHOP.call(obj, k))
