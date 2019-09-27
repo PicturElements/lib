@@ -1,18 +1,9 @@
 import {
-	clone, 
-	get,
+	clone,
 	inject,
-	sym,
-	isObject,
-	resolveArgs
+	isObject
 } from "@qtxr/utils";
-import { Hookable } from "@qtxr/bc";
-import {
-	XHRManager,
-	XHRState,
-	decodeData
-} from "@qtxr/request";
-import ScrollStops from "@qtxr/scroll-stops";
+import * as suppliers from "./suppliers";
 
 const wc = {
 	wrap(component) {
@@ -44,11 +35,33 @@ class ComponentWrapper {
 		}
 
 		this.exporterInjectors = injectors;
+
+		this.assert = {
+			hasAsset(assetName, useName) {
+				if (!ComponentWrapper.assets.hasOwnProperty(assetName) || !ComponentWrapper.assets[assetName])
+					throw new Error(`Cannot use ${useName}: no asset by name '${assetName}' is available`);
+			},
+			hasUnusedProp: (key, useName) => {
+				const props = this.component.props;
+				
+				if (!props)
+					throw new TypeError(`Cannot use ${useName}: property is not an object`);
+			
+				if (Array.isArray(props) && props.indexOf(key) != -1)
+					err();
+				else if (isObject(props) && props.hasOwnProperty(key))
+					err();
+			
+				function err() {
+					throw new Error(`Cannot use ${useName}: found duplicate prop key '${key}'`);
+				}
+			}
+		};
 	}
 
 	use(endpoint, ...args) {
 		if (typeof endpoint != "string")
-			throw new Error("'use' endpoint must be a string");
+			throw new Error("'use' endpoint key must be a string");
 
 		let used = !!this.used[endpoint];
 		const ep = ComponentWrapper.endpoints[endpoint];
@@ -65,6 +78,31 @@ class ComponentWrapper {
 
 	addProvision(key, value) {
 		return this._addToInjector("provide", key, value);
+	}
+
+	// Assumes props is already defined, through default options
+	addProp(key, value, useName) {
+		this.assert.hasUnusedProp(key, useName);
+		this.component.props[key] = value;
+		return this.component.props;
+	}
+
+	addMethod(key, method) {
+		const methods = this.component.methods;
+
+		if (methods.hasOwnProperty(key))
+			throw new Error(`Tried overriding method '${key}'`);
+		if (typeof method != "function")
+			throw new Error(`Cannot add method '${key}': supplied method is not a function`);
+
+		methods[key] = method;
+	}
+
+	addHook(key, hook) {
+		if (typeof hook != "function")
+			throw new Error(`Cannot add hook '${key}': supplied hook is not a function`);
+
+		nestHook(this.component, key, hook);
 	}
 
 	// Returns an exesting partition or creates a new one
@@ -99,48 +137,30 @@ class ComponentWrapper {
 		return component;
 	}
 
-	static setAsset(name, asset) {
-		ComponentWrapper.assets[name] = asset;
+	static supply(name, supplier) {
+		supplier = supplier || suppliers[name];
+		if (!isObject(supplier))
+			throw new Error(`Cannot supply '${name}': supplier is not an object`);
+		if (!name || typeof name != "string")
+			throw new Error(`Cannot supply: name (${name}) is not valid`);
+		if (this.endpoints.hasOwnProperty(name))
+			throw new Error(`Cannot supply '${name}': ComponentWrapper aready has an endpoint with this name`);
+
+		if (supplier.hasOwnProperty("init") && typeof supplier.init == "function") {
+			return (...args) => {
+				supplier = Object.assign(supplier);
+				supplier.use = supplier.init(this, ...args);
+				this.endpoints[name] = supplier;
+				return this;
+			};
+		}
+		
+		this.endpoints[name] = supplier;
+		return this;
 	}
 }
 
-ComponentWrapper.assets = {
-	i18nManager: null
-};
-
-ComponentWrapper.endpoints = {
-	xhr: {
-		use: useXhr,
-	},
-	live: {
-		use: useLive
-	},
-	events: {
-		use: useEvents,
-		isUsable(wrapper, used) {
-			if (!used)
-				return true;
-
-			console.warn("Events cannot be used more than once because only one event partition and a singular method are allowed to be initiated");
-			return false;
-		}
-	},
-	scrollStops: {
-		use: useScrollStops
-	},
-	i18n: {
-		use: useI18N
-	},
-	debounce: {
-		use: useDebounce
-	},
-	hooks: {
-		use: useHooks
-	},
-	tasks: {
-		use: useTasks
-	}
-};
+ComponentWrapper.endpoints = {};
 
 ComponentWrapper.exporters = {
 	data(obj, wrapper, vm) {
@@ -187,335 +207,6 @@ function mkDefaultOptions() {
 	};
 }
 
-function useXhr(wrapper, used, path) {
-	const component = wrapper.component,
-		xhrPartitions = wrapper.internal.xhrPartitions || {},
-		data = wrapper.getInjectorPartition("data");
-
-	const gotten = get(data, path, null, {
-			autoBuild: true,
-			context: true
-		}),
-		state = {
-			loaded: false,
-			loading: false,
-			error: false,
-			msg: ""
-		};
-
-	for (const k in state) {
-		if (state.hasOwnProperty(k) && !gotten.data.hasOwnProperty(k))
-			gotten.data[k] = state[k];
-	}
-
-	const xhrState = new XHRState()
-		.hook("static:init", runtime => {
-			setLoadingState(runtime.loadingState, "loading");
-		})
-		.hook("static:success", runtime => {
-			setLoadingState(runtime.loadingState, "success");
-		})
-		.hook("static:fail", runtime => {
-			setLoadingState(runtime.loadingState, "error");
-		});
-
-	const manager = new XHRManager({
-		flush: ["once"],
-		withRuntime: true,
-		state: xhrState
-	});
-
-	xhrPartitions[path] = {
-		manager,
-		xhrState
-	};
-	wrapper.internal.xhrPartitions = xhrPartitions;
-
-	if (used)
-		return;
-
-	component.methods.xhr = function(path) {
-		const vm = this,
-			partition = xhrPartitions[path];
-
-		if (!partition)
-			throw new Error(`Cannot access XHR partition at '${path}' because it's not registered`);
-
-		const loadingState = get(vm.$data, path);
-
-		partition.manager.attachRuntime({
-			vm,
-			loadingState,
-			setMsg(msg) {
-				loadingState.msg = msg;
-			},
-			resolveErrorMsg() {
-				const xhr = partition.manager.settings.state.xhr;
-
-				if (xhr.responseText)
-					this.setMsg(decodeData(xhr).message);
-				else
-					this.setMsg(`Network error (${xhr.status})`);
-			}
-		});
-
-		return partition.manager;
-	};
-
-	component.methods.setLoadingState = function(partition, state) {
-		const dp = this.$data && this.$data[partition];
-
-		if (!this.$data.hasOwnProperty(partition) || !dp || dp.constructor != Object)
-			return;
-
-		setLoadingState(dp, state);
-	};
-}
-
-function setLoadingState(partition, data) {
-	if (!partition)
-		return;
-
-	let state = {
-		loaded: false,
-		loading: false,
-		error: false
-	};
-
-	if (data && data.constructor == Object)
-		state = data;
-	else switch (data) {
-		case "loading":
-			state.loading = true;
-			break;
-		case "success":
-			state.loaded = true;
-			break;
-		case "error":
-			state.error = true;
-			break;
-	}
-
-	for (const k in partition) {
-		if (partition.hasOwnProperty(k))
-			partition[k] = state[k];
-	}
-}
-
-function useLive(wrapper, used, data) {
-	if (!used)
-		wrapper.internal.live = {};
-
-	inject(wrapper.internal.live, data, {
-		override: true,
-		injectSymbols: true,
-		shallow: true
-	});
-}
-
-function useEvents(wrapper, used, partitionName = "events") {
-	const component = wrapper.component,
-		data = wrapper.getInjectorPartition("data");
-	
-	if (!data.hasOwnProperty(partitionName))
-		data[partitionName] = [];
-	else if (!Array.isArray(data[partitionName].constructor)) {
-		console.warn(`Will refuse to use events because component data already has a non-array property with key '${partitionName}'`);
-		return false;
-	}
-
-	component.methods.addEventListener = function(target, type, callback, options) {
-		if (typeof callback != "function")
-			return console.warn("Cannot add event listener: callback is not a function");
-
-		const partition = this.$data[partitionName],
-			vm = this,
-			// Assumes that no event handler is called with more than the event as its args
-			interceptingCallback = function(evt) {
-				callback.call(this, evt, vm);
-			};
-
-		partition.push({
-			target,
-			type,
-			callback: interceptingCallback,
-			options
-		});
-
-		target.addEventListener(type, interceptingCallback, options);
-	};
-
-	nestHook(component, "beforeDestroy", function() {
-		const partition = this.$data[partitionName];
-		partition.forEach(p => p.target.removeEventListener(p.type, p.callback, p.options));
-	});
-}
-
-const scrollStopsParams = [
-	{ name: "name", type: "string", default: "scrollStops" },
-	{ name: "options", type: "object", default: {} }
-];
-
-function useScrollStops(wrapper, used, ...args) {
-	const component = wrapper.component;
-
-	const {
-		name,
-		options
-	} = resolveArgs(args, scrollStopsParams);
-
-	// Prep data object for reactivity
-	wrapper.addData(name, null);
-
-	nestHook(component, (options.on || "beforeMount"), function() {
-		const elem = options.element;
-		options.elem = typeof elem == "function" ? elem.call(this, elem) : elem;
-		this.$data[name] = new ScrollStops(options);
-		this.$data[name].thisVal = this;
-	});
-
-	nestHook(component, (options.off || "beforeDestroy"), function() {
-		this.$data[name].destroy();
-	});
-}
-
-function useI18N(wrapper, used) {
-	if (used)
-		return;
-
-	assertHasAsset("i18nManager", "i18n");
-	
-	const manager = ComponentWrapper.assets.i18nManager,
-		methods = wrapper.component.methods,
-		ns = sym("wc-i18n-ns");
-	
-	methods.loadLocaleFragment = manager.loadFragment.bind(manager);
-	methods.hookLocale = (...args) => manager.hookNS(ns, ...args);
-
-	nestHook(wrapper.component, "beforeDestroy", _ => manager.clearHooksNS(ns));
-}
-
-function useDebounce(wrapper, used, name, timeout = 50) {
-	const component = wrapper.component,
-		int = wrapper.internal;
-
-	int.debounce = int.debounce || {};
-	int.debounce[name] = new Debouncer(timeout);
-
-	wrapper.addData(name, int.debounce[name]);
-
-	if (used)
-		return;
-	
-	nestHook(component, "beforeDestroy", _ => {
-		for (const k in int.debounce) {
-			if (int.debounce.hasOwnProperty(k))
-				int.debounce[k].clear();
-		}
-	});
-}
-
-class Debouncer extends Hookable {
-	constructor(timeout) {
-		super();
-		this.timeout = timeout;
-		this.timer = null;
-		this.callback = null;
-	}
-
-	debounce(callback, timeout) {
-		this.callback = callback;
-		this.clear();
-		const to = typeof timeout == "number" ? timeout : this.timeout;
-		this.timer = setTimeout(callback, to);
-	}
-
-	clear() {
-		clearTimeout(this.timer);
-	}
-}
-
-function useHooks(wrapper, used, name = "hooks") {
-	const component = wrapper.component,
-		int = wrapper.internal;
-
-	int.hooks = int.hooks || [];
-	const hooks = wrapper.addData(name, new Hookable());
-	int.hooks.push(hooks);
-
-	if (used)
-		return;
-
-	nestHook(component, "mounted", _ => {
-		int.hooks.forEach(h => h.clearHooks());
-	});
-}
-
-const taskHooks = ["beforeMount", "mounted", "beforeUpdate", "updated"];
-
-function useTasks(wrapper, used) {
-	const component = wrapper.component;
-
-	if (used)
-		return;
-
-	taskHooks.forEach(hookName => {
-		nestHook(component, hookName, function() {
-			const tasks = this.$props.tasks;
-			runTasks(this, tasks, hookName);
-		});
-	});
-
-	addProp(component.props, "tasks", null, "tasks");
-}
-
-function runTasks(vm, tasks, hookName) {
-	if (!tasks)
-		return;
-	
-	if (typeof tasks == "function")
-		tasks(vm, hookName);
-	else if (Array.isArray(tasks)) {
-		for (let i = 0, l = tasks.length; i < l; i++) {
-			if (typeof tasks[i] == "function")
-				tasks[i](vm, hookName);
-		}
-	} else if (isObject(tasks)) {
-		for (const k in tasks) {
-			if (!tasks.hasOwnProperty(k) || k != hookName)
-				continue;
-
-			const task = tasks[k];
-
-			if (typeof task == "function")
-				tasks[k](vm, hookName);
-			else
-				runTasks(vm, task);
-		}
-	}
-}
-
-// Assertions
-function assertUnusedProp(props, name, useName) {
-	if (!props)
-		throw new TypeError(`Cannot use ${useName}: property is not an object`);
-
-	if (Array.isArray(props) && props.indexOf(name) != -1)
-		err();
-	else if (isObject(props) && props.hasOwnProperty(name))
-		err();
-
-	function err() {
-		throw new Error(`Cannot use ${useName}: found duplicate prop key '${name}'`);
-	}
-}
-
-function assertHasAsset(assetName, useName) {
-	if (!ComponentWrapper.assets.hasOwnProperty(assetName) || !ComponentWrapper.assets[assetName])
-		throw new Error(`Cannot use ${useName}: no asset by name '${assetName}' is available`);
-}
-
-// Utils
 function nestHook(target, key, hook) {
 	if (typeof target[key] == "function") {
 		const origHook = target[key];
@@ -526,18 +217,6 @@ function nestHook(target, key, hook) {
 		};
 	} else 
 		target[key] = hook;
-}
-
-// Assumes props is already defined, through default options
-function addProp(props, name, descriptor, useName) {
-	assertUnusedProp(props, name, useName);
-
-	if (Array.isArray(props))
-		props.push(name);
-	else if (isObject(props))
-		props[name] = descriptor;
-
-	return props;
 }
 
 export default wc;
