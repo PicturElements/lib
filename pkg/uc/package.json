@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/uc",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Collection of utility classes",
   "main": "index.js",
   "scripts": {
@@ -25,11 +25,12 @@
   },
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/uc#readme",
   "dependencies": {
-    "@qtxr/utils": "^1.8.0"
+    "@qtxr/bc": "^1.2.3",
+    "@qtxr/utils": "^1.11.0"
   },
   "devDependencies": {},
   "qlib": {
-    "pushes": 4,
+    "pushes": 5,
     "expose": {
       "scripts": [
         "connect/feed.js"
