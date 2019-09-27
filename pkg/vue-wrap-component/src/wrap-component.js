@@ -127,7 +127,7 @@ class ComponentWrapper {
 		if (supplier.hasOwnProperty("init") && typeof supplier.init == "function") {
 			return (...args) => {
 				supplier = Object.assign(supplier);
-				supplier.use = supplier.init(this, ...args);
+				supplier.use = supplier.init(...args);
 				this.endpoints[name] = supplier;
 				return this;
 			};
