@@ -5,8 +5,6 @@ export default {
 		return (wrapper, used) => {
 			if (used)
 				return;
-		
-			wrapper.assert.hasAsset("i18nManager", "i18n");
 			
 			const ns = sym("wc-i18n-ns");
 			

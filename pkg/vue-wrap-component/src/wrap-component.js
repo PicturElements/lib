@@ -35,28 +35,6 @@ class ComponentWrapper {
 		}
 
 		this.exporterInjectors = injectors;
-
-		this.assert = {
-			hasAsset(assetName, useName) {
-				if (!ComponentWrapper.assets.hasOwnProperty(assetName) || !ComponentWrapper.assets[assetName])
-					throw new Error(`Cannot use ${useName}: no asset by name '${assetName}' is available`);
-			},
-			hasUnusedProp: (key, useName) => {
-				const props = this.component.props;
-				
-				if (!props)
-					throw new TypeError(`Cannot use ${useName}: property is not an object`);
-			
-				if (Array.isArray(props) && props.indexOf(key) != -1)
-					err();
-				else if (isObject(props) && props.hasOwnProperty(key))
-					err();
-			
-				function err() {
-					throw new Error(`Cannot use ${useName}: found duplicate prop key '${key}'`);
-				}
-			}
-		};
 	}
 
 	use(endpoint, ...args) {
@@ -82,7 +60,7 @@ class ComponentWrapper {
 
 	// Assumes props is already defined, through default options
 	addProp(key, value, useName) {
-		this.assert.hasUnusedProp(key, useName);
+		this.assert.hasUnusedProp(this.component.props, key, useName);
 		this.component.props[key] = value;
 		return this.component.props;
 	}
@@ -170,6 +148,22 @@ ComponentWrapper.exporters = {
 				injectSymbols: true,
 				shallow: true
 			});
+		}
+	}
+};
+
+ComponentWrapper.prototype.assert = {
+	hasUnusedProp(props, key, useName) {
+		if (!props)
+			throw new TypeError(`Cannot use ${useName}: property is not an object`);
+	
+		if (Array.isArray(props) && props.indexOf(key) != -1)
+			err();
+		else if (isObject(props) && props.hasOwnProperty(key))
+			err();
+	
+		function err() {
+			throw new Error(`Cannot use ${useName}: found duplicate prop key '${key}'`);
 		}
 	}
 };
