@@ -139,7 +139,7 @@ class ComponentWrapper {
 
 	static autoSupply() {
 		for (const k in suppliers) {
-			if (suppliers.hasOwnProperty(k) && hasInit(suppliers[k]))
+			if (suppliers.hasOwnProperty(k) && !hasInit(suppliers[k]))
 				this.supply(k);
 		}
 
