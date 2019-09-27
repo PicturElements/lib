@@ -9,12 +9,10 @@ const {
 	findByKey
 } = require("../utils");
 
-function ask(rl, question) {
-	return new Promise(resolve => {
-		rl.question(question, response => {
-			resolve(response);
-		});
-	});
+function ask(rl, ...args) {
+	return promisify(
+		rl.question.bind(rl), null, null
+	)(args);
 }
 
 const statParamMap = { err: 0, stats: 1 };
@@ -47,7 +45,7 @@ function readdir(...args) {
 
 function writeFile(...args) {
 	return promisify(
-		fs.writeFile, null, null, 
+		fs.writeFile, null, null,
 		(resolve, err) => resolve(!err)
 	)(args);
 }

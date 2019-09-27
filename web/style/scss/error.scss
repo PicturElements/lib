@@ -1,0 +1,22 @@
+@import "./utils";
+
+html,
+body {
+	height: 100%;
+	font-size: 14px;
+}
+
+body {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background: $main-back;
+	font-family: "Catamaran", sans-serif;
+	color: $main-col;
+	letter-spacing: 0.025em;
+	margin: 0;
+}
+
+#error-msg {
+	font-weight: bold;
+}

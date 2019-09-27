@@ -1,0 +1,19 @@
+html,
+body {
+  height: 100%;
+  font-size: 14px; }
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #d7dee4;
+  font-family: "Catamaran", sans-serif;
+  color: #30353a;
+  letter-spacing: 0.025em;
+  margin: 0; }
+
+#error-msg {
+  font-weight: bold; }
+
+/*# sourceMappingURL=error.css.map */

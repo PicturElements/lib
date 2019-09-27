@@ -23,13 +23,13 @@ const scssStamp = new BuildStamp(),
 
 // Build
 chokidar
-	.watch("style/scss/*.scss")
+	.watch("web/style/scss/*.scss")
 	.on("change", _ => {
 		console.log(
 			`Compiling SCSS ${scssStamp.verbose()}`
 		);
 
-		spawn("sass", ["--update", "./_style/scss:./_style/css"], { stdio: "inherit" });
+		spawn("sass", ["--update", "web/style/scss:web/style/css"], { stdio: "inherit" });
 	});
 
 chokidar
