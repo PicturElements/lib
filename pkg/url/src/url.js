@@ -71,7 +71,8 @@ export default class URL {
 			protocol: "",
 			search: "",
 			searchParams: {},
-			stepUp: 0
+			stepUp: 0,
+			pathnameIsRelative: false
 		});
 
 		if (url)
@@ -144,11 +145,14 @@ export default class URL {
 	}
 
 	get pathname() {
-		const path = URL_MAP.get(this).path;
+		const data = URL_MAP.get(this),
+			path = data.path;
 		let pathname = "";
 
-		for (let i = 0, l = path.length; i < l; i++)
-			pathname += `/${path[i].value}`;
+		for (let i = 0, l = path.length; i < l; i++) {
+			const val = path[i].value;
+			pathname += (!i && (data.pathnameIsRelative || data.stepUp != 0)) ? val : `/${val}`;
+		}
 
 		return pathname;
 	}
@@ -158,6 +162,7 @@ export default class URL {
 			path = parsePath(coerceStr(pathname)),
 			collapsed = collapsePath(path, data);
 
+		data.pathnameIsRelative = pathname[0] != "/";
 		data.stepUp = collapsed.stepUp;
 		data.path = collapsed.path;
 	}
@@ -218,6 +223,11 @@ export default class URL {
 			data.search = paramsToSearch({});
 			data.searchParams = {};
 		}
+	}
+
+	get relative() {
+		const data = URL_MAP.get(this);
+		return !Boolean(data.hostname);
 	}
 
 	clone() {

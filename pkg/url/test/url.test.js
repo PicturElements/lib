@@ -17,5 +17,5 @@ it("Only returns a hostname when a protocol is specified", () => {
 
 	const fileURL = new URL("myoldsystemfile.com");
 	expect(fileURL.hostname).toBe("");
-	expect(fileURL.pathname).toBe("/myoldsystemfile.com");
+	expect(fileURL.pathname).toBe("myoldsystemfile.com");
 });
