@@ -63,7 +63,7 @@ export default function query(list, q, options) {
 			if (match || (lazy || guardPass) && (matchCount || i < keyLen - 1)) {
 				matchesBuffer.push(val);
 				indicesBuffer.push(idx);
-				matchCountsBuffer.push(matchCount + Number(match && guardPass));
+				matchCountsBuffer.push(matchCount + Number(match));
 			}
 		}
 

@@ -38,6 +38,29 @@ function isConstructor(val) {
 	return val !== null && val !== undefined && val.prototype != null && val.prototype.constructor == val;
 }
 
+function isPrimitive(val) {
+	if (!val && val !== docAll)
+		return true;
+
+	switch (typeof val) {
+		case "object":
+		case "function":
+			return false;
+	}
+
+	return true;
+}
+
+function isValidObjectKey(key) {
+	switch (typeof key) {
+		case "string":
+		case "symbol":
+			return true;
+	}
+
+	return false;
+}
+
 const isSymbol = typeof Symbol == "undefined" ? candidate => {
 	return typeof candidate == "string" && candidate.indexOf(polyfillPrefixes.symbol) == 0;
 } : candidate => {
@@ -84,6 +107,10 @@ const isSetLike = typeof Set == "undefined" ? _ => false : candidate => {
 	return candidate instanceof Set;
 };
 
+const isMapLike = typeof Map == "undefined" ? _ => false : candidate => {
+	return candidate instanceof Map;
+};
+
 function isArrResolvable(candidate) {
 	if (isArrayLike(candidate))
 		return true;
@@ -108,10 +135,13 @@ export {
 	isObject,
 	isInstance,
 	isConstructor,
+	isPrimitive,
+	isValidObjectKey,
 	isSymbol,
 	isIterable,
 	isArrayLike,
 	isSetLike,
+	isMapLike,
 	isArrResolvable,
 	isEnv
 };
