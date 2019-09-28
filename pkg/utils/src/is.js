@@ -23,7 +23,11 @@ function isObj(val) {
 }
 
 function isObject(val) {
-	return !!val && Object.getPrototypeOf(val) == Object.prototype;
+	if (!val)
+		return false;
+
+	const proto = Object.getPrototypeOf(val);
+	return proto == null || proto == Object.prototype;
 }
 
 function isInstance(val) {
