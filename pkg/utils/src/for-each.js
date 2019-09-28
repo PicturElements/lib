@@ -2,8 +2,8 @@ import { symbolIteratorKey } from "./_constants";
 import {
 	isArrayLike,
 	isDirectInstanceof,
-	isSetLike
 } from "./is";
+import { isSetLike } from "./lazy";
 import {
 	composeOptionsTemplates,
 	createOptionsObject

@@ -3,6 +3,10 @@ import {
 	polyfillPrefixes
 } from "./_constants";
 
+// Moved to ./lazy:
+// * isSetLike 
+// * isMapLike
+
 const docAll = typeof document == "undefined" ? [] : document.all;
 
 function isDirectInstanceof(obj, constr) {
@@ -103,14 +107,6 @@ function isArrayLike(candidate) {
 	return candidate.length == 0 && Object.keys(candidate).length == 0;
 }
 
-const isSetLike = typeof Set == "undefined" ? _ => false : candidate => {
-	return candidate instanceof Set;
-};
-
-const isMapLike = typeof Map == "undefined" ? _ => false : candidate => {
-	return candidate instanceof Map;
-};
-
 function isArrResolvable(candidate) {
 	if (isArrayLike(candidate))
 		return true;
@@ -140,8 +136,6 @@ export {
 	isSymbol,
 	isIterable,
 	isArrayLike,
-	isSetLike,
-	isMapLike,
 	isArrResolvable,
 	isEnv
 };

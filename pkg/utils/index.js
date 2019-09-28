@@ -4,6 +4,7 @@ export * from "./src/convert";
 export * from "./src/dom";
 export * from "./src/func";
 export * from "./src/is";
+export * from "./src/lazy";
 export * from "./src/num";
 export * from "./src/obj";
 export * from "./src/options";
