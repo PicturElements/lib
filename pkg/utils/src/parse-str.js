@@ -48,13 +48,17 @@ export default function parseStr(str) {
 			break;
 		case "{":
 		case "[":
-			// Try parsing input as JSON else return input string
-			try {
-				return JSON.parse(str);
-			} catch (e) {
-				return str;
-			}
+			return parseObj(str);
 	}
 	
 	return str;
+}
+
+function parseObj(objStr) {
+	// Try parsing input as JSON else return input string
+	try {
+		return JSON.parse(objStr);
+	} catch (e) {
+		return objStr;
+	}
 }
