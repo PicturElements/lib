@@ -1,5 +1,6 @@
 import {
 	clone,
+	hasOwn,
 	inject,
 	isObject
 } from "@qtxr/utils";
@@ -139,7 +140,7 @@ class ComponentWrapper {
 
 	static autoSupply() {
 		for (const k in suppliers) {
-			if (suppliers.hasOwnProperty(k) && !hasInit(suppliers[k]))
+			if (hasOwn(suppliers, k) && !hasInit(suppliers[k]))
 				this.supply(k);
 		}
 
