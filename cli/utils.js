@@ -107,6 +107,10 @@ function closeFile(descriptor) {
 	});
 }
 
+async function getFileError(url, flags = "r") {
+
+}
+
 async function readFile(...paths) {
 	const descriptor = await findFileDescriptor(...paths);
 
@@ -246,6 +250,10 @@ function warn(...logs) {
 }
 
 function error(...logs) {
+	console.log("\x1b[1m\x1b[31m%s\x1b[0m", logs.map(String).join(" "));
+}
+
+function errorBlock(...logs) {
 	console.log("\x1b[1m\x1b[37m\x1b[41m%s\x1b[0m", logs.map(String).join(" "));
 }
 
@@ -290,6 +298,7 @@ module.exports = {
 	success,
 	warn,
 	error,
+	errorBlock,
 	join,
 	joinDir,
 	findUrl

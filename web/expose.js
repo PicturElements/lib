@@ -4,7 +4,7 @@ const {
 	exists,
 	readJSON,
 	success,
-	error
+	errorBlock
 } = require("../cli/utils");
 
 const BUNDLE_EXT_MAP = {
@@ -51,7 +51,7 @@ async function buildExposedPartition(pkgName, exposeType, locals) {
 
 		webpack(options, (err, stats) => {
 			if (err || stats.hasErrors()) {
-				error("ERROR: ", err);
+				errorBlock("ERROR: ", err);
 				resolve(false);
 			} else {
 				resolve(true);

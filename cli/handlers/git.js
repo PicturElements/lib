@@ -9,46 +9,45 @@ const {
 	booleanQuestion,
 	question
 } = require("../form-utils");
+const Commander = require("../commander");
 
 const PKG_DIR = path.join(__dirname, "../../pkg"),
 	STD_IO = { stdio: "inherit" };
 
-module.exports = async function git(options, cmd) {
-	const pkgPath = path.relative(PKG_DIR, "");
-	if (!pkgPath)
-		return console.log("Cannot use command: cwd is packages root");
-	if (pkgPath.indexOf("..") == 0)
-		return console.log("Cannot use command: cwd falls outside packages root");
-
-	const root = pkgPath.split(path.sep)[0];
-
-	console.log(`Starting in package '${root}'`);
-
-	switch (cmd) {
-		case "push":
-			await push(root);
-			break;
-		case "unstage":
-			await spawn("git", ["reset", "--soft", "HEAD~1"]);
-			await spawn("git", ["status"], STD_IO);
-			break;
-		default:
-			console.log(`Invalid command '${cmd || ""}'`);
-	}
-};
+const commands = new Commander({
+		guard(cmd) {
+			const pkgPath = path.relative(PKG_DIR, "");
+			if (!pkgPath)
+				return cmd.error("Cannot use command: cwd is packages root");
+			if (pkgPath.indexOf("..") == 0)
+				return cmd.error("Cannot use command: cwd falls outside packages root");
+		}
+	})
+	.cmd("push", async (options, ...args) => {
+		const root = path.relative(PKG_DIR, "").split(path.sep)[0];
+		return await push(root);
+	})
+	.cmd("unstage", async (options, ...args) => {
+		await spawn("git", ["reset", "--soft", "HEAD~1"]);
+		await spawn("git", ["status"], STD_IO);
+	});
 
 async function push(root) {
 	const jsonPath = path.join(PKG_DIR, root, "package.json"),
 		package = await readJSONNull(jsonPath);
 
-	if (!package)
-		return console.log("Couldn't find package.json");
+	if (!package) {
+		error("Couldn't find package.json");
+		return false;
+	}
 
 	const pushes = package.qlib.pushes || 0;
 
 	package.qlib.pushes = pushes + 1;
-	if (!await (writeJSON(jsonPath, package, "  ")))
-		return console.log("Aborting: failed to update package.json");
+	if (!await (writeJSON(jsonPath, package, "  "))) {
+		error("Aborting: failed to update package.json");
+		return false;
+	}
 
 	process.on("beforeExit", async _ => {
 		console.log("\nUndoing changes...");
@@ -57,7 +56,7 @@ async function push(root) {
 
 		if (await (writeJSON(jsonPath, package, "  ")))
 			console.log("Successfully undid changes; exiting");
-		 else {
+		else {
 			error("WARNING: failed to update package.json. Please update it manually with the following data:");
 			console.log({
 				"qlib.pushes": pushes
@@ -90,12 +89,19 @@ async function push(root) {
 	}
 
 	const commitStatus = await spawn("git", ["commit", "-m", `${msgPrefix}${msg}`], STD_IO);
-	if (commitStatus.code != 0)
-		return console.log("Commit failed - dumping progress");
+	if (commitStatus.code != 0) {
+		error("Commit failed - dumping progress");
+		return false;
+	}
 
 	const pushStatus = await spawn("git", ["push"]);
-	if (pushStatus.code != 0)
-		return console.log("Push failed - dumping progress");
+	if (pushStatus.code != 0) {
+		error("Push failed - dumping progress");
+		return false;
+	}
 
 	process.exit();
+	return true;
 }
+
+module.exports = commands;

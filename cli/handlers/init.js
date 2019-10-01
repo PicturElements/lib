@@ -3,7 +3,10 @@ const {
 	stat,
 	mkdir,
 	logNL,
-	writeFile
+	writeFile,
+	error,
+	success,
+	errorBlock
 } = require("../utils");
 
 const getPackageFields = require("../data-getters/package-fields");
@@ -22,13 +25,13 @@ module.exports = async function init(options, name) {
 	const precedence = JSONForm.calcPrecedenceFromCLIOptions(options);
 	
 	if (!name)
-		return console.log("Failed to initialize package: name is not valid");
+		return error("Failed to initialize package: name is not valid");
 	
 	const pkgPathLocal = path.join(PKG_DIR, name),
 		pkgPath = path.join(HOME_DIR, pkgPathLocal);
 
 	if (await stat(pkgPath))
-		return console.log(`Failed to initialize package: '${name}' already exists`);
+		return error(`Failed to initialize package: '${name}' already exists`);
 
 	// Set up package.json
 	while (true) {
@@ -55,7 +58,7 @@ module.exports = async function init(options, name) {
 		}
 	}
 
-	console.log(`\nSuccess! Created package ${name} in ${path.join(HOME_DIR, PKG_DIR)}`);
+	success(`\nSuccess! Created package ${name} in ${path.join(HOME_DIR, PKG_DIR)}`);
 
 	async function startInit(writer) {
 		// Set up basic file structure
@@ -116,12 +119,13 @@ module.exports = async function init(options, name) {
 };
 
 function panic(pkgPath, reason) {
-	console.log(`Panic: ${reason}\nPlease manually remove directory ${pkgPath}\n`);
+	errorBlock(`Panic: ${reason}\nPlease manually remove directory ${pkgPath}\n`);
 }
 
 async function writeFiles(files) {
 	for (const file of files) {
 		const success = await writeFile(file.path, file.content || "");
+		
 		if (!success)
 			return file.err || `failed to write file at ${file.path}`;
 	}

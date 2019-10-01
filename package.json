@@ -37,6 +37,7 @@
     "jest-cli": "^24.9.0"
   },
   "bin": {
+    "ql": "./cli/cli",
     "qlib": "./cli/cli"
   }
 }

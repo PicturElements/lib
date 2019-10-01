@@ -1,11 +1,9 @@
+const Commander = require("../commander");
 const path = require("path");
 
-module.exports = async function i18n(options, cmd) {
-	switch (cmd) {
-		case "mkmap":
-			console.log("generating sitemap...");
-			break;
-		default:
-			console.log(`Invalid command '${cmd || ""}'`);
-	}
-};
+const commands = new Commander()
+	.cmd("mkmap", (options, ...args) => {
+		console.log("generating sitemap...");
+	});
+
+module.exports = commands;
