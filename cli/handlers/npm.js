@@ -12,8 +12,8 @@ const Commander = require("../commander");
 const STD_IO = { stdio: "inherit" };
 
 const commands = new Commander()
-	.cmd("install", async (options, ...args) => {
-		const [ pkgName, ...passedArgs ] = args;
+	.cmd("install", async options => {
+		const [ pkgName, ...passedArgs ] = options.args;
 
 		if (!await isValidPkgName(pkgName, "install"))
 			return false;
@@ -39,8 +39,8 @@ const commands = new Commander()
 		
 		success(`Sucessfully installed ${package.name}`);
 	})
-	.cmd("local-install", async (options, ...args) => {
-		const [ pkgName ] = args;
+	.cmd("local-install", async options => {
+		const [ pkgName ] = options.args;
 
 		if (!await isValidPkgName(pkgName, "local-install"))
 			return false;
@@ -56,8 +56,8 @@ const commands = new Commander()
 			return false;
 		}
 	})
-	.cmd("local-uninstall", async (options, ...args) => {
-		const [ pkgName ] = args;
+	.cmd("local-uninstall", async options => {
+		const [ pkgName ] = options.args;
 
 		if (!await isValidPkgName(pkgName, "local-uninstall"))
 			return false;

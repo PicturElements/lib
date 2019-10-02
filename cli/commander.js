@@ -1,5 +1,4 @@
 // TODO:
-// clean up options in handler calls (add runtime, etc)
 // check nested Commanders for duplicate commands/aliases
 
 const {
@@ -15,12 +14,16 @@ const validCommandRegex = /^[a-z0-9-_?]+$/i;
 
 class Commander {
 	constructor(config = {}) {
+		this.helpTexts = {};
+		this.command = "";
+
 		applyConfigAndHooks(this, config);
 
 		this.commandsList = [];
 		this.aliases = {};
 		this.commands = {};
 		this.owner = null;
+		this.currentCommandInstance = null;
 	}
 
 	cmd(command, config) {
@@ -45,12 +48,10 @@ class Commander {
 			};
 		}
 
-		if (config.handle instanceof Commander)
-			config.handle.owner = this;
-
 		const cmd = new Command(this, command, config);
 		this.commandsList.push(cmd);
 		this.commands[command] = cmd;
+		this.currentCommandInstance = cmd;
 
 		return this;
 	}
@@ -74,22 +75,12 @@ class Commander {
 		return this._run(runtime);
 	}
 
-	pre(func) {
-		this.hooks.pre = func;
-		return this;
-	}
-
-	post(func) {
-		this.hooks.post = func;
-		return this;
-	}
-
 	_run(runtime) {
-		const currentCmd = runtime.getNextCommand();
+		const currentCommand = runtime.getNextCommand();
 
 		for (const command of this.commandsList) {
-			if (command.command == currentCmd) {
-				runtime.setLastValidCommand(currentCmd);
+			if (command.command == currentCommand) {
+				runtime.setLastValidCommand(currentCommand);
 				return command.invoke(runtime);
 			}
 		}
@@ -105,27 +96,57 @@ class Commander {
 			lvc = runtime.lastValidCommand;
 
 		if (lvc || !cmdChunk) {
-			const list = this.commandsList.map(c => c.command).sort(),
-				subcommandStr = list.join("\n");
+			if (runtime.isValidMatch())
+				error(`\nFailed to find full command match for '${cmdChunk}'`);
+			else
+				error(`Failed to find command for '${cmdChunk}'`);
 
-			error(`\nFailed to find command for '${cmdChunk}'`);
-			console.log(`Command '${runtime.lastValidCommand || ""}' has the following subcommands:`);
-			info(`${subcommandStr}\n`);
+			this.logCommandsList();
 		} else
 			error(`Failed to find command for '${cmdChunk}'`);
+	}
+
+	getCommandsList() {
+		return this.commandsList
+			.filter(c => c.listable !== false)
+			.map(c => c.command)
+			.sort();
+	}
+
+	logCommandsList() {
+		console.log(`Command '${this.command}' has the following subcommands:`);
+		info(`${this.getCommandsList().join("\n")}\n`);
+	}
+	
+	pre(func) {
+		this.hooks.pre = func;
+		return this;
+	}
+
+	post(func) {
+		this.hooks.post = func;
+		return this;
+	}
+
+	helpText(helpText) {
+		this.currentCommandInstance.helpText = helpText;
+		return this;
 	}
 }
 
 class Command {
 	constructor(owner, command, config = {}) {
-		this.helpText = owner.helpText || null;
-		this.handle = owner.handle || null;
+		this.helpText = resolvePartitionValue(owner, "helpTexts", command);
+		this.handle = resolvePartitionValue(owner, "handle");
+		this.listable = true;
 		
 		applyConfigAndHooks(this, config);
 
 		this.owner = owner;
 		this.command = command;
 		this.runtime = null;
+
+		linkHandlerOwner(this.handle, this);
 
 		if (!isHandler(this.handle))
 			throw new Error("Failed to set command: handler is not a function or Commander");
@@ -136,34 +157,30 @@ class Command {
 		// become useful in hooks
 		this.runtime = runtime;
 
-		if (await this.expectHook("guard").toBe(false))
+		const options = runtime.export(this);
+
+		if (await this.expectHook("guard", options).toBe(false))
 			return false;
 
-		await this.callHook("pre");
+		await this.callHook("pre", options);
 
-		const options = runtime.export();
 		let retVal = null,
-			handler = this.handle;
-
-		if (typeof this.handle == "string")
-			handler = require(this.handle);
+			handler = resolveHandler(this.handle, this);
 		
 		if (await this.expectHook("intercept", options).toBe(true))
 			retVal = true;
 		else switch (getHandlerType(handler)) {
 			case "function": {
-				retVal = await handler(options, ...options.args);
+				retVal = await handler(options);
 				break;
 			}
 
 			case "commander":
-				// handler
-				handler.owner = this;
 				retVal = handler._run(runtime);
 				break;
 		}
 
-		await this.callHook("post", runtime);
+		await this.callHook("post", options);
 
 		return retVal === undefined ? true : retVal;
 	}
@@ -176,7 +193,7 @@ class Command {
 				helpText = this.helpText;
 				break;
 			case "function":
-				helpText = this.helpText(this);
+				helpText = this.helpText(this, this.runtime.export(this));
 				break;
 		}
 
@@ -242,20 +259,29 @@ class CommandRuntime {
 	}
 
 	getNextCommand() {
-		return this.options.args[this.pointer++];
+		this.currentCommand = this.options.args[this.pointer++];
+		return this.currentCommand;
 	}
 
 	getCommandChunk() {
 		return this.options.args.slice(0, this.pointer).join(" ");
 	}
 
+	isValidMatch() {
+		const last = this.lastCommand || this.options.args[this.options.args.length - 1];
+		return last == this.lastValidCommand;
+	}
+
 	setLastValidCommand(cmd) {
 		this.lastValidCommand = cmd;
 	}
 
-	export() {
+	export(cmd) {
 		const options = Object.assign({}, this.options);
 		options.args = options.args.slice(this.pointer);
+		options.cmd = cmd;
+		options.runtime = this;
+		options.root = getRootCommander(cmd);
 		return options;
 	}
 }
@@ -308,6 +334,51 @@ function getRootCommander(item) {
 			return item;
 
 		item = item.owner;
+	}
+}
+
+function resolvePartitionValue(cmdOrOwner, key, secondaryKey) {
+	let stores = [];
+
+	// If it's a Command instance, check own,
+	// owner, and root properties
+	// Otherwise, only check owner and root properties
+	if (cmdOrOwner instanceof Command)
+		stores = [cmdOrOwner[key], cmdOrOwner.owner[key]];
+	else
+		stores = [cmdOrOwner[key]];
+
+	const root = getRootCommander(cmdOrOwner);
+
+	if (root && cmdOrOwner != root)
+		stores.push(root[key]);
+
+	for (const store of stores) {
+		if (secondaryKey === undefined) {
+			if (store != null)
+				return store;
+		} else {
+			if (store.hasOwnProperty(secondaryKey) && store[secondaryKey] != null)
+				return store[secondaryKey];
+		}
+	}
+
+	return null;
+}
+
+function resolveHandler(handler, owner) {
+	if (typeof handler == "string")
+		handler = require(handler);
+	
+	linkHandlerOwner(handler, owner);
+
+	return handler;
+}
+
+function linkHandlerOwner(handler, owner) {
+	if (handler instanceof Commander) {
+		handler.owner = owner;
+		handler.command = owner.command;
 	}
 }
 

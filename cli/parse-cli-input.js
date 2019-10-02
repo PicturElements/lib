@@ -13,14 +13,6 @@ module.exports = function parseCLIInput(argv, aliases, extraArgs) {
 		argv = process.argv.slice(0, 2).concat(toArgv(argv));
 	}
 
-	// Deprecated
-	if (argv.constructor == Object) {
-		console.log("Object argv is deprecated");
-		argv.args = [...argv.args, ...extraArgs];
-		argv.rawArgs = [...argv.rawArgs, ...extraArgs];
-		return argv;
-	}
-
 	const [execPath, binPath, ...args] = argv,
 		rawArgs = [...args, ...extraArgs],
 		options = {
@@ -88,17 +80,4 @@ function toArgv(argStr) {
 function applyAlias(args, idx, targetCommand) {
 	const newArgs = toArgv(targetCommand);
 	args.splice(idx, 1, ...newArgs);
-
-	/*const newArgs = toArgv(targetCommand),
-		shift = newArgs.length - 1,
-		startIdx = Math.max(args.length, idx) + shift - 1,
-		endIdx = idx + shift;
-
-	for (let i = startIdx; i > endIdx; i--)
-		args[i + 1] = args[i - shift];
-
-	for (let i = endIdx; i >= idx; i--)
-		args[i] = newArgs[i - idx];
-
-	return args;*/
 }

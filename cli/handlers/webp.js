@@ -9,8 +9,9 @@ const { booleanQuestion } = require("../form-utils");
 
 const imgFileRegex = /\.(?:png|jpe?g|tiff?|webp)$/;
 
-module.exports = async function webp(options, ioPaths, passedOptions) {
-	const cwd = process.cwd(),
+module.exports = async function webp(options) {
+	const [ ioPaths, passedOptions ] = options.args,
+		cwd = process.cwd(),
 		ioPathSplit = ioPaths.split(":").map(p => join(cwd, p)),
 		iPath = ioPathSplit[0],
 		oPath = ioPathSplit[1] === undefined ? iPath : ioPathSplit[1];

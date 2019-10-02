@@ -10,6 +10,7 @@ const libScopedCommands = {
 };
 
 const commands = new Commander({
+		command: process.argv[1].split(path.sep).pop(),
 		guard(cmd) {
 			if (libScopedCommands.hasOwnProperty(cmd.command) && process.cwd().indexOf(HOME_DIR) == -1) {
 				error(`Refusing to run this qlib command outside the home directory (${HOME_DIR})`);
@@ -40,7 +41,13 @@ const commands = new Commander({
 		.alias("vi", "vue invoke")
 	.cmd("test")
 	.cmd("git")
-		.alias("gp", "git push");
+		.alias("gp", "git push")
+	.cmd("?", {
+		handle(options) {
+			options.root.logCommandsList();
+		},
+		listable: false
+	});
 
 async function run(command, extraArgs) {
 	return await commands.run(command, null, extraArgs);

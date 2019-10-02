@@ -23,11 +23,11 @@ const commands = new Commander({
 				return cmd.error("Cannot use command: cwd falls outside packages root");
 		}
 	})
-	.cmd("push", async (options, ...args) => {
+	.cmd("push", async options => {
 		const root = path.relative(PKG_DIR, "").split(path.sep)[0];
 		return await push(root);
 	})
-	.cmd("unstage", async (options, ...args) => {
+	.cmd("unstage", async options => {
 		await spawn("git", ["reset", "--soft", "HEAD~1"]);
 		await spawn("git", ["status"], STD_IO);
 	});

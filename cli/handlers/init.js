@@ -21,8 +21,9 @@ const HOME_DIR = path.join(__dirname, "../.."),
 	NPM_USER = "qtxr",
 	README_URL = `https://github.com/PicturElements/lib/tree/master/${PKG_DIR}/@name@#readme`;
 
-module.exports = async function init(options, name) {
-	const precedence = JSONForm.calcPrecedenceFromCLIOptions(options);
+module.exports = async function init(options) {
+	const [ name ] = options.args,
+		precedence = JSONForm.calcPrecedenceFromCLIOptions(options);
 	
 	if (!name)
 		return error("Failed to initialize package: name is not valid");
