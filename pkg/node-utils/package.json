@@ -1,0 +1,48 @@
+{
+  "name": "@qtxr/node-utils",
+  "version": "1.0.0",
+  "description": "Utilities for common tasks in node environments",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node ../server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PicturElements/lib.git",
+    "directory": "pkg/node-utils"
+  },
+  "keywords": [
+    "node",
+    "fs",
+    "path",
+    "cli",
+    "async",
+    "promise",
+    "codemod",
+    "commonJS"
+  ],
+  "author": "qtxr",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/PicturElements/lib/issues"
+  },
+  "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/node-utils#readme",
+  "dependencies": {},
+  "devDependencies": {},
+  "qlib": {
+    "pushes": 1,
+    "expose": {
+      "scripts": [
+        "connect/feed.js"
+      ],
+      "styles": []
+    },
+    "ui": [
+      {
+        "type": "console",
+        "config": {}
+      }
+    ]
+  }
+}
