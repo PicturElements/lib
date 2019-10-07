@@ -12,16 +12,19 @@ export default function serialize(fieldsOrItem, optionsOrIndentStr = {}) {
 
 	const indentStr = typeof options.indentStr == "string" ? options.indentStr : "\t",
 		startIndent = typeof options.indent == "number" ? options.indent || 0 : 0,
-		quoteChar = typeof options.quote == "string" ? options.quote : "\"";
+		quoteChar = typeof options.quote == "string" && !options.jsonCompatible ? options.quote : "\"";
 
 	const srz = (item, indent = 0) => {
 		switch (typeof item) {
 			case "string":
 				return `"${item}"`;
+
 			case "number":
 				return isNaN(item) || !isFinite(item) ? "null": String(item);
+
 			case "boolean":
 				return String(item);
+				
 			case "object":
 				if (item == null)
 					return "null";
@@ -60,8 +63,12 @@ export default function serialize(fieldsOrItem, optionsOrIndentStr = {}) {
 				}
 
 				return "{}";
+				
 			case "function":
-				return "{}";
+				if (options.jsonCompatible)
+					return "{}";
+				
+				return item.toString().split(/\n|\r/).join(`\n${repeat(indentStr, indent)}`);
 		}
 	};
 
