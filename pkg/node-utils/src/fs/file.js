@@ -1,5 +1,7 @@
 const fs = require("fs");
 const promisify = require("../promisify");
+const { mkdir } = require("./dir");
+const { splitDirAndFile } = require("../path/general");
 
 async function readFile(...paths) {
 	const descriptor = await findFileDescriptor(...paths);
@@ -40,6 +42,24 @@ function writeFile(...args) {
 	)(args);
 }
 
+async function writeFileDeep(pth, fileData) {
+	const {
+		dir,
+		file
+	} = splitDirAndFile(pth);
+
+	if (!file)
+		return false;
+
+	await mkdir(dir, {
+		recursive: true
+	});
+
+	await writeFile(pth, fileData);
+
+	return true;
+}
+
 // TODO: promisify
 function closeFile(descriptor) {
 	return new Promise(resolve => {
@@ -77,6 +97,7 @@ module.exports = {
 	readFile,
 	readFileUTF,
 	writeFile,
+	writeFileDeep,
 	closeFile,
 	unlink
 };

@@ -20,14 +20,25 @@ function pathRelative(pth, pth2) {
 const filePathRegex = /\..+?$/;
 
 function stripFileFromPath(pth) {
+	return splitDirAndFile(pth).dir;
+}
+
+function splitDirAndFile(pth) {
 	const split = pth.split(/\\|\//);
 
-	if (!filePathRegex.test(split[split.length - 1]))
-		return pth;
+	if (!filePathRegex.test(split[split.length - 1])) {
+		return {
+			dir: pth,
+			file: null
+		};
+	}
 
-	split.pop();
-	
-	return split.join(path.sep);
+	const file = split.pop();
+
+	return {
+		dir: split.join("/"),
+		file
+	};
 }
 
 function coerceFilePath(pth, extension = "js") {
@@ -37,10 +48,20 @@ function coerceFilePath(pth, extension = "js") {
 	return `${pth}.${extension}`;
 }
 
+function getFileName(pth) {
+	const file = splitDirAndFile(pth).file;
+	if (!file)
+		return null;
+
+	return file.replace(/\.\w+?/, "");
+}
+
 module.exports = {
 	join,
 	joinDir,
 	pathRelative,
 	stripFileFromPath,
-	coerceFilePath
+	splitDirAndFile,
+	coerceFilePath,
+	getFileName
 };

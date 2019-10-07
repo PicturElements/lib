@@ -6,7 +6,7 @@ module.exports = {
 	...require("./src/fs/general"),
 	...require("./src/fs/json"),
 	// io
-	...require("./src/io/log"),
+	...require("./src/io/console"),
 	...require("./src/io/readline"),
 	// path
 	findPath: require("./src/path/find-path"),
@@ -14,6 +14,7 @@ module.exports = {
 	// other
 	promisify: require("./src/promisify"),
 	tryify: require("./src/tryify"),
-	...require("./src/buffered-render"),
+	serialize: require("./src/serialize"),
+	...require("./src/render"),
 	...require("./src/file-inject")
 };

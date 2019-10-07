@@ -1,4 +1,4 @@
 module.exports = {
-	...require("./log"),
+	...require("./console"),
 	...require("./readline")
 };
