@@ -30,6 +30,8 @@ function mkTemplateRenderer(args = {}) {
 			return args.templateData.hasOwnProperty(key) ? args.templateData[key] : "";
 		});
 	};
+
+	return mkRenderer(args);
 }
 
 function render(args) {
@@ -47,7 +49,7 @@ function render(args) {
 	struct = build(struct);
 	// Render and display a pretty error message on error
 	try {
-		mount(destTarget, srcTarget, struct);
+		mount(destTarget, srcTarget, struct, args);
 	} catch (e) {
 		warn(`Failed to render structure ${serialize(struct, {
 			indentStr: "  ",
@@ -92,7 +94,7 @@ function vueRender(args) {
 	// Make sure buffer cleanup doesn't fail
 	try {
 		// Buffer file structure
-		mount(destTarget, srcTarget, struct);
+		mount(destTarget, srcTarget, struct, args);
 		// Run main render on the new buffer
 		api.render(destTarget, templateData, ejsOptions);
 	} catch (e) {
