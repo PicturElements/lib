@@ -18,7 +18,18 @@ function mkRenderer(args = {}) {
 		destTarget: a.destTarget || args.destTarget || "",
 		srcTarget: a.srcTarget || args.srcTarget || "",
 		struct: a.struct || args.struct || {},
+		templateData: Object.assign({}, args.templateData, a.templateData),
+		templateRenderer: a.templateRenderer || args.templateRenderer
 	});
+}
+
+function mkTemplateRenderer(args = {}) {
+	args = Object.assign({}, args);
+	args.templateRenderer = file => {
+		return file.replace(/%(\w+?)%/g, (match, key) => {
+			return args.templateData.hasOwnProperty(key) ? args.templateData[key] : "";
+		});
+	};
 }
 
 function render(args) {
@@ -162,7 +173,7 @@ function setPath(pth, parent, key) {
 		node.path = pth;
 }
 
-function mount(destTarget, srcTarget, struct) {
+function mount(destTarget, srcTarget, struct, args) {
 	const run = (pth, s) => {
 		for (const k in s) {
 			if (!s.hasOwnProperty(k))
@@ -174,7 +185,7 @@ function mount(destTarget, srcTarget, struct) {
 				const destPath = path.join(pth, k);
 
 				if (isFileDataNode(node)) {
-					writeFileDeep(destPath, node.fileData);
+					writeFileDeep(destPath, node.fileData, args);
 					continue;
 				}
 
@@ -189,9 +200,9 @@ function mount(destTarget, srcTarget, struct) {
 					// doesn't require additional data
 					s[k] = {};
 					fs.mkdirSync(destPath);
-					copyDir(destPath, srcPath, s[k]);
+					copyDir(destPath, srcPath, s[k], args);
 				} else
-					copyFile(destPath, srcPath);
+					copyFile(destPath, srcPath, args);
 			} else {
 				const dir = path.join(pth, k);
 				fs.mkdirSync(dir, {
@@ -205,39 +216,40 @@ function mount(destTarget, srcTarget, struct) {
 	run(destTarget, struct);
 }
 
-function copyFile(destPath, srcPath) {
-	fs.copyFileSync(
-		srcPath,
-		destPath,
-		err => {
-			if (err)
-				throw err;
-		}
-	);
+function copyFile(destPath, srcPath, args) {
+	if (typeof args.templateRenderer == "function") {
+		const fileData = fs.readFileSync(srcPath);
+		fs.writeFileSync(args.templateRenderer(fileData));
+	} else {
+		fs.copyFileSync(
+			srcPath,
+			destPath,
+			err => {
+				if (err)
+					throw err;
+			}
+		);
+	}
 }
 
-function copyDir(destPath, srcPath, struct) {
-	const copy = (dPath, sPath, s) => {
-		const files = fs.readdirSync(sPath);
+function copyDir(destPath, srcPath, struct, args) {
+	const files = fs.readdirSync(srcPath);
 
-		for (const file of files) {
-			const destFilePath = path.join(dPath, file),
-				srcFilePath = path.join(sPath, file);
+	for (const file of files) {
+		const destFilePath = path.join(destPath, file),
+			srcFilePath = path.join(srcPath, file);
 
-			if (fs.statSync(srcFilePath).isDirectory()) {
-				fs.mkdirSync(destFilePath, {
-					recursive: true
-				});
-				s[file] = {};
-				copyDir(destFilePath, srcFilePath, s[file]);
-			} else {
-				s[file] = srcFilePath;
-				copyFile(destFilePath, srcFilePath);
-			}
+		if (fs.statSync(srcFilePath).isDirectory()) {
+			fs.mkdirSync(destFilePath, {
+				recursive: true
+			});
+			struct[file] = {};
+			copyDir(destFilePath, srcFilePath, struct[file], args);
+		} else {
+			struct[file] = srcFilePath;
+			copyFile(destFilePath, srcFilePath, args);
 		}
-	};
-
-	copy(destPath, srcPath, struct);
+	}
 }
 
 function writeFileDeep(pth, fileData) {
@@ -283,6 +295,7 @@ async function tearDown(destTarget, struct) {
 
 module.exports = {
 	mkRenderer,
+	mkTemplateRenderer,
 	render,
 	mkVueRenderer,
 	vueRender
