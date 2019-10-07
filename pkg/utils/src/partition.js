@@ -18,7 +18,7 @@ export default function partition(data, partitionMap, classifier) {
 
 		if (hasOwn(partitionMap, cls))
 			partitionMap[cls][k] = data[k];
-		else if (hasOwn(partitionMap, "default"))
+		else if (hasOwn(partitionMap, "default") && cls != "garbage")
 			partitionMap.default[k] = data[k];
 	}
 
