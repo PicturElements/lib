@@ -101,7 +101,7 @@ function vueRender(args) {
 }
 
 function build(struct, outStruct = {}) {
-	if (!isObject(struct) || isLeafNode(struct))
+	if (isLeafNode(struct))
 		return struct;
 
 	for (const k in struct) {

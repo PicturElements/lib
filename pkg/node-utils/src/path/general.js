@@ -53,7 +53,7 @@ function getFileName(pth) {
 	if (!file)
 		return null;
 
-	return file.replace(/\.\w+?/, "");
+	return file.replace(/\.\w+$/, "");
 }
 
 module.exports = {
