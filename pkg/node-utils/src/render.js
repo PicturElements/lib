@@ -220,7 +220,11 @@ function mount(destTarget, srcTarget, struct, args) {
 
 function copyFile(destPath, srcPath, args) {
 	if (typeof args.templateRenderer == "function") {
-		const fileData = fs.readFileSync(srcPath);
+		let fileData = fs.readFileSync(srcPath);
+		
+		if (fileData instanceof Buffer)
+			fileData = fileData.toString();
+
 		fs.writeFileSync(args.templateRenderer(fileData));
 	} else {
 		fs.copyFileSync(
