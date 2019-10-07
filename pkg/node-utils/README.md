@@ -1,2 +1,2 @@
 ## @qtxr/fs-utils
-Utilities for the NodeJS file system module
+Utilities for common tasks in node environments

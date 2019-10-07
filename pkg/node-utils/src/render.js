@@ -25,9 +25,9 @@ function mkRenderer(args = {}) {
 
 function mkTemplateRenderer(args = {}) {
 	args = Object.assign({}, args);
-	args.templateRenderer = file => {
-		return file.replace(/%(\w+?)%/g, (match, key) => {
-			return args.templateData.hasOwnProperty(key) ? args.templateData[key] : "";
+	args.templateRenderer = (fileData, a) => {
+		return fileData.replace(/%(\w+?)%/g, (match, key) => {
+			return a.templateData && a.templateData.hasOwnProperty(key) ? a.templateData[key] : "";
 		});
 	};
 
@@ -55,7 +55,7 @@ function render(args) {
 			indentStr: "  ",
 			quote: ""
 		})}`);
-		error(e);
+		error(e, e.message);
 	}
 }
 
@@ -221,11 +221,11 @@ function mount(destTarget, srcTarget, struct, args) {
 function copyFile(destPath, srcPath, args) {
 	if (typeof args.templateRenderer == "function") {
 		let fileData = fs.readFileSync(srcPath);
-		
+
 		if (fileData instanceof Buffer)
 			fileData = fileData.toString();
 
-		fs.writeFileSync(args.templateRenderer(fileData));
+		fs.writeFileSync(destPath, args.templateRenderer(fileData, args));
 	} else {
 		fs.copyFileSync(
 			srcPath,
@@ -258,7 +258,7 @@ function copyDir(destPath, srcPath, struct, args) {
 	}
 }
 
-function writeFileDeep(pth, fileData) {
+function writeFileDeep(pth, fileData, args) {
 	const {
 		dir,
 		file
@@ -270,6 +270,13 @@ function writeFileDeep(pth, fileData) {
 	fs.mkdirSync(dir, {
 		recursive: true
 	});
+
+	if (typeof args.templateRenderer == "function") {
+		if (fileData instanceof Buffer)
+			fileData = fileData.toString();
+
+		fileData = args.templateRenderer(fileData, args);
+	}
 
 	fs.writeFile(pth, fileData, err => {
 		if (err)
