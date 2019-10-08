@@ -41,9 +41,17 @@ function exists(url) {
 	)([url, fs.constants.F_OK]);
 }
 
+const renameParamMap = { err: 0 };
+function rename(...args) {
+	return promisify(
+		fs.rename, renameParamMap, null
+	)(args);
+}
+
 module.exports = {
 	stat,
 	exec,
 	spawn,
-	exists
+	exists,
+	rename
 };
