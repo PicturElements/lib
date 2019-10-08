@@ -53,7 +53,11 @@ function getFileName(pth) {
 	if (!file)
 		return null;
 
-	return file.replace(/\.\w+$/, "");
+	return stripExtension(file);
+}
+
+function stripExtension(file) {
+	return file.replace(/(.+?)(?:\..*)?$/, "$1");
 }
 
 module.exports = {
@@ -63,5 +67,6 @@ module.exports = {
 	stripFileFromPath,
 	splitDirAndFile,
 	coerceFilePath,
-	getFileName
+	getFileName,
+	stripExtension
 };
