@@ -18,17 +18,17 @@ function apply(thisVal, func, ...args) {
 
 const fixedBindKey = sym("fixedBind key");
 
-function bind(func, context) {
+function bind(func, ...args) {
 	if (typeof func == "function")
-		return func[fixedBindKey] ? func : func.bind(context);
+		return func[fixedBindKey] ? func : func.bind(...args);
 
 	console.error("Supplied bind target is not a function");
 	return null;
 }
 
-function fixedBind(func, context) {
+function fixedBind(func, ...args) {
 	if (typeof func == "function") {
-		const bound = bind(func, context);
+		const bound = bind(func, ...args);
 		bound[fixedBindKey] = true;
 	}
 

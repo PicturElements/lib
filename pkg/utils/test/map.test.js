@@ -17,9 +17,9 @@ it("accepts a target object", () => {
 	});
 });
 
-it("returns a blank object or array-like if no valid callback is given", () => {
-	expect(map([1, 2, 3])).toStrictEqual([]);
-	expect(map({ a: 1, b: 2, c: 3 })).toStrictEqual({});
+it("uses an identity function if no valid callback is given", () => {
+	expect(map([1, 2, 3])).toStrictEqual([1, 2, 3]);
+	expect(map({ a: 1, b: 2, c: 3 })).toStrictEqual({ a: 1, b: 2, c: 3 });
 });
 
 it("accepts options", () => {

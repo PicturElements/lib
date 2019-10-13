@@ -1,10 +1,16 @@
 import equals from "./equals";
+import {
+	composeOptionsTemplates,
+	createOptionsObject
+} from "./options";
 
-export default function propMatch(val, matcher, options) {
+export default function matchValue(val, matcher, options) {
+	options = createOptionsObject(options, optionsTemplates);
+
 	if (val == null)
 		return false;
 
-	if (!options.smart)
+	if (options.plain)
 		return plainMatch(val, matcher, options);
 
 	switch (typeof matcher) {
@@ -28,3 +34,8 @@ function plainMatch(val, matcher, options) {
 
 	return equals(val, matcher);
 }
+
+const optionsTemplates = composeOptionsTemplates({
+	plain: true,
+	deepEquality: true
+});

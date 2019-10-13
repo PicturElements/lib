@@ -7,10 +7,8 @@ import {
 
 export default function map(obj, callback, options, out) {
 	out = isObj(out) ? out : isArrResolvable(obj) ? [] : {};
+	callback = typeof callback == "function" ? callback : v => v;
 	const isArrLike = isArrayLike(out);
-
-	if (typeof callback != "function")
-		return out;
 
 	forEach(obj, (v, k, o) => {
 		if (isArrLike)

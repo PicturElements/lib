@@ -18,7 +18,7 @@ import {
 	}
 */
 export default function inject(target, extender, options) {
-	options = createOptionsObject(options, injectTemplates);
+	options = createOptionsObject(options, optionsTemplates);
 		
 	target = coerceToObj(target, extender);
 	extender = coerceToObj(extender);
@@ -78,7 +78,7 @@ export default function inject(target, extender, options) {
 	return inj(target, extender);
 }
 
-const injectTemplates = composeOptionsTemplates({
+const optionsTemplates = composeOptionsTemplates({
 	cloneExtender: true,
 	injectDataset: {
 		cloneExtender: true,

@@ -3,7 +3,10 @@ import {
 	isArrayLike,
 	isDirectInstanceof,
 } from "./is";
-import { isSetLike } from "./lazy";
+import {
+	isSetLike,
+	isMapLike
+} from "./lazy/is";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
@@ -58,10 +61,16 @@ import hasOwn from "./has-own";
 // reverse		- iterate in reverse
 // iterable		- use iterator if object is iterable over native loop constructs
 // isSetLike	- hint that object behaves like a set during iteration, in that
-//				  the returned value at each iteration step represents both
-//				  the key and value. Otherwise, if an array is returned, it
+//				  the the returned value at each iteration step represents both
+//				  the key and value. It will automatically treat Set instances as set-like
+// isMapLike	- hint that object behaves like a map during iteration, in that
+//				  if an array is returned at each iteration step, it
 //				  will assume that it represents a key-value pair. It will
-//				  automatically treat Set instances as set-like
+//				  automatically treat Map instances as map-like. Furthermore,
+//				  it will automatically flip the key and value (since forEach
+//				  calls callbacks with (value, key, source)). This can be disabled
+//				  by explicitly setting flipKV to false
+// flipKV		- flip key and value in set-like iteration values. True by default
 // sparse		- indicates that the provided object may be sparse, so forEach
 //				  should not call the callback on empty properties
 // label		- label that can be used to break (nested) forEach
@@ -82,32 +91,43 @@ import hasOwn from "./has-own";
 //				  no arguments are passed and 'this' is null
 //				  Note that this will not be called if the loop that was broken was
 //				  the last one, as in this case the returned value is forEach itself
-//				  and as such it cannot propagate as a token can
+//				  and as such it cannot propagate as a token would
+
 export default function forEach(obj, callback, options){
-	if (!obj || typeof callback != "function")
+	if (obj === null || obj === undefined || typeof callback != "function")
 		return forEach;
 
-	options = createOptionsObject(options || forEach._options, forEachTemplates);
+	options = createOptionsObject(options || forEach._options, optionsTemplates);
 	forEach._options = null;
 
 	if (obj[symbolIteratorKey] && (options.iterable || !isArrayLike(obj))) {
 		const iterator = obj[symbolIteratorKey](),
 			setLike = options.isSetLike || isSetLike(obj),
+			mapLike = options.isMapLike || isMapLike(obj),
 			stack = [];
-		let item = null;
+		let item = null,
+			idx = -1;
 
-		while (true) {
+		while (++idx >= 0) {
 			item = iterator.next();
 			if (item.done)
 				break;
 
-			const kv = !setLike && Array.isArray(item.value) ?
-				item.value :
-				[item.value, item.value];
+			let vk;
+
+			if (setLike)
+				vk = [item.value, item.value];
+			else if (mapLike && Array.isArray(item.value)) {
+				if (options.flipKV === false)
+					vk = item.value;
+				else
+					vk = [item.value[1], item.value[0]];
+			} else // assume number index as key
+				vk = [item.value, idx];
 
 			if (options.reverse)
-				stack.push(kv);
-			else if (callback(kv[0], kv[1], obj) == jmpT) {
+				stack.push(vk);
+			else if (callback(vk[0], vk[1], obj) == jmpT) {
 				if (shouldContinue(options))
 					continue;
 				return brk(options);
@@ -315,10 +335,15 @@ function brk(options) {
 	return jmpT;
 }
 
-const forEachTemplates = composeOptionsTemplates({
+const optionsTemplates = composeOptionsTemplates({
 	reverse: true,
 	iterable: true,
+	isMapLike: true,
 	isSetLike: true,
+	flipKV: true,
+	noFlipKV: {
+		flipKV: false
+	},
 	sparse: true,
 	overSymbols: true
 });

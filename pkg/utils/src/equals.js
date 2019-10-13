@@ -10,7 +10,7 @@ let eqRuntime = {
 };
 
 function equals(valA, valB, options) {
-	eqRuntime = createOptionsObject(options, equalsTemplates);
+	eqRuntime = createOptionsObject(options, optionsTemplates);
 	return eq(valA, valB);
 }
 
@@ -87,7 +87,7 @@ function eqObject(a, b) {
 	return true;
 }
 
-const equalsTemplates = composeOptionsTemplates({
+const optionsTemplates = composeOptionsTemplates({
 	lazy: true
 });
 

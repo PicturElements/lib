@@ -1,14 +1,19 @@
 import parsePropStr from "./parse-prop-str";
-import propMatch from "./prop-match";
-import { isArrayLike } from "./is";
+import matchValue from "./match-value";
+import matchType from "./match-type";
+import {
+	isArrayLike,
+	isObj
+} from "./is";
 import { keys as objKeys } from "./obj";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./options";
+import matchQuery from "./match-query";
 
 export default function query(list, q, options) {
-	options = createOptionsObject(options, queryTemplates);
+	options = createOptionsObject(options, optionsTemplates);
 
 	if (!isArrayLike(list) || !q || typeof q != "object") {
 		return {
@@ -40,12 +45,14 @@ export default function query(list, q, options) {
 			key,
 			srcKey,
 			lazy,
-			strict
+			strict,
+			typeModifier
 		} = parsedQueryKey;
 
 		lazy = (options.lazy && !strict) || (!options.lazy && lazy);
 
-		const srcArr = iterations ? matches : list,
+		const typed = options.typed ^ typeModifier,
+			srcArr = iterations ? matches : list,
 			matchesBuffer = [],
 			indicesBuffer = [],
 			matchCountsBuffer = [];
@@ -54,8 +61,18 @@ export default function query(list, q, options) {
 			const val = srcArr[j],
 				idx = indices[j] || j,
 				matchCount = matchCounts[j] || 0,
-				guardPass = guard && !guard(parsedQueryKey, q, val),
-				match = Boolean(val) && propMatch(val[key], q[srcKey], options);
+				guardPass = guard && !guard(parsedQueryKey, q, val);
+			let match;
+
+			if (!val)
+				match = false;
+			else if (isObj(q[srcKey]) && options.deep)
+				match = matchQuery(val[key], q[srcKey], options);
+			else {
+				match = typed ?
+					matchType(val[key], q[srcKey], options) :
+					matchValue(val[key], q[srcKey], options);
+			}
 
 			// If the last key has been reached and there's no match,
 			// there there can be no matched result even with lazy
@@ -108,10 +125,25 @@ export default function query(list, q, options) {
 	};
 }
 
-const queryTemplates = composeOptionsTemplates({
-	smart: true,
+const optionsTemplates = composeOptionsTemplates({
+	// For matchValue
+	plain: true,
 	deepEquality: true,
+	// For matchType
+	strictConstructor: true,
+	noStrictConstructor: {
+		strictConstructor: false
+	},
+	falseDefault: {
+		defaultMatch: false
+	},
+	trueDefault: {
+		defaultMatch: true
+	},
+	// For query
+	deep: true,
 	lazy: true,
+	typed: true,
 	bundle: true,
 	noNullish: true
 });

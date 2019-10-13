@@ -31,16 +31,16 @@ const pathRegex = new RegExp(regexSources.path, "gi"),
 	splitCache = {};
 
 export default function splitPath(path) {
-	if (splitCache.hasOwnProperty(path))
-		return splitCache[path];
-
 	if (Array.isArray(path))
 		return path;
 
 	if (typeof path != "string" && typeof path != "number")
 		return [];
 
-	let out = [];
+	if (splitCache.hasOwnProperty(path))
+		return splitCache[path];
+
+	const out = [];
 	path = String(path);
 
 	while (true) {

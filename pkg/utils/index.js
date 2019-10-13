@@ -1,10 +1,12 @@
+export * from "./src/arr";
 export * from "./src/binary-search";
 export * from "./src/coerce";
 export * from "./src/convert";
 export * from "./src/dom";
+export * from "./src/env";
 export * from "./src/func";
+export * from "./src/hash";
 export * from "./src/is";
-export * from "./src/lazy";
 export * from "./src/num";
 export * from "./src/obj";
 export * from "./src/options";
@@ -18,6 +20,7 @@ export * from "./src/sym";
 
 export { default as basicInterpolate } from "./src/basic-interpolate";
 export { default as clone } from "./src/clone";
+export { default as cloneFast } from "./src/clone-fast";
 export { default as concatMut } from "./src/concat-mut";
 export { default as equals } from "./src/equals";
 export { default as filterMut } from "./src/filter-mut";
@@ -28,6 +31,7 @@ export { default as get } from "./src/get";
 export { default as getConstructorName } from "./src/get-constructor-name";
 export { default as getFunctionName } from "./src/get-function-name";
 export { default as hasOwn } from "./src/has-own";
+export { default as hash } from "./src/hash";
 export { default as immutate } from "./src/immutate";
 export { default as infill } from "./src/infill";
 export { default as inject } from "./src/inject";
@@ -36,9 +40,12 @@ export { default as map } from "./src/map";
 export { default as mapExtract } from "./src/map-extract";
 export { default as mapNum } from "./src/map-num";
 export { default as matchType } from "./src/match-type";
+export { default as matchValue } from "./src/match-value";
+export { default as matchQuery } from "./src/match-query";
 export { default as MemoGetter } from "./src/memo-getter";
 export { default as memoize } from "./src/memoize";
 export { default as mkAccessor } from "./src/mk-accessor";
+export { default as mkStdLib } from "./src/mk-std-lib";
 export { default as nub } from "./src/nub";
 export { default as objToArr } from "./src/obj-to-arr";
 export { default as parseArgStr } from "./src/parse-arg-str";
@@ -51,7 +58,6 @@ export { default as partition } from "./src/partition";
 export { default as QNDSet } from "./src/qnd-set";
 export { default as query } from "./src/query";
 export { default as queryFilterMut } from "./src/query-filter-mut";
-export { default as queryMatch } from "./src/query-match";
 export { default as resolveArgs } from "./src/resolve-args";
 export { default as serialize } from "./src/serialize";
 export { default as splitArgStr } from "./src/split-arg-str";
@@ -59,3 +65,7 @@ export { default as splitPath } from "./src/split-path";
 
 // Backwards compatibility
 export { default as queryObj } from "./src/query";
+export { default as queryMatch } from "./src/match-query";
+
+// Lazy functions
+export * from "./src/lazy/is";

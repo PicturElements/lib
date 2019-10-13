@@ -1,10 +1,14 @@
-import { isNativeSimpleObject } from "./is";
+import {
+	isNativeSimpleObject,
+	isArrayLike
+} from "./is";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./options";
-import map from "./map";
+import hasOwn from "./has-own";
 
+// Faster but slightly less feature rich clone function
 export default function clone(obj, options) {
 	options = createOptionsObject(options, optionsTemplates);
 	const depth = options.shallow ? 0 : (options.hasOwnProperty("depth") ? options.depth : Infinity);
@@ -14,13 +18,25 @@ export default function clone(obj, options) {
 			// Check if the object is a direct instance of anything else than Object
 			// or Array, in which case we don't want to copy over the object naively,
 			// as the prototypes aren't transferred and we probably don't wish to deep copy
-			// instances anyway
+			// an instance anyway
 			if (!isNativeSimpleObject(o) && !options.cloneInstances)
 				return o;
 
-			const objOut = map(o, v => {
-				return d < depth ? cl(v, d + 1) : v;
-			});
+			let objOut;
+
+			if (isArrayLike(o)) {
+				objOut = [];
+
+				for (let i = 0, l = o.length; i < l; i++)
+					objOut.push(d < depth ? cl(o[i], d + 1) : o[i]);
+			} else {
+				objOut = {};
+
+				for (let k in o) {
+					if (hasOwn(o, k, options.cloneSymbols))
+						objOut[k] = d < depth ? cl(o[k], d + 1) : o[k];
+				}
+			}
 
 			if (options.cloneSymbols && typeof Symbol != "undefined") {
 				const symbols = Object.getOwnPropertySymbols(o);

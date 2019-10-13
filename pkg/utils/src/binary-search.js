@@ -96,7 +96,7 @@ function mkStandardBinaryComparator(val) {
 //				with proximity 0, the index will be used as the first search pivot
 
 function findClosest(arr, comparator, options) {
-	options = createOptionsObject(options, findClosestTemplates);
+	options = createOptionsObject(options, optionsTemplates);
 
 	let steps = 0;
 
@@ -135,7 +135,7 @@ function findClosest(arr, comparator, options) {
 				overflow = stepPoint >= arr.length,
 				outOfBounds = underflow || overflow;
 
-			if (!outOfBounds) {
+			if (!(options.upper ^ options.lower) && !outOfBounds) {
 				const stepProx = comparator(arr[stepPoint]),
 					sa = Math.abs(stepProx),
 					ra = Math.abs(refProx);
@@ -177,7 +177,7 @@ function findClosest(arr, comparator, options) {
 	}
 }
 
-const findClosestTemplates = composeOptionsTemplates({
+const optionsTemplates = composeOptionsTemplates({
 	upper: true,
 	lower: true,
 	bounded: {

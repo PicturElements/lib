@@ -1,22 +1,17 @@
 function cleanRegex(str) {
-	return str.replace(/([$^()\]\/\\])/g, "\\$1");
+	return str.replace(/[$^()\]\/\\]/g, "\\$&");
 }
 
 function cleanPath(str) {
-	return escape(str.replace(/(\])/g, "\\$1"));
+	return escape(str).replace(/(\])/g, "\\$&");
 }
 
 function escape(str) {
-	return str.replace(/(?:\\.)|(['"`\\])/g, (match, capture) => {
-		if (capture)
-			return `\\${capture}`;
-
-		return match;
-	});
+	return str.replace(/['"`\\]/g, match => `\\${match}`);
 }
 
 function unescape(str) {
-	return String(str).replace(/\\(.)/, "$1");
+	return String(str).replace(/\\(.)/g, "$1");
 }
 
 function repeat(str, count = 0) {

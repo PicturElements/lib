@@ -1,4 +1,4 @@
-import queryMatch from "./query-match";
+import matchQuery from "./match-query";
 import filterMut from "./filter-mut";
 import {
 	composeOptionsTemplates,
@@ -6,13 +6,13 @@ import {
 } from "./options";
 
 export default function queryFilterMut(list, q, filterOptions, queryOptions) {
-	const options = createOptionsObject(filterOptions, queryFilterTemplates);
+	const options = createOptionsObject(filterOptions, optionsTemplates);
 
 	return filterMut(list, item => {
-		return options.invert ^ queryMatch(item, q, queryOptions);
+		return options.invert ^ matchQuery(item, q, queryOptions);
 	});
 }
 
-const queryFilterTemplates = composeOptionsTemplates({
+const optionsTemplates = composeOptionsTemplates({
 	invert: true
 });

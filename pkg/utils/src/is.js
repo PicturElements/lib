@@ -3,10 +3,6 @@ import {
 	polyfillPrefixes
 } from "./_constants";
 
-// Moved to ./lazy:
-// * isSetLike 
-// * isMapLike
-
 const docAll = typeof document == "undefined" ? [] : document.all;
 
 function isDirectInstanceof(obj, constr) {
@@ -124,6 +120,17 @@ function isEnv(env, def = "production") {
 	return process.env.NODE_ENV == env;
 }
 
+const nativeFuncRegex = /{\s*\[native code\]\s*}\s*$/;
+
+function isNativeFunction(candidate) {
+	if (typeof candidate != "function")
+		return false;
+
+	const funcStr = candidate.toString();
+
+	return funcStr.length < 1000 && nativeFuncRegex.test(funcStr);
+}
+
 export {
 	isDirectInstanceof,
 	isNativeSimpleObject,
@@ -137,5 +144,6 @@ export {
 	isIterable,
 	isArrayLike,
 	isArrResolvable,
-	isEnv
+	isEnv,
+	isNativeFunction
 };

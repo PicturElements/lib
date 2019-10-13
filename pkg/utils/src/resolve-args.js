@@ -72,7 +72,7 @@ import getFunctionName from "./get-function-name";
 // are added to the array instead of the outbound arguments
 
 export default function resolveArgs(args, signature, options) {
-	options = createOptionsObject(options, resolveArgsTemplates);
+	options = createOptionsObject(options, optionsTemplates);
 
 	if (!isArrayLike(args))
 		throw new Error("Failed to resolve arguments: no arguments supplied");
@@ -89,7 +89,7 @@ export default function resolveArgs(args, signature, options) {
 		useSingleSource = false;
 
 	if (options.allowSingleSource && isObject(args[0])) {
-		if (matchType({}, signature[0].type, false))
+		if (matchType({}, signature[0].type, "falseDefault"))
 			throw new Error("Failed to resolve arguments: argument ambiguity; first argument of function that supports single source arguments cannot be an object. There is no way to determine which type of argument should be used from arguments alone");
 	
 		useSingleSource = true;
@@ -145,7 +145,7 @@ export default function resolveArgs(args, signature, options) {
 resolveArgs.wrap = (func, signature, options) => {
 	options = Object.assign(
 		{},
-		createOptionsObject(options, resolveArgsTemplates),
+		createOptionsObject(options, optionsTemplates),
 		{
 			returnArgList: true
 		}
@@ -164,7 +164,7 @@ resolveArgs.wrap = (func, signature, options) => {
 	return wrapped;
 };
 
-const resolveArgsTemplates = composeOptionsTemplates({
+const optionsTemplates = composeOptionsTemplates({
 	allowSingleSource: true,
 	returnArgList: true
 });

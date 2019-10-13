@@ -10,7 +10,7 @@ import {
 // context returns the accessed object and the parent
 
 export default function get(data, path, def, options = {}) {
-	options = createOptionsObject(options, getItemTemplates);
+	options = createOptionsObject(options, optionsTemplates);
 	
 	let split = Array.isArray(path) ? path : splitPath(path),
 		trace = [],
@@ -67,7 +67,7 @@ export default function get(data, path, def, options = {}) {
 	return data;
 }
 
-const getItemTemplates = composeOptionsTemplates({
+const optionsTemplates = composeOptionsTemplates({
 	autoBuild: true,
 	context: true,
 	trace: true,
