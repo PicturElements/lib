@@ -24,7 +24,7 @@ const stockTransformers = [
 				return value;
 
 			switch (typeof value) {
-				// There's no guarantee that functions  can be reliably serialized,
+				// There's no guarantee that functions can be reliably serialized,
 				// as closures, function locations, etc. aren't preserved.
 				// Ideally, functions shouldn't be serialized at all
 				case "function":
@@ -32,6 +32,7 @@ const stockTransformers = [
 						return wrap("nativeFunction", getFunctionName(value));
 					
 					return wrap("function", `return ${value.toString()}`);
+
 				case "bigint":
 					return wrap("bigint", value.toString());
 			}
@@ -43,8 +44,10 @@ const stockTransformers = [
 						source: value.source,
 						flags: value.flags
 					});
+
 				case Date:
 					return wrap("date", value.toString());
+
 				case Array: {
 					const circularId = getCircularId(value);
 
@@ -52,8 +55,7 @@ const stockTransformers = [
 						return wrap({
 							type: "circularArray",
 							id: circularId,
-							value,
-							ignoreReplace: true
+							value
 						});
 					}
 
@@ -237,18 +239,20 @@ export default class CustomJSON {
 	}
 }
 
-function runReplace(inst, key, value, owner) {
-	wrapReplacer.setRuntime(getReviverHash(key), key, value, owner);
+// NEVER edit these for backwards compatibility
+const reviverKeyKey = "___@qtxr/uc/custom-json:type";
 
-	// ignoreReplace can be set on any packet when it's not
-	// wise to run replacers on replaced data
-	if (owner.hasOwnProperty("ignoreReplace"))
+function runReplace(inst, key, value, owner) {
+	wrapReplacer.setRuntime(key, value, owner);
+
+	// Don't run on processed data
+	if (owner.hasOwnProperty(reviverKeyKey))
 		return value;
 
 	for (let i = 0, l = inst.replacers.length; i < l; i++) {
 		const replacer = inst.replacers[i];
 
-		if (replacer.hasOwnProperty("match") && !matchType(value, replacer.match, "falseDefault"))
+		if (replacer.match && !matchType(value, replacer.match, "falseDefault"))
 			continue;
 
 		wrapReplacer.transformerName = replacer.name;
@@ -261,12 +265,10 @@ function runReplace(inst, key, value, owner) {
 }
 
 function runRevive(inst, key, value) {
-	const hash = getReviverHash(key);
-
-	if (!value.hasOwnProperty(hash))
+	if (!value.hasOwnProperty(reviverKeyKey))
 		return value;
 
-	const reviverKey = value[hash],
+	const reviverKey = value[reviverKeyKey],
 		reviver = inst.revivers[reviverKey];
 
 	if (typeof reviver != "function")
@@ -298,40 +300,21 @@ function wrapReplacer(typeOrPacket, valueOrReplacer) {
 		delete packet.type;
 	}
 
-	packet[wrapReplacer.hash] = getReviverKey(wrapReplacer.transformerName, type);
+	packet[reviverKeyKey] = getReviverKey(wrapReplacer.transformerName, type);
 
 	return packet;
 }
 
-wrapReplacer.hash = null;
 wrapReplacer.key = null;
 wrapReplacer.value = null;
 wrapReplacer.owner = null;
 wrapReplacer.transformerName = null;
 
-wrapReplacer.setRuntime = (hash, key, value, owner) => {
-	wrapReplacer.hash = hash;
+wrapReplacer.setRuntime = (key, value, owner) => {
 	wrapReplacer.key = key;
 	wrapReplacer.value = value;
 	wrapReplacer.owner = owner;
 };
-
-// This is duplicated from @qtxr/utils/hash because under no 
-// circumstances may the hash change between stringifying/parsing
-const p = 1721,
-	m = 137438953447;
-
-function getReviverHash(str) {
-	let hash = 0,
-		power = 1;
-
-	for (let i = 0, l = str.length; i < l; i++) {
-		hash = (hash + str.charCodeAt(i) * power) % m;
-		power = (power * p) % m;
-	}
-
-	return `%%json-reviver-packet-${hash}/${str.length}%%`;
-}
 
 function getReviverKey(transformerName, type) {
 	return `${transformerName}:${type}`;
