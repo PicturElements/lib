@@ -1,14 +1,12 @@
+import forEach from "./for-each";
+
 // Basic hashing function optimized for structure
 // preservation and decent performance
 export default function hash(value, reduce = false) {
-	try {
-		if (reduce)
-			return hashString(runHash(value), reduce);
+	if (reduce)
+		return hashString(runHash(value), reduce);
 
-		return runHash(value);
-	} catch(e) {
-		throw new Error("Cyclic structure found");
-	}
+	return runHash(value);
 }
 
 function hashSafe(value, reduce = false) {
@@ -18,6 +16,7 @@ function hashSafe(value, reduce = false) {
 
 		return runHash(value);
 	} catch(e) {
+		console.warn("Cyclic structure found", value);
 		return null;
 	}
 }
@@ -60,17 +59,30 @@ function hashObject(value) {
 			return out + "]";
 		}
 
-		case Object:
-		default: {
-			let out = value.constructor == Object ? "obj:{" : `${value.constructor.name || "inst"}:{`;
+		case Object: {
+			let out = "obj:{";
 
 			const keys = Object.keys(value).sort();
 
 			if (keys.length > 0)
-				out += runHash(value[keys[0]]);
+				out += `${runHash(value[keys[0]])}@${hashString(keys[0])}`;
 
 			for (let i = 1, l = keys.length; i < l; i++)
-				out += `,${runHash(value[keys[i]])}`;
+				out += `,${runHash(value[keys[i]])}@${hashString(keys[i])}`;
+
+			return out + "}";
+		}
+
+		default: {
+			let out = "inst:{",
+				count = 0;
+
+			forEach(value, (val, key) => {
+				if (count++ > 0)
+					out += ",";
+
+				out += `${runHash(val)}@${runHash(key)}`;
+			});
 
 			return out + "}";
 		}
@@ -96,7 +108,22 @@ const p = 1721,
 // 137438953447 is the largest prime less than 137438953471
 // Note that this assumes that p is never larger than 2**16 - 1
 
-function hashString(str, reduce = false) {
+// Caching is done to save processing on long strings,
+// and as JS's hashing for string keys is much more performant,
+// the performance benefits are significant:
+// Without caching:	~203598ms (3m 23s)
+// With caching		~25ms
+// for the first chapter of Moby Dick (12310) characters
+const hashCache = Object.create(null),
+	reducedHashCache = Object.create(null);
+
+function hashString(str, reduce) {
+	return reduce ?
+		reducedHashCache[str] || hashStringHelper(str, true, reducedHashCache) :
+		hashCache[str] || hashStringHelper(str, false, hashCache);
+}
+
+function hashStringHelper(str, reduce, cache) {
 	let hash = 0,
 		power = 1;
 
@@ -106,9 +133,9 @@ function hashString(str, reduce = false) {
 	}
 
 	if (reduce)
-		return `${hash.toString(36)}/${str.length}`;
-
-	return `${hash}/${str.length}`;
+		return (cache[str] = `${hash.toString(36)}/${str.length}`);
+	
+	return (cache[str] = `${hash}/${str.length}`);
 }
 
 /*
