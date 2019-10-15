@@ -79,9 +79,15 @@ export default function inject(target, extender, options) {
 }
 
 const optionsTemplates = composeOptionsTemplates({
+	clone: true,
+	cloneTarget: true,
 	cloneExtender: true,
 	injectDataset: {
 		cloneExtender: true,
 		override: true,
 	},
+	override: true,
+	noUndef: true,
+	shallow: true,
+	preserveInstances: true,
 });

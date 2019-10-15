@@ -1,4 +1,5 @@
 import { isObject } from "./is";
+import { getEnvType } from "./env";
 
 const blankOptions = Object.freeze({});
 
@@ -32,7 +33,7 @@ function createOptionsObject(optionsPrecursor, templates, err) {
 	switch (typeof optionsPrecursor) {
 		case "string":
 			return templates[optionsPrecursor] || tryBundle(optionsPrecursor, templates) || (
-				console.error(err || `'${optionsPrecursor}' is not a valid option`) ||
+				logError(err, optionsPrecursor, templates) ||
 				blankOptions
 			);
 		case "object":
@@ -46,7 +47,7 @@ function createOptionsObjectWithDefault(optionsPrecursor, templates, def, err) {
 	switch (typeof optionsPrecursor) {
 		case "string":
 			return templates[optionsPrecursor] || tryBundle(optionsPrecursor, templates) || (
-				console.error(err || `'${optionsPrecursor}' is not a valid option`) ||
+				logError(err, optionsPrecursor, templates) ||
 				createOptionsObject(def, templates)
 			);
 		case "object":
@@ -68,10 +69,32 @@ function tryBundle(optionsStr, templates) {
 
 		if (templ)
 			Object.assign(template, templ);
+		else
+			logError(`Failed to bundle option '${options[i]}': no option with that name exists`, null, templates);
 	}
 
 	templates[optionsStr] = Object.freeze(template);
 	return templates[optionsStr];
+}
+
+function logError(err, option, templates) {
+	console.error(err || `'${option}' is not a valid option`);
+
+	if (getEnvType() != "window")
+		return;
+
+	console.groupCollapsed("Expand to view the currently supported options");
+	const keys = Object.keys(templates).sort();
+
+	for (let i = 0, l = keys.length; i < l; i++) {
+		const key = keys[i];
+
+		console.groupCollapsed(key);
+		console.log(templates[key]);
+		console.groupEnd();
+	}
+
+	console.groupEnd();
 }
 
 export {

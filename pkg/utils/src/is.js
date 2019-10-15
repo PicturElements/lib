@@ -86,10 +86,16 @@ const isIterable = typeof Symbol == "undefined" ? candidate => {
 };
 
 function isArrayLike(candidate) {
+	// Common array-likes
 	if (Array.isArray(candidate) || typeof candidate == "string" || candidate === docAll)
 		return true;
 
+	// Non-objects or objects without a numerical length property
 	if (!candidate || typeof candidate != "object" || typeof candidate.length != "number")
+		return false;
+
+	// Object instances or the window object
+	if (candidate.constructor == Object || (typeof window == "object" && candidate == window))
 		return false;
 
 	// If the object is syntactically an array, see if Array.prototype.slice

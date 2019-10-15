@@ -5,7 +5,8 @@ import {
 import {
 	isObj,
 	isObject,
-	isArrResolvable
+	isArrResolvable,
+	isNativeSimpleObject
 } from "./is";
 import splitPath from "./split-path";
 import hasOwn from "./has-own";
@@ -113,7 +114,7 @@ function getDirectoryMeta(dir) {
 
 function setDirMeta(dir, name = "", path = "", parent = null) {
 	setSymbol(dir, isDirSym, true);
-	setSymbol(dir, dirPathSym, path ? `${path}/${name}` : name);
+	setSymbol(dir, dirPathSym, path ? `${path}.${name}` : name);
 	setSymbol(dir, parentDirSym, parent);
 }
 
@@ -136,7 +137,7 @@ function uncirculate(obj, options) {
 		o[circularIdKey] = -1;
 
 		const out = map(o, v => {
-			if (!isObj(v))
+			if (!isNativeSimpleObject(v))
 				return v;
 
 			if (v.hasOwnProperty(circularIdKey)) {
