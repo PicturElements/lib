@@ -72,7 +72,7 @@ const isDirSym = sym("isDir"),
 	dirPathSym = sym("dirPath"),
 	parentDirSym = sym("parentDir");
 
-function getDirectory(root, path = "") {
+function getDirectory(root, path = "", returnRestPath = false) {
 	path = splitPath(path);
 
 	if (!isObject(root))
@@ -81,22 +81,37 @@ function getDirectory(root, path = "") {
 	if (!isDir(root))
 		setDirMeta(root);
 
-	let dir = root;
+	let dir = root,
+		restPath = null;
 
 	for (let i = 0, l = path.length; i < l; i++) {
 		const key = path[i];
 
-		if (!dir.hasOwnProperty(key)) {
+		if (restPath)
+			restPath.push(key);
+		else if (!dir.hasOwnProperty(key)) {
 			const subdir = {};
 			setDirMeta(subdir, key, dir[dirPathSym], dir);
 			dir[key] = subdir;
 			dir = subdir;
 		} else {
-			if (!isDir(dir[key]))
-				throw new Error(`Failed to make directory: '${key}' is not a directory`);
+			if (!isDir(dir[key])) {
+				if (returnRestPath) {
+					restPath = [key];
+					continue;
+				} else
+					throw new Error(`Failed to make directory: '${key}' is not a directory`);
+			}
 
 			dir = dir[key];
 		}
+	}
+
+	if (returnRestPath) {
+		return {
+			directory: dir,
+			restPath
+		};
 	}
 
 	return dir;
