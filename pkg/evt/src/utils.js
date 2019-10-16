@@ -7,6 +7,19 @@ function isValidKey(evt, type) {
 	return checkKey(evt, evt.key.toLowerCase(), evtValidators[type] || type);
 }
 
+// https://stackoverflow.com/questions/21177489/selectionstart-selectionend-on-input-type-number-no-longer-allowed-in-chrome
+// https://html.spec.whatwg.org/multipage/input.html#do-not-apply
+// Please note that if the target text, search, password, tel, or url types or else checkWord
+// will not work properly
+
+const validTypes = {
+	text: true,
+	search: true,
+	password: true,
+	tel: true,
+	url: true
+};
+
 function isValidWord(evt, type) {
 	const target = evt.target,
 		val = target.value || "";
@@ -18,6 +31,9 @@ function isValidWord(evt, type) {
 		console.warn("Cannot validate word: event target must be an input with a selectionStart property");
 		return true;
 	}
+
+	if (target.type && !validTypes.hasOwnProperty(target.type))
+		console.warn(`Cannot get selection bounds for input with type '${target.type}' and so cannot accurately determine the value string. Please consider changing the input type to either text, search, password, tel, or url.`);
 
 	const testStr = val.substr(0, target.selectionStart) + evt.key + val.substr(target.selectionEnd);
 	return validateStr(testStr, evtValidators[type] || type);
@@ -50,8 +66,18 @@ function validateStr(str, validatorPartition) {
 	return true;
 }
 
-function getCoords(evt) {
+function getCoords(evt, element = null) {
 	const p = evt.touches ? evt.touches[0] : evt;
+
+	if (element instanceof Element) {
+		const bcr = element.getBoundingClientRect();
+
+		return {
+			x: p.clientX - bcr.left,
+			y: p.clientY - bcr.top
+		};
+	}
+
 	return {
 		x: p.clientX,
 		y: p.clientY
