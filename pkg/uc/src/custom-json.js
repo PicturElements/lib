@@ -45,9 +45,6 @@ const stockTransformers = [
 						flags: value.flags
 					});
 
-				case Date:
-					return wrap("date", value.toString());
-
 				case Array: {
 					const circularId = getCircularId(value);
 
@@ -93,7 +90,6 @@ const stockTransformers = [
 				return BigInt(packet.value);
 			},
 			regex: packet => new RegExp(packet.source, packet.flags),
-			date: packet => new Date(packet.value),
 			map(packet) {
 				if (typeof Map == "undefined") {
 					console.warn("Map is not supported - falling back to raw key-value array", packet);
