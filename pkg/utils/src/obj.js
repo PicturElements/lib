@@ -239,6 +239,44 @@ function setCircularId(obj, id) {
 	obj[circularIdKey] = id;
 }
 
+function unenum(obj, key, value) {
+	Object.defineProperty(obj, key, {
+		enumerable: false,
+		writable: true,
+		value: value
+	});
+}
+
+function writeProtect(obj, key) {
+	const descriptor = Object.getOwnPropertyDescriptor(obj, key);
+
+	if (!descriptor || !descriptor.writable || !descriptor.configurable)
+		return false;
+
+	Object.defineProperty(obj, key, {
+		value: obj[key],
+		writable: false,
+		configurable: true
+	});
+
+	return true;
+}
+
+function revokeWriteProtect(obj, key) {
+	const descriptor = Object.getOwnPropertyDescriptor(obj, key);
+
+	if (!descriptor || !descriptor.configurable)
+		return false;
+
+	Object.defineProperty(obj, key, {
+		value: obj[key],
+		writable: true,
+		configurable: true
+	});
+
+	return true;
+}
+
 export {
 	objToArr,
 	keys,
@@ -248,5 +286,8 @@ export {
 	circulate,
 	isCircular,
 	getCircularId,
-	setCircularId
+	setCircularId,
+	unenum,
+	writeProtect,
+	revokeWriteProtect
 };

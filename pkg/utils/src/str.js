@@ -1,3 +1,5 @@
+import { getWrappedRange } from "./range";
+
 function cleanRegex(str) {
 	return str.replace(/[$^()\]\/\\]/g, "\\$&");
 }
@@ -62,6 +64,12 @@ function padEnd(str, length = 2, padChar = " ") {
 	return str;
 }
 
+function spliceStr(str, from, to, replacement, relative = false) {
+	const range = getWrappedRange(from, to, str.length, relative);
+	replacement = replacement == null ? "" : String(replacement);
+	return str.substr(0, range[0]) + replacement + str.substr(range[1]);
+}
+
 export {
 	cleanRegex,
 	cleanPath,
@@ -69,5 +77,6 @@ export {
 	unescape,
 	repeat,
 	padStart,
-	padEnd
+	padEnd,
+	spliceStr
 };
