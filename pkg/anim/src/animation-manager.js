@@ -4,7 +4,6 @@ import Queue from "./queue";
 
 export default class AnimationManager {
 	constructor() {
-		this.dropped = true;
 		this.lastT = 0;
 		this.queue = [];
 		// Required by Queue, see ./queue.js
@@ -30,7 +29,7 @@ export default class AnimationManager {
 				if (!runtime.frames) {
 					runtime.frames++;
 					runtime.phase = "delayed";
-					animation.run(0, t, 0, t);
+					animation.tick(0, t, 0, t);
 				}
 				
 				if (runtime.delayPosition < 1) {
@@ -45,8 +44,8 @@ export default class AnimationManager {
 				exitBcExceededPositivePos = runtime.speed > 0 && runtime.position >= 1,
 				exitBcExceededNegativePos = runtime.speed < 0 && runtime.position <= 0;
 
-
-			animation.run(
+			runtime.frames++;
+			animation.tick(
 				Ease.ease(runtime.easing, runtime.position),
 				t,
 				tDelta,
@@ -64,8 +63,6 @@ export default class AnimationManager {
 		this.tickRequested = false;
 		if (this.queue.length)
 			this.requestTick();
-		else
-			this.dropped = true;
 	}
 
 	enqueue(animation) {

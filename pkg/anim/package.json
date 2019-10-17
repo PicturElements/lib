@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/anim",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Animation library with flexible easings, queueing, and fine grained control",
   "main": "index.js",
   "scripts": {
@@ -25,11 +25,11 @@
   },
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/anim#readme",
   "dependencies": {
-    "@qtxr/utils": "^1.3.0"
+    "@qtxr/utils": "^1.19.0"
   },
   "devDependencies": {},
   "qlib": {
-    "pushes": 3,
+    "pushes": 4,
     "expose": {
       "scripts": [
         "connect/feed.js"
