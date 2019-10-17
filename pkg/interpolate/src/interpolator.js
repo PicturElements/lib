@@ -82,7 +82,7 @@ export default class Interpolator {
 	}
 
 	animate(callback, ...options) {
-		return new InterpolatorAnimation(this, callback, ...options).promise;
+		return new InterpolatorAnimation(this, callback, ...options).run();
 	}
 
 	getInterpolationPosition(keyframe, keyframe2, at) {
