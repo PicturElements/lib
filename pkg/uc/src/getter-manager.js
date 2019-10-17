@@ -62,18 +62,18 @@ export default class GetterManager {
 			getter = this.getters;
 
 		if (!path.length)
-			throw new Error("Cannot get: invalid path ''");
+			return warn("Cannot get: invalid path ''");
 
 		for (let i = 0, l = path.length; i < l; i++) {
 			if (getter instanceof Getter)
-				throw new Error(`Cannot get: cannot step into Getter`);
+				return warn(`Cannot get: cannot step into Getter`);
 
 			if (getter instanceof GetterGroup) {
 				if (!getter.getters.hasOwnProperty(path[i]))
-					throw new Error(`Cannot get: no getter by name '${path[i]}' found in GetterGroup instance`);
+					return warn(`Cannot get: no getter by name '${path[i]}' found in GetterGroup instance`);
 			} else {
 				if (!getDirectoryMeta(getter).isDirectory)
-					throw new Error(`Cannot get: no directory by name '${path[i]}' found`);
+					return warn(`Cannot get: no directory by name '${path[i]}' found`);
 			}
 
 			if (getter instanceof GetterGroup) {
@@ -91,10 +91,15 @@ export default class GetterManager {
 		}
 
 		if (!isGetter(getter))
-			throw new Error(`Cannot get: failed to find getter at '${mkAccessor(path)}'`);
+			return warn(`Cannot get: failed to find getter at '${mkAccessor(path)}'`);
 		
 		return runGetter(getter, config, assets, rootGetter, groupPath);
 	}
+}
+
+function warn(msg, retVal = null) {
+	console.warn(msg);
+	return retVal;
 }
 
 function runGetter(getter, config = {}, assets = {}, rootGetter = null, groupPath = null) {
@@ -372,6 +377,12 @@ function mountGetter(owner, name, data) {
 
 	if (target.hasOwnProperty(name))
 		throw new Error(`Cannot add getter: getter by name '${name}' already exists`);
+
+	if (typeof data == "function") {
+		data = {
+			get: data
+		};
+	}
 
 	if (!isGetter(data))
 		throw new Error("Cannot make getter: supplied getter is malformed");

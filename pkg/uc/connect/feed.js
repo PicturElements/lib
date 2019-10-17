@@ -40,16 +40,11 @@ feed.add("gm", activeFeed => {
 		},
 		group: {
 			getters: {
-				a: {
-					get(config, assets, resolve) {
-						return {
-							test: resolve("test"),
-							outer: resolve("outer")
-						};
-					},
-					config: {
-						test: 42
-					}
+				a(config, assets, resolve) {
+					return {
+						test: resolve("test"),
+						outer: resolve("outer")
+					};
 				},
 				b: {
 					getters: {
