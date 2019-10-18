@@ -1,7 +1,5 @@
 const path = require("path");
-const {
-	spawn
-} = require("../utils");
+const { spawn } = require("../../pkg/node-utils");
 const Commander = require("../commander");
 
 const ROOT = path.join(__dirname, "../.."),

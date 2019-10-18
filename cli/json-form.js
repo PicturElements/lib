@@ -1,7 +1,5 @@
 const Form = require("./form");
-const {
-	writeFile
-} = require("./utils");
+const { writeFile } = require("../pkg/node-utils");
 const {
 	isObject,
 	repeat

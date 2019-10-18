@@ -1,12 +1,11 @@
 const {
 	join,
-	joinDir,
 	exists,
 	readJSONNull,
 	spawn,
 	error,
 	success
-} = require("../utils");
+} = require("../../pkg/node-utils");
 const Commander = require("../commander");
 
 const STD_IO = { stdio: "inherit" };
@@ -18,7 +17,7 @@ const commands = new Commander()
 		if (!await isValidPkgName(pkgName, "install"))
 			return false;
 
-		const path = joinDir("pkg", pkgName);
+		const path = join(__dirname, "../pkg", pkgName);
 		const package = await readJSONNull(join(path, "package.json"));
 
 		if (!package) {
@@ -48,7 +47,7 @@ const commands = new Commander()
 		const exit = await spawn("npm", [
 			"i",
 			"-D",
-			`file:${joinDir("pkg", pkgName)}`
+			`file:${join(__dirname, "../pkg", pkgName)}`
 		], STD_IO);
 
 		if (exit.code) {
@@ -62,7 +61,7 @@ const commands = new Commander()
 		if (!await isValidPkgName(pkgName, "local-uninstall"))
 			return false;
 
-		const path = joinDir("pkg", pkgName);
+		const path = join(__dirname, "../pkg", pkgName);
 		const package = await readJSONNull(join(path, "package.json"));
 
 		if (!package) {
@@ -90,7 +89,7 @@ async function isValidPkgName(pkgName, cmd) {
 		return false;
 	}
 
-	const path = joinDir("pkg", pkgName);
+	const path = join(__dirname, "../pkg", pkgName);
 
 	if (!await exists(path)) {
 		error(`Failed to run ${cmd}: ${pkgName} is not a package`);

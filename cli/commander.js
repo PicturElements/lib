@@ -4,9 +4,9 @@
 const {
 	error,
 	success,
-	joinDir,
-	info
-} = require("./utils");
+	info,
+	join
+} = require("../pkg/node-utils");
 const parseCLIInput = require("./parse-cli-input");
 
 const HANDLER_DIR = "cli/handlers";
@@ -36,11 +36,11 @@ class Commander {
 
 		if (typeof config == "string") {
 			config = {
-				handle: joinDir(HANDLER_DIR, config)
+				handle: join(__dirname, "..", HANDLER_DIR, config)
 			};
 		} else if (!config) {
 			config = {
-				handle: joinDir(HANDLER_DIR, command)
+				handle: join(__dirname, "..", HANDLER_DIR, command)
 			};
 		} else if (isHandler(config)) {
 			config = {

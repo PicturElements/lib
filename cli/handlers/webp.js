@@ -3,7 +3,7 @@ const {
 	mkdir,
 	exec,
 	collectFileTree
-} = require("../utils");
+} = require("../../pkg/node-utils");
 const { isObject } = require("../../utils");
 const { booleanQuestion } = require("../form-utils");
 

@@ -7,7 +7,7 @@ const {
 	error,
 	success,
 	errorBlock
-} = require("../utils");
+} = require("../../pkg/node-utils");
 
 const getPackageFields = require("../data-getters/package-fields");
 const getExposeDefault = require("../data-getters/expose-defaults");

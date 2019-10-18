@@ -1,4 +1,4 @@
-const { coerceFilePath } = require("../utils");
+const { coerceFilePath } = require("../../pkg/node-utils");
 
 const splitOnComma = input => input.trim().split(/\s*,\s*/);
 

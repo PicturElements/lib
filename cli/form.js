@@ -1,14 +1,12 @@
 const NestedReadlineInterface = require("./nested-readline-interface");
+const { ask } = require("../pkg/node-utils");
 const {
-	ask,
 	calcPrecedence,
-	calcPrecedenceFromCLIOptions
-} = require("./utils");
-const {
+	calcPrecedenceFromCLIOptions,
 	resolveVal,
 	shortPrint,
 	coerceNum,
-	isObject
+	isObject 
 } = require("../utils");
 
 const FIELDMAP_SRC_SYMBOL = Symbol("fieldMap source"),

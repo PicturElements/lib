@@ -4,7 +4,7 @@ const {
 	readJSONNull,
 	writeJSON,
 	error
-} = require("../utils");
+} = require("../../pkg/node-utils");
 const {
 	booleanQuestion,
 	question

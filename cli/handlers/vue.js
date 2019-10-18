@@ -1,5 +1,5 @@
 const run = require("../run");
-const { spawn } = require("../utils");
+const { spawn } = require("../../pkg/node-utils");
 const Commander = require("../commander");
 
 const STD_IO = { stdio: "inherit" };

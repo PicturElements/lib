@@ -1,6 +1,6 @@
 const path = require("path");
 const Commander = require("./commander");
-const { error } = require("./utils");
+const { error } = require("../pkg/node-utils");
 
 const HOME_DIR = path.join(__dirname, "..");
 
@@ -39,9 +39,10 @@ const commands = new Commander({
 	.cmd("vue")
 		.alias("vdp", "vue dev-plugin")
 		.alias("vi", "vue invoke")
-	.cmd("test")
+	.cmd("jest")
 	.cmd("git")
 		.alias("gp", "git push")
+		.alias("p", "git push")
 	.cmd("?", {
 		handle(options) {
 			options.root.logCommandsList();
