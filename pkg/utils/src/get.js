@@ -1,4 +1,5 @@
 import splitPath from "./split-path";
+import hasOwn from "./has-own";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
@@ -23,7 +24,7 @@ export default function get(data, path, def, options = {}) {
 	for (let i = options.pathOffset || 0, l = split.length; i < l; i++) {
 		const prop = split[i];
 
-		if (!data || prop === undefined || (data[prop] === undefined && !data.hasOwnProperty(prop))) {
+		if (!data || prop === undefined || (data[prop] === undefined && !hasOwn(data, prop, true))) {
 			match = false;
 
 			if (options.autoBuild) {
@@ -76,23 +77,3 @@ const optionsTemplates = composeOptionsTemplates({
 		context: true,
 	}
 });
-
-/* 
-	DEPRECATED: refs
-	if (prop && prop[0] == "$") {
-		const refKey = prop.substr(1),
-			refs = options.references || {};
-
-		if (refs.hasOwnProperty(refKey)) {
-			if (options.trace) {
-				trace.push(refKey);
-				nodeTrace.push(data);
-			}
-
-			data = refs[refKey];
-			parent = data;
-			child = null;
-			continue;
-		}
-	}
-*/
