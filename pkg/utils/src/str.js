@@ -70,6 +70,11 @@ function spliceStr(str, from, to, replacement, relative = false) {
 	return str.substr(0, range[0]) + replacement + str.substr(range[1]);
 }
 
+function trimStr(str, start, end) {
+	start = start || 0;
+	return str.substr(start, str.length - (end || 0) - start);
+}
+
 export {
 	cleanRegex,
 	cleanPath,
@@ -78,5 +83,6 @@ export {
 	repeat,
 	padStart,
 	padEnd,
-	spliceStr
+	spliceStr,
+	trimStr
 };
