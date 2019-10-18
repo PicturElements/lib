@@ -19,6 +19,8 @@ export default class GetterManager {
 
 		if (isObject(getters))
 			this.addGetters("", getters);
+
+		console.log(this);
 	}
 
 	addGetter(path, name, getter) {
@@ -73,7 +75,7 @@ export default class GetterManager {
 					return warn(`Cannot get: no getter by name '${path[i]}' found in GetterGroup instance`);
 			} else {
 				if (!getDirectoryMeta(getter).isDirectory)
-					return warn(`Cannot get: no directory by name '${path[i]}' found`);
+					return warn(`Cannot get: no directory by name '${path[i]}' at '${mkAccessor(path.slice(0, i - 1))}' found`);
 			}
 
 			if (getter instanceof GetterGroup) {
