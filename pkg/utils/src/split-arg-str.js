@@ -1,9 +1,11 @@
+import { cleanRegex } from "./str";
+
 const argSeparatorCache = {};
 
 export default function splitArgStr(str, argSeparator = ",") {
-	const args = [],
-		isRegexArgSep = argSeparator instanceof RegExp;
-	let quote = null,
+	const args = [];
+	let isRegexArgSep = argSeparator instanceof RegExp,
+		quote = null,
 		structStackDepth = 0,
 		arg = "",
 		lastChar = null;
@@ -21,8 +23,17 @@ export default function splitArgStr(str, argSeparator = ",") {
 			argSeparator = new RegExp(argSeparator.source, flags);
 			argSeparatorCache[key] = argSeparator;
 		}
-	} else if (argSeparator.length != 1)
-		console.warn(`Argument separator (${argSeparator}) is not a single character. Expect bad output`);
+	} else if (!argSeparator || typeof argSeparator != "string") {
+		console.warn(`Argument separator (${argSeparator}) is invalid. Expect bad output`);
+		argSeparator = "";
+	} else if (argSeparator.length > 1) {
+		if (argSeparatorCache.hasOwnProperty(argSeparator))
+			argSeparator = argSeparatorCache[argSeparator];
+		else
+			argSeparator = argSeparatorCache[argSeparator] = new RegExp(cleanRegex(argSeparator), "gi");
+
+		isRegexArgSep = true;
+	}
 
 	for (let i = 0, l = str.length; i < l; i++) {
 		const char = str[i];

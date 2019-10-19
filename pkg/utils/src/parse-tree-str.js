@@ -42,7 +42,8 @@ export default function parseTreeStr(str, options = {}) {
 			item = {
 				indent: nextIndent,
 				raw: ex[2],
-				children: []
+				children: [],
+				row: line
 			};
 			
 		if (!struct)

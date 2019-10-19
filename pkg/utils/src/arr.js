@@ -1,6 +1,16 @@
 import { isMapLike } from "./lazy/is";
 import map from "./map";
 import filterMut from "./filter-mut";
+import QNDSet from "./qnd-set";
+import forEach from "./for-each";
+
+function nub(arr) {
+	const set = new QNDSet(arr),
+		out = [];
+
+	forEach(set, v => out.push(v));
+	return out;
+}
 
 function from(candidate) {
 	if (isMapLike(candidate))
@@ -27,6 +37,7 @@ function remFromArr(arr, item, g = true) {
 }
 
 export {
+	nub,
 	from,
 	remFromArr
 };

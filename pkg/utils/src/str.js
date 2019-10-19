@@ -1,7 +1,7 @@
 import { getWrappedRange } from "./range";
 
 function cleanRegex(str) {
-	return str.replace(/[$^()\]\/\\]/g, "\\$&");
+	return str.replace(/[$^()\[\]\/\\]/g, "\\$&");
 }
 
 function cleanPath(str) {

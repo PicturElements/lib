@@ -94,8 +94,8 @@ function isArrayLike(candidate) {
 	if (!candidate || typeof candidate != "object" || typeof candidate.length != "number")
 		return false;
 
-	// Object instances or the window object
-	if (candidate.constructor == Object || (typeof window == "object" && candidate == window))
+	// Object instances or the window object (Arguments objects are not included)
+	if ((candidate.constructor == Object && String(candidate) != "[object Arguments]") || (typeof window == "object" && candidate == window))
 		return false;
 
 	// If the object is syntactically an array, see if Array.prototype.slice
