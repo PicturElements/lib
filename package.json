@@ -33,8 +33,16 @@
     "@babel/core": "^7.6.2",
     "@babel/preset-env": "^7.6.2",
     "babel-jest": "^25.0.0",
+    "css-loader": "^3.2.0",
+    "fibers": "^4.0.1",
     "jest": "^24.9.0",
-    "jest-cli": "^24.9.0"
+    "jest-cli": "^24.9.0",
+    "mini-css-extract-plugin": "^0.8.0",
+    "node-sass": "^4.12.0",
+    "sass": "^1.23.0",
+    "sass-loader": "^8.0.0",
+    "vue-loader": "^15.7.1",
+    "vue-template-compiler": "^2.6.10"
   },
   "bin": {
     "ql": "./cli/cli",

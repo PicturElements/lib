@@ -32,7 +32,8 @@ main {
   border-radius: 3px;
   box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.05);
   padding: 8px;
-  flex-grow: 1; }
+  flex-grow: 1;
+  }
 
 .shrink {
   flex-grow: 0; }

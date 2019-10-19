@@ -1,3 +1,5 @@
+const path = require("path");
+
 // Miscellaneous pure utilities not pertinent to CLI, the file system, or OS
 
 function promisify(func, paramNamesOrParamMap, returnKeyOrReturnIndex, optionsOrCallback) {
@@ -176,7 +178,35 @@ class BuildStamp {
 		
 		return `@ ${dateStr} ${date.getDate()}/${date.getMonth() + 1} - build ${this.builds}`;
 	}
-} 
+}
+
+function calcPrecedence(inp, nameMap, def) {
+	switch (typeof inp) {
+		case "string": {
+			if (nameMap.hasOwnProperty(inp))
+				return nameMap[inp];
+
+			const precedence = Number(inp);
+			return isNaN(precedence) ? def : precedence;
+		}
+
+		case "number":
+			return isNaN(inp) ? def : inp;
+	}
+
+	return def;
+}
+
+function calcPrecedenceFromCLIOptions(options, nameMap, def) {
+	if (options.kvOptions.hasOwnProperty("precedence"))
+		return calcPrecedence(options.kvOptions.precedence, nameMap, def);
+
+	const prec = findByKey(options.keyOptions, nameMap);
+	if (prec !== null)
+		return prec;
+
+	return def;
+}
 
 module.exports = {
 	promisify,
@@ -188,5 +218,7 @@ module.exports = {
 	shortPrint,
 	repeat,
 	findByKey,
-	BuildStamp
+	BuildStamp,
+	calcPrecedence,
+	calcPrecedenceFromCLIOptions
 };

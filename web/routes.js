@@ -1,7 +1,7 @@
 const {
 	exists,
 	join
-} = require("../cli/utils");
+} = require("../pkg/node-utils");
 
 // Views
 const renderPkgPage = require("./views/pkg");

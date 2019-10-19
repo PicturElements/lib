@@ -4,12 +4,12 @@ const path = require("path");
 const express = require("express");
 const {
 	join,
-	joinDir,
 	readdir,
 	stat,
 	spawn,
-	info
-} = require("../cli/utils");
+	info,
+	error
+} = require("../pkg/node-utils");
 const { BuildStamp } = require("../utils");
 const { buildExposedAtPkg } = require("./expose");
 const routes = require("./routes");
@@ -43,12 +43,16 @@ chokidar
 
 // Routes
 routes(app);
-app.use("/media", express.static(joinDir("web/media")));
-app.use("/style", express.static(joinDir("web/style/css")));
-app.use("/bundles", express.static(joinDir("web/bundles")));
-app.use("/pkg", express.static(joinDir("pkg")));
+app.use("/media", express.static(join(__dirname, "../web/media")));
+app.use("/style", express.static(join(__dirname, "../web/style/css")));
+app.use("/bundles", express.static(join(__dirname, "../web/bundles")));
+app.use("/pkg", express.static(join(__dirname, "../pkg")));
 
 app.listen(PORT, _ => console.log(`Visit port ${PORT}.`));
+
+function plural(count, base) {
+	return base + (count ? "s" : "");
+}
 
 (async _ => {
 	console.log("Building exposed files");
@@ -57,7 +61,9 @@ app.listen(PORT, _ => console.log(`Visit port ${PORT}.`));
 	const pkgDir = await readdir(pkgPath);
 
 	const startTime = Date.now();
-	let count = 0;
+	let count = 0,
+		errors = 0,
+		fatalErrors = 0;
 
 	for (const pkgName of pkgDir) {
 		if (pkgName[0] == ".")
@@ -69,10 +75,22 @@ app.listen(PORT, _ => console.log(`Visit port ${PORT}.`));
 		if (!st || !st.isDirectory())
 			continue;
 
-		await buildExposedAtPkg(pkgName);
+		const statuses = await buildExposedAtPkg(pkgName);
+
+		if (!statuses)
+			fatalErrors++;
+		else
+			errors += statuses.filter(success => !success).length;
+
 		console.log();
 		count++;
 	}
 
-	info(`Finished building exposed files for ${count} packages (${Date.now() - startTime} ms)`);
+	info(`Finished building exposed files for ${count} ${plural(count, "package")} (${Date.now() - startTime} ms)`);
+	
+	if (errors)
+		error(`${errors} ${plural(errors, "error")}`);
+		
+	if (fatalErrors)
+		error(`${fatalErrors} fatal ${plural(fatalErrors, "error")}`);
 })();
