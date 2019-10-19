@@ -4,10 +4,6 @@ function join(...paths) {
 	return path.join(...paths);
 }
 
-function joinDir(...paths) {
-	return path.join(__dirname, "..", ...paths);
-}
-
 // Returns a relative path with / as the separator
 function pathRelative(pth, pth2) {
 	pth = path.relative(stripFileFromPath(pth), pth2);
@@ -62,7 +58,6 @@ function stripExtension(file) {
 
 module.exports = {
 	join,
-	joinDir,
 	pathRelative,
 	stripFileFromPath,
 	splitDirAndFile,

@@ -1,21 +1,31 @@
 function info(...logs) {
-	console.log("\x1b[1m\x1b[36m%s\x1b[0m", logs.map(String).join(" "));
+	process.stdout.write("\x1b[1m\x1b[36m");
+	console.log(...logs);
+	process.stdout.write("\x1b[0m");
 }
 
 function success(...logs) {
-	console.log("\x1b[1m\x1b[32m%s\x1b[0m", logs.map(String).join(" "));
+	process.stdout.write("\x1b[1m\x1b[32m");
+	console.log(...logs);
+	process.stdout.write("\x1b[0m");
 }
 
 function warn(...logs) {
-	console.log("\x1b[1m\x1b[33m%s\x1b[0m", logs.map(String).join(" "));
+	process.stdout.write("\x1b[1m\x1b[33m");
+	console.log(...logs);
+	process.stdout.write("\x1b[0m");
 }
 
 function error(...logs) {
-	console.log("\x1b[1m\x1b[31m%s\x1b[0m", logs.map(String).join(" "));
+	process.stdout.write("\x1b[1m\x1b[31m");
+	console.log(...logs);
+	process.stdout.write("\x1b[0m");
 }
 
 function errorBlock(...logs) {
-	console.log("\x1b[1m\x1b[37m\x1b[41m%s\x1b[0m", logs.map(String).join(" "));
+	process.stdout.write("\x1b[1m\x1b[37m\x1b[41m");
+	console.log(...logs);
+	process.stdout.write("\x1b[0m");
 }
 
 module.exports = {
