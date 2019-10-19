@@ -57,11 +57,18 @@ export default class GetterManager {
 		return this;
 	}
 
-	get(path, config = {}, assets = {}) {
+	get(path, config = {}, assets = {}, suppressWarnings = false) {
 		path = splitPath(path);
 		let groupPath = null,
 			rootGetter = null,
 			getter = this.getters;
+
+		const warn = (msg, retVal = null) => {
+			if (!suppressWarnings)
+				console.warn(msg);
+
+			return retVal;
+		};
 
 		if (!path.length)
 			return warn("Cannot get: invalid path ''");
@@ -97,11 +104,10 @@ export default class GetterManager {
 		
 		return runGetter(getter, config, assets, rootGetter, groupPath);
 	}
-}
 
-function warn(msg, retVal = null) {
-	console.warn(msg);
-	return retVal;
+	getSafe(path, config, assets) {
+		return this.get(path, config, assets, true);
+	}
 }
 
 function runGetter(getter, config = {}, assets = {}, rootGetter = null, groupPath = null) {
