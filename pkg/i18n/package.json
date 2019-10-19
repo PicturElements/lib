@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/i18n",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "Compact, powerful, fast, and intuitive internationali(z|s)ation library",
   "main": "index.js",
   "scripts": {
@@ -30,7 +30,7 @@
   },
   "devDependencies": {},
   "qlib": {
-    "pushes": 12,
+    "pushes": 13,
     "expose": {
       "scripts": [
         "connect/feed.js"

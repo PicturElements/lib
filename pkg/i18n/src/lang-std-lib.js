@@ -16,7 +16,6 @@ const datePeriods = {
 const langStdLib = {
 	day(args, accessor) {	// Suggested key: day
 		const data = args.manager.get(accessor) || [];
-		console.log(args);
 		return data[args.store.date.getDay()];
 	},
 	month(args, accessor) {	// Suggested key: month
