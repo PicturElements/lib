@@ -126,7 +126,9 @@ export default class ScrollStops extends Hookable {
 	}
 
 	trigger(evt) {
-		const scrollRef = this.options.elem == document ? (document.scrollingElement || document.html) : this.options.elem,
+		const scrollRef = this.options.elem == document ?
+				(document.scrollingElement || document.documentElement) :
+				this.options.elem,
 			payload = {
 				width: scrollRef.scrollWidth,
 				height: scrollRef.scrollHeight,

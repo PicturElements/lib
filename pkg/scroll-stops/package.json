@@ -30,7 +30,7 @@
   },
   "devDependencies": {},
   "qlib": {
-    "pushes": 2,
+    "pushes": 3,
     "expose": {
       "scripts": [
         "connect/feed.js"
