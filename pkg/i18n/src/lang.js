@@ -854,8 +854,10 @@ function resolveExpr(resolveToken, expr) {
 function resolveRef(store, ref, formatArgs, args = []) {
 	let item = get(store, ref, undefined, "context");
 
-	if (typeof item.data == "function")
-		return item.context[item.key](formatArgs, ...args);
+	if (typeof item.data == "function") {
+		const v = item.context[item.key](formatArgs, ...args);
+		return v;
+	}
 
 	return item.data;
 }
@@ -951,18 +953,23 @@ function padFormatter(num, formatter) {
 
 function processFormatter(args, formatter, getter) {
 	if (isFmt(formatter, "formatter")) {
-		let num = getFormatterUnit(args.store.date, formatter.class);
+		let out = getFormatterUnit(args.store.date, formatter.class);
 
-		const numCandidate = typeof getter == "function" ? getter(true, num, formatter) : getter;
-		if (numCandidate !== undefined)
-			num = numCandidate;
+		const outCandidate = typeof getter == "function" ? getter(true, out, formatter) : out;
+		if (outCandidate !== undefined)
+			out = outCandidate;
 
-		if (typeof num == "number")
-			return padFormatter(num, formatter);
+		if (typeof out == "number")
+			return padFormatter(out, formatter);
+		else if (typeof out == "string")
+			return out;
+		else if (isFmt(out, "formatter"))
+			return padFormatter(getFormatterUnit(args.store.date, out.class), out);
 	} else {
-		const returnCandidate = typeof getter == "function" ? getter(false, 0, null) : getter;
-		if (returnCandidate !== undefined)
-			return returnCandidate;
+		const outCandidate = typeof getter == "function" ? getter(false, 0, null) : getter;
+		
+		if (outCandidate !== undefined)
+			return outCandidate;
 	}
 
 	return formatter;

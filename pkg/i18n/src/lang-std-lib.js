@@ -29,10 +29,12 @@ const langStdLib = {
 	meridiem(args) {
 		return args.store.ampm(args);
 	},
-	m12(args, formatter) {
+	m12(args, formatter, useMeridiem, fallback) {
+		useMeridiem = typeof useMeridiem == "boolean" ? useMeridiem : true;
+
 		return processFormatter(args, formatter, (matched, num) => {
-			if (!matched || formatter.class != "hour" || !args.store.militaryTime)
-				return formatter;
+			if (!matched || formatter.class != "hour" || !useMeridiem)
+				return fallback || formatter;
 
 			return num % 12 || 12;
 		});
