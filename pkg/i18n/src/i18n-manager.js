@@ -8,7 +8,8 @@ import {
 	sym,
 	setSymbol,
 	inject,
-	isEnv
+	isEnv,
+	mkStdLib
 } from "@qtxr/utils";
 import { Hookable } from "@qtxr/bc";
 import { AssetLoader } from "@qtxr/request";
@@ -19,7 +20,6 @@ import {
 	resolveRefTrace
 } from "./lang";
 import langStdLib from "./lang-std-lib";
-import mkSTDLib from "./mk-std-lib";
 
 const RESERVED_KEYS = {
 	default: 1,
@@ -37,6 +37,11 @@ const LOCALE_SYM = sym("locale"),
 
 class I18NManager extends Hookable {
 	constructor(locale, settings) {
+		if (isObject(locale)) {
+			settings = locale;
+			locale = null;
+		}
+
 		super();
 		this.locale = locale ? coerceIETF(locale) : new IETF("en");
 		this.requestedLocale = this.locale;
@@ -45,7 +50,7 @@ class I18NManager extends Hookable {
 		this.store = {};
 		this.addedAssets = {};
 		this.sitemap = null;
-		this.stdLib = mkSTDLib(langStdLib, this.settings.stdLib);
+		this.stdLib = mkStdLib("I18NStdLib", langStdLib, this.settings.stdLib);
 
 		this.loader = new AssetLoader({
 			path: (loader, path) => coerceToJSONFileName(path),
@@ -183,23 +188,42 @@ class I18NManager extends Hookable {
 		});
 	}
 
-	registerLocale(node, force = false) {
+	registerLocale(config, force = false) {
 		force = typeof force == "boolean" ? force : false;
 
-		const ietf = coerceIETF(node.locale),
-			data = node.item,
-			dependencies = node.dependencies,
-			path = node.path;
-		let newLocale = false;
+		let ietf = coerceIETF(config.locale),
+			data,
+			dependencies = [],
+			path;
 
-		if (!isObj(data) || !ietf.valid)
-			return console.warn(`Failed to register locale '${ietf.value}' because it's not an object or the IETF code is invalid`);
+		if (!isObj(config))
+			return console.warn(`Failed to register locale '${ietf.value}' because the supplied config data is not an object`);
+		
+		if (config.isAssetNode) {
+			data = config.item;
+			dependencies = config.dependencies;
+			path = config.path;
+		} else {
+			if (!config.name || typeof config.name != "string")
+				return console.warn(`Failed to register locale '${ietf.value}' because the config doesn't have a valid identifying name`);
+
+			data = config.data;
+			dependencies = [];
+			path = config.name;
+		}
+
+		if (!isObj(data))
+			return console.warn(`Failed to register locale '${ietf.value}' because the supplied data is not an object`);
+		if (!ietf.valid)
+			return console.warn(`Failed to register locale '${ietf.value}' because the IETF code is invalid`);
 		if (this.addedAssets.hasOwnProperty(path) && !force)
 			return console.warn(`Refused to add locale '${ietf.value}' because it's already defined. Use the force flag`);
 
-		if (!this.store.hasOwnProperty(ietf.value)) {
+		const newLocale = !this.store.hasOwnProperty(ietf.value);
+
+		if (newLocale) {
+			this.locales.push(ietf.value);
 			this.store[ietf.value] = initLocalePartition(data, dependencies, ietf.value);
-			newLocale = true;
 		}
 
 		const inData = formatLocaleData(data);

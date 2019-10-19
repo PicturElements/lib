@@ -14,24 +14,18 @@ const datePeriods = {
 };
 
 const langStdLib = {
-	day(args, verbose) {
-		if (verbose)
-			return this.dayV(args);
-		return args.dateStore.days[args.store.date.getDay()];
+	day(args, accessor) {	// Suggested key: day
+		const data = args.manager.get(accessor) || [];
+		console.log(args);
+		return data[args.store.date.getDay()];
 	},
-	dayV(args) {
-		return args.dateStore.daysVerbose[args.store.date.getDay()];
+	month(args, accessor) {	// Suggested key: month
+		const data = args.manager.get(accessor) || [];
+		return data.months[args.store.date.getMonth()];
 	},
-	month(args, verbose) {
-		if (verbose)
-			return this.monthV(args);
-		return args.dateStore.months[args.store.date.getMonth()];
-	},
-	monthV(args) {
-		return args.dateStore.monthsVerbose[args.store.date.getMonth()];
-	},
-	ampm(args) {
-		return args.dateStore.meridiem[Math.floor(args.store.date.getHours() / 12)];
+	ampm(args, accessor) {	// Suggested key: meridiem
+		const data = args.manager.get(accessor) || [];
+		return data[Math.floor(args.store.date.getHours() / 12)];
 	},
 	m12(args, formatter) {
 		return processFormatter(args, formatter, (matched, num) => {
