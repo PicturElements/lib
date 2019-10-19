@@ -46,7 +46,7 @@ export default class GetterManager {
 				const node = gs[k],
 					currPath = [...p, k];
 			
-				if (isGetter(node))
+				if (isGetter(node) || typeof node == "function")
 					this.addGetter(p, k, node);
 				else
 					add(currPath, node);
