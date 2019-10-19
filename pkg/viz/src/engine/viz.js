@@ -6,6 +6,7 @@ import {
 	unenum,
 	equals,
 	inject,
+	isObject,
 	combine,
 	coerceNum,
 	isFiniteNum
@@ -107,11 +108,13 @@ export default class Viz {
 			}
 		};
 
-		this.i18n = optionals.i18n || new I18NManager();
+		if (isObject(optionals.i18n))
+			this.i18n = new I18NManager(optionals.i18n);
+		else
+			this.i18n = optionals.i18n || new I18NManager();
+
 		this.i18n.hook("localeset", _ => this.update());
 		this.i18n.hook("localeloaded", _ => this.update());
-
-		this.getter = optionals.getter || mkGetterManager();
 
 		this.cache = optionals.cache || new CalcCache();
 		this.cache.registerCachePartition("paint");
@@ -125,6 +128,12 @@ export default class Viz {
 		const dynamicArgs = {
 			owner: this
 		};
+
+		if (isObject(optionals.getter)) {
+			this.getter = mkGetterManager();
+			this.getter.addGetters(optionals.getter);
+		} else
+			this.getter = optionals.getter || mkGetterManager();
 
 		this.config = fillInDataApplyInstantiators(
 			optionals.config || {},
@@ -301,8 +310,6 @@ export default class Viz {
 		}
 
 		const monitor = _ => {
-			const key = "monitor_frames_" + this.id;
-
 			if (perf.unmonitoredCount == 3) {
 				this.update(true);
 				perf.unmonitoredCount = 0;
@@ -366,6 +373,7 @@ export default class Viz {
 
 			zim.forEach(({ idx }) => {
 				const dataset = datasets[idx];
+				
 				if (get(dataset, "data.points")) {
 					const args = {
 						dataset,
@@ -944,11 +952,19 @@ export default class Viz {
 		if (!isObj(dataset))
 			dataset = this.dataRefs.dict[dataset];
 
-		if (typeof collector != "function")
-			collector = this.getter.get(["processors", "collectors", collector]);
+		if (typeof collector != "function") {
+			if (isObject(collector))
+				collector = this.getter.get(["processors", "collectors", collector.type], collector);
+			else
+				collector = this.getter.get(["processors", "collectors", collector]);
+		}
 
-		if (typeof plotter != "function")
-			plotter = this.getter.get(["processors", "plotters", plotter]);
+		if (typeof plotter != "function") {
+			if (isObject(plotter))
+				plotter = this.getter.get(["processors", "plotters", plotter.type], plotter);
+			else
+				plotter = this.getter.get(["processors", "plotters", plotter]);
+		}
 
 		if (!dataset)
 			err("dataset", dataset);

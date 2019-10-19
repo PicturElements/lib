@@ -34,7 +34,7 @@ const getters = {
 
 		return p => {
 			if (p.index)
-				return compileCollector(p.data.points, Infinity, -Infinity, domainKey, 0, p.data.points.length - 1, p);
+				return compileCollectorIndex(p, domainKey);
 			else {
 				const points = p.data.points,
 					minX = getClosestIndex(points, p.viewport.startX, domainKey),
@@ -48,7 +48,7 @@ const getters = {
 };
 
 // ====== Compiler helpers ======
-function compileCollector(data, minY, maxY, key, startIdx, endIdx, p) {
+function compileCollector(data, minY, maxY, domainKey, startIdx, endIdx, p) {
 	if (!data || !data.length)
 		return null;
 
@@ -71,8 +71,8 @@ function compileCollector(data, minY, maxY, key, startIdx, endIdx, p) {
 	if (p.dataset.noPadding)
 		padding = { t: 0, r: 0, b: 0, l: 0 };
 
-	const sX = data[startIdx][key],
-		eX = data[endIdx][key],
+	const sX = data[startIdx][domainKey],
+		eX = data[endIdx][domainKey],
 		minX = vp.startX == null ? sX : vp.startX,
 		maxX = vp.endX == null ? eX : vp.endX,
 		refDataset = p.dataset.refDataset || p.dataset,
@@ -114,6 +114,11 @@ function compileCollector(data, minY, maxY, key, startIdx, endIdx, p) {
 	};
 }
 
+function compileCollectorIndex(p, domainKey) {
+	const points = p.data.points;
+	return compileCollector(points, Infinity, -Infinity, domainKey, 0, points.length - 1, p);
+}
+
 export default {
 	getters,
 	cachePolicy: "same-config",
@@ -123,6 +128,7 @@ export default {
 	},
 	assets: {
 		compileCollector,
+		compileCollectorIndex,
 		getClosestIndex,
 		multiMinMax
 	}

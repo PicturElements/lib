@@ -1,8 +1,7 @@
 const getters = {
-	// Type 0 collectors: run on input data and both index and calculate output data.
 	line(config, assets, r) {
 		return p => {
-			paintMountain(p, {
+			plotMountain(p, {
 				style: p.inst.config.style.line,
 				stroke: true,
 				coordKeys: {
@@ -11,10 +10,11 @@ const getters = {
 				}
 			});
 		};
-	}
+	},
+
 };
 
-function paintMountain(p, { style, stroke = false, fill = false, coordKeys = {}, log = true }) {
+function plotMountain(p, { style, stroke = false, fill = false, coordKeys = {}, log = true }) {
 	const points = getPlotPoints(
 			p.dataset,
 			p.canvas,
@@ -55,7 +55,7 @@ function paintMountain(p, { style, stroke = false, fill = false, coordKeys = {},
 }
 
 // This could theoretically be abstracted to an OCML fetcher function with a callback.
-function paintBar(p, style, colored) {
+function plotBar(p, style, colored) {
 	const ctx = p.context,
 		pts = p.points,
 		bounding = p.bounding,
@@ -98,7 +98,7 @@ function paintBar(p, style, colored) {
 	p.inst.updatePlotIndex(ctx);
 }
 
-function paintBasicPlot(p, styleKey, plotKey, skip) {
+function plotBasic(p, styleKey, plotKey, skip) {
 	let style = null,
 		strokeKey = "stroke";
 
@@ -116,10 +116,10 @@ function paintBasicPlot(p, styleKey, plotKey, skip) {
 
 	p.context.lineWidth = style.width || 2;
 	p.context.strokeStyle = style[strokeKey];
-	paintLine(p.context, p.points, "time", plotKey, p.bounding, start, end);
+	plotLine(p.context, p.points, "time", plotKey, p.bounding, start, end);
 }
 
-function paintLine(ctx, pts, keyX, keyY, bounding, start, end) {
+function plotLine(ctx, pts, keyX, keyY, bounding, start, end) {
 	const canvas = ctx.canvas,
 		w = canvas.width,
 		h = canvas.height;
@@ -140,7 +140,7 @@ function paintLine(ctx, pts, keyX, keyY, bounding, start, end) {
 	ctx.stroke();
 }
 
-function paintCandle(p, style, hollow) {
+function plotCandle(p, style, hollow) {
 	const ctx = p.context,
 		bounding = p.bounding,
 		ds = p.dataset,
@@ -197,9 +197,9 @@ function paintCandle(p, style, hollow) {
 	p.inst.updatePlotIndex(ctx);
 }
 
-function paintSuccessiveLines(p, styleKey, plotKeys, skip) {
+function plotSuccessiveLines(p, styleKey, plotKeys, skip) {
 	for (let i = plotKeys.length - 1; i >= 0; i--) {
-		paintBasicPlot(p, {
+		plotBasic(p, {
 			style: p.inst.config.style[styleKey || "successive"],
 			key: i
 		}, plotKeys[i], skip);
@@ -253,15 +253,15 @@ function setFill(val, ctx, h) {
 }
 
 // Conforms and completes gradient arrays
-// ["red","green","blue"] -> ["red",0,"green",0.5,"blue",1]
-// ["red","green","blue",0.6,"lilac"] -> ["red",0,"green",0.3,"blue",0.6,"lilac",1]
+// ["red", "green", "blue"] -> ["red", 0, "green", 0.5, "blue", 1]
+// ["red", "green", "blue", 0.6, "lilac"] -> ["red", 0, "green", 0.3, "blue", 0.6, "lilac", 1]
 function conformGradient(arr) {
 	if (!arr.length)
 		return arr;
 
 	// Fill in missing numbers
 	for (let i = 0; i < arr.length; i++) {
-		if (!(i % 2) && typeof arr[i + 1] != "number") {
+		if ((i % 2) == 0 && typeof arr[i + 1] != "number") {
 			arr.splice(i + 1, 0, -1);
 		}
 	}
@@ -330,12 +330,12 @@ export default {
 	},
 	assets: {
 		// Painting utils
-		paintBar,
-		paintBasicPlot,
-		paintCandle,
-		paintLine,
-		paintMountain,
-		paintSuccessiveLines,
+		plotBar,
+		plotBasic,
+		plotCandle,
+		plotLine,
+		plotMountain,
+		plotSuccessiveLines,
 		// Data utils
 		getPlotPoints,
 		mapX,
