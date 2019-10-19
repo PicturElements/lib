@@ -20,11 +20,14 @@ const langStdLib = {
 	},
 	month(args, accessor) {	// Suggested key: month
 		const data = args.manager.get(accessor) || [];
-		return data.months[args.store.date.getMonth()];
+		return data[args.store.date.getMonth()];
 	},
 	ampm(args, accessor) {	// Suggested key: meridiem
 		const data = args.manager.get(accessor) || [];
 		return data[Math.floor(args.store.date.getHours() / 12)];
+	},
+	meridiem(args) {
+		return args.store.ampm(args);
 	},
 	m12(args, formatter) {
 		return processFormatter(args, formatter, (matched, num) => {
