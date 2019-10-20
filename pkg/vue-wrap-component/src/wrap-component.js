@@ -12,7 +12,7 @@ const dataMap = {
 	methods: "addMethod",
 	computed: "addComputed",
 	props: "addProp",
-	component: "addComponent"
+	components: "addComponent"
 };
 
 const wc = {
