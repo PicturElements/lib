@@ -6,6 +6,15 @@ import {
 } from "@qtxr/utils";
 import * as suppliers from "./suppliers";
 
+const dataMap = {
+	data: "addData",
+	provide: "addProvision",
+	methods: "addMethod",
+	computed: "addComputed",
+	props: "addProp",
+	component: "addComponent"
+};
+
 const wc = {
 	wrap(component) {
 		return new ComponentWrapper(component);
@@ -51,19 +60,32 @@ class ComponentWrapper {
 		this.used[endpoint] = used;
 	}
 
+	// Generic function for adding data to components
+	add(type, value) {
+		if (!value || !dataMap.hasOwnProperty(type))
+			return false;
+
+		const addKey = dataMap[type];
+
+		if (Array.isArray(value)) {
+			for (let i = 0, l = value.length; i < l; i++)
+				this[addKey](i, value[i]);
+		} else {
+			for (const k in value) {
+				if (value.hasOwnProperty(k))
+					this[addKey](k, value[k]);
+			}
+		}
+
+		return true;
+	}
+
 	addData(key, value) {
 		return this._addToInjector("data", key, value);
 	}
 
 	addProvision(key, value) {
 		return this._addToInjector("provide", key, value);
-	}
-
-	// Assumes props is already defined, through default options
-	addProp(key, value, useName) {
-		this.assert.hasUnusedProp(this.component.props, key, useName);
-		this.component.props[key] = value;
-		return this.component.props;
 	}
 
 	addMethod(key, method) {
@@ -75,6 +97,42 @@ class ComponentWrapper {
 			throw new Error(`Cannot add method '${key}': supplied method is not a function`);
 
 		methods[key] = method;
+	}
+
+	addComputed(key, comp) {
+		const computed = this.component.computed;
+
+		if (computed.hasOwnProperty(key))
+			throw new Error(`Tried overriding computed property '${key}'`);
+		if (typeof comp != "function")
+			throw new Error(`Cannot add computed property '${key}': supplied value is not a function`);
+
+		computed[key] = comp;
+	}
+
+	// Assumes props is already defined, through default options
+	addProp(key, value) {
+		const resolvedKey = resolvePropKey(key, value),
+			resolvedValue = resolvePropValue(key, value),
+			propsIsArray = Array.isArray(this.component.props);
+
+		this.assert.hasUnusedProp(this.component.props, resolvedKey);
+
+		if (propsIsArray)
+			this.component.props.push(resolvedKey);
+		else
+			this.component.props[resolvedKey] = resolvedValue;
+
+		return this.component.props;
+	}
+
+	addComponent(key, component) {
+		const components = this.component.components;
+
+		if (components.hasOwnProperty(key))
+			throw new Error(`Tried overriding component '${key}'`);
+
+		components[key] = component;
 	}
 
 	addHook(key, hook) {
@@ -163,9 +221,9 @@ ComponentWrapper.exporters = {
 };
 
 ComponentWrapper.prototype.assert = {
-	hasUnusedProp(props, key, useName) {
+	hasUnusedProp(props, key) {
 		if (!props)
-			throw new TypeError(`Cannot use ${useName}: property is not an object`);
+			throw new TypeError(`Cannot add property: property is not an object`);
 	
 		if (Array.isArray(props) && props.indexOf(key) != -1)
 			err();
@@ -173,7 +231,7 @@ ComponentWrapper.prototype.assert = {
 			err();
 	
 		function err() {
-			throw new Error(`Cannot use ${useName}: found duplicate prop key '${key}'`);
+			throw new Error(`Cannot add property: found duplicate prop key '${key}'`);
 		}
 	}
 };
@@ -225,6 +283,20 @@ function nestHook(target, key, hook) {
 
 function hasInit(supplier) {
 	return supplier.hasOwnProperty("init") && typeof supplier.init == "function";
+}
+
+function resolvePropKey(key, value) {
+	if (typeof key == "number")
+		return value;
+
+	return key;
+}
+
+function resolvePropValue(key, value) {
+	if (typeof key == "number")
+		return null;
+
+	return value;
 }
 
 export default wc;

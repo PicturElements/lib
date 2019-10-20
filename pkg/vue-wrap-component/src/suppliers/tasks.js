@@ -14,7 +14,7 @@ export default {
 			});
 		});
 	
-		wrapper.addProp("tasks", null, "tasks");
+		wrapper.addProp("tasks", null);
 	}
 };
 
