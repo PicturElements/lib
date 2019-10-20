@@ -14,14 +14,15 @@ const getters = {
 
 };
 
-function plotMountain(p, { style, stroke = false, fill = false, coordKeys = {}, log = true }) {
+function plotMountain(p, { style, stroke = false, fill = false, coordKeys = {}, log = true, padPoints = 0 }) {
 	const points = getPlotPoints(
 			p.dataset,
 			p.canvas,
 			p.bounding,
 			coordKeys.x,
 			coordKeys.y,
-			true
+			true,
+			padPoints
 		),
 		ctx = p.context,
 		h = p.canvas.height;
@@ -207,12 +208,12 @@ function plotSuccessiveLines(p, styleKey, plotKeys, skip) {
 }
 
 // Basic function that returns an array of points
-function getPlotPoints(dataset, canvas, bounding, keyX, keyY, fullData) {
+function getPlotPoints(dataset, canvas, bounding, keyX, keyY, fullData, padPoints = 0) {
 	const pts = dataset.data.points,
 		w = canvas.width,
 		h = canvas.height,
-		start = dataset.data.startIdx,
-		end = dataset.data.endIdx,
+		start = Math.max(dataset.data.startIdx - padPoints, 0),
+		end = Math.min(dataset.data.endIdx + padPoints, pts.length - 1),
 		out = [];
 
 	// Return some data, just to make sure nothing breaks
