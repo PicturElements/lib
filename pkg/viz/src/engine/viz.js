@@ -1099,9 +1099,6 @@ export default class Viz {
 				tooltipLocal
 			} = overlay.elems;
 
-			tooltip.style.left = (payload.pointAbs.x + 5) + "px";
-			tooltip.style.top = (payload.pointAbs.y + 5) + "px";
-
 			tooltipGlobal.innerHTML = "";
 			tooltipLocal.innerHTML = "";
 
@@ -1109,6 +1106,16 @@ export default class Viz {
 				renderTooltipItems(tooltipGlobal, tooltipMod.global, sourceData);
 
 			renderTooltipItems(tooltipLocal, tips, sourceData);
+
+			const bcr = tooltip.getBoundingClientRect(),
+				tooltipSpace = 5,
+				{ x, y } = payload.pointAbs,
+				{ w, h } = payload,
+				left = (x + bcr.width + tooltipSpace * 2) < w ? x + tooltipSpace : x - bcr.width - tooltipSpace,
+				top = (y + bcr.height + tooltipSpace * 2) < h ? y + tooltipSpace : y - bcr.height - tooltipSpace;
+
+			tooltip.style.left = `${left}px`;
+			tooltip.style.top = `${top}px`;
 		};
 
 		const renderTooltipItems = (wrapper, tooltips, sourceData) => {
