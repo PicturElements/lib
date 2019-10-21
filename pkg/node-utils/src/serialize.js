@@ -1,6 +1,8 @@
 const { isObject } = require("./utils");
 
-module.exports = function serialize(fieldsOrItem, optionsOrIndentStr = {}) {
+const specialSym = Symbol("special");
+
+function serialize(fieldsOrItem, optionsOrIndentStr = {}) {
 	let options = optionsOrIndentStr;
 
 	if (typeof optionsOrIndentStr == "string") {
@@ -14,6 +16,11 @@ module.exports = function serialize(fieldsOrItem, optionsOrIndentStr = {}) {
 		quoteChar = typeof options.quote == "string" && !options.jsonCompatible ? options.quote : "\"";
 
 	const srz = (item, indent = 0) => {
+		switch (item && item[specialSym]) {
+			case "raw":
+				return item.value;
+		}
+
 		switch (typeof item) {
 			case "string":
 				return `"${item}"`;
@@ -73,3 +80,12 @@ module.exports = function serialize(fieldsOrItem, optionsOrIndentStr = {}) {
 
 	return indentStr.repeat(startIndent) + srz(fieldsOrItem, startIndent);
 }
+
+serialize.special = value => {
+	return {
+		value,
+		[specialSym]: "raw"
+	};
+};
+
+module.exports = serialize;
