@@ -1,6 +1,7 @@
 const { isObject } = require("./utils");
+const { warn } = require("./io/console");
 
-const specialSym = Symbol("special");
+const specialTokenSym = Symbol("specialToken");
 
 function serialize(fieldsOrItem, optionsOrIndentStr = {}) {
 	let options = optionsOrIndentStr;
@@ -16,12 +17,13 @@ function serialize(fieldsOrItem, optionsOrIndentStr = {}) {
 		quoteChar = typeof options.quote == "string" && !options.jsonCompatible ? options.quote : "\"";
 
 	const srz = (item, indent = 0) => {
-		switch (item && item[specialSym]) {
+		switch (getSpecialTokenType(item) || typeof item) {
+			// Token types
 			case "raw":
+			case "rawReplaceKey":
 				return item.value;
-		}
 
-		switch (typeof item) {
+			// Types
 			case "string":
 				return `"${item}"`;
 
@@ -58,8 +60,12 @@ function serialize(fieldsOrItem, optionsOrIndentStr = {}) {
 					for (const k in item) {
 						const serialized = srz(item[k], indent + 1);
 
-						if (serialized !== undefined)
-							out.push(`${indentStr.repeat(indent + 1)}${quoteChar}${k}${quoteChar}: ${serialized}`);
+						if (serialized !== undefined) {
+							if (getSpecialTokenType(item[k]) == "rawReplaceKey")
+								out.push(`${indentStr.repeat(indent + 1)}${item[k].value}`);
+							else
+								out.push(`${indentStr.repeat(indent + 1)}${quoteChar}${k}${quoteChar}: ${serialized}`);
+						}
 					}
 
 					if (!out.length)
@@ -81,11 +87,35 @@ function serialize(fieldsOrItem, optionsOrIndentStr = {}) {
 	return indentStr.repeat(startIndent) + srz(fieldsOrItem, startIndent);
 }
 
-serialize.special = value => {
+serialize.raw = value => {
+	if (typeof value != "string") {
+		warn("Failed to add raw value: provided value is not a string");
+		return null;
+	}
+
 	return {
 		value,
-		[specialSym]: "raw"
+		[specialTokenSym]: "raw"
 	};
 };
+
+serialize.rawReplaceKey = value => {
+	if (typeof value != "string") {
+		warn("Failed to add raw value: provided value is not a string");
+		return null;
+	}
+
+	return {
+		value,
+		[specialTokenSym]: "rawReplaceKey"
+	};
+};
+
+function getSpecialTokenType(item) {
+	if (!item || !item.hasOwnProperty(specialTokenSym))
+		return null;
+
+	return item[specialTokenSym];
+}
 
 module.exports = serialize;
