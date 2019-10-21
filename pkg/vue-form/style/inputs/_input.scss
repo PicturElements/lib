@@ -1,3 +1,5 @@
+@use "../utils.scss" as *;
+
 @mixin input(
 	$background: white,
 	$error-background: #ffe1e1,
