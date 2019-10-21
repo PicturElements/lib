@@ -1,5 +1,16 @@
 @use "../utils.scss" as *;
 
+$dropdown-params: (
+	"background",
+	"error-background",
+	"border",
+	"error-border",
+	"height",
+	"padding",
+	"mobile-padding",
+	"separator-border"
+);
+
 @mixin dropdown(
 	$background: white,
 	$error-background: #ffe1e1,
@@ -8,8 +19,7 @@
 	$height: 30px,
 	$padding: 10px,
 	$mobile-padding: 30px,
-	$separator-border: 1px solid rgba(128, 128, 128, 0.25),
-	$rest...
+	$separator-border: 1px solid rgba(128, 128, 128, 0.25)
 ) {
 	.inp-dropdown {
 		position: relative;

@@ -1,5 +1,18 @@
 @use "../utils.scss" as *;
 
+$input-parameters: (
+	"background",
+	"error-background",
+	"autofill-background",
+	"border",
+	"focus-border",
+	"error-border",
+	"autofill-border",
+	"focus-border-color",
+	"error-color",
+	"autofill-color"
+);
+
 @mixin input(
 	$background: white,
 	$error-background: #ffe1e1,
@@ -10,8 +23,7 @@
 	$autofill-border: 1px solid #74b4e6,
 	$focus-border-color: #1e2021,
 	$error-color: #9a3131,
-	$autofill-color: #276a9e,
-	$rest...
+	$autofill-color: #276a9e
 ) {
 	.inp-input {
 		input {

@@ -1,9 +1,15 @@
+$radio-params: (
+	"border",
+	"focus-border",
+	"error-background",
+	"error-border"
+);
+
 @mixin radio(
 	$border: 1px solid #dadada,
 	$focus-border: 1px solid #1e2021,
 	$error-background: #ffe1e1,
-	$error-border: 1px solid #e02929,
-	$rest...
+	$error-border: 1px solid #e02929
 ) {
 	.inp-radio {
 		position: relative;
