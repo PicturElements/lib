@@ -1,6 +1,7 @@
 @mixin count(
 	$border: 1px solid #dadada,
-	$focus-background: #eee
+	$focus-background: #eee,
+	$rest...
 ) {
 	.inp-count {
 		height: 30px;
