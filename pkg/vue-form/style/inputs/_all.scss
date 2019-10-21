@@ -8,7 +8,9 @@
 	$out: ();
 
 	@each $param in $param-list {
-		$out: map-merge($param, map-get($args, $param))
+		@if (map-has-key($args, $param)) {
+			$out: map-merge($out, ($param, map-get($args, $param)));
+		}
 	}
 
 	@return $out;
