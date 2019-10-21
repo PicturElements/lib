@@ -1,4 +1,7 @@
-@mixin count {
+@mixin count(
+	$border: 1px solid #dadada,
+	$focus-background: #eee
+) {
 	.inp-count {
 		height: 30px;
 		width: 100px;
@@ -15,7 +18,7 @@
 			cursor: pointer;
 	
 			&:active {
-				background: $input-focus-background;
+				background: $focus-background;
 				color: inherit;
 			}
 	
@@ -40,7 +43,7 @@
 			cursor: text;
 	
 			&:focus {
-				background: $input-focus-background;
+				background: $focus-background;
 			}
 		}
 	}

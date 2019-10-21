@@ -1,5 +1,4 @@
-@import "./utils.scss";
-@import "./themes/light.scss";
-@import "./inputs/all.scss";
+@use "./themes/light.scss" as *;
+@use "./inputs/all.scss" as *;
 
-@include all;
+@include all($theme);

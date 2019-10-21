@@ -1,18 +1,29 @@
-@mixin input {
+@mixin input(
+	$background: white,
+	$error-background: #ffe1e1,
+	$autofill-background: #edf7ff,
+	$border: 1px solid #dadada,
+	$focus-border: 1px solid #1e2021,
+	$error-border: 1px solid #e02929,
+	$autofill-border: 1px solid #74b4e6,
+	$focus-border-color: #1e2021,
+	$error-color: #9a3131,
+	$autofill-color: #276a9e,
+) {
 	.inp-input {
 		input {
 			width: 100%;
 			padding: 6px 8px;
 			background: transparent;
-			border: $input-border;
+			border: $border;
 			font-size: 95%;
 			outline: none;
 	
 			&:focus {
-				border: $input-focus-border;
+				border: $focus-border;
 			}
 	
-			@include autofill($input-autofill-background, $input-autofill-color, $input-autofill-border);
+			@include autofill($autofill-background, $autofill-color, $autofill-border);
 		}
 	
 		.validation-msg {
@@ -23,17 +34,17 @@
 			width: 100%;
 			font-size: 80%;
 			padding: 3px 7px;
-			background: $input-focus-border-color;
-			color: $input-background;
+			background: $focus-border-color;
+			color: $background;
 		}
 	
 		&.error {
 			input {
 				&:not(:focus) {
-					background: $input-error-background;
-					border: $input-error-border;
-					color: $input-error-color;
-					@include autofill($input-error-background, $input-error-color, $input-error-border);
+					background: $error-background;
+					border: $error-border;
+					color: $error-color;
+					@include autofill($error-background, $error-color, $error-border);
 				}
 	
 				&:focus + .validation-msg {

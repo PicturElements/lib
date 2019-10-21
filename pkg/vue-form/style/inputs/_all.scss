@@ -1,13 +1,14 @@
-@import "./input.scss";
-@import "./checkbox.scss";
-@import "./count.scss";
-@import "./dropdown.scss";
-@import "./radio.scss";
+@use "./input.scss" as *;
+@use "./checkbox.scss" as *;
+@use "./count.scss" as *;
+@use "./dropdown.scss" as *;
+@use "./radio.scss" as *;
 
-@mixin all {
-	@include input;
-	@include checkbox;
-	@include count;
-	@include dropdown;
-	@include radio;
+@mixin all($theme) {
+	$input-theme: map-get($theme, "input");
+	@include input($input-theme...);
+	@include checkbox(map-merge($input-theme, map-get($theme, "checkbox"))...);
+	@include count(map-merge($input-theme, map-get($theme, "count"))...);
+	@include dropdown(map-merge($input-theme, map-get($theme, "dropdown"))...);
+	@include radio(map-merge($input-theme, map-get($theme, "radio"))...);
 }

@@ -1,39 +1,45 @@
-// colors
-$input-color: white;
-$input-focus-color: white;
-$input-error-color: #fff4f4;
-$input-autofill-color: #fafcff;
+$theme: (
+	// This also serves as the base style for
+	// other inputs, which can be overwritten,
+	// in each input map
+	"input": (
+		"color": white,
+		"focus-color": white,
+		"error-color": #fff4f4,
+		"autofill-color": #fafcff,
 
-// backgrounds
-$input-background: #151515;
-$input-focus-background: #222;
-$input-error-background: #a02222;
-$input-autofill-background: #2b628e;
+		"background": #151515,
+		"focus-background": #222,
+		"error-background": #a02222,
+		"autofill-background": #2b628e,
 
-$input-border-width: 1px;
-$input-border-style: solid;
-$input-border-color: #797b82;
-$input-border: $input-border-width $input-border-style $input-border-color;
+		"border-width": 1px,
+		"border-style": solid,
+		"border-color": #797b82,
+		"border": 1px solid #797b82,
 
-$input-focus-border-width: 1px;
-$input-focus-border-style: solid;
-$input-focus-border-color: #d1d3da;
-$input-focus-border: $input-focus-border-width $input-focus-border-style $input-focus-border-color;
+		"focus-border-width": 1px,
+		"focus-border-style": solid,
+		"focus-border-color": #d1d3da,
+		"focus-border": 1px solid #d1d3da,
 
-$input-autofill-border-width: 1px;
-$input-autofill-border-style: solid;
-$input-autofill-border-color: #4f9bd6;
-$input-autofill-border: $input-autofill-border-width $input-autofill-border-style $input-autofill-border-color;
+		"error-border-width": 1px,
+		"error-border-style": solid,
+		"error-border-color": #e02929,
+		"error-border": 1px solid #e02929,
 
-$input-error-border-width: 1px;
-$input-error-border-style: solid;
-$input-error-border-color: #e02929;
-$input-error-border: $input-error-border-width $input-error-border-style $input-error-border-color;
-
-// misc variables
-
-// dropdown
-$dropdown-height: 30px;
-$dropdown-padding: 10px;
-$dropdown-mobile-padding: 30px;
-$dropdown-separator-border: 1px solid rgba(128, 128, 128, 0.25);
+		"autofill-border-width": 1px,
+		"autofill-border-style": solid,
+		"autofill-border-color": #797b82,
+		"autofill-border": 1px solid #797b82
+	),
+	"checkbox": (),
+	"count": (),
+	"dropdown": (
+		"height": 30px,
+		"padding": 10px,
+		"mobile-padding": 30px,
+		"separator-border": 1px solid rgba(128, 128, 128, 0.25)
+	),
+	"radio": ()
+);

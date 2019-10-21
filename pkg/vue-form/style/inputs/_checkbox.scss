@@ -1,18 +1,23 @@
-@mixin checkbox {
+@mixin checkbox(
+	$border: 1px solid #dadada,
+	$focus-border: 1px solid #1e2021,
+	$error-background: #ffe1e1,
+	$error-border: 1px solid #e02929
+) {
 	.inp-checkbox {
 		.checkbox {
 			position: relative;
 			width: 1.8em;
 			height: 1.8em;
 			background: transparent;
-			border: $input-border;
+			border: $border;
 			padding: 0;
 			outline: none;
 			border-radius: 1px;
 			flex-shrink: 0;
 	
 			&:focus {
-				border: $input-focus-border;
+				border: $focus-border;
 			}
 	
 			.icon {
@@ -25,8 +30,8 @@
 		}
 	
 		&.error button {
-			background: $input-error-background;
-			border: $input-error-border;
+			background: $error-background;
+			border: $error-border;
 		}
 	
 		.label {

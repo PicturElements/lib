@@ -1,14 +1,25 @@
-@mixin dropdown {
+@use "./utils.scss" as *;
+
+@mixin dropdown(
+	$background: white,
+	$error-background: #ffe1e1,
+	$border: 1px solid #dadada,
+	$error-border: 1px solid #e02929,
+	$height: 30px,
+	$padding: 10px,
+	$mobile-padding: 30px,
+	$separator-border: 1px solid rgba(128, 128, 128, 0.25)
+) {
 	.inp-dropdown {
 		position: relative;
 		width: 100%;
-		height: $dropdown-height;
+		height: $height;
 		max-width: 100%;
-		border: $input-border;
+		border: $border;
 		outline: none;
 		text-align: left;
 		padding: 0;
-		background: $input-background;
+		background: $background;
 		user-select: none;
 	
 		.mobi-focus,
@@ -29,14 +40,14 @@
 		}
 	
 		.dropdown-option {
-			line-height: $dropdown-height;
-			height: $dropdown-height;
-			padding: 0 $dropdown-padding;
+			line-height: $height;
+			height: $height;
+			padding: 0 $padding;
 			white-space: nowrap;
 			cursor: pointer;
 	
 			&.dropdown-active-option {
-				padding-right: $dropdown-height + $dropdown-padding;
+				padding-right: $height + $padding;
 	
 				> .icon {
 					position: absolute;
@@ -51,7 +62,7 @@
 			}
 	
 			+ .dropdown-option {
-				border-top: $dropdown-separator-border;
+				border-top: $separator-border;
 			}
 	
 			.dropdown-option-inner {
@@ -90,8 +101,8 @@
 	
 		&.error {
 			&:not(.open) {
-				background: $input-error-background;
-				border: $input-error-border;
+				background: $error-background;
+				border: $error-border;
 	
 				.placeholder {
 					opacity: 1;
@@ -117,11 +128,11 @@
 				.dropdown-list {
 					position: fixed;
 					top: 50%;
-					left: $dropdown-mobile-padding;
-					right: $dropdown-mobile-padding;
+					left: $mobile-padding;
+					right: $mobile-padding;
 					width: auto;
 					max-height: 90%;
-					max-height: calc(100% - #{$dropdown-mobile-padding * 2});
+					max-height: calc(100% - #{$mobile-padding * 2});
 					transform: translateY(-50%);
 					z-index: 100001;
 				}
