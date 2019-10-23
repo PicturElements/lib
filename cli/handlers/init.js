@@ -2,7 +2,6 @@ const path = require("path");
 const {
 	stat,
 	mkdir,
-	logNL,
 	writeFile,
 	error,
 	success,
@@ -47,7 +46,7 @@ module.exports = async function init(options) {
 		console.log("\nSetting up package.json:");
 		await writer.cli(precedence);
 		console.log("\nFinished setting up package.json:\n");
-		logNL(writer.serialize("  "));
+		console.log(writer.serialize("  "));
 
 		if (await booleanQuestion()) {
 			const success = await startInit(writer);

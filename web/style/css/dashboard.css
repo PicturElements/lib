@@ -44,7 +44,8 @@ main {
   align-items: center; }
 
 .no-content-msg {
-  color: #54595f; }
+  /* color: #54595f; */
+  }
 
 :not(.no-content) > .no-content-msg {
   display: none; }

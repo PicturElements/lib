@@ -12,16 +12,21 @@ const STD_IO = { stdio: "inherit" };
 
 const commands = new Commander()
 	.cmd("install", async options => {
-		const [ pkgName, ...passedArgs ] = options.args;
+		const [ pkgName, ...passedArgs ] = options.args,
+			pth = join(__dirname, "../../pkg", pkgName);
 
 		if (!await isValidPkgName(pkgName, "install"))
 			return false;
 
-		const path = join(__dirname, "../pkg", pkgName);
-		const package = await readJSONNull(join(path, "package.json"));
+		if (!await exists(join(pth, "package.json"))) {
+			error("Failed to install: couldn't find package.json");
+			return false;
+		}
+
+		const package = await readJSONNull(join(pth, "package.json"));
 
 		if (!package) {
-			error("Failed to run uninstall: package.json not readable");
+			error("Failed to run install: package.json not readable");
 			return false;
 		}
 		
@@ -39,21 +44,36 @@ const commands = new Commander()
 		success(`Sucessfully installed ${package.name}`);
 	})
 	.cmd("local-install", async options => {
-		const [ pkgName ] = options.args;
+		const [ pkgName ] = options.args,
+			pth = join(__dirname, "../../pkg", pkgName);
 
 		if (!await isValidPkgName(pkgName, "local-install"))
 			return false;
 
+		if (!await exists(join(pth, "package.json"))) {
+			error("Failed to local-install: couldn't find package.json");
+			return false;
+		}
+
+		const package = await readJSONNull(join(pth, "package.json"));
+
+		if (!package) {
+			error("Failed to run local-install: package.json not readable");
+			return false;
+		}
+
 		const exit = await spawn("npm", [
 			"i",
 			"-D",
-			`file:${join(__dirname, "../pkg", pkgName)}`
+			`file:${pth}`
 		], STD_IO);
 
 		if (exit.code) {
 			error(`Failed to run local-install (exit code ${exit.code})`);
 			return false;
 		}
+
+		success(`Sucessfully installed ${package.name}`);
 	})
 	.cmd("local-uninstall", async options => {
 		const [ pkgName ] = options.args;
@@ -61,8 +81,8 @@ const commands = new Commander()
 		if (!await isValidPkgName(pkgName, "local-uninstall"))
 			return false;
 
-		const path = join(__dirname, "../pkg", pkgName);
-		const package = await readJSONNull(join(path, "package.json"));
+		const pth = join(__dirname, "../../pkg", pkgName);
+		const package = await readJSONNull(join(pth, "package.json"));
 
 		if (!package) {
 			error("Failed to run local-uninstall: package.json not readable");
@@ -89,9 +109,9 @@ async function isValidPkgName(pkgName, cmd) {
 		return false;
 	}
 
-	const path = join(__dirname, "../pkg", pkgName);
+	const pth = join(__dirname, "../../pkg", pkgName);
 
-	if (!await exists(path)) {
+	if (!await exists(pth)) {
 		error(`Failed to run ${cmd}: ${pkgName} is not a package`);
 		return false;
 	}
