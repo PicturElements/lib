@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/color",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Color parsing, transforms, and utilities",
   "main": "index.js",
   "scripts": {
@@ -25,8 +25,12 @@
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/color#readme",
   "dependencies": {},
   "devDependencies": {},
+  "files": [
+    "/src",
+    "/index.d.ts"
+  ],
   "qlib": {
-    "pushes": 3,
+    "pushes": 4,
     "expose": {
       "scripts": [
         "connect/feed.js"
