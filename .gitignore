@@ -5,3 +5,7 @@ node_modules
 web/bundles
 coverage
 lib-unprocessed
+
+# Packages not yet ready to be published
+/pkg/dom
+/pkg/polyfill
