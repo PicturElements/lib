@@ -6,7 +6,7 @@ feed(exp, "I18NManager");
 
 feed.add("I18N", activeFeed => {
 	const I18N = new I18NManager({
-		baseUrl: "pkg/i18n/locales"
+		baseUrl: "pkg/i18n/connect/locales"
 	});
 
 	I18N.setLocale("en-uk");

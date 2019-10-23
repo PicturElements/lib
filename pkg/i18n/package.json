@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/i18n",
-  "version": "2.3.3",
+  "version": "2.3.4",
   "description": "Compact, powerful, fast, and intuitive internationali(z|s)ation library",
   "main": "index.js",
   "scripts": {
@@ -24,13 +24,17 @@
   },
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/i18n#readme",
   "dependencies": {
-    "@qtxr/bc": "^1.2.3",
-    "@qtxr/request": "^3.0.1",
-    "@qtxr/utils": "^1.21.0"
+    "@qtxr/bc": "^1.2.5",
+    "@qtxr/request": "^3.0.2",
+    "@qtxr/utils": "^1.21.4"
   },
   "devDependencies": {},
+  "files": [
+    "/src",
+    "/index.d.ts"
+  ],
   "qlib": {
-    "pushes": 15,
+    "pushes": 16,
     "expose": {
       "scripts": [
         "connect/feed.js"
