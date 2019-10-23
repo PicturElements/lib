@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/anim",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Animation library with flexible easings, queueing, and fine grained control",
   "main": "index.js",
   "scripts": {
@@ -33,7 +33,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 6,
+    "pushes": 7,
     "expose": {
       "scripts": [
         "connect/feed.js"
