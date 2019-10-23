@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/node-utils",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Utilities for common tasks in node environments",
   "main": "index.js",
   "scripts": {
@@ -30,8 +30,12 @@
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/node-utils#readme",
   "dependencies": {},
   "devDependencies": {},
+  "files": [
+    "/src",
+    "/index.d.ts"
+  ],
   "qlib": {
-    "pushes": 12,
+    "pushes": 13,
     "expose": {
       "scripts": [
         "connect/feed.js"
