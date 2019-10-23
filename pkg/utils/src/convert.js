@@ -1,3 +1,5 @@
+import { isObject } from "./is";
+
 // API:
 // convert accepts a lookup table, which is structured as follows:
 // {
@@ -31,30 +33,44 @@ function convert(lookup, val, from, to) {
 
 	const fromPart = lookup[from];
 
-	switch (typeof fromPart) {
-		case "object": {
-			if (!fromPart || !fromPart.hasOwnProperty(to))
-				return null;
+	if (isObject(fromPart)) {
+		if (!fromPart || !fromPart.hasOwnProperty(to))
+			return null;
 
-			const conv = fromPart[to];
+		const conv = fromPart[to];
 
-			if (typeof conv == "function")
-				return conv(val, from, to);
+		if (typeof conv == "function")
+			return conv(val, from, to);
 
-			return val * conv;
-		}
-
-		case "string": {
-			const refConv = 1 / convert(lookup, 1, fromPart, from);
-			return convert(lookup, val * refConv, fromPart, to);
-		}
+		return val * conv;
+	} else if (typeof fromPart == "string") {
+		const refConv = 1 / convert(lookup, 1, fromPart, from);
+		return convert(lookup, val * refConv, fromPart, to);
 	}
 
 	return null;
 }
 
 function mkConverter(lookup) {
-	return convert.bind(null, lookup);
+	return convert.bind(null, fillInLookup(lookup));
+}
+
+function fillInLookup(lookup) {
+	lookup = Object.assign({}, lookup);
+
+	for (const k in lookup) {
+		if (!lookup.hasOwnProperty(k) || !isObject(lookup[k]))
+			continue;
+
+		const partition = lookup[k];
+
+		for (const k2 in partition) {
+			if (partition.hasOwnProperty(k2) && !lookup.hasOwnProperty(k2))
+				lookup[k2] = k;
+		}
+	}
+
+	return lookup;
 }
 
 export {
