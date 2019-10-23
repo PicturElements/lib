@@ -1,0 +1,13 @@
+@use "./primitives.scss" as *;
+
+@mixin rangeClass($slug, $property, $unit, $start, $end, $step:1) {
+	$steps: ($end - $start) / $step;
+
+	@for $i from 0 through $steps {
+		$val: $start + $i * $step;
+
+		.#{$slug + str-replace($val, ".", "_")} {
+			#{$property}: #{$val + $unit};
+		}
+	}
+}

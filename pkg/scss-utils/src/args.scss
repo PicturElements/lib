@@ -1,0 +1,11 @@
+@function trim-args($args, $param-list) {
+	$out: ();
+
+	@each $param in $param-list {
+		@if (map-has-key($args, $param)) {
+			$out: map-merge($out, ($param: map-get($args, $param)));
+		}
+	}
+
+	@return $out;
+}

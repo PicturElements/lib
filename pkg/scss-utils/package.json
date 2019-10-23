@@ -1,0 +1,50 @@
+{
+  "name": "@qtxr/scss-utils",
+  "version": "1.0.1",
+  "description": "Various functions, mixins, and other utilities for SCSS",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node ../server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PicturElements/lib.git",
+    "directory": "pkg/scss-utils"
+  },
+  "keywords": [
+    "scss",
+    "sass",
+    "css",
+    "utility",
+    "mixin",
+    "function"
+  ],
+  "author": "qtxr",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/PicturElements/lib/issues"
+  },
+  "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/scss-utils#readme",
+  "dependencies": {},
+  "devDependencies": {},
+  "files": [
+    "/src",
+    "/index.scss"
+  ],
+  "qlib": {
+    "pushes": 1,
+    "expose": {
+      "scripts": [
+        "connect/feed.js"
+      ],
+      "styles": []
+    },
+    "ui": [
+      {
+        "type": "console",
+        "config": {}
+      }
+    ]
+  }
+}

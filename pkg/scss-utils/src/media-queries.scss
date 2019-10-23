@@ -1,0 +1,49 @@
+@function join-media-query($separator, $queries...) {
+	$query-list: ();
+
+	@each $query in $queries {
+		$query-list: append($query-list, map-get($media-queries, $query));
+	}
+
+	@return str-join($query-list, $separator);
+}
+
+@mixin media-all($queries...) {
+	$query: join-media-query(" and ", $queries...);
+
+	@media #{$query} {
+		@content;
+	}
+}
+
+@mixin media-any($queries...) {
+	$query: join-media-query(", ", $queries...);
+
+	@media #{$query} {
+		@content;
+	}
+}
+
+@mixin mobile {
+	@media (max-aspect-ratio: 1/1) and (max-width: 700px) {
+		@content;
+	}
+}
+
+@mixin not-mobile {
+	@media (min-aspect-ratio: 1/1), (min-width: 700px) {
+		@content;
+	}
+}
+
+@mixin mobile-small {
+	@media (max-aspect-ratio: 1/1) and (max-width: 350px) {
+		@content;
+	}
+}
+
+@mixin not-mobile-small {
+	@media (max-aspect-ratio: 1/1) and (max-width: 350px) {
+		@content;
+	}
+}

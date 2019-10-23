@@ -1,0 +1,26 @@
+@mixin placeholder($selector: "&") {
+	#{$selector}::-webkit-input-placeholder {
+		@content;
+	}
+
+	#{$selector}::-moz-placeholder {
+		@content;
+	}
+
+	#{$selector}:-ms-input-placeholder {
+		@content;
+	}
+
+	#{$selector}:-moz-placeholder {
+		@content;
+	}
+}
+
+@mixin autofill($back, $front, $border, $selector: "&") {
+	#{$selector}:-webkit-autofill {
+		box-shadow: inset 0 0 0 200px $back;
+		-webkit-text-fill-color: $front;
+		border: $border;
+		@content;
+	}
+}

@@ -1,0 +1,7 @@
+@mixin raster($back, $front, $size: 6px) {
+	background-image:
+		linear-gradient(45deg, $back 20%, transparent 25%, transparent 75%, $back 75%),
+		linear-gradient(45deg, $back 25%, $front 25%, $front 75%, $back 75%);
+	background-position: 0 0, $size $size;
+	background-size: ($size * 2) ($size * 2);
+}
