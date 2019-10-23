@@ -184,12 +184,20 @@ class ComponentWrapper {
 			throw new Error(`Cannot supply '${name}': ComponentWrapper aready has an endpoint with this name`);
 
 		if (hasInit(supplier)) {
-			return (...args) => {
-				supplier = Object.assign(supplier);
+			const initializer = (...args) => {
+				supplier = Object.assign({}, supplier);
 				supplier.use = supplier.init(...args);
 				this.endpoints[name] = supplier;
 				return this;
 			};
+
+			initializer.supply = _ => {
+				throw new Error(`Uninitialized endpoint found: '${name}'`);
+			};
+
+			initializer.autoSupply = initializer.supply;
+
+			return initializer;
 		}
 		
 		this.endpoints[name] = supplier;
