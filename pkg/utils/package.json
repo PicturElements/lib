@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/utils",
-  "version": "1.21.2",
+  "version": "1.21.4",
   "description": "Collection of small and versatile utility functions",
   "main": "index.js",
   "scripts": {
@@ -25,8 +25,12 @@
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/utils#readme",
   "dependencies": {},
   "devDependencies": {},
+  "files": [
+    "/src",
+    "/index.d.ts"
+  ],
   "qlib": {
-    "pushes": 48,
+    "pushes": 49,
     "expose": {
       "scripts": [
         "connect/feed.js"
