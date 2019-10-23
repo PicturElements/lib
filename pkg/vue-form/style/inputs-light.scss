@@ -1,4 +1,4 @@
 @use "./themes/light.scss" as *;
-@use "./inputs/all.scss" as *;
+@use "./inputs" as *;
 
-@include all($theme);
+@include inputs($theme);

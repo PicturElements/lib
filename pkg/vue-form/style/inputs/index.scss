@@ -12,7 +12,7 @@
 	@return trim-args(map-merge($input-theme, $target-theme), $param-list);
 }
 
-@mixin all($theme) {
+@mixin inputs($theme) {
 	$input-theme: map-get($theme, "input");
 	@include input(trim-args($input-theme, $input-params)...);
 	@include checkbox(trim-args-merge($theme, "checkbox", $checkbox-params)...);

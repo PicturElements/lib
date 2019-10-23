@@ -1,6 +1,6 @@
 @use "./themes/dark.scss" as *;
-@use "./inputs/all.scss" as *;
+@use "./inputs" as *;
 
 .v-form.dark {
-	@include all($theme);
+	@include inputs($theme);
 }

@@ -1,6 +1,6 @@
 @use "./themes/light.scss" as *;
-@use "./inputs/all.scss" as *;
+@use "./inputs" as *;
 
 .v-form.light {
-	@include all($theme);
+	@include inputs($theme);
 }
