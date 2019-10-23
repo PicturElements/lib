@@ -26,18 +26,23 @@ Below are the default processors the library uses.
 * **path** `(loader, path) -> path`
   
   Processes paths so that all assets are requested in a uniform way. By default, this is an identity processor (returns its input). The path may also be any valid URI. Please also note that this function should be idempotent, as AssetLoader may need to process paths multiple times. For similar reasons, and for consistency in general, it's recommended that this processor is never overwritten. This is because, among other things, it's used internally to identify enqueued assets.
+
 * **prefetchResponse** `(loader, path, response: response node) -> response: any`
   
   Processes response data from prefetch. The response argument is parsed response data straight from the XHR loader wrapped in a response node. The returned value from this is passed as the resolved value. By default, this is an identity processor that warns if an asset wasn't properly loaded.
+
 * **fetchResponse** `(loader, path, response: response node) -> response: any`
   
   Processes response data from fetch. The response argument is parsed response data straight from the XHR loader wrapped in a response node. The returned value from this is passed as the resolved value. By default, this is an identity processor that warns if an asset wasn't properly loaded.
+
 * **xhrSettings** `(loader, path, settings: Object) -> settings: object | null`
   
   Processes settings to be passed to the XHR loader. By default, this processor returns the input, or an empty object if a falsy input is given.
+
 * **dependencies** `(loader, path, dependent: response node) -> dependencies: string[] | null`
   
   Processes dependencies given a dependent. The dependent is a response node and the processor will not be invoked when a dependency wasn't successfully fetched. This method must return an array of paths or URIs (processed or unprocessed) or else no dependencies will be loaded. When processsed, the loaded asset is wrapped in an asset node (see below). When the dependency has been loaded, it's appended to the `dependecies` property of the asset node. By default, this processor returns the `dependencies` property of the dependent's payload.
+  
 * **assetNode** `(loader, path, node: asset node, dependent: response node) -> node: asset node`
   
   Processes asset node data. This processor should modify the provided node or return a structurally similar node. By default, this is an identity processor.

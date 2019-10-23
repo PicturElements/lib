@@ -209,7 +209,8 @@ export default class AssetLoader {
 				);
 			}
 
-			this.xhrManager.use(xhrSettings)
+			this.xhrManager
+				.use(xhrSettings)
 				.get(path)
 				.success(d => {
 					delete this.track.enqueued[path];
