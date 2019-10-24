@@ -9,7 +9,7 @@ const {
 } = require("../pkg/node-utils");
 const parseCLIInput = require("./parse-cli-input");
 
-const HANDLER_DIR = "cli/handlers";
+const HANDLER_DIR = join(__dirname, "../cli/handlers");
 const validCommandRegex = /^[a-z0-9-_?]+$/i;
 
 class Commander {
@@ -36,11 +36,11 @@ class Commander {
 
 		if (typeof config == "string") {
 			config = {
-				handle: join(__dirname, "..", HANDLER_DIR, config)
+				handle: join(HANDLER_DIR, config)
 			};
 		} else if (!config) {
 			config = {
-				handle: join(__dirname, "..", HANDLER_DIR, command)
+				handle: join(HANDLER_DIR, command)
 			};
 		} else if (isHandler(config)) {
 			config = {

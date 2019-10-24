@@ -68,6 +68,11 @@ const getPackageFields = _ => ([
 		value: {},
 		precedence: 0
 	}, {
+		name: "files",
+		value: ["/src", "/index.d.ts"],
+		process: splitOnComma,
+		precedence: 0
+	}, {
 		name: "qlib",
 		fields: [
 			{
