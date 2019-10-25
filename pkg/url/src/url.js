@@ -26,7 +26,7 @@ const URL_PARSERS = [
 		guard(inst, otomy) {
 			return Boolean(inst.protocol);
 		},
-		regex: /^[^\/]+/
+		regex: /^[^\/:]+/
 	}, {
 		key: "port",
 		regex: /^:([^\s\/]+)/,
@@ -98,11 +98,14 @@ export default class URL {
 
 	set host(host) {
 		host = coerceStr(host);
-		const split = host.split(":");
 
-		this.hostname = split[0];
+		const split = host.split(":"),
+			data = URL_MAP.get(this);
+
+		data.hostname = split[0].trim();
+
 		if (split.length > 1)
-			this.port = split[1];
+			data.port = split[1].trim();
 	}
 
 	get hostname() {
@@ -110,17 +113,14 @@ export default class URL {
 	}
 
 	set hostname(hostname) {
-		URL_MAP.get(this).hostname = coerceStr(hostname);
+		this.host = hostname;
 	}
 
 	get href() {
 		const data = URL_MAP.get(this);
-		let href = "";
+		let href = this.origin;
 
-		if (data.protocol)
-			href += `${data.protocol}//`;
-
-		href += (data.hostname + this.pathname);
+		href += this.pathname;
 		
 		if (data.search)
 			href += data.search;
@@ -136,8 +136,24 @@ export default class URL {
 	}
 
 	get origin() {
-		return "not implemented";
-		// return URL_MAP.get(this).origin;
+		const data = URL_MAP.get(this);
+
+		if (data.hostname) {
+			const data = URL_MAP.get(this);
+			let origin = "";
+
+			if (data.protocol)
+				origin += `${data.protocol}//`;
+
+			origin += data.hostname;
+
+			if (data.port)
+				origin += `:${data.port}`;
+
+			return origin;
+		}
+
+		return "";
 	}
 
 	set origin(origin) {
@@ -172,7 +188,14 @@ export default class URL {
 	}
 
 	set port(port) {
+		if (typeof port == "number" && !isNaN(port) && isFinite(port))
+			port = String(port);
+		
 		URL_MAP.get(this).port = coerceStr(port);
+	}
+
+	get self() {
+		return URL_MAP.get(this);
 	}
 
 	get protocol() {
@@ -294,15 +317,16 @@ export default class URL {
 
 		let outInstance = null,
 			path = [],
-			hash = "";
+			hash = "",
+			foundAbsolutePath = false;
 		const searchParams = {};
 
 		// Validate / collect data 
 		for (let i = 0, l = paths.length; i < l; i++) {
 			const url = coerceUrl(paths[i]);
 
-			if (i > 0 && isAbsolute(this)) {
-				sendError(`Cannot join path: interspersed absolute path '${url.href}'`);
+			if (i > 0 && isAbsolute(url)) {
+				sendError(`Cannot join path: found interspersed absolute path '${url.href}'`);
 				return URL.NULL;
 			}
 
@@ -323,6 +347,9 @@ export default class URL {
 		// Join paths
 		for (let i = 0, l = paths.length; i < l; i++) {
 			const p = URL_MAP.get(paths[i]).path;
+
+			if (isAbsolute(paths[i]) && paths[i + 1] && !URL_MAP.get(paths[i + 1]).pathnameIsRelative)
+				continue;
 
 			for (let j = 0, l2 = p.length; j < l2; j++)
 				path.push(p[j]);
