@@ -274,7 +274,9 @@ function runRevive(inst, key, value) {
 }
 
 function wrapReplacer(typeOrPacket, valueOrReplacer) {
-	const type = typeof typeOrPacket == "string" ? typeOrPacket : typeOrPacket && typeOrPacket.type;
+	const type = typeof typeOrPacket == "string" ?
+		typeOrPacket :
+		typeOrPacket && typeOrPacket.type;
 
 	if (!type || typeof type != "string")
 		throw new Error("Invalid packet: type must be a truthy string");
@@ -284,9 +286,13 @@ function wrapReplacer(typeOrPacket, valueOrReplacer) {
 	if (typeof typeOrPacket == "string") {
 		packet = {};
 
-		if (typeof valueOrReplacer == "function")
-			packet.value = valueOrReplacer(wrapReplacer.key, wrapReplacer.value, wrapReplacer.owner);
-		else
+		if (typeof valueOrReplacer == "function") {
+			packet.value = valueOrReplacer(
+				wrapReplacer.key,
+				wrapReplacer.value,
+				wrapReplacer.owner
+			);
+		} else
 			packet.value = valueOrReplacer;
 	} else {
 		if (!isObject(typeOrPacket))
