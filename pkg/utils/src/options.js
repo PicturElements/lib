@@ -69,8 +69,10 @@ function tryBundle(optionsStr, templates) {
 
 		if (templ)
 			Object.assign(template, templ);
-		else
-			logError(`Failed to bundle option '${options[i]}': no option with that name exists`, null, templates);
+		else {
+			console.error(`Failed to bundle option '${options[i]}': no option with that name exists`);
+			return null;
+		}
 	}
 
 	templates[optionsStr] = Object.freeze(template);
