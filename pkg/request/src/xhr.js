@@ -31,7 +31,7 @@ const sourceTargetRegex = /^(?:([\w-:]*)\s*->\s*)?([\w-:]+)$/,
 
 class XHRManager {
 	constructor(options) {
-		options = options && options.constructor == Object ? options : null;
+		options = isObject(options) ? options : null;
 
 		this.pendingPreset = null;
 		this.runtime = {};
@@ -71,11 +71,12 @@ class XHRManager {
 				}
 
 				const preset = typeof pi == "string" ? this.presets[pi] : pi;
-	
-				if (preset && preset.constructor == Object) {
-					added = true;
-					outPreset = injectPreset(outPreset, preset);
-				}
+
+				if (!isObject(preset))
+					continue;
+
+				added = true;
+				outPreset = injectPreset(outPreset, preset);
 			}
 		};
 
@@ -383,7 +384,7 @@ function mkRuntime(state, xId) {
 }
 
 function resolveType(type) {
-	if (type && type.constructor == Object)
+	if (isObject(type))
 		return type;
 
 	if (typeof type != "string") {
@@ -460,10 +461,13 @@ function mergeData(acc, data) {
 }
 
 function mkUrl(url, preset) {
+	if (typeof url != "string")
+		url = (preset && typeof preset.url == "string") ? preset.url : "";
+
 	if (preset && preset.baseUrl)
 		return URL.join(preset.baseUrl, url);
 
-	return url || window.location.href;
+	return URL.join(window.location.href, url);
 }
 
 function setHeaders(xhr, preset) {
