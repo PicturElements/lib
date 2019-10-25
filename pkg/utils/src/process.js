@@ -1,4 +1,7 @@
-import { isObject } from "./is";
+import {
+	inject,
+	isObject
+} from "./is";
 
 // Difference between hooks and processors
 // Processors are similar to hooks, but behave like highly specialized
@@ -41,19 +44,11 @@ import { isObject } from "./is";
 // 4. Calling a processor without additional arguments should never fail on the high level
 
 function mkProcessor(optionsOrProcessors) {
-	if (!isObject(optionsOrProcessors))
-		throw new TypeError("Failed to make processor: input is not an object");
-
-	let processors = {},
-		transformers = {},
-		dispatcher = null;
-
-	if (optionsOrProcessors.hasOwnProperty("processors")) {
-		processors = setObj(optionsOrProcessors.processors, processors);
-		transformers = setObj(optionsOrProcessors.transformers, transformers);
-		dispatcher = optionsOrProcessors.dispatch;
-	} else
-		processors = optionsOrProcessors;
+	const {
+		processors,
+		transformers,
+		dispatcher
+	} = normalizeProcessorOptions(optionsOrProcessors);
 
 	return (type, proc, ...args) => {
 		let processor = processors.hasOwnProperty(type) ? processors[type] : null;
@@ -74,6 +69,34 @@ function mkProcessor(optionsOrProcessors) {
 			return null;
 		};
 	};
+}
+
+function extendProcessorOptions(options, optionsOrProcessors, injectOptions) {
+	return inject(
+		options,
+		normalizeProcessorOptions(optionsOrProcessors),
+		injectOptions
+	);
+}
+
+function normalizeProcessorOptions(optionsOrProcessors) {
+	const options = {
+		processors: {},
+		transformers: {},
+		dispatch: null
+	};
+
+	if (!isObject(optionsOrProcessors))
+		return options;
+
+	if (optionsOrProcessors.hasOwnProperty("processors")) {
+		options.processors = setObj(optionsOrProcessors.processors, options.processors);
+		options.transformers = setObj(optionsOrProcessors.transformers, options.transformers);
+		options.dispatcher = optionsOrProcessors.dispatch;
+	} else
+		options.processors = optionsOrProcessors;
+
+	return options;
 }
 
 function setObj(candidate, fallback) {
