@@ -1,7 +1,8 @@
 import {
 	isObject,
 	resolveArgs,
-	getTime
+	getTime,
+	mkProcessor
 } from "@qtxr/utils";
 import { XHRManager } from "./xhr";
 
@@ -49,12 +50,19 @@ export default class AssetLoader {
 		this.assets = [];
 		this.assetsMap = {};
 		this.xhrManager = manager || new XHRManager();
-		this.processors = Object.assign({}, DEFAULT_PROCESSORS, processors);
 		this.track = {
 			requested: {},
 			enqueued: {},
 			successful: {},
 			failed: {}
+		};
+
+		const process = mkProcessor(
+			Object.assign({}, DEFAULT_PROCESSORS, processors)
+		);
+
+		this.process = (type, processors, path) => {
+			return process(type, processors, this, path);
 		};
 	}
 
@@ -334,18 +342,6 @@ export default class AssetLoader {
 				.apply(this, fetchBuffer[i].args)
 				.then(fetchBuffer[i].resolve);
 		}
-	}
-
-	process(type, processors, path) {
-		return (...args) => {
-			processors = isObject(processors) ? processors : this.processors;
-
-			const processor = processors[type] || this.processors[type];
-			if (typeof processor == "function")
-				return processor(this, path, ...args);
-	
-			return null;
-		};
 	}
 
 	static traverse(rootNode, callback, tail = false) {
