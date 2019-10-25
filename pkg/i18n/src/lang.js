@@ -25,8 +25,8 @@ import {
 // so that there's no significant performance difference
 // 
 // const formatRegex = /.../gi;  To see the full regex, check parseFormatParser
-const formatterRegex = /^([a-z]*)([A-Z]*)$/,
-	formatCapturingGroups = [
+const FORMATTER_REGEX = /^([a-z]*)([A-Z]*)$/,
+	FORMAT_CAPTURING_GROUPS = [
 		// Regex groups are 1-indexed
 		null,				// CG1 is a string matcher group and is not used
 		"variable",			// Variable reference
@@ -41,7 +41,7 @@ const formatterRegex = /^([a-z]*)([A-Z]*)$/,
 		"terminator",		// Selector / function argument / group terminators
 		"operator"			// Operators (boolean, bitwise)
 	],
-	formatCache = {};
+	FORMAT_CACHE = {};
 
 // current: /\\.|(["'`])(?:\\.|.)*?\1|\$([a-z0-9_.-]+)(\()?|\b(([yldhms])\5+?)\b|\[((?:\\.|(["'`])(?:\\.|.)*?\7|[^\\\]])+)\]\s*{|(}\s*{)|%([a-z0-9_.-]+)%|(\()|([})])|(\|\||&&|!|[!<>]==)/gi
 // /\\.|\$([a-z0-9_.-]+)(\()?|\b(([ywdhms])\4+?)\b|\[((?:[^\\\]]|\\.)+)\]\s*{|(}\s*{)|%([a-z0-9_.-]+)%|([})])/gi
@@ -54,7 +54,7 @@ const formatterRegex = /^([a-z]*)([A-Z]*)$/,
 //					as an argument to a function
 // exitResolvable	describes whether this term can be resolved at the string joining step
 //					of the format resolve, should a term token be passed to the joiner
-const tokenData = {
+const TOKEN_DATA = {
 	variable: {
 		permissions: {
 			argResolvable: true,
@@ -133,21 +133,21 @@ const tokenData = {
 	}
 };
 
-const selectorCoerceMap = {
+const SELECTOR_COERCE_MAP = {
 	b: "boolean",
 	n: "number",
 	i: "integer",
 	s: "string"
 };
 
-const terminatorMap = {
+const TERMINATOR_MAP = {
 	selector: "}",
 	variable: ")",
 	group: ")",
 	selectorHead: "]"
 };
 
-const formatterClassMap = {
+const FORMATTER_CLASS_MAP = {
 	Y: "year",
 	L: "month",
 	D: "day",
@@ -156,12 +156,12 @@ const formatterClassMap = {
 	S: "second"
 };
 
-const unaryOps = {
+const UNARY_UPS = {
 	"!": "NOT",
 	"~": "bitwise NOT"
 };
 
-const binaryOps = {
+const BINARY_OPS = {
 	"|": "bitwise OR",
 	"||": "OR",
 	"&": "bitwise AND",
@@ -180,17 +180,22 @@ const binaryOps = {
 	">>>": "zero-fill right shift"
 };
 
+const AND_OR = {
+	AND: true,
+	OR: true
+};
+
 function parseFormat(format) {
 	if (format == null)
 		return [];
 
-	if (formatCache.hasOwnProperty(format))
-		return formatCache[format];
+	if (FORMAT_CACHE.hasOwnProperty(format))
+		return FORMAT_CACHE[format];
 
 	const parsed = parseFormatParser("" + format);
 	cleanAST(parsed);
 
-	formatCache[format] = parsed;
+	FORMAT_CACHE[format] = parsed;
 
 	return parsed;
 }
@@ -214,7 +219,7 @@ function parseFormatParser(format, currentStack) {
 			ptr = ex.index;
 		}
 
-		const { label, capture } = getCapturingData(ex, formatCapturingGroups),
+		const { label, capture } = getCapturingData(ex, FORMAT_CAPTURING_GROUPS),
 			allowedChild = allowedChildToken(label, structStack),
 			match = ex[0];
 
@@ -232,7 +237,7 @@ function parseFormatParser(format, currentStack) {
 
 				struct.push(variable);
 
-				const argParen = getCapturingMatch(ex, formatCapturingGroups, "variableArgs");
+				const argParen = getCapturingMatch(ex, FORMAT_CAPTURING_GROUPS, "variableArgs");
 				if (argParen !== undefined) {
 					variable.parent = struct;
 					structStack.push(variable);
@@ -241,7 +246,7 @@ function parseFormatParser(format, currentStack) {
 				break;
 
 			case "formatter":					// date formatters - YY / yy / ll / HH
-				const formatter = formatterRegex.exec(capture);
+				const formatter = FORMATTER_REGEX.exec(capture);
 
 				if (!formatter)
 					throw new SyntaxError(`parser@${ptr}: '${capture}' is not a valid formatter. A valid formatter consists of an arbitrary number (including 0) of soft pads (lower case) and hard pads (upper case), in that order`);
@@ -250,7 +255,7 @@ function parseFormatParser(format, currentStack) {
 					type: "formatter",
 					value: capture,
 					length: capture.length,
-					class: formatterClassMap[capture[0].toUpperCase()],
+					class: FORMATTER_CLASS_MAP[capture[0].toUpperCase()],
 					pad: {
 						soft: formatter[1].length,
 						hard: formatter[2].length
@@ -264,7 +269,9 @@ function parseFormatParser(format, currentStack) {
 						parent: struct,
 						expr: [],
 						terms: [],
-						coerce: selectorCoerceMap[capture[1]] || "none"
+						termsMap: {},
+						defaultTerm: null,
+						coerce: SELECTOR_COERCE_MAP[capture[1]] || "none"
 					}, ex),
 					selectorHead = mkToken({
 						type: "selectorHead",
@@ -291,7 +298,7 @@ function parseFormatParser(format, currentStack) {
 						throw new SyntaxError(`parser@${ptr}: Unexpected new selector`);
 
 					const term = {
-						label: getCapturingMatch(ex, formatCapturingGroups, "selectorTermLabel") || null,
+						label: getCapturingMatch(ex, FORMAT_CAPTURING_GROUPS, "selectorTermLabel") || null,
 						term: []
 					};
 					currentStruct.terms.push(term);
@@ -309,7 +316,7 @@ function parseFormatParser(format, currentStack) {
 
 			case "terminator": {
 				const token = structStack[structStack.length - 1],
-					mapItem = token && terminatorMap[token.type],
+					mapItem = token && TERMINATOR_MAP[token.type],
 					terminatorMatch = mapItem && (mapItem instanceof RegExp ? mapItem.test(capture) : mapItem == capture);
 
 				if (terminatorMatch) {
@@ -344,13 +351,13 @@ function parseFormatParser(format, currentStack) {
 						unary: false
 					}, ex);
 
-					if (unaryOps.hasOwnProperty(capture)) {
+					if (UNARY_UPS.hasOwnProperty(capture)) {
 						op.unary = true;
-						op.name = unaryOps[capture];
+						op.name = UNARY_UPS[capture];
 					}
 
-					if (binaryOps.hasOwnProperty(capture))
-						op.name = binaryOps[capture];
+					if (BINARY_OPS.hasOwnProperty(capture))
+						op.name = BINARY_OPS[capture];
 
 					struct.push(op);
 				} else
@@ -382,12 +389,13 @@ function parseFormatParser(format, currentStack) {
 	return outStruct;
 }
 
-function mkToken(tokenData = {}, ex = null) {
-	tokenData.formatToken = true;
-	if (ex && ex.hasOwnProperty("index"))
-		tokenData.index = ex.index;
+function mkToken(data = {}, ex = null) {
+	data.formatToken = true;
 	
-	return tokenData;
+	if (ex && ex.hasOwnProperty("index"))
+		data.index = ex.index;
+	
+	return data;
 }
 
 function mkSmartRef(value) {
@@ -431,7 +439,7 @@ function getCapturingMatch(ex, labels, label) {
 }
 
 function allowedChildToken(tokenType, structStack) {
-	const partition = tokenData[tokenType];
+	const partition = TOKEN_DATA[tokenType];
 	let endStruct = structStack[structStack.length - 1];
 
 	if (partition && partition.ignoreParents) {
@@ -454,36 +462,51 @@ function allowedChildToken(tokenType, structStack) {
 
 function cleanAST(parsed) {
 	for (let i = parsed.length - 1; i >= 0; i--) {
-		const currTerm = parsed[i];
+		const node = parsed[i];
 
-		cASTJoinStr(parsed, currTerm, i);
+		cASTJoinStr(parsed, i);
 
-		if (!isFmt(currTerm))
+		if (!isFmt(node))
 			continue;
 
-		if (currTerm.hasOwnProperty("children"))
-			cleanAST(currTerm.children, currTerm, i);
+		if (node.hasOwnProperty("children"))
+			cleanAST(node.children, node, i);
 		
-		switch (currTerm.type) {
+		switch (node.type) {
 			case "variable":
-				currTerm.args = currTerm.children = flattenGroups(currTerm.args);
-				cASTFormatArgs(currTerm.args);
+				node.args = node.children = flattenGroups(node.args);
+				cASTFormatArgs(node.args);
 				break;
 			case "selector":
-				currTerm.terms.forEach(t => cleanAST(t.term));
-				cleanAST(currTerm.expr);
-				cASTFormatExpr(currTerm.expr);
-				cASTAtomizeExpr(currTerm.expr);
+				for (let i = 0, l = node.terms.length; i < l; i++) {
+					const term = node.terms[i];
+					cleanAST(term);
+
+					if (term.label === null)
+						node.defaultTerm = term;
+					else {
+						if (node.termsMap.hasOwnProperty(term.label))
+							throw new SyntaxError(`Invalid selector label: '${term.label}' is already a defined label`);
+
+						node.termsMap[term.label] = term;
+					}
+				}
+
+				node.terms.forEach(t => cleanAST(t.term));
+				cleanAST(node.expr);
+				cASTFormatExpr(node.expr);
+				cASTAtomizeExpr(node.expr);
 				break;
 		}
 	}
 }
 
-function cASTJoinStr(parsed, currTerm, idx) {
-	const nextTerm = parsed[idx + 1];
+function cASTJoinStr(parsed, idx) {
+	const currNode = parsed[idx],
+		nextNode = parsed[idx + 1];
 
-	if (typeof currTerm == "string" && typeof nextTerm == "string") {
-		parsed[idx] = currTerm + nextTerm;
+	if (typeof currNode == "string" && typeof nextNode == "string") {
+		parsed[idx] = currNode + nextNode;
 		parsed.splice(idx + 1, 1);
 	}
 }
@@ -568,11 +591,6 @@ function cASTFormatExpr(expr) {
 	}
 }
 
-const andOr = {
-	AND: true,
-	OR: true
-};
-
 // Bundle together AND terms to aid short circuit evaluation
 // Reason:
 // 1	2	 3	  4
@@ -588,7 +606,7 @@ function cASTAtomizeExpr(expr) {
 		const item = expr[i];
 
 		if (isFmt(item, "operator")) {
-			if (andOr.hasOwnProperty(item.name))
+			if (AND_OR.hasOwnProperty(item.name))
 				tryBundle(i + 1);
 			else
 				running = true;
@@ -764,7 +782,7 @@ function resolveFormat(parsedFormat, meta) {
 						term = fmt.terms[exprVal];
 						break;
 					case "string":
-						term = fmt.terms.find(t => t.label == exprVal);
+						term = fmt.termsMap[exprVal] || fmt.defaultTerm;
 						break;
 				}
 
@@ -918,7 +936,7 @@ function queryPermissions(fmt, action) {
 	if (!fmt || !fmt.formatToken)
 		return false;
 
-	const partition = tokenData[fmt.type];
+	const partition = TOKEN_DATA[fmt.type];
 	
 	if (!partition)
 		return false;
