@@ -253,6 +253,7 @@ class I18NManager extends Hookable {
 			AssetLoader.traverse(tree.payload, dependent => {
 				this.registerLocale(dependent, true);
 			}, true);
+
 			this.callHooks("localeloaded");
 			
 			return tree.payload.item;
