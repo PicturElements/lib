@@ -1,7 +1,5 @@
-import {
-	inject,
-	isObject
-} from "./is";
+import inject from "./inject";
+import { isObject } from "./is";
 
 // Difference between hooks and processors
 // Processors are similar to hooks, but behave like highly specialized
