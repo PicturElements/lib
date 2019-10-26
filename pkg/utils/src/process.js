@@ -107,5 +107,6 @@ function setObj(candidate, fallback) {
 }
 
 export {
-	mkProcessor
+	mkProcessor,
+	extendProcessorOptions
 };
