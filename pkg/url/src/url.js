@@ -103,9 +103,7 @@ export default class URL {
 			data = URL_MAP.get(this);
 
 		data.hostname = split[0].trim();
-
-		if (split.length > 1)
-			data.port = split[1].trim();
+		data.port = split.length > 1 ? split[1].trim() : "";
 	}
 
 	get hostname() {
@@ -113,7 +111,16 @@ export default class URL {
 	}
 
 	set hostname(hostname) {
-		this.host = hostname;
+		hostname = coerceStr(hostname);
+
+		const split = hostname.split(":"),
+			data = URL_MAP.get(this),
+			trimmedPort = split[1] && split[1].trim();
+
+		data.hostname = split[0].trim();
+
+		if (trimmedPort)
+			data.port = trimmedPort;
 	}
 
 	get href() {
@@ -167,7 +174,7 @@ export default class URL {
 
 		for (let i = 0, l = path.length; i < l; i++) {
 			const val = path[i].value;
-			pathname += (!i && (data.pathnameIsRelative || data.stepUp != 0)) ? val : `/${val}`;
+			pathname += (!i && !data.hostname && (data.pathnameIsRelative || data.stepUp != 0)) ? val : `/${val}`;
 		}
 
 		return pathname;
@@ -194,20 +201,14 @@ export default class URL {
 		URL_MAP.get(this).port = coerceStr(port);
 	}
 
-	get self() {
-		return URL_MAP.get(this);
-	}
-
 	get protocol() {
 		return URL_MAP.get(this).protocol;
 	}
 
 	set protocol(protocol) {
 		protocol = coerceStr(protocol);
-		if (protocol && protocol[protocol.length - 1] != ":")
-			protocol = `${protocol}:`;
-
-		URL_MAP.get(this).protocol = protocol;
+		protocol = protocol && protocol.replace(/:\/*$/, "");
+		URL_MAP.get(this).protocol = protocol ? `${protocol}:` : "";
 	}
 
 	get search() {
@@ -258,19 +259,9 @@ export default class URL {
 			tData = URL_MAP.get(this),
 			cData = URL_MAP.get(cloned);
 
-		for (const k in tData) {
-			if (!tData.hasOwnProperty(k))
-				continue;
-
-			const item = tData[k];
-			
-			if (Array.isArray(item))
-				cData[k] = item.slice().map(v => Object.assign({}, v));
-			else if (item && typeof item == "object")
-				cData[k] = Object.assign({}, item);
-			else
-				cData[k] = item;
-		}
+		Object.assign(cData, tData);
+		cData.path = tData.path.slice().map(v => Object.assign({}, v));
+		cData.searchParams = Object.assign({}, tData.searchParams);
 
 		return cloned;
 	}
