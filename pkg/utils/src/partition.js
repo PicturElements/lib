@@ -1,7 +1,7 @@
 import hasOwn from "./has-own";
 import { isObject } from "./is";
 
-export default function partition(data, partitionMap, classifier) {
+export default function partition(data, partitionMap, classifier, defaultPartition = "default") {
 	if (!isObject(partitionMap) || (!isObject(classifier) && typeof classifier != "function"))
 		return partitionMap;
 	
@@ -18,8 +18,8 @@ export default function partition(data, partitionMap, classifier) {
 
 		if (hasOwn(partitionMap, cls))
 			partitionMap[cls][k] = data[k];
-		else if (hasOwn(partitionMap, "default") && cls != "garbage")
-			partitionMap.default[k] = data[k];
+		else if (hasOwn(partitionMap, defaultPartition) && cls != "garbage")
+			partitionMap[defaultPartition][k] = data[k];
 	}
 
 	return partitionMap;
