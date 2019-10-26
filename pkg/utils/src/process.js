@@ -41,7 +41,7 @@ import { isObject } from "./is";
 //	  that cannot be transformed to functions
 // 4. Calling a processor without additional arguments should never fail on the high level
 
-function mkProcessor(optionsOrProcessors) {
+function mkProcessor(optionsOrProcessors, ...initialArgs) {
 	const {
 		processors,
 		transformers,
@@ -55,14 +55,14 @@ function mkProcessor(optionsOrProcessors) {
 			processor = proc[type];
 
 		if (typeof dispatcher == "function")
-			return dispatcher(processor, transformers, ...args);
+			return dispatcher(processor, transformers, ...initialArgs, ...args);
 
 		return (...curriedArgs) => {
 			if (transformers.hasOwnProperty(type) && typeof transformers[type] == "function")
-				processor = transformers[type](processor, type, ...args, ...curriedArgs);
+				processor = transformers[type](processor, type, ...initialArgs, ...args, ...curriedArgs);
 
 			if (typeof processor == "function")
-				return processor(...args, ...curriedArgs);
+				return processor(...initialArgs, ...args, ...curriedArgs);
 
 			return null;
 		};
