@@ -22,7 +22,7 @@ const splitters = {
 			split = [];
 
 		for (let i = 0, l = separatorSplit.length; i < l; i++) {
-			const caseChangeSplit = matchAll(separatorSplit[i], /[A-Z][^A-Z\s]*|[^A-Z\s]+/g);
+			const caseChangeSplit = matchAll(separatorSplit[i], /[A-Z][^A-Z\s]+|(?:[A-Z](?![^A-Z]))+|[^A-Z\s]+/g);
 			concatMut(split, caseChangeSplit);
 		}
 
@@ -146,7 +146,23 @@ casing.to = type => {
 	return joiner(splitter(str));
 };
 
+
 function resetCasingSession() {
 	casing.session.str = null;
 	casing.session.from = null;
 }
+
+(_ => {
+	const descriptors = {};
+
+	for (const k in joiners) {
+		if (!joiners.hasOwnProperty(k))
+			continue;
+
+		descriptors[k] = {
+			get: _ => casing.to(k)
+		};
+	}
+
+	Object.defineProperties(casing.to, descriptors);
+})();
