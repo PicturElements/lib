@@ -59,7 +59,7 @@ function mkProcessor(optionsOrProcessors, ...initialArgs) {
 
 		return (...curriedArgs) => {
 			if (transformers.hasOwnProperty(type) && typeof transformers[type] == "function")
-				processor = transformers[type](processor, type, ...initialArgs, ...args, ...curriedArgs);
+				processor = transformers[type](processor, ...initialArgs, ...args, ...curriedArgs);
 
 			if (typeof processor == "function")
 				return processor(...initialArgs, ...args, ...curriedArgs);
