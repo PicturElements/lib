@@ -1,14 +1,10 @@
 import { inject } from "@qtxr/utils";
 
 export default {
-	use(wrapper, used, data) {
+	use(wrapper, used, computeds) {
 		if (!used)
 			wrapper.internal.live = {};
-	
-		inject(wrapper.internal.live, data, {
-			override: true,
-			injectSymbols: true,
-			shallow: true
-		});
+
+		Object.assign(wrapper.internal.live, computeds);
 	}
 };

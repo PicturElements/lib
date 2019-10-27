@@ -218,12 +218,24 @@ ComponentWrapper.endpoints = {};
 
 ComponentWrapper.exporters = {
 	data(obj, wrapper, vm) {
-		if (wrapper.internal.live) {
-			inject(obj, wrapper.internal.live, {
+		const {
+			live,
+			computedData
+		} = wrapper.internal;
+
+		if (live) {
+			inject(obj, live, {
 				override: true,
 				injectSymbols: true,
 				shallow: true
 			});
+		}
+
+		if (computedData) {
+			for (const k in computedData) {
+				if (computedData.hasOwnProperty(k) && typeof computedData[k] == "function")
+					obj[k] = computedData[k](wrapper, vm);
+			}
 		}
 	}
 };

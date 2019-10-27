@@ -1,3 +1,4 @@
+export { default as computedData } from "./computed-data";
 export { default as debounce } from "./debounce";
 export { default as events } from "./events";
 export { default as hooks } from "./hooks";

@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/vue-wrap-component",
-  "version": "2.1.4",
+  "version": "2.2.0",
   "description": "Component wrapping library for Vue components",
   "main": "index.js",
   "scripts": {
@@ -33,7 +33,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 18,
+    "pushes": 19,
     "expose": {
       "scripts": [
         "connect/feed.js"
