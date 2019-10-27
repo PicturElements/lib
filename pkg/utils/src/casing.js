@@ -146,7 +146,6 @@ casing.to = type => {
 	return joiner(splitter(str));
 };
 
-
 function resetCasingSession() {
 	casing.session.str = null;
 	casing.session.from = null;
