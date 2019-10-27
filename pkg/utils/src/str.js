@@ -75,6 +75,11 @@ function trimStr(str, start, end) {
 	return str.substr(start, str.length - (end || 0) - start);
 }
 
+function splitClean(str, splitter) {
+	const split = str.split(splitter);
+	return split.filter(str => str.trim().length);
+}
+
 export {
 	cleanRegex,
 	cleanPath,
@@ -84,5 +89,6 @@ export {
 	padStart,
 	padEnd,
 	spliceStr,
-	trimStr
+	trimStr,
+	splitClean
 };

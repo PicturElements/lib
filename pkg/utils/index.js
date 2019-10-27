@@ -13,6 +13,7 @@ export * from "./src/options";
 export * from "./src/process";
 export * from "./src/range";
 export * from "./src/regex-reduce";
+export * from "./src/regex";
 export * from "./src/resolve-val";
 export * from "./src/sort";
 export * from "./src/str";
@@ -21,6 +22,7 @@ export * from "./src/ts-str";
 export * from "./src/sym";
 
 export { default as basicInterpolate } from "./src/basic-interpolate";
+export { default as casing } from "./src/casing";
 export { default as clone } from "./src/clone";
 export { default as cloneFast } from "./src/clone-fast";
 export { default as combine } from "./src/combine";
