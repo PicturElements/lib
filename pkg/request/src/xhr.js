@@ -1,7 +1,8 @@
 import {
 	clone,
 	getConstructorName,
-	isObject
+	isObject,
+	casing
 } from "@qtxr/utils";
 import URL from "@qtxr/url";
 import { Hookable } from "@qtxr/bc";
@@ -434,8 +435,31 @@ function injectPreset(acc, data) {
 		return acc;
 
 	for (const k in data) {
-		if (data.hasOwnProperty(k))
-			acc[k] = mergeData(acc[k], data[k]);
+		if (!data.hasOwnProperty(k))
+			continue;
+
+		switch (k) {
+			case "headers": {
+				if (!isObject(data[k]))
+					continue;
+
+				const headers = {},
+					inHeaders = data[k];
+
+				for (const k2 in inHeaders) {
+					if (!inHeaders.hasOwnProperty(k2))
+						continue;
+
+					headers[casing(k2).to("pascalKebab")] = inHeaders[k2];
+				}
+
+				acc[k] = mergeData(acc[k], headers);
+				break;
+			}
+				
+			default:
+				acc[k] = mergeData(acc[k], data[k]);
+		}
 	}
 
 	return acc;
@@ -483,30 +507,31 @@ function encodeData(data, preset) {
 	switch (getContentTypeEncode(preset)) {
 		case "form-encoded":
 			const dataArr = [];
-			// TODO: make this respect the encoding set in the headers
-			if (typeof data == "object") {
-				for (const key in data) {
-					if (!data.hasOwnProperty(key))
-						continue;
 
-					let d = data[key];
-		
-					if (Array.isArray(d)) {
-						for (let i = 0; i < d.length; i++)
-							dataArr.push(key + "%5B%5D=" + encodeURIComponent(d[i]));
-					} else {
-						if (typeof d == "object")
-							d = JSON.stringify(d);
-
-						dataArr.push(key + "=" + encodeURIComponent(d));
-					}
-				}
-
-				return dataArr.join("&");
-			}
+			if (typeof data != "object")
+				return String(data);
 			
-			return "" + data;
+			for (const key in data) {
+				if (!data.hasOwnProperty(key))
+					continue;
+
+				let d = data[key];
+	
+				if (Array.isArray(d)) {
+					for (let i = 0; i < d.length; i++)
+						dataArr.push(key + "%5B%5D=" + encodeURIComponent(d[i]));
+				} else {
+					if (typeof d == "object")
+						d = JSON.stringify(d);
+
+					dataArr.push(key + "=" + encodeURIComponent(d));
+				}
+			}
+
+			return dataArr.join("&");
+
 		case "json":
+		default:
 			return JSON.stringify(typeof data == "object" ? data : {});
 	}
 
@@ -525,10 +550,8 @@ function decodeData(xhr) {
 }
 
 function getContentTypeEncode(preset) {
-	const headers = (preset && preset.headers) || {},
-		contentType = headers["Content-Type"] || headers["content-type"] || headers.contentType || headers.contenttype;
-	
-	return normalizeContentType(contentType);
+	const headers = (preset && preset.headers) || {};
+	return normalizeContentType(headers["Content-Type"]);
 }
 
 function getContentTypeDecode(xhr) {
