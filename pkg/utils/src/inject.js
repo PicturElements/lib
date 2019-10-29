@@ -51,32 +51,36 @@ export default function inject(target, extender, options) {
 		extender = newExtender;
 	}
 
-	function inj(targ, ext, schema) {
+	function inj(targ, ext, runtime) {
 		targ = coerceToObj(targ, ext);
 		ext = coerceToObj(ext);
 
 		if (Array.isArray(ext)) {
 			for (let i = 0, l = ext.length; i < l; i++)
-				doInject(i, targ, ext, schema, false);
+				doInject(i, targ, ext, runtime, false);
 		} else {
 			for (let k in ext)
-				doInject(k, targ, ext, schema, options.injectSymbols);
+				doInject(k, targ, ext, runtime, options.injectSymbols);
 		}
 
 		if (options.injectSymbols && typeof Symbol != "undefined") {
 			const symbols = Object.getOwnPropertySymbols(ext);
 
 			for (let i = 0, l = symbols.length; i < l; i++)
-				doInject(symbols[i], targ, ext, schema, true);
+				doInject(symbols[i], targ, ext, runtime, true);
 		}
 
 		return targ;
 	}
 
-	function doInject(key, targ, ext, schema, allowSymbols) {
+	function doInject(key, targ, ext, runtime, allowSymbols) {
+		const {
+			schema,
+			ignore
+		} = runtime;
 		let ek = ext[key];
 
-		if (options.strictSchema && (!isObj(schema) || !hasOwn(schema, key)))
+		if (rt.useSchema && options.strictSchema && (!isObj(schema) || !hasOwn(schema, key)))
 			return;
 
 		if (isObj(schema)) {
@@ -86,26 +90,45 @@ export default function inject(target, extender, options) {
 			if (isObj(schema[key]) && (!isObj(ext[key]) || Array.isArray(schema[key]) != isArrayLike(ext[key])))
 				return;
 		}
+
+		if (isObj(ignore) && hasOwn(ignore, key) && !isObj(ignore[key])) {
+			if (typeof ignore[key] == "function") {
+				if (ignore[key](ext[key], key, ext))
+					return;
+			} else
+				return;
+		}
 	
 		if (hasOwn(ext, key, allowSymbols) && (!options.noUndef || ek !== undefined)) {
-			if (isObj(ek) && (options.preserveInstances || isNativeSimpleObject(ek)) && !options.shallow)
-				targ[key] = inj(targ[key], ek, schema && schema[key]);
-			else if (!targ.hasOwnProperty(key) || options.override)
+			if (isObj(ek) && (options.preserveInstances || isNativeSimpleObject(ek)) && !options.shallow) {
+				runtime.schema = schema && schema[key];
+				runtime.ignore = ignore && ignore[key];
+				targ[key] = inj(targ[key], ek, runtime);
+				runtime.schema = schema;
+				runtime.ignore = ignore;
+			} else if (!targ.hasOwnProperty(key) || options.override)
 				targ[key] = ek;
 		}
 	}
 
-	return inj(
-		target,
-		extender,
-		options.schema ? matchQuery(
+	const rt = {
+		schema: options.schema ? matchQuery(
 			extender,
 			options.schema,
 			[
 				"deep|returnMatchMap",
 				options.schemaOptions || "typed"
 			]
-		).matchMap : null
+		).matchMap : null,
+		ignore: options.ignore
+	};
+
+	rt.useSchema = Boolean(rt.schema);
+
+	return inj(
+		target,
+		extender,
+		rt
 	);
 }
 
