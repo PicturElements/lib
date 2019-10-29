@@ -59,12 +59,12 @@
 
 <script>
 	import Form from "@qtxr/form";
-
-	import Input from "./input";
-	import Checkbox from "./checkbox";
-	import Count from "./count";
-	import Dropdown from "./dropdown";
-	import Radio from "./radio";
+	
+	import Input from "./input.vue";
+	import Checkbox from "./checkbox.vue";
+	import Count from "./count.vue";
+	import Dropdown from "./dropdown.vue";
+	import Radio from "./radio.vue";
 
 	export default {
 		name: "VForm",
