@@ -447,9 +447,13 @@ export default class Viz {
 		};
 
 		const render = (tmpl, parent) => {
-			const n = node(tmpl.tag, tmpl.attributes.class, null, {
-				id: tmpl.attributes.id
+			const attrs = inject({}, tmpl.attributes, {
+				ignore: {
+					class: true
+				}
 			});
+
+			const n = node(tmpl.tag, tmpl.attributes.class, null, attrs);
 
 			if (tmpl.id) {
 				if (ref.hasOwnProperty(tmpl.id))
