@@ -10,11 +10,11 @@ import parseStr from "./parse-str";
 // TODO: fix lvl
 
 // Note: this function mutates the target data
-export default function infill(target, source, configOrRuntime) {
+export default function infill(target, source, optionsOrRuntime) {
 	if (source === undefined)
 		return target;
 
-	const runtime = tickRuntime(configOrRuntime);
+	const runtime = tickRuntime(optionsOrRuntime);
 
 	if (target == null) {
 		if (isObj(source))
@@ -93,16 +93,16 @@ function parseDFModifier(modifier) {
 	return modifierOut;
 }
 
-function tickRuntime(configOrRuntime) {
-	if (configOrRuntime && configOrRuntime.isRuntime) {
-		configOrRuntime.lvl++;
-		return configOrRuntime;
+function tickRuntime(optionsOrRuntime) {
+	if (optionsOrRuntime && optionsOrRuntime.isRuntime) {
+		optionsOrRuntime.lvl++;
+		return optionsOrRuntime;
 	}
 
 	const runtime = Object.assign({
 		isRuntime: true,
 		lvl: 0
-	}, configOrRuntime);
+	}, optionsOrRuntime);
 
 	if (isObject(runtime.modifiers))
 		runtime.modifiers = Object.assign({}, STOCK_INFILL_MODIFIERS, runtime.modifiers);

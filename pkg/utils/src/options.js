@@ -1,5 +1,6 @@
 import { isObject } from "./is";
 import { getEnvType } from "./env";
+import hasOwn from "./has-own";
 
 const blankOptions = Object.freeze({});
 
@@ -13,7 +14,7 @@ function composeOptionsTemplates(...templates) {
 			continue;
 
 		for (const k in template) {
-			if (!Object.hasOwnProperty.call(template, k))
+			if (!hasOwn(template, k))
 				continue;
 
 			templatesOut[k] = Object.freeze(
@@ -33,10 +34,13 @@ function createOptionsObject(optionsPrecursor, templates, err) {
 	switch (typeof optionsPrecursor) {
 		case "string":
 			return templates[optionsPrecursor] || tryBundle(optionsPrecursor, templates) || (
-				logError(err, optionsPrecursor, templates) ||
+				logResolveError(err, optionsPrecursor, templates) ||
 				blankOptions
 			);
 		case "object":
+			if (Array.isArray(optionsPrecursor))
+				return mergeOptions(optionsPrecursor, templates, err);
+			
 			return optionsPrecursor ? optionsPrecursor : blankOptions;
 		default:
 			return blankOptions;
@@ -47,10 +51,13 @@ function createOptionsObjectWithDefault(optionsPrecursor, templates, def, err) {
 	switch (typeof optionsPrecursor) {
 		case "string":
 			return templates[optionsPrecursor] || tryBundle(optionsPrecursor, templates) || (
-				logError(err, optionsPrecursor, templates) ||
+				logResolveError(err, optionsPrecursor, templates) ||
 				createOptionsObject(def, templates)
 			);
 		case "object":
+			if (Array.isArray(optionsPrecursor))
+				return mergeOptions(optionsPrecursor, templates, err);
+
 			return optionsPrecursor ? optionsPrecursor : createOptionsObject(def, templates);
 		default:
 			return createOptionsObject(def, templates);
@@ -79,7 +86,7 @@ function tryBundle(optionsStr, templates) {
 	return templates[optionsStr];
 }
 
-function logError(err, option, templates) {
+function logResolveError(err, option, templates) {
 	console.error(err || `'${option}' is not a valid option`);
 
 	if (getEnvType() != "window")
@@ -97,6 +104,23 @@ function logError(err, option, templates) {
 	}
 
 	console.groupEnd();
+}
+
+function mergeOptions(options, templates, err) {
+	const template = Object.create(null);
+
+	for (let i = 0, l = options.length; i < l; i++) {
+		const option = createOptionsObject(options[i], templates, err);
+
+		for (const k in option) {
+			if (!hasOwn(option, k))
+				continue;
+
+			template[k] = option[k];
+		}
+	}
+
+	return Object.freeze(template);
 }
 
 export {
