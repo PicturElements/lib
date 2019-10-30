@@ -166,7 +166,7 @@
 		},
 		props: {
 			input: Dropdown,
-			placeholder: String
+			placeholder: String,
 			mobileQuery: String,
 			meta: {
 				type: Object,

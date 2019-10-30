@@ -71,7 +71,7 @@
 			}
 		},
 		props: {
-			input: Radio
+			input: Radio,
 			mobileQuery: String,
 			meta: {
 				type: Object,

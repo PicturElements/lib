@@ -55,7 +55,7 @@
 			symbols: {
 				type: Object,
 				default: _ => ({})
-			}
+			},
 			mobileQuery: String,
 			meta: {
 				type: Object,

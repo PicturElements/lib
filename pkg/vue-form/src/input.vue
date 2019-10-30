@@ -35,7 +35,7 @@
 		},
 		props: {
 			input: Input,
-			placeholder: String
+			placeholder: String,
 			mobileQuery: String,
 			meta: {
 				type: Object,

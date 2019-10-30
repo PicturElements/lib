@@ -34,7 +34,7 @@
 		},
 		props: {
 			input: Checkbox,
-			label: String
+			label: String,
 			mobileQuery: String,
 			meta: {
 				type: Object,
