@@ -1,0 +1,380 @@
+@mixin viz() {
+	.v-viz-wrapper {
+		position: relative;
+	}
+	
+	.viz-wrapper canvas {
+		display: block;
+	}
+
+	.viz-graph-module {
+		position: relative;
+		margin: 15px 0;
+		user-select: none;
+	}
+
+	.viz-graph-wrapper {
+		display: flex;
+		flex-grow: 1;
+		position: relative;
+		white-space: nowrap;
+	}
+
+	.viz-vertical {
+		position: relative;
+		width: 30px;
+		flex-grow: 0;
+		flex-shrink: 0;
+	}
+
+	.viz-graph-area {
+		position: relative;
+		flex-grow: 1;
+	}
+
+	.viz-graph-canvas {
+		width: 100%;
+		height: 100%;
+	}
+
+	.viz-legend-box {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+	}
+
+	.viz-legend-box .viz-graph-info-controls {
+		position: relative;
+		float: left;
+		clear: both;
+	}
+
+	.viz-graph-overlay {
+		position: absolute;
+		width: 100%;
+		height: 100%;
+		top: 0;
+		left: 0;
+		pointer-events: none;
+		z-index: 10;
+
+		&.top-overlay {
+			z-index: 100;
+		}
+	}
+
+	.viz-graph-overlay.show-guidelines {
+		cursor: crosshair;
+	}
+
+	.viz-guideline {
+		position: absolute;
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 300ms, border 200ms;
+	}
+
+	.viz-graph-overlay.show-guidelines .viz-guideline {
+		opacity: 1;
+	}
+
+	.viz-guideline.vertical {
+		margin-left: -1px;
+		height: 100%;
+		border-left: 1px dashed #777;
+	}
+
+	.viz-guideline.horizontal {
+		width: 100%;
+		border-top: 1px dashed #777;
+	}
+
+	.zoom-guidelines .viz-guideline {
+		border-color: #80a4ef;
+	}
+
+	.guideline-inner {
+		min-width: 30px;
+		position: absolute;
+		height: 18px;
+		line-height: 18px;
+		padding: 0 5px;
+		background: black;
+		color: white;
+		text-align: center;
+		white-space: nowrap;
+		font-size: 70%;
+		border-radius: 3px;
+		box-sizing: border-box;
+	}
+
+	.viz-guideline.horizontal .guideline-inner {
+		top: -9px;
+	}
+
+	.viz-guideline.vertical .guideline-inner {
+		transform: translate(-50%, 0);
+	}
+
+	.viz-guideline.vertical.pos-default { bottom: 0; }
+	.viz-guideline.vertical.pos-default .guideline-inner { top: 0; }
+
+	.viz-guideline.vertical.pos-alt { top: 0; }
+	.viz-guideline.vertical.pos-alt .guideline-inner { bottom: 0; }
+
+	.viz-guideline.horizontal.pos-default { right: 0; }
+	.viz-guideline.horizontal.pos-default .guideline-inner { left: 0; }
+
+	.viz-guideline.horizontal.pos-alt { left: 0; }
+	.viz-guideline.horizontal.pos-alt .guideline-inner { right: 0; }
+
+	.viz-horizontal {
+		width: 100%;
+		height: 30px;
+		box-sizing: border-box;
+	}
+
+	.viz-vert-scale, .viz-hor-scale {
+		width: 100%;
+		height: 100%;
+	}
+
+	.viz-overview-canvas {
+		width: 100%;
+		height: 100%;
+		background: #f8fafb;
+		box-sizing: border-box;
+	}
+
+	.viz-legend {
+		font-size: 12px;
+		text-align: center;
+		color: #aaa;
+		white-space: nowrap;
+	}
+
+	.viz-legend-main span {
+		color: #333;
+		margin-right: 15px;
+		margin-left: 2px;
+	}
+
+	.viz-legend-main span:last-child {
+		margin-right: 0;
+	}
+
+	.viz-overview {
+		position: relative;
+		overflow: hidden;
+		flex-shrink: 0;
+		user-select: none;
+	}
+
+	.viz-overview-mask {
+		position: absolute;
+		top: -10px;
+		left: -20px;
+		height: 100%;
+		padding: 10px 0;
+		box-shadow: 0 0 0 2500px rgba(255, 255, 255, 0.5);
+		border: 1px solid rgba(197, 197, 197, 0.58);
+		box-sizing: content-box;
+	}
+
+	.viz-overview-mask.draggable {
+		cursor: ew-resize;
+		cursor: grab;
+		cursor: -moz-grab;
+		cursor: -webkit-grab;
+	}
+
+	.viz-overview-mask.dragging {
+		cursor: ew-resize;
+		cursor: grabbing;
+		cursor: -moz-grabbing;
+		cursor: -webkit-grabbing;
+	}
+
+	.viz-overview-handle {
+		position: absolute;
+		width: 9px;
+		height: 20px;
+		background: white;
+		border-radius: 5px;
+		cursor: col-resize;
+		top: 50%;
+		left: 0;
+		margin: -10px -5px;
+		border: inherit;
+		box-sizing: border-box;
+	}
+
+	.viz-overview-handle.right {
+		left: auto;
+		right: 0;
+	}
+
+	.viz-overview-handle:before {
+		content: "";
+		display: block;
+		position: absolute;
+		top: 3px;
+		left: 3px;
+		width: 1px;
+		height: 12px;
+		background: #cecece;
+	}
+
+	.viz-subcanvases {
+		width: 100%;
+	}
+
+	.viz-graph-wrapper + .viz-graph-wrapper:before {
+		content: "";
+		position: absolute;
+		width: 100%;
+		height: 2px;
+		top: -1px;
+		left: 0;
+		background: #cecece;
+	}
+
+	.viz-graph-canvas, .viz-subcanvases .viz-vert-scale {
+		position: relative;
+	}
+
+	.viz-graph-info-wrapper {
+		position: absolute;
+		left: 0;
+		top: 0;
+		pointer-events: none;
+		z-index: 100;
+	}
+
+	.viz-graph-info-control {
+		background: rgba(255, 255, 255, 0.89);
+		color: #6f6a6a;
+		font-size: 80%;
+		padding: 2px 6px;
+		border-bottom-right-radius: 3px;
+		float: left;
+		clear: both;
+	}
+
+	.viz-graph-title {
+		text-transform: uppercase;
+		float: left;
+	}
+
+	.viz-graph-legend {
+		float: left;
+		margin-left: 5px;
+	}
+
+	.indic-metric {
+		margin-left: 5px;
+	}
+
+	.modal .indic-metric {
+		margin: 0 5px 0 2px;
+	}
+
+	.modal .indic-metric:last-child {
+		margin-right: 0;
+	}
+
+	.crosshair {
+		cursor: crosshair;
+	}
+
+	// Tooltips
+	.viz-tooltip {
+		position: absolute;
+		background: white;
+		padding: 0 8px 4px 8px;
+		border-radius: 3px;
+		font-size: 12px;
+		line-height: 1.45em;
+		white-space: nowrap;
+		opacity: 0;
+		transform: translateY(10px);
+		transition: opacity 300ms, transform 300ms;
+		box-shadow: inset 0 0 0 1px rgba(117, 142, 169, 0.15), 2px 2px 3px rgba(0,0,0,0.05);
+		z-index: 100;
+	}
+
+	.show-tooltip .viz-tooltip {
+		opacity: 1;
+		transform: translateY(0);
+	}
+
+	.tooltip-legend {
+		display: flex;
+
+		&:first-child {
+			margin-top: 4px;
+		}
+	}
+
+	.tooltip-legend-text {
+		display: flex;
+		flex-grow: 1;
+		justify-content: space-between;
+		line-height: 1;
+		margin: 2px 0 3px 0;
+	}
+
+	.tooltip-item-symbol {
+		width: 10px;
+		height: 10px;
+		margin: 4px 6px 0 0;
+		box-shadow: inset 0 0 0 1px rgba(117, 142, 169, 0.15);
+		border-radius: 1px;
+	}
+
+	.legend-value {
+		margin-left: 6px;
+	}
+
+	.legend-centered-text {
+		opacity: 0.8;
+		font-size: 80%;
+		text-align: center;
+		width: 100%;
+	}
+
+	// Scale box
+	.viz-scale-box-wrapper {
+		position: absolute;
+		width: 100%;
+		height: 100%;
+		top: 0;
+		left: 0;
+		pointer-events: none;
+	}
+
+	.viz-scale-bar {
+		position: absolute;
+		pointer-events: auto;
+		z-index: 101;
+
+		&:hover {
+			background: rgba(128, 168, 187, 0.1);
+		}
+
+		&.scale-height {
+			left: 0;
+			bottom: 0;
+			width: 100%;
+			height: 10px;
+			margin: -5px 0;
+			cursor: ns-resize;
+			cursor: row-resize;
+
+			&.top {
+				top: 0;
+			}
+		}
+	}
+}

@@ -1,0 +1,124 @@
+@use "~@qtxr/scss-utils" as *;
+
+$listing-params: (
+	"card-background",
+	"card-shadow",
+	"border-radius",
+	"outer-margin",
+	"padding",
+	"darker-background",
+	"tools-height",
+	"weak-color",
+	"error-color",
+	"row-border",
+	"odd-row-background",
+	"even-row-background"
+);
+
+@mixin listing(
+	$card-background: white,
+	$card-shadow: 0 2px 4px rgba(0, 0, 0, 0.07),
+	$border-radius: 2px,
+	$outer-margin: 20px,
+	$padding: 10px,
+	$darker-background: whitesmoke,
+	$tools-height: 34px,
+	$weak-color: #555,
+	$error-color: #bb2424,
+	$row-border: 1px solid #eee,
+	$odd-row-background: white,
+	$even-row-background: whitesmoke
+) {
+	.listing {
+		background: $card-background;
+		box-shadow: $card-shadow;
+		border-radius: $border-radius;
+		margin: $outer-margin;
+		padding: $padding;
+		
+		.util-box-title-box .listing-count {
+			padding: 3px 8px;
+			background: $darker-background;
+			border-radius: $border-radius;
+			font-size: 85%;
+			margin-left: 0.5em;
+
+			.listing-count-num {
+				font-weight: bold;
+				opacity: 0.9;
+			}
+		}
+	}
+
+	
+	.listing-box {
+		position: relative;
+		min-height: 100px;
+		max-height: 500px;
+		overflow-x: auto;
+		overflow-y: auto;
+		border-radius: $border-radius;
+
+		&.loading {
+			min-height: 200px;
+		}
+
+		&.no-results,
+		&.error {
+			text-align: center;
+			padding: 10px 0;
+			font-size: 90%;
+			color: $weak-color;
+		}
+
+		&.error {
+			text-align: center;
+			padding: 10px 0;
+			color: $error-color;
+			// background: $error-back;
+		}
+
+		&.table {
+			border: 1px solid $darker-background;
+
+			table {
+				border-collapse: collapse;
+				width: 100%;
+
+				tr:nth-child(2n) {
+					background: $darker-background;
+				}
+
+				th,
+				td {
+					padding: 6px 8px;
+					text-align: left;
+				}
+			}
+		}
+
+		&.list {
+			.list-row {
+				background: $odd-row-background;
+
+				+ .list-row {
+					border-top: $row-border;
+				}
+
+				&:nth-child(even) {
+					background: $even-row-background;
+				}
+			}
+		}
+	}
+
+	/*@include mobile {
+		.listing-tools {
+			flex-direction: column;
+
+			input {
+				margin-top: 5px;
+			}
+		}
+	}*/
+}

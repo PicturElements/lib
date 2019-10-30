@@ -1,0 +1,31 @@
+$loading-box-params: (
+	"card-background",
+	"transition"
+);
+
+@mixin loading-box(
+	$background: white,
+	$transition: 300ms
+) {
+	.loading-box {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		border-radius: inherit;
+		background: $background;
+		opacity: 1;
+		transition: opacity $transition;
+		z-index: 100000;
+
+		&.loading-fade-enter,
+		&.loading-fade-leave-to {
+			opacity: 0;
+		}
+
+		&.semi-transparent {
+			background: rgba($background, 0.8);
+		}
+	}
+}
