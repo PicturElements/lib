@@ -12,7 +12,8 @@
 					Checkbox(
 						:class="cell.class.input"
 						:input="cell.input"
-						:label="res(cell.label)")
+						:label="res(cell.label)"
+						:meta="inputMeta")
 						template(v-slot:icon="inp")
 							slot(:name="`${cell.input.name}-icon`" v-bind="inp")
 								slot(name="checkbox-icon" v-bind="inp")
@@ -20,7 +21,8 @@
 					Count(
 						:class="cell.class.input"
 						:input="cell.input"
-						:symbols="res(cell.symbols)")
+						:symbols="res(cell.symbols)"
+						:meta="inputMeta")
 						template(v-slot:down-symbol="inp")
 							slot(:name="`${cell.input.name}-down-symbol`" v-bind="inp")
 								slot(name="count-down-symbol" v-bind="inp")
@@ -31,7 +33,8 @@
 					Dropdown(
 						:class="cell.class.input"
 						:input="cell.input"
-						:placeholder="res(cell.placeholder)")
+						:placeholder="res(cell.placeholder)"
+						:meta="inputMeta")
 						template(v-slot="option")
 							slot(:name="`${cell.input.name}-option`" v-bind="option")
 								slot(name="dropdown-option" v-bind="option")
@@ -41,7 +44,8 @@
 				template(v-else-if="cell.input.type == 'radio'")
 					Radio(
 						:class="cell.class.input"
-						:input="cell.input")
+						:input="cell.input"
+						:meta="inputMeta")
 						template(v-slot:label="option")
 							slot(:name="`${cell.input.name}-label`" v-bind="option")
 								slot(name="radio-label" v-bind="option")
@@ -52,7 +56,8 @@
 					Input(
 						:class="cell.class.input"
 						:input="cell.input"
-						:placeholder="res(cell.placeholder)")
+						:placeholder="res(cell.placeholder)"
+						:meta="inputMeta")
 				slot(:name="`${cell.input.name}-post-content`" v-bind="cell.input")
 					slot(name="post-content" v-bind="cell.input")
 </template>
@@ -127,6 +132,13 @@
 				processedRows: connect(inputs, 0)
 			};
 		},
+		computed: {
+			inputMeta() {
+				return {
+					mobileQuery: this.mobileQuery
+				}
+			}
+		},
 		methods: {
 			joinCls(...classes) {
 				const out = {};
@@ -169,7 +181,11 @@
 		},
 		props: {
 			form: Form, 
-			rows: [Array, Object]
+			rows: [Array, Object],
+			mobileQuery: {
+				type: String,
+				default: "(max-aspect-ratio: 1/1) and (max-width: 700px)"
+			}
 		}
 	};
 </script>

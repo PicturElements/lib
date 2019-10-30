@@ -44,11 +44,20 @@
 					return val.call(this, this.form);
 
 				return val;
+			},
+			isMobile() {
+				const mobileQuery = this.mobileQuery || meta.mobileQuery || "(max-aspect-ratio: 1/1) and (max-width: 700px)";
+				return matchMedia(mobileQuery).matches;
 			}
 		},
 		props: {
 			input: Count,
 			symbols: {
+				type: Object,
+				default: _ => ({})
+			}
+			mobileQuery: String,
+			meta: {
 				type: Object,
 				default: _ => ({})
 			}

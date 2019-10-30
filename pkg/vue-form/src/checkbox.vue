@@ -26,11 +26,20 @@
 					return val.call(this, this.form);
 
 				return val;
+			},
+			isMobile() {
+				const mobileQuery = this.mobileQuery || meta.mobileQuery || "(max-aspect-ratio: 1/1) and (max-width: 700px)";
+				return matchMedia(mobileQuery).matches;
 			}
 		},
 		props: {
 			input: Checkbox,
 			label: String
+			mobileQuery: String,
+			meta: {
+				type: Object,
+				default: _ => ({})
+			}
 		},
 		beforeMount() {
 			this.input.hook("update", inp => {
