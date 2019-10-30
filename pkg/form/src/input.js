@@ -73,6 +73,7 @@ export default class Input extends Hookable {
 
 			if (!this.compare(oldVal, this.value)) {
 				this.form.callHooks("change", this, oldVal, this.value);
+				this.form.callHooks(`change:${this.name}`, this, oldVal, this.value);
 				this.callHooks("change", oldVal, this.value);
 			}
 		}
@@ -84,6 +85,7 @@ export default class Input extends Hookable {
 		this.form.propagateMap = {};
 		
 		this.form.callHooks("trigger", this, this.value);
+		this.form.callHooks(`trigger:${this.name}`, this, this.value);
 		this.callHooks("sourceTrigger");
 	}
 
@@ -125,6 +127,7 @@ export default class Input extends Hookable {
 			this.update(this, this.form.inputs);
 
 		this.form.callHooks("update", this);
+		this.form.callHooks(`update:${this.name}`, this);
 		this.callHooks("update");
 	}
 }
