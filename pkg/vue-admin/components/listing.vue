@@ -52,6 +52,12 @@
 			slot(name="title" v-bind="utilBox")
 		template(v-slot:footer="utilBox")
 			.util-box-footer-left.f.ac
+				.page-selector.f(v-if="isPagination")
+					button.page-selector-btn.f.c(
+						v-for="page in pages"
+						:class="page.class"
+						:disabled="page.disabled"
+						@click="cell.setPage(page.id)") {{ page.id + 1 }}
 			.util-box-footer-right.f.ac
 				slot(
 					name="footer-right-form"
@@ -87,72 +93,73 @@
 			}
 		},
 		methods: {
-			/*layout() {
-				this.runQuery();
-				this.sort();
-				this.$data.count = this.$data.outList.length;
-			},
-			runQuery() {
-				const filterer = this.$props.filter,
-					query = this.$data.query,
-					list = this.$props.list,
-					tags = this.$props.tags,
-					pagination = this.$props.pagination;
-
-				if (pagination) {
-					const offset = pagination.offset,
-						size = pagination.pageSize,
-						outList = [];
-
-					for (let i = 0; i < size; i++) {
-						if (!list.hasOwnProperty(offset + i))
-							continue;
-
-						const item = list[offset + i];
-						if (typeof filterer != "function" || !filterer(query, item, tags, offset + i, list))
-							outList.push(item);
-					}
-
-					this.$data.outList = outList;
-				} else if (typeof filterer == "function")
-					this.$data.outList = list.filter((item, i) => !filterer(query, item, tags, i, list));
-				else
-					this.$data.outList = list;
-			},*/
 			mkItem(item, idx) {
 				item = {
 					self: item,
 					viewMode: this.config.viewMode,
-					idx,
-					// TODO: deprecate
-					common: this.config.common
+					idx
 				};
 
-				/*item.dispatchChange = change => {
-					if (typeof change == "string")
-						change = { type: change };
-
-					change.item = item;
-					this.bubbleChange(change);
-				};*/
-
 				return item;
-			},
-			/*handleChange(change) {
-				switch (change.type) {
-					case "count-box:update":
-						this.bubbleChange({
-							type: "listing:newPage",
-							id: this.$props.identifier || null,
-							offset: (change.count - 1) * this.$props.pagination.pageSize
-						});
-						return false; // Don't propagate count box change further
-				}
-			}*/
+			}
 		},
 		computed: {
 			isPagination() {
 				return this.cell instanceof DataCellPagination;
+			},
+			pages() {
+				const cell = this.cell,
+					state = cell.state,
+					page = state.page,
+					pageCount = Math.ceil(state.total / state.pageSize) - 1,
+					padding = Math.min(this.config.navPadding, pageCount / 2),
+					floorPad = Math.floor(padding),
+					ceilPad = Math.ceil(padding),
+					fullPadding = padding * 2,
+					pages = [];
+				let padLeft = page < pageCount / 2 ?
+						Math.min(floorPad, page) :
+						fullPadding - Math.min(pageCount - page, ceilPad),
+					padRight = page < pageCount / 2 ?
+						fullPadding - Math.min(floorPad, page) :
+						Math.min(pageCount - page, ceilPad);
+
+				if (this.config.pageArrows) {
+					pages.push({
+						id: 0,
+						class: "to-start",
+						disabled: page <= 0
+					}, {
+						id: page - 1,
+						class: "decrement",
+						disabled: page <= 0
+					});
+				}
+
+				for (let i = 0; i < padLeft + 1 + padRight; i++) {
+					pages.push({
+						id: page + i - padLeft,
+						class: i == padLeft ? "selected" : null
+					});
+				}
+
+				if (this.config.pageArrows) {
+					pages.push({
+						id: page + 1,
+						class: "increment",
+						disabled: page >= pageCount
+					});
+
+					if (isFinite(pageCount)) {
+						pages.push({
+							id: pageCount,
+							class: "to-end",
+							disabled: page >= pageCount
+						});
+					}
+				}
+				
+				return pages;
 			}
 		},
 		props: {
@@ -163,6 +170,8 @@
 				type: Object,
 				default: _ => ({
 					viewMode: "list",
+					navPadding: 2,
+					pageArrows: true,
 					reload: true
 				})
 			}

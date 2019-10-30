@@ -5,14 +5,14 @@
 				.util-box-title-box.f.ac
 					slot(name="title-pre" v-bind="this")
 					.util-box-title
-						slot(name="title" v-bind="this") Untitled UtilBox
+						slot(name="title" v-bind="this")
 					slot(name="title-post" v-bind="this")
 			.util-box-header-right.f.ac
 				.util-box-header-utils.f.ac
 					slot(name="header-utils-pre" v-bind="this")
 					slot(name="header-utils" v-bind="this")
 						slot(name="header-utils-reload" v-bind="this")
-							button.admin-btn.small.expand-disabled.fade-color.reload(
+							button.admin-btn.square.expand-disabled.fade-color.reload(
 								v-if="config.reload"
 								:disabled="cell.state.loading"
 								@click="cell.fetch()")

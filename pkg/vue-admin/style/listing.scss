@@ -12,7 +12,12 @@ $listing-params: (
 	"error-color",
 	"row-border",
 	"odd-row-background",
-	"even-row-background"
+	"even-row-background",
+	"page-selector-border",
+	"page-selector-side",
+	"highlight",
+	"highlight-complement",
+	"highlight-light"
 );
 
 @mixin listing(
@@ -27,7 +32,12 @@ $listing-params: (
 	$error-color: #bb2424,
 	$row-border: 1px solid #eee,
 	$odd-row-background: white,
-	$even-row-background: whitesmoke
+	$even-row-background: whitesmoke,
+	$page-selector-border: 1px solid #dadada,
+	$page-selector-side: 30px,
+	$highlight: #1b66bf,
+	$highlight-complement: white,
+	$highlight-light: #6cafff
 ) {
 	.listing {
 		background: $card-background;
@@ -49,14 +59,12 @@ $listing-params: (
 			}
 		}
 	}
-
 	
 	.listing-box {
 		position: relative;
 		min-height: 100px;
 		max-height: 500px;
-		overflow-x: auto;
-		overflow-y: auto;
+		overflow: auto;
 		border-radius: $border-radius;
 
 		&.loading {
@@ -75,7 +83,6 @@ $listing-params: (
 			text-align: center;
 			padding: 10px 0;
 			color: $error-color;
-			// background: $error-back;
 		}
 
 		&.table {
@@ -85,7 +92,7 @@ $listing-params: (
 				border-collapse: collapse;
 				width: 100%;
 
-				tr:nth-child(2n) {
+				tr:nth-child(even) {
 					background: $darker-background;
 				}
 
@@ -109,6 +116,97 @@ $listing-params: (
 					background: $even-row-background;
 				}
 			}
+		}
+	}
+
+	.page-selector-btn {
+		position: relative;
+		width: $page-selector-side;
+		height: $page-selector-side;
+		border: $page-selector-border;
+		outline: none;
+		cursor: pointer;
+
+		&.selected {
+			background: $highlight;
+			color: $highlight-complement;
+			font-weight: bold;
+			border: none;
+			z-index: 10;
+		}
+
+		&:disabled {
+			pointer-events: none;
+			opacity: 0.7;
+		}
+
+		&:not(.decrement) + .page-selector-btn {
+			border-left: none;
+		}
+
+		&:not(.decrement) + .page-selector-btn.selected:before {
+			content: "";
+			position: absolute;
+			top: 0;
+			left: -1px;
+			right: 0;
+			bottom: 0;
+			background: inherit;
+			z-index: -1;
+		}
+
+		&.increment,
+		&.decrement,
+		&.to-start,
+		&.to-end {
+			font-size: 0;
+			border: none;
+
+			&:hover {
+				background: $darker-background;
+			}
+		}
+
+		&.increment:before,
+		&.decrement:before,
+		&.to-start:before,
+		&.to-end:before,
+		&.to-start:after,
+		&.to-end:after {
+			content: "";
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			margin: -4px -6px;
+			border: 1px solid;
+			border-left-color: transparent;
+			border-top-color: transparent;
+			width: 8px;
+			height: 8px;
+			border-radius: 0 1px 2px 1px;
+			transform: rotate(-45deg);
+		}
+
+		&.decrement:before {
+			transform: rotate(135deg);
+			margin-left: -3px;
+		}
+
+		&.to-start:before {
+			transform: rotate(135deg);
+		}
+
+		&.to-start:after {
+			transform: rotate(135deg);
+			margin-left: 1px;
+		}
+
+		&.to-end:before {
+			margin-left: -10px;
+		}
+
+		&.to-end:after {
+			margin-left: -3px;
 		}
 	}
 
