@@ -1,0 +1,51 @@
+{
+  "name": "@qtxr/data-cell",
+  "version": "1.0.0",
+  "description": "Interface for abstracting data fetching, manipulation, and state",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node ../server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PicturElements/lib.git",
+    "directory": "pkg/data-cell"
+  },
+  "keywords": [
+    "data",
+    "manager",
+    "interface"
+  ],
+  "author": "qtxr",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/PicturElements/lib/issues"
+  },
+  "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/data-cell#readme",
+  "dependencies": {
+    "@qtxr/bc": "^1.2.5",
+    "@qtxr/request": "^3.1.0",
+    "@qtxr/utils": "^1.25.0"
+  },
+  "devDependencies": {},
+  "files": [
+    "/src",
+    "/index.d.ts"
+  ],
+  "qlib": {
+    "pushes": 1,
+    "expose": {
+      "scripts": [
+        "connect/feed.js"
+      ],
+      "styles": []
+    },
+    "ui": [
+      {
+        "type": "console",
+        "config": {}
+      }
+    ]
+  }
+}
