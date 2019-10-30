@@ -30,7 +30,7 @@ export default function matchQuery(value, query, options) {
 				let qVal = q[i];
 
 				if (options.noNullish && qVal == null) {
-					v[i] = nullishMatch;
+					matchMap[i] = nullishMatch;
 					continue;
 				}
 
@@ -46,7 +46,7 @@ export default function matchQuery(value, query, options) {
 				parsedQueryKey.srcKey = i;
 
 				if (guard && !guard(parsedQueryKey, v, q)) {
-					v[i] = guardMatch;
+					matchMap[i] = guardMatch;
 					continue;
 				}
 
@@ -96,14 +96,14 @@ export default function matchQuery(value, query, options) {
 					continue;
 				
 				if (options.noNullish && q[k] == null) {
-					v[k] = nullishMatch;
+					matchMap[k] = nullishMatch;
 					continue;
 				}
 
 				const parsedQueryKey = parsePropStr(k);
 
 				if (guard && !guard(parsedQueryKey, v, q)) {
-					v[k] = guardMatch;
+					matchMap[k] = guardMatch;
 					continue;
 				}
 
