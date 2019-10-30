@@ -9,7 +9,7 @@
 		.collapse-target(@click="collapse")
 		.dropdown-option.dropdown-active-option
 			slot(name="icon" v-bind="$data")
-				.icon {{ expanded ? "-" : "+" }}
+				.icon(:class="{ expanded }") {{ expanded ? "-" : "+" }}
 			.dropdown-option-inner
 				span.placeholder(v-if="activeIndex == -1")
 					| {{ input.placeholder || placeholder }}
