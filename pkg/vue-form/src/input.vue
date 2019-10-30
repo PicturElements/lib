@@ -42,7 +42,7 @@
 				default: _ => ({})
 			},
 			isMobile() {
-				const mobileQuery = this.mobileQuery || meta.mobileQuery || "(max-aspect-ratio: 1/1) and (max-width: 700px)";
+				const mobileQuery = this.mobileQuery || this.meta.mobileQuery || "(max-aspect-ratio: 1/1) and (max-width: 700px)";
 				return matchMedia(mobileQuery).matches;
 			}
 		},
