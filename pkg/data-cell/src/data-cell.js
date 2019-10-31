@@ -56,6 +56,40 @@ const PROCESSOR_TRANSFORMERS = {
 
 				return getErrorMsg(cell, wrappedResponse, errorMsg);
 			};
+		} else if (isObject(proc)) {
+			let {
+				matches,
+				value,
+				errorMsg,
+				errorMsgAccesor
+			} = proc;
+
+			return (cell, runtime, wrappedResponse) => {
+				let match = true;
+
+				if (Array.isArray(matches)) {
+					const [ accessor, value, errMsg ] = matches;
+
+					if (errMsg)
+						errorMsg = errMsg;
+
+					match = get(wrappedResponse, accessor) == value;
+				} else if (typeof matches == "string") {
+					if (value !== undefined)
+						match = get(wrappedResponse, matches) == value;
+					else
+						match = Boolean(get(wrappedResponse, matches));
+				} else if (typeof matches == "function")
+					match = Boolean(matches(cell, wrappedResponse));
+
+				if (match && wrappedResponse.success)
+					return null;
+
+				if (typeof errorMsgAccesor == "string")
+					return getErrorMsg(cell, wrappedResponse, get(wrappedResponse, errorMsgAccesor));
+
+				return getErrorMsg(cell, wrappedResponse, errorMsg);
+			};
 		}
 
 		return proc;
@@ -158,8 +192,12 @@ export default class DataCell extends Hookable {
 		}, initConfig.defaultState, "override");
 
 		this.data = null;
+
 		this.xhrManager = newConfig.xhrManager || new XHRManager();
-		this.xhrPreset = inject(xhrPreset, newConfig.xhrPreset);
+		this.xhrPreset = [inject(xhrPreset, newConfig.xhrPreset)];
+		if (newConfig.xhrPreset)
+			this.xhrPreset.push(newConfig.xhrPreset);
+
 		this.fetcher = mkFetcherObject(this, newConfig);
 		this.stateTransforms = inject(
 			newConfig.stateTransforms,
@@ -621,12 +659,14 @@ function fetchRequest(cell, runtime, method = "get", url = null, preset = null) 
 	method = method.toLowerCase();
 	
 	if (typeof url != "string") {
-		preset = url;
+		preset = {
+			payload: url
+		};
 		url = null;
 	}
 
 	return new Promise(resolve => {
-		const runtimePreset = this.process("preset")(runtime.preset);
+		const runtimePreset = cell.process("preset")(runtime.preset);
 
 		cell.xhrManager
 			.use(cell.xhrPreset, runtimePreset, preset)
@@ -658,12 +698,17 @@ function fetchRequest(cell, runtime, method = "get", url = null, preset = null) 
 					resolve(failResponse);
 				}
 			})
-			.fail((status, xhr, xhrState) => {
+			.fail((payloadOrStatus, xhr, xhrState) => {
+				const payload = (typeof payloadOrStatus != "number") ? payloadOrStatus : null;
+				
 				let failResponse = cell.mkErrorResponse("Unknown Error", {
-					status,
+					payload,
+					status: xhr.status,
 					xhr,
 					xhrState
 				});
+
+				debugger;
 
 				failResponse = cell.process("fail")(runtime, failResponse);
 				const validation = validate(cell, runtime, failResponse);

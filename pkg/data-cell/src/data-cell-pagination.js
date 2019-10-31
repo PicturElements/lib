@@ -32,6 +32,17 @@ const PROCESSSOR_OPTIONS = {
 	}
 };
 
+const STATE_TRANSFORMS = {
+	page({ value, newState }) {
+		newState.offset = newState.pageSize * value;
+	},
+	pageSize({ value, oldValue, newState, state }) {
+		const page = Math.floor((oldValue * state.page) / value);
+		newState.page = page;
+		newState.offset = page * value;
+	}
+};
+
 export default class DataCellPagination extends DataCell {
 	constructor(config = {}) {
 		super(config, {
@@ -46,16 +57,7 @@ export default class DataCellPagination extends DataCell {
 				offset: (config.pageSize || 25) * (config.page || 0),
 				total: config.total || Infinity
 			},
-			stateTransforms: {
-				page({ value, newState }) {
-					newState.offset = newState.pageSize * value;
-				},
-				pageSize({ value, oldValue, newState, state }) {
-					const page = Math.floor((oldValue * state.page) / value);
-					newState.page = page;
-					newState.offset = page * value;
-				}
-			},
+			stateTransforms: STATE_TRANSFORMS,
 			processorOptions: PROCESSSOR_OPTIONS,
 			preventDataSet: true,
 			preventStateSet: true,
