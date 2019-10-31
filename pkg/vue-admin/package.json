@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/vue-admin",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Administrator tools for Vue",
   "main": "index.js",
   "scripts": {
@@ -43,7 +43,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 7,
+    "pushes": 8,
     "expose": {
       "scripts": [
         "connect/feed.js"
