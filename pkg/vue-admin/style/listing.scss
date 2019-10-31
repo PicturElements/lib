@@ -1,71 +1,16 @@
-@use "~@qtxr/scss-utils" as *;
-
-$listing-params: (
-	"card-background",
-	"card-shadow",
-	"border-radius",
-	"outer-margin",
-	"padding",
-	"darker-background",
-	"tools-height",
-	"weak-color",
-	"error-color",
-	"row-border",
-	"odd-row-background",
-	"even-row-background",
-	"page-selector-border",
-	"page-selector-side",
-	"highlight",
-	"highlight-complement",
-	"highlight-light"
-);
-
 @mixin listing(
-	$card-background: white,
-	$card-shadow: 0 2px 4px rgba(0, 0, 0, 0.07),
-	$border-radius: 2px,
-	$outer-margin: 20px,
-	$padding: 10px,
-	$darker-background: whitesmoke,
-	$tools-height: 34px,
 	$weak-color: #555,
 	$error-color: #bb2424,
+	$accent-background: whitesmoke,
 	$row-border: 1px solid #eee,
 	$odd-row-background: white,
-	$even-row-background: whitesmoke,
-	$page-selector-border: 1px solid #dadada,
-	$page-selector-side: 30px,
-	$highlight: #1b66bf,
-	$highlight-complement: white,
-	$highlight-light: #6cafff
+	$even-row-background: whitesmoke
 ) {
-	.listing {
-		background: $card-background;
-		box-shadow: $card-shadow;
-		border-radius: $border-radius;
-		margin: $outer-margin;
-		padding: $padding;
-		
-		.util-box-title-box .listing-count {
-			padding: 3px 8px;
-			background: $darker-background;
-			border-radius: $border-radius;
-			font-size: 85%;
-			margin-left: 0.5em;
-
-			.listing-count-num {
-				font-weight: bold;
-				opacity: 0.9;
-			}
-		}
-	}
-	
 	.listing-content {
 		position: relative;
 		min-height: 100px;
 		max-height: 500px;
 		overflow: auto;
-		border-radius: $border-radius;
 
 		&.loading {
 			min-height: 200px;
@@ -86,14 +31,14 @@ $listing-params: (
 		}
 
 		&.table {
-			border: 1px solid $darker-background;
+			border: 1px solid $accent-background;
 
 			table {
 				border-collapse: collapse;
 				width: 100%;
 
 				tr:nth-child(even) {
-					background: $darker-background;
+					background: $accent-background;
 				}
 
 				th,
@@ -118,106 +63,4 @@ $listing-params: (
 			}
 		}
 	}
-
-	.page-selector-btn {
-		position: relative;
-		width: $page-selector-side;
-		height: $page-selector-side;
-		border: $page-selector-border;
-		background: transparent;
-		outline: none;
-		cursor: pointer;
-
-		&.selected {
-			background: $highlight;
-			color: $highlight-complement;
-			font-weight: bold;
-			border: none;
-			z-index: 10;
-		}
-
-		&:disabled {
-			pointer-events: none;
-			opacity: 0.7;
-		}
-
-		&:not(.decrement) + .page-selector-btn {
-			border-left: none;
-		}
-
-		&:not(.decrement) + .page-selector-btn.selected:before {
-			content: "";
-			position: absolute;
-			top: 0;
-			left: -1px;
-			right: 0;
-			bottom: 0;
-			background: inherit;
-			z-index: -1;
-		}
-
-		&.increment,
-		&.decrement,
-		&.to-start,
-		&.to-end {
-			font-size: 0;
-			border: none;
-
-			&:hover {
-				background: $darker-background;
-			}
-		}
-
-		&.increment:before,
-		&.decrement:before,
-		&.to-start:before,
-		&.to-end:before,
-		&.to-start:after,
-		&.to-end:after {
-			content: "";
-			position: absolute;
-			top: 50%;
-			left: 50%;
-			margin: -4px -6px;
-			border: 1px solid;
-			border-left-color: transparent;
-			border-top-color: transparent;
-			width: 8px;
-			height: 8px;
-			border-radius: 0 1px 2px 1px;
-			transform: rotate(-45deg);
-		}
-
-		&.decrement:before {
-			transform: rotate(135deg);
-			margin-left: -3px;
-		}
-
-		&.to-start:before {
-			transform: rotate(135deg);
-		}
-
-		&.to-start:after {
-			transform: rotate(135deg);
-			margin-left: 1px;
-		}
-
-		&.to-end:before {
-			margin-left: -10px;
-		}
-
-		&.to-end:after {
-			margin-left: -3px;
-		}
-	}
-
-	/*@include mobile {
-		.listing-tools {
-			flex-direction: column;
-
-			input {
-				margin-top: 5px;
-			}
-		}
-	}*/
 }

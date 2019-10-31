@@ -1,5 +1,6 @@
 @use "~@qtxr/scss-utils" as *;
 
+@use "./listing-box.scss" as *;
 @use "./listing.scss" as *;
 @use "./loading-box.scss" as *;
 @use "./util-box.scss" as *;
@@ -7,6 +8,7 @@
 @use "~@qtxr/vue-form/style/inputs" as *;
 
 @mixin all($theme) {
+	@include listing-box(trim-args(map-get($theme, "listing-box"), $listing-box-params)...);
 	@include listing(trim-args(map-get($theme, "listing"), $listing-params)...);
 	@include loading-box(trim-args(map-get($theme, "loading-box"), $loading-box-params)...);
 	@include util-box(trim-args(map-get($theme, "util-box"), $util-box-params)...);
