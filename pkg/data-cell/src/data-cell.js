@@ -129,14 +129,9 @@ export default class DataCell extends Hookable {
 			newConfig: {},
 			processors: {},
 			xhrPreset: {}
-		}, (val, k) => {
-			if (k[0] == "$")
-				return "processors";
+		}, (val, k) => k[0] == "$" ? "processors" : classifier[k], "newConfig");
 
-			return classifier[k];
-		}, "newConfig");
-
-		// Remove "$" from root level processors
+		// Remove "$" from root level processor keys
 		for (const k in processors) {
 			if (processors.hasOwnProperty(k) && k[0] == "$") {
 				processors[k.substr(1)] = processors[k];
@@ -156,6 +151,11 @@ export default class DataCell extends Hookable {
 		this.xhrManager = newConfig.xhrManager || new XHRManager();
 		this.xhrPreset = inject(xhrPreset, newConfig.xhrPreset);
 		this.fetcher = mkFetcherObject(this, newConfig);
+		this.stateTransforms = inject(
+			newConfig.stateTransforms,
+			initConfig.stateTransforms,
+			"cloneTarget"
+		);
 
 		// The base runtime. External code may inject data
 		// here. Other runtime objects may overwrite this
@@ -292,7 +292,7 @@ export default class DataCell extends Hookable {
 	}
 
 	setState(...states) {
-		const newState = {};
+		let newState = {};
 
 		for (let i = 0, l = states.length; i < l; i++) {
 			let state = states[i];
@@ -300,8 +300,10 @@ export default class DataCell extends Hookable {
 			if (typeof state == "string")
 				state = STATE_PRESETS[state];
 
-			inject(newState, state, "override");
+			Object.assign(newState, state);
 		}
+
+		newState = applyStateTransforms(this, newState);
 
 		return mergeStateAndDispatchChanges(this, newState);
 	}
@@ -329,6 +331,59 @@ export default class DataCell extends Hookable {
 	}
 }
 
+function applyStateTransforms(cell, newState) {
+	const state = cell.state,
+		transformMap = {},
+		affected = {};
+	
+	newState = Object.assign({}, state, newState); 
+
+	for (const k in newState) {
+		applyTransform(k, {
+			source: k,
+			transformed: {}
+		});
+	}
+
+	function applyTransform(key, transformSession) {
+		if (!newState.hasOwnProperty(key) || newState[key] == state[key])
+			return;
+
+		if (!cell.stateTransforms.hasOwnProperty(key))
+			return;
+
+		affected[key] = true;
+
+		const untransformedState = Object.assign({}, newState),
+			transformedState = cell.stateTransforms[key]({
+				value: newState[key],
+				oldValue: state[key],
+				state,
+				newState,
+				key
+			});
+
+		newState = isObject(transformedState) ? transformedState : newState;
+
+		for (const k in newState) {
+			if (!newState.hasOwnProperty(k) || k == key)
+				continue;
+
+			if (affected.hasOwnProperty(k)) {
+				if (transformSession.transformed[k])
+					console.error(`Attempted to transform '${k}' again, after already being transformed, starting at '${transformSession.source}', coming from '${key}'`);
+				
+				newState[k] = untransformedState[k];
+			} else if (newState[k] != untransformedState[k]) {
+				transformSession.transformed[k] = true;
+				applyTransform(k, transformSession);
+			}
+		}
+	}
+
+	return newState;
+}
+
 function mergeStateAndDispatchChanges(cell, newState) {
 	const state = cell.state,
 		changes = {};
@@ -345,8 +400,8 @@ function mergeStateAndDispatchChanges(cell, newState) {
 
 		cell.callHooks(`stateUpdate:${k}`, newState[k], state[k]);
 		changes[k] = {
-			old: newState[k],
-			new: state[k]
+			old: state[k],
+			new: newState[k]
 		};
 		state[k] = newState[k];
 	}

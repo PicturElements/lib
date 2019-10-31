@@ -46,6 +46,16 @@ export default class DataCellPagination extends DataCell {
 				offset: (config.pageSize || 25) * (config.page || 0),
 				total: config.total || Infinity
 			},
+			stateTransforms: {
+				page({ value, newState }) {
+					newState.offset = newState.pageSize * value;
+				},
+				pageSize({ value, oldValue, newState, state }) {
+					const page = Math.floor((oldValue * state.page) / value);
+					newState.page = page;
+					newState.offset = page * value;
+				}
+			},
 			processorOptions: PROCESSSOR_OPTIONS,
 			preventDataSet: true,
 			preventStateSet: true,
@@ -155,8 +165,7 @@ export default class DataCellPagination extends DataCell {
 		page = Math.max(page, 0);
 
 		const changes = this.setState({
-			page,
-			offset: this.state.pageSize * page
+			page
 		});
 
 		if (changes.page)
@@ -169,12 +178,9 @@ export default class DataCellPagination extends DataCell {
 
 		pageSize = Math.max(pageSize, 5);
 
-		const page = Math.floor((this.state.pageSize * this.state.page) / pageSize),
-			changes = this.setState({
-				pageSize,
-				page,
-				offset: page * pageSize
-			});
+		const changes = this.setState({
+			pageSize
+		});
 
 		if (changes.pageSize)
 			this.fetch();

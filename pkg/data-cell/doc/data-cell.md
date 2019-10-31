@@ -82,3 +82,15 @@ The polling object is used to automatically fetch new data in set intervals.
 		iterationCount
 		lastTimestamp		// Timestamp at last iteration
 	}
+
+### State
+
+`DataCell` employs a state to manage how data is handled in the system.
+
+### State transforms
+
+Sometimes state data depends on other state data. In this case it could be useful to have abstract connections between these data. `DataCell` does this with state transforms. A state transform may be a simple function or a transform object, including a transform function. A transform function is simple. It receives a snapshot of the current state and its task is to directly mutate it, or return a new state. A transform is triggered by a new value being set in the state. The returned/mutated state will also be subject to transforms, so complex updates can be set up with ease.
+
+Transforms are triggered relative to the current state, so if a transform runs but doesn't change a value no further transforms are triggered for that specific value.
+
+To remain deterministic, state transforms do have some limitations. For example, a transform triggered by data A that affects data B, which in turn also transforms data A is not desirable. Therefore, transforms are only allowed to affect any one value once. If multiple transforms affect any value, an error will be logged. However, this does not apply to circular transforms. Circular transforms (A -> B -> A) will not fail, as the transforms will halt when the triggered key is found. In the event that multiple Additionally, transforms currently only apply to the root level of the state, as to reduce program complexity.
