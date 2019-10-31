@@ -99,18 +99,19 @@ class XHRManager {
 
 		const xhr = new XMLHttpRequest(),
 			xs = getState(this),
-			xId = xs.link(this, xhr);
+			xId = xs.link(this, xhr),
+			preset = this.pendingPreset;
 
 		injectStateDependencies(xs, this);
 
 		xhr.onprogress = evt => handleProgress(evt, xId, xs);
-		xhr.onreadystatechange = ({ target }) => handleStateChange(target, xId, xs);
-		xhr.onerror = ({ target }) => xs.callHooks("fail", xId, true, target.status, target);
+		xhr.onreadystatechange = ({ target }) => handleStateChange(target, xId, xs, preset);
+		xhr.onerror = ({ target }) => handleFail(target, xId, xs, preset);
 
-		xhr.open("GET", mkUrl(url, this.pendingPreset));
+		xhr.open("GET", mkUrl(url, preset));
 
-		if (this.pendingPreset)
-			setHeaders(xhr, this.pendingPreset);
+		if (preset)
+			setHeaders(xhr, preset);
 
 		xhr.send();
 
@@ -125,22 +126,23 @@ class XHRManager {
 
 		const xhr = new XMLHttpRequest(),
 			xs = getState(this),
-			xId = xs.link(this, xhr);
+			xId = xs.link(this, xhr),
+			preset = this.pendingPreset;
 
 		injectStateDependencies(xs, this);
 
 		xhr.onprogress = evt => handleProgress(evt, xId, xs);
-		xhr.onreadystatechange = ({ target }) => handleStateChange(target, xId, xs);
-		xhr.onerror = ({ target }) => xs.callHooks("fail", xId, true, target.status, target);
+		xhr.onreadystatechange = ({ target }) => handleStateChange(target, xId, xs, preset);
+		xhr.onerror = ({ target }) => handleFail(target, xId, xs, preset);
 
-		xhr.open("POST", mkUrl(url, this.pendingPreset));
+		xhr.open("POST", mkUrl(url, preset));
 
-		if (this.pendingPreset) {
-			setHeaders(xhr, this.pendingPreset);
-			data = mergeData(this.pendingPreset.payload, data);
+		if (preset) {
+			setHeaders(xhr, preset);
+			data = mergeData(preset.payload, data);
 		}
 		
-		xhr.send(encodeData(data, this.pendingPreset));
+		xhr.send(encodeData(data, preset));
 
 		this.pendingPreset = null;
 		xs.runInit();
@@ -171,14 +173,21 @@ function handleProgress(evt, xId, xs) {
 	xs.callHooks("progress", xId, true, xs.getProgress());
 }
 
-function handleStateChange(xhr, xId, xs) {
+function handleStateChange(xhr, xId, xs, preset) {
 	if (xhr.readyState == 4) {
 		if (xhr.status == 200) {
 			const data = decodeData(xhr);
 			xs.callHooks("success", xId, true, data, xhr);
 		} else
-			xs.callHooks("fail", xId, true, xhr.status, xhr);
+			handleFail(xId, xhr, xs, preset);
 	}
+}
+
+function handleFail(xId, xhr, xs, preset) {
+	if (preset && preset.returnReponseOnFail)
+		xs.callHooks("fail", xId, true, decodeData(xhr), xhr);
+	else
+		xs.callHooks("fail", xId, true, xhr.status, xhr);
 }
 
 let globalXId = 0;
