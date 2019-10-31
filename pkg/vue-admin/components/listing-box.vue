@@ -67,6 +67,7 @@
 	import Form from "@qtxr/form";
 
 	import VForm from "@qtxr/vue-form";
+	import Listing from "./listing.vue";
 	import UtilBox from "./util-box.vue";
 	import LoadingBox from "./loading-box.vue";
 
@@ -168,6 +169,7 @@
 		},
 		components: {
 			VForm,
+			Listing,
 			UtilBox,
 			LoadingBox
 		},
