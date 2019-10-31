@@ -1,2 +1,2 @@
-## @qtxr/fs-utils
+## @qtxr/node-utils
 Utilities for common tasks in node environments
