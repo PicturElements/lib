@@ -1,10 +1,10 @@
 import {
 	filterMut,
 	resolveArgs,
-	isObject
+	isObject,
+	queryFilterMut
 } from "@qtxr/utils";
 import Hook from "./hook";
-import { queryFilterMut } from "../../utils";
 
 // TODO: in first major version, rename nickname to identifier
 
