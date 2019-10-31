@@ -60,7 +60,7 @@ $dropdown-params: (
 			&.dropdown-active-option {
 				padding-right: $height + $padding;
 	
-				> .icon {
+				> .dropdown-icon {
 					position: absolute;
 					top: 0;
 					right: 0;
