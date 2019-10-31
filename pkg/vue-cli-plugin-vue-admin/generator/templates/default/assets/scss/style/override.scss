@@ -1,0 +1,16 @@
+// Override user agent style
+@use "../theme.scss" as *;
+
+@mixin override {
+	*,
+	*:before,
+	*:after {
+		-webkit-box-sizing: border-box;
+		box-sizing: border-box;
+	}
+
+	a {
+		color: inherit;
+		text-decoration: none;
+	}
+}

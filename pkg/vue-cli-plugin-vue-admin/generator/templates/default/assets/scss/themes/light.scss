@@ -1,0 +1,182 @@
+// By default, the general style is global to the module
+$main-background: whitesmoke;
+$main-color: #3b3e41;
+
+$sidebar-background: #2e343c;
+$sidebar-alt-background: #38404a;
+$sidebar-color: white;
+$sidebar-default-width: 200px;
+
+$overlap-background: #25282d;
+$overlap-logo-width: 25px;
+$overlap-logo-height: 25px;
+$overlap-overlay-color: #3e4348;
+
+$header-background: white;
+$header-color: #2e343c;
+$header-height: 50px;
+
+$repeating-pattern-foreground: #f9fcff;
+$repeating-pattern-background: #e6eaef;
+
+$card-background: white;
+$card-shadow: 0 2px 3px rgba(0, 0, 0, 0.07);
+
+$highlight: #1b66bf;
+$highlight-complement: white;
+$highlight-light: #6cafff;
+
+$subdued: #e6eaef;
+$subdued-complement: #a9b2bb;
+
+$sidebar-base-indent: 15px;
+$sidebar-overlay-background: rgba(255, 255, 255, 0.1);
+
+$stamp-color: #87919e;
+$semi-light-stamp-color: #a6afbb;
+$light-stamp-color: #c6ceda;
+
+$input-master-height: 28px;
+
+$error-label-background: #fcf0fd;
+$error-label-border: 1px solid #efdcf5;
+$error-label-color: #8c0f65;
+$error-label-text-shadow: 0 1px rgba(0, 0, 0, 0.05);
+
+$accent-background: whitesmoke;
+
+$theme: (
+	general: (
+		main-background: $main-background,
+		main-color: $main-color,
+		
+		sidebar-background: $sidebar-background,
+		sidebar-alt-background: $sidebar-alt-background,
+		sidebar-color: $sidebar-color,
+		sidebar-default-width: $sidebar-default-width,
+		
+		overlap-background: $overlap-background,
+		overlap-logo-width: $overlap-logo-width,
+		overlap-logo-height: $overlap-logo-height,
+		overlap-overlay-color: $overlap-overlay-color,
+		
+		header-background: $header-background,
+		header-color: $header-color,
+		header-height: $header-height,
+		
+		repeating-pattern-foreground: $repeating-pattern-foreground,
+		repeating-pattern-background: $repeating-pattern-background,
+		
+		card-background: $card-background,
+		card-shadow: $card-shadow,
+		
+		highlight: $highlight,
+		highlight-complement: $highlight-complement,
+		highlight-light: $highlight-light,
+		
+		subdued: $subdued,
+		subdued-complement: $subdued-complement,
+		
+		sidebar-base-indent: $sidebar-base-indent,
+		sidebar-overlay-background: $sidebar-overlay-background,
+
+		stamp-color: $stamp-color,
+		semi-light-stamp-color: $semi-light-stamp-color,
+		light-stamp-color: $light-stamp-color,
+
+		input-master-height: $input-master-height,
+
+		error-label-background: $error-label-background,
+		error-label-border: $error-label-border,
+		error-label-color: $error-label-color,
+		error-label-text-shadow: $error-label-text-shadow,
+
+		accent-background: $accent-background
+	),
+	util-box: (
+		card-background: white,
+		card-shadow: 0 2px 4px rgba(0, 0, 0, 0.07),
+
+		border-radius: 2px,
+		outer-margin: 10px,
+		padding: 10px,
+
+		separator: 1px solid whitesmoke
+	),
+	listing-box: (
+		background: white,
+		shadow: 0 2px 4px rgba(0, 0, 0, 0.07),
+
+		border-radius: 2px,
+		outer-margin: 20px,
+		padding: 10px,
+
+		accent-background: $accent-background,
+		
+		page-selector-border: 1px solid #dadada,
+		page-selector-side: $input-master-height,
+
+		highlight: $highlight,
+		highlight-complement: $highlight-complement,
+		highlight-light: $highlight-light
+	),
+	listing: (
+		weak-color: #555,
+		error-color: #bb2424,
+
+		accent-background: $accent-background,
+
+		row-border: 1px solid #eee,
+		odd-row-background: white,
+		even-row-background: whitesmoke,
+	),
+	inputs: (
+		// This also serves as the base style for
+		// other inputs, which can be overwritten,
+		// in each input map
+		input: (
+			color: #1e2021,
+			focus-color: #1e2021,
+			error-color: #9a3131,
+			autofill-color: #276a9e,
+
+			background: white,
+			focus-background: #eee,
+			error-background: #ffe1e1,
+			autofill-background: #edf7ff,
+
+			border-width: 1px,
+			border-style: solid,
+			border-color: #dadada,
+			border: 1px solid #dadada,
+
+			focus-border-width: 1px,
+			focus-border-style: solid,
+			focus-border-color: #1e2021,
+			focus-border: 1px solid #1e2021,
+
+			error-border-width: 1px,
+			error-border-style: solid,
+			error-border-color: #e02929,
+			error-border: 1px solid #e02929,
+
+			autofill-border-width: 1px,
+			autofill-border-style: solid,
+			autofill-border-color: #74b4e6,
+			autofill-border: 1px solid #74b4e6
+		),
+		checkbox: (),
+		count: (),
+		dropdown: (
+			height: $input-master-height,
+			padding: 10px,
+			mobile-padding: 30px,
+			separator-border: 1px solid rgba(128, 128, 128, 0.25)
+		),
+		radio: ()
+	),
+	loading-box: (
+		background: $card-background,
+		transition: 300ms
+	)
+);

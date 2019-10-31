@@ -1,0 +1,12 @@
+@use "./forms.scss" as *;
+@use "./override.scss" as *;
+@use "./ui.scss" as *;
+@use "./util-classes.scss" as *;
+
+// By default, style should be scoped to .admin
+.admin {
+	@include override;
+	@include ui;
+	@include forms;
+	@include util-classes;
+}

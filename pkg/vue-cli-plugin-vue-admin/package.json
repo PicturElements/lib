@@ -1,0 +1,55 @@
+{
+  "name": "@qtxr/vue-cli-plugin-vue-admin",
+  "version": "1.0.2",
+  "description": "Plugin used by Vue CLI services to manage @qtxr/v-admin",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node ../server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PicturElements/lib.git",
+    "directory": "pkg/vue-cli-plugin-vue-admin"
+  },
+  "keywords": [
+    "plugin",
+    "vue",
+    "admin",
+    "v-admin"
+  ],
+  "author": "qtxr",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/PicturElements/lib/issues"
+  },
+  "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/vue-cli-plugin-vue-admin#readme",
+  "dependencies": {
+    "@qtxr/node-utils": "^1.5.2",
+    "@qtxr/utils": "^1.21.1",
+    "@qtxr/vue-admin": "^1.0.13"
+  },
+  "devDependencies": {},
+  "files": [
+    "/src",
+    "/generator",
+    "/media",
+    "/index.d.ts",
+    "/prompts.js"
+  ],
+  "qlib": {
+    "pushes": 1,
+    "expose": {
+      "scripts": [
+        "connect/feed.js"
+      ],
+      "styles": []
+    },
+    "ui": [
+      {
+        "type": "console",
+        "config": {}
+      }
+    ]
+  }
+}

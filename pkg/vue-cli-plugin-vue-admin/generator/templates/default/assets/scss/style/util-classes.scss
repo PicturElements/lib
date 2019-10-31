@@ -1,0 +1,157 @@
+// Utility classes (tailwind style)
+@use "../theme.scss" as *;
+@use "~@qtxr/scss-utils" as *;
+
+@mixin util-classes {
+	.f {
+		display: flex;
+
+		&.jc,
+		&.c {
+			justify-content: center;
+		}
+
+		&.jsb {
+			justify-content: space-between;
+		}
+
+		&.jsa {
+			justify-content: space-around;
+		}
+
+		&.js {
+			justify-content: flex-start;
+		}
+
+		&.je {
+			justify-content: flex-end;
+		}
+
+		&.ac,
+		&.c {
+			align-items: center;
+		}
+
+		&.as {
+			align-items: flex-start;
+		}
+
+		&.ae {
+			align-items: flex-end;
+		}
+
+		&.row {
+			flex-direction: row;
+		}
+
+		&.col {
+			flex-direction: column;
+		}
+
+		&.grow {
+			flex-grow: 1;
+		}
+
+		&.ngrow {
+			flex-grow: 1;
+		}
+
+		&.shrink {
+			flex-shrink: 1;
+		}
+
+		&.nshrink {
+			flex-shrink: 0;
+		}
+
+		&.exp {
+			flex-grow: 1;
+			flex-basis: 1px;
+		}
+
+		&.fix {
+			flex-shrink: 0;
+			flex-grow: 0;
+			flex-basis: 0;
+		}
+
+		&.wrap {
+			flex-wrap: wrap;
+		}
+	}
+
+	.f-jc,
+	.f-c {
+		justify-content: center;
+	}
+
+	.f-jsb {
+		justify-content: space-between;
+	}
+
+	.f-jsa {
+		justify-content: space-around;
+	}
+
+	.f-js {
+		justify-content: flex-start;
+	}
+
+	.f-je {
+		justify-content: flex-end;
+	}
+
+	.f-ac,
+	.f-c {
+		align-items: center;
+	}
+
+	.f-as {
+		align-items: flex-start;
+	}
+
+	.f-ae {
+		align-items: flex-end;
+	}
+
+	.f-row {
+		flex-direction: row;
+	}
+
+	.f-col {
+		flex-direction: column;
+	}
+
+	.f-grow {
+		flex-grow: 1;
+	}
+
+	.f-ngrow {
+		flex-grow: 0;
+	}
+
+	.f-shrink {
+		flex-shrink: 1;
+	}
+
+	.f-nshrink {
+		flex-shrink: 0;
+	}
+
+	.f-exp {
+		flex-grow: 1;
+		flex-basis: 1px;
+	}
+
+	.f-fix {
+		flex-shrink: 0;
+		flex-grow: 0;
+		flex-basis: 0;
+	}
+
+	@include rangeClass("o", "opacity", "", 0, 1, 0.1);
+	@include rangeClass("mb", "margin-bottom", "px", -10, 50, 5);
+	@include rangeClass("ml", "margin-left", "px", -10, 50, 5);
+	@include rangeClass("mr", "margin-right", "px", -10, 50, 5);
+	@include rangeClass("fs", "font-size", "%", 50, 160, 5);
+}

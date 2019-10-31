@@ -1,0 +1,9 @@
+// Import main theme
+@use "./theme.scss" as *;
+// Apply to styles from @qtxr/vue-admin/styles,
+// which are delivered as partials
+@use "~@qtxr/vue-admin/style/all.scss" as *;
+
+.admin {
+	@include all($theme);
+}
