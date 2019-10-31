@@ -1,3 +1,14 @@
+@use "~@qtxr/scss-utils" as *;
+
+$listing-params: (
+	"weak-color",
+	"error-color",
+	"accent-background",
+	"row-border",
+	"odd-row-background",
+	"even-row-background"
+);
+
 @mixin listing(
 	$weak-color: #555,
 	$error-color: #bb2424,
