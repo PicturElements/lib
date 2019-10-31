@@ -164,12 +164,9 @@ export default class DataCellPagination extends DataCell {
 
 		page = Math.max(page, 0);
 
-		const changes = this.setState({
+		this.setState({
 			page
 		});
-
-		if (changes.page)
-			this.fetch();
 	}
 
 	setPageSize(pageSize) {
@@ -178,12 +175,9 @@ export default class DataCellPagination extends DataCell {
 
 		pageSize = Math.max(pageSize, 5);
 
-		const changes = this.setState({
+		this.setState({
 			pageSize
 		});
-
-		if (changes.pageSize)
-			this.fetch();
 	}
 
 	shiftCache(amount = 0) {

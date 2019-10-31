@@ -1,9 +1,11 @@
 import {
+	sym,
 	get,
 	casing,
 	clone,
 	inject,
 	isObject,
+	matchType,
 	partition,
 	resolveVal,
 	mkProcessor,
@@ -13,7 +15,7 @@ import {
 import { XHRManager } from "@qtxr/request";
 import { Hookable } from "@qtxr/bc";
 
-const STATE_PRESETS = {
+const DEFAULT_STATE_PRESETS = {
 	loaded: {
 		loaded: true,
 		loading: false,
@@ -102,6 +104,14 @@ const DEFAULT_PROCESSOR_OPTIONS = {
 	}
 };
 
+const DEFAULT_WATCHER_TASK_DISPATCHERS = {
+	fetch(cell, changes) {
+		return cell._fetch({
+			changes
+		});
+	}
+};
+
 const DEFAULT_PARTITION_CLASSIFIER = {
 	// XHR preset
 	url: "xhrPreset",
@@ -156,9 +166,26 @@ export default class DataCell extends Hookable {
 			initConfig.stateTransforms,
 			"cloneTarget"
 		);
+		this.statePresets = Object.assign(
+			DEFAULT_STATE_PRESETS,
+			initConfig.statePresets,
+			newConfig.statePresets
+		);
+	
+		this.watchTaskDispatchers = Object.assign(
+			{},
+			DEFAULT_WATCHER_TASK_DISPATCHERS,
+			initConfig.watchTaskDispatchers,
+			newConfig.watchTaskDispatchers
+		);
+
+		this.watcher = mkWatcherObject(
+			this,
+			newConfig.watch || newConfig.watch
+		);
 
 		// The base runtime. External code may inject data
-		// here. Other runtime objects may overwrite this
+		// here. Third party code may mutate this
 		this.baseRuntime = {
 			cell: this
 		};
@@ -235,6 +262,8 @@ export default class DataCell extends Hookable {
 
 		const fetcher = this.fetcher,
 			doFetch = async _ => {
+				this.baseRuntime.state = this.state;
+
 				if (this.defaultRuntime)
 					runtime = inject(this.defaultRuntime, runtime, "cloneTarget");
 				if (this.pendingRuntime)
@@ -292,19 +321,18 @@ export default class DataCell extends Hookable {
 	}
 
 	setState(...states) {
-		let newState = {};
+		let newState = Object.assign({}, this.state);
 
 		for (let i = 0, l = states.length; i < l; i++) {
 			let state = states[i];
 
 			if (typeof state == "string")
-				state = STATE_PRESETS[state];
+				state = this.statePresets[state];
 
 			Object.assign(newState, state);
 		}
 
 		newState = applyStateTransforms(this, newState);
-
 		return mergeStateAndDispatchChanges(this, newState);
 	}
 	
@@ -335,8 +363,6 @@ function applyStateTransforms(cell, newState) {
 	const state = cell.state,
 		transformMap = {},
 		affected = {};
-	
-	newState = Object.assign({}, state, newState); 
 
 	for (const k in newState) {
 		applyTransform(k, {
@@ -371,7 +397,7 @@ function applyStateTransforms(cell, newState) {
 
 			if (affected.hasOwnProperty(k)) {
 				if (transformSession.transformed[k])
-					console.error(`Attempted to transform '${k}' again, after already being transformed, starting at '${transformSession.source}', coming from '${key}'`);
+					console.error(`Attempted to transform '${k}' again, after already being transformed. Origin at '${transformSession.source}', coming from '${key}'`);
 				
 				newState[k] = untransformedState[k];
 			} else if (newState[k] != untransformedState[k]) {
@@ -386,7 +412,7 @@ function applyStateTransforms(cell, newState) {
 
 function mergeStateAndDispatchChanges(cell, newState) {
 	const state = cell.state,
-		changes = {};
+		changes = [];
 	let changed = false;
 
 	for (const k in newState) {
@@ -399,14 +425,69 @@ function mergeStateAndDispatchChanges(cell, newState) {
 		}
 
 		cell.callHooks(`stateUpdate:${k}`, newState[k], state[k]);
-		changes[k] = {
+		changes.push({
+			property: k,
 			old: state[k],
 			new: newState[k]
-		};
+		});
+
 		state[k] = newState[k];
 	}
 
+	dispatchChanges(cell, changes);
 	return changes;
+}
+
+function dispatchChanges(cell, changes) {
+	const dispatchers = cell.watcher.dispatchers,
+		batchKey = sym("task batch"),
+		tasks = [];
+
+	for (let i = 0, l = changes.length; i < l; i++) {
+		const change = changes[i];
+
+		if (!dispatchers.hasOwnProperty(change.property) && !dispatchers.hasOwnProperty("any"))
+			continue;
+
+		let dispatcher = resolveDispatcher(dispatchers[change.property] || dispatchers.any);
+
+		if (typeof dispatcher == "function") {
+			if (dispatcher.hasOwnProperty(batchKey))
+				tasks[dispatcher[batchKey]].changes.push(change);
+			else {
+				dispatcher[batchKey] = tasks.length;
+				tasks[tasks.length] = {
+					dispatch: dispatcher,
+					changes: [change]
+				};
+			}
+		} else
+			throw new Error(`Failed to dispatch changes: '${change.property}' is not a valid dispatcher`);
+	}
+
+	for (let i = 0, l = tasks.length; i < l; i++) {
+		delete tasks[i].dispatch[batchKey];
+		tasks[i].dispatch(cell, tasks[i].changes);
+	}
+
+	function resolveDispatcher(dispatcher) {
+		switch (typeof dispatcher) {
+			case "string":
+				if (dispatcher[0] == ".")
+					return resolveDispatcher(dispatchers[dispatcher.substr(1)]);
+				
+				return cell.watchTaskDispatchers[dispatcher];
+
+			case "function":
+				return dispatcher;
+
+			case "object":
+				if (dispatcher == null)
+					return null;
+
+				return dispatcher.dispatch;
+		} 
+	}
 }
 
 function mkFetcherObject(cell, config) {
@@ -496,6 +577,44 @@ function mkPollingObject(pollConfig) {
 	});
 
 	return poll;
+}
+
+function mkWatcherObject(cell, watchers) {
+	const watcher = {
+		dispatchers: {}
+	};
+
+	if (!watchers)
+		return watcher;
+
+	if (Array.isArray(watchers)) {
+		for (let i = 0, l = watchers.length; i < l; i++) {
+			const watch = watchers[i];
+
+			// By default, watchers dispatch a fetch
+			if (typeof watch == "string")
+				watcher.dispatchers[watch] = "fetch";
+			else if (isObject(watch) && watch.hasOwnProperty("watch"))
+				watcher.dispatchers[watch.watch] = watch;
+			else
+				throw new TypeError(`Failed to make watcher object (at index ${i}): array watchers must contain a string specifying the watched property, or a dispatcher object with a 'watch' key`);
+		}
+	} else if (isObject(watchers)) {
+		for (const k in watchers) {
+			if (!watchers.hasOwnProperty(k))
+				continue;
+
+			const watch = watchers[k];
+
+			if (!matchType(watch, "string|function|Object"))
+				throw new TypeError(`Failed to make watcher object (at key '${k}'): properties must be a string refrence to a dispatcher, a dispatcher function, or a dispatcher object`);
+		
+			watcher.dispatchers[k] = watch;
+		}
+	} else
+		throw new TypeError("Failed to make watcher object: invalid watcher input, must be array or object");
+
+	return watcher;
 }
 
 function fetchRequest(cell, runtime, method = "get", url = null, preset = null) {
