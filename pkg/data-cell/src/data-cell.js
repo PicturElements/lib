@@ -708,8 +708,6 @@ function fetchRequest(cell, runtime, method = "get", url = null, preset = null) 
 					xhrState
 				});
 
-				debugger;
-
 				failResponse = cell.process("fail")(runtime, failResponse);
 				const validation = validate(cell, runtime, failResponse);
 				failResponse.errorMsg = validation;
