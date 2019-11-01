@@ -45,7 +45,6 @@
 				});
 
 				this.cell.hook("stateUpdate:loading", (cell, loading) => {
-					console.log(this.viz, cell, loading);
 					this.viz.loading = loading;
 				})
 		 	} else if (this.data)

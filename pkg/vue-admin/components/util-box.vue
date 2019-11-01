@@ -51,9 +51,6 @@
 		},
 		components: {
 			LoadingBox
-		},
-		mounted() {
-			console.log(this);
 		}
 	};
 </script>
