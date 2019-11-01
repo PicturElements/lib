@@ -2,44 +2,44 @@ $theme: (
 	// This also serves as the base style for
 	// other inputs, which can be overwritten,
 	// in each input map
-	"input": (
-		"color": #1e2021,
-		"focus-color": #1e2021,
-		"error-color": #9a3131,
-		"autofill-color": #276a9e,
+	input: (
+		color: #1e2021,
+		focus-color: #1e2021,
+		error-color: #9a3131,
+		autofill-color: #276a9e,
 
-		"background": white,
-		"focus-background": #eee,
-		"error-background": #ffe1e1,
-		"autofill-background": #edf7ff,
+		background: white,
+		focus-background: #eee,
+		error-background: #ffe1e1,
+		autofill-background: #edf7ff,
 
-		"border-width": 1px,
-		"border-style": solid,
-		"border-color": #dadada,
-		"border": 1px solid #dadada,
+		border-width: 1px,
+		border-style: solid,
+		border-color: #dadada,
+		border: 1px solid #dadada,
 
-		"focus-border-width": 1px,
-		"focus-border-style": solid,
-		"focus-border-color": #1e2021,
-		"focus-border": 1px solid #1e2021,
+		focus-border-width: 1px,
+		focus-border-style: solid,
+		focus-border-color: #1e2021,
+		focus-border: 1px solid #1e2021,
 
-		"error-border-width": 1px,
-		"error-border-style": solid,
-		"error-border-color": #e02929,
-		"error-border": 1px solid #e02929,
+		error-border-width: 1px,
+		error-border-style: solid,
+		error-border-color: #e02929,
+		error-border: 1px solid #e02929,
 
-		"autofill-border-width": 1px,
-		"autofill-border-style": solid,
-		"autofill-border-color": #74b4e6,
-		"autofill-border": 1px solid #74b4e6
+		autofill-border-width: 1px,
+		autofill-border-style: solid,
+		autofill-border-color: #74b4e6,
+		autofill-border: 1px solid #74b4e6
 	),
-	"checkbox": (),
-	"count": (),
-	"dropdown": (
-		"height": 30px,
-		"padding": 10px,
-		"mobile-padding": 30px,
-		"separator-border": 1px solid rgba(128, 128, 128, 0.25)
+	checkbox: (),
+	count: (),
+	dropdown: (
+		height: 30px,
+		padding: 10px,
+		mobile-padding: 30px,
+		separator-border: 1px solid rgba(128, 128, 128, 0.25)
 	),
-	"radio": ()
+	radio: ()
 );

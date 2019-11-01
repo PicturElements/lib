@@ -32,6 +32,11 @@ $radio-params: (
 					background: currentColor;
 				}
 			}
+
+			.radio-top {
+				display: flex;
+				align-items: center;
+			}
 		}
 	
 		.radio-option {

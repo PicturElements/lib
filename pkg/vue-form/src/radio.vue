@@ -2,7 +2,7 @@
 	.input-wrapper.radio.inp-radio(:class="validationState")
 		.radio-section(v-for="(option, idx) in options"
 			:class="{ active: idx == activeIndex }")
-			.radio-top.f.ac
+			.radio-top
 				button.radio-option(@click="trigger(option)")
 				.label(@click="trigger(option)")
 					slot(name="label" v-bind="wrapOption(option)")

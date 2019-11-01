@@ -1,5 +1,5 @@
 <template lang="pug">
-	.input-wrapper.checkbox.inp-checkbox.f.ac.fs90(:class="validationState")
+	.input-wrapper.checkbox.inp-checkbox(:class="validationState")
 		button.checkbox(
 			:class="{ checked: input.value }"
 			@click="trigger")

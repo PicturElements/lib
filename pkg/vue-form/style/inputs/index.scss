@@ -6,17 +6,10 @@
 @use "./dropdown.scss" as *;
 @use "./radio.scss" as *;
 
-@function trim-args-merge($theme, $key, $param-list) {
-	$input-theme: map-get($theme, "input");
-	$target-theme: map-get($theme, $key);
-	@return trim-args(map-merge($input-theme, $target-theme), $param-list);
-}
-
-@mixin inputs($theme) {
-	$input-theme: map-get($theme, "input");
-	@include input(trim-args($input-theme, $input-params)...);
-	@include checkbox(trim-args-merge($theme, "checkbox", $checkbox-params)...);
-	@include count(trim-args-merge($theme, "count", $count-params)...);
-	@include dropdown(trim-args-merge($theme, "dropdown", $dropdown-params)...);
-	@include radio(trim-args-merge($theme, "radio", $radio-params)...);
+@mixin inputs($theme: ()) {
+	@include input(compose-args($theme, $input-params, "input")...);
+	@include checkbox(compose-args($theme, $checkbox-params, "input", "checkbox")...);
+	@include count(compose-args($theme, $checkbox-params, "input", "count")...);
+	@include dropdown(compose-args($theme, $checkbox-params, "input", "dropdown")...);
+	@include radio(compose-args($theme, $checkbox-params, "input", "radio")...);
 }

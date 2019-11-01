@@ -13,9 +13,12 @@ $checkbox-params: (
 ) {
 	.inp-checkbox {
 		.checkbox {
+			display: flex;
+			align-items: center;
 			position: relative;
 			width: 1.8em;
 			height: 1.8em;
+			font-size: 90%;
 			background: transparent;
 			border: $border;
 			padding: 0;

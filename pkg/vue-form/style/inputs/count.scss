@@ -8,12 +8,17 @@ $count-params: (
 	$focus-background: #eee
 ) {
 	.inp-count {
+		display: flex;
 		height: 30px;
 		width: 100px;
 		border: $border;
 		border-radius: 3px;
 	
 		.count-btn {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex-shrink: 0;
 			width: 30px;
 			height: 100%;
 			user-select: none;
