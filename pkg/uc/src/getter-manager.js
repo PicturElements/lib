@@ -19,8 +19,6 @@ export default class GetterManager {
 
 		if (isObject(getters))
 			this.addGetters("", getters);
-
-		console.log(this);
 	}
 
 	addGetter(path, name, getter) {
