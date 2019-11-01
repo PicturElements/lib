@@ -1,3 +1,5 @@
+@use "./map.scss" as *;
+
 @function trim-args($args, $param-list) {
 	$out: ();
 
@@ -8,4 +10,15 @@
 	}
 
 	@return $out;
+}
+
+@function compose-args($src, $param-list, $accessors...) {
+	$out: ();
+
+	@each $accessor in $accessors {
+		$partition: map-deep-get($src, $accessor);
+		$out: map-merge($out, $partition);
+	}
+
+	@return trim-args($out, $param-list);
 }

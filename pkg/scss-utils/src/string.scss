@@ -1,0 +1,34 @@
+@function str-replace($string, $search, $replace: '') {
+	$string: "" + $string;
+
+	$index: str-index($string, $search);
+	
+	@if $index {
+		@return str-slice($string, 1, $index - 1) + $replace + str-replace(str-slice($string, $index + str-length($search)), $search, $replace);
+	}
+	
+	@return $string;
+}
+
+@function str-split($str, $separator: " ", $allow-empty: false) {
+	$split: ();
+	$idx: str-index($str, $separator);
+	$len: str-length($separator);
+	
+	@while $idx != null {
+		$component: str-slice($str, 1, $idx - 1);
+		
+		@if $component != "" or $allow-empty {
+			$split: append($split, $component);
+		}
+		
+		$str: str-slice($str, $idx + $len);
+		$idx: str-index($str, $separator)
+	}
+	
+	@if $str != "" or $allow-empty {
+		$split: append($split, $str);
+	}
+	
+	@return $split;
+}

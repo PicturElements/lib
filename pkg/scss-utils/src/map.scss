@@ -1,0 +1,15 @@
+@use "./string.scss" as *;
+
+@function map-deep-get($map, $accessor, $separator: ".") {
+	$path: str-split($accessor, $separator);
+	
+	@each $component in $path {
+		@if (type-of($map) != map) {
+			@return ();
+		}
+		
+		$map: map-get($map, $component);
+	}
+	
+	@return if(type-of($map) == map, $map, ());
+}
