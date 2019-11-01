@@ -1,4 +1,4 @@
-@use "./primitives.scss" as *;
+@use "./string.scss" as *;
 
 @mixin rangeClass($slug, $property, $unit, $start, $end, $step:1) {
 	$steps: ($end - $start) / $step;
