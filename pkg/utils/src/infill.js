@@ -5,6 +5,8 @@ import {
 	isObject
 } from "./is";
 import parseStr from "./parse-str";
+import parseArgStr from "./parse-arg-str";
+import matchType from "./match-type";
 
 // TODO: check where null should be a valid default value
 // TODO: fix lvl
@@ -61,8 +63,8 @@ export default function infill(target, source, optionsOrRuntime) {
 	return target;
 }
 
-const parseModifierRegex = /^@(\w+?)(?:\s*?(?:::(.+))|:(.+))?$/,
-	parseModifierParamsRegex = /(\w+?)\s*:\s*((?:(?:(["'`])(?:\\.|.)*?\3)|[^"'`;])+)/g;
+const parseModifierRegex = /^@([\w_$-]+?)(?:\s*?(?:::(.+))|:(.+))?$/,
+	modifierParamIdentifierRegex = /([\w_$-]+?)\s*:\s*(.+)/g;
 
 function parseDFModifier(modifier) {
 	const modifierOut = {
@@ -78,17 +80,22 @@ function parseDFModifier(modifier) {
 	modifierOut.name = ex[1];
 
 	if (ex[2]) {
-		const paramStr = ex[2];
+		const paramStr = ex[2],
+			args = parseArgStr(paramStr, /[,;]/);
 
-		while (true) {
-			const pEx = parseModifierParamsRegex.exec(paramStr);
-			if (!pEx)
-				break;
+		for (let i = 0, l = args.length; i < l; i++) {
+			const arg = args[i],
+				iEx = modifierParamIdentifierRegex.exec(arg);
 
-			modifierOut.params[pEx[1]] = parseStr(pEx[2].trim());
+			if (!iEx)
+				console.error(`Invalid parameter identifier (at '${arg}')`);
+			else
+				modifierOut.params[iEx[0]] = parseStr(iEx[1]);
 		}
-	} else if (ex[3])
-		modifierOut.params.arg = parseStr(ex[3].trim());
+	} else if (ex[3]) {
+		modifierOut.params.strArg = ex[3].trim();
+		modifierOut.params.arg = parseStr(modifierOut.params.strArg);
+	}
 
 	return modifierOut;
 }
@@ -120,6 +127,28 @@ const STOCK_INFILL_MODIFIERS = {
 	every({ parentTarget, parentSource, runtime, key }) {
 		forEach(parentTarget, t => {
 			infill(t, parentSource[key], runtime);
+		});
+	},
+	"any-type"({ parentTarget, parentSource, runtime, originalKey, strArg: type }) {
+		forEach(parentTarget, t => {
+			if (matchType(t, type))
+				infill(t, parentSource[originalKey], runtime);
+		});
+	},
+	"any-key"({ parentTarget, parentSource, runtime, originalKey, strArg: regex }) {
+		regex = new RegExp(regex);
+
+		forEach(parentTarget, (t, k) => {
+			if (regex.test(String(k)))
+				infill(t, parentSource[originalKey], runtime);
+		});
+	},
+	"any-full-key"({ parentTarget, parentSource, runtime, originalKey, strArg: regex }) {
+		regex = new RegExp(`^${regex}$`);
+
+		forEach(parentTarget, (t, k) => {
+			if (regex.test(String(k)))
+				infill(t, parentSource[originalKey], runtime);
 		});
 	},
 	lazy({ parentTarget, source, runtime, arg: key }) {
