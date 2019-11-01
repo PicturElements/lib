@@ -83,6 +83,14 @@ The polling object is used to automatically fetch new data in set intervals.
 		lastTimestamp		// Timestamp at last iteration
 	}
 
+### The Watcher Object
+
+The watcher object is used to trigger actions when the state changes. `DataCell` runs the watcher over all changes and creates a task queue. When finished, it will dispatch the tasks. Importantly, if it identifies duplicate tasks, these will be bundled together. An array of changes will be supplied to the watcher task dispatcher.
+
+### Watcher Task Dispatchers
+
+Watcher task dispatchers run tasks. 
+
 ### State
 
 `DataCell` employs a state to manage how data is handled in the system.

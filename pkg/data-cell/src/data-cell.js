@@ -61,7 +61,7 @@ const PROCESSOR_TRANSFORMERS = {
 				matches,
 				value,
 				errorMsg,
-				errorMsgAccesor
+				errorMsgPath
 			} = proc;
 
 			return (cell, runtime, wrappedResponse) => {
@@ -85,8 +85,8 @@ const PROCESSOR_TRANSFORMERS = {
 				if (match && wrappedResponse.success)
 					return null;
 
-				if (typeof errorMsgAccesor == "string")
-					return getErrorMsg(cell, wrappedResponse, get(wrappedResponse, errorMsgAccesor));
+				if (typeof errorMsgPath == "string")
+					return getErrorMsg(cell, wrappedResponse, get(wrappedResponse, errorMsgPath));
 
 				return getErrorMsg(cell, wrappedResponse, errorMsg);
 			};
