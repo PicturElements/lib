@@ -5,14 +5,24 @@ import {
 	hasOwn,
 	isObject,
 	splitPath,
-	mkAccessor
+	mkAccessor,
+	isConstructor
 } from "@qtxr/utils";
+import { usePlugin } from "../utils";
 import { Debouncer } from "@qtxr/uc";
 
 export default {
 	interfaceName: "store",
 	init(admin, store, partitionPath = "admin", key = "vue-admin-storage") {
 		partitionPath = split(partitionPath);
+
+		if (isObject(store) && isConstructor(store.Store)) {
+			usePlugin(store);
+			store = new store.Store();
+		}
+
+		if (!store)
+			return null;
 
 		return {
 			setupStore(path, st) {
