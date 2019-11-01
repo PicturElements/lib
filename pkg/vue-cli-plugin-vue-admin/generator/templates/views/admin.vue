@@ -30,11 +30,7 @@
 
 <script>
 	import admin from "../admin";
-	import * as components from "@qtxr/vue-admin/components";
-
-	import Login from "../components/login.vue";
-	import SidebarNav from "../components/sidebar-nav.vue";
-	import Icon from "../components/icon.vue";
+	import components from "../components";
 
 	// Load final static assets and finish VueAdmin initialization
 	import "../assets/scss/imports.scss";
@@ -57,12 +53,7 @@
 			}
 		},
 		props: {},
-		components: {
-			...components,
-			Login,
-			SidebarNav,
-			Icon
-		}
+		components
 	});
 
 	export default view.export();

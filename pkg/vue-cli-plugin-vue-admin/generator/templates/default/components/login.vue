@@ -50,7 +50,7 @@
 				this.$parent.loginCell.fetch()
 					.then(response => {
 						if (response.success)
-							this.commit("session/login")
+							this.commit("session/login");
 					});
 			}
 		},

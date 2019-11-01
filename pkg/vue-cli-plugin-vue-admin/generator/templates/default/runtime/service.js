@@ -18,6 +18,7 @@ const {
 } = require("@qtxr/node-utils");
 
 const genViewMap = require("./updaters/view-map");
+const genComponentExport = require("./updaters/component-export");
 
 const root = path.join(__dirname, "..");
 
@@ -33,6 +34,7 @@ async function init() {
 
 async function runAll() {
 	await genViewMap();
+	await genComponentExport();
 }
 
 function watchModels() {
@@ -161,10 +163,15 @@ function watchComponents() {
 			info(`Added component at ${pth}`);
 
 			const {
+					file,
 					fileName,
 					preset
 				} = extractFileData(pth),
 				targetPath = path.join("components", `${fileName}.vue`);
+
+			// Omit export file from export generation
+			if (file == "index.js")
+				return;
 
 			const currentFileData = await readFileUTF(pth);
 
@@ -182,6 +189,12 @@ function watchComponents() {
 				if (pth != getComponentPath(fileName))
 					await unlink(pth);
 			}
+
+			await genComponentExport();
+		})
+		.on("unlink", async pth => {
+			info(`Removed component from ${pth}`);
+			await genComponentExport();
 		});
 }
 

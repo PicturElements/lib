@@ -1,0 +1,8 @@
+// Default listing styling
+@use "../theme.scss" as *;
+
+@mixin listing {
+	.list-row {
+		padding: 6px 8px;
+	}
+}

@@ -4,7 +4,7 @@
 
 <script>
 	import admin from "../admin";
-	import * as components from "@qtxr/vue-admin/components";
+	import components from "../components";
 
 	const view = admin.wrap("dashboard", {
 		name: "Dashboard",
@@ -12,9 +12,7 @@
 		methods: {},
 		computed: {},
 		props: {},
-		components: {
-			...components
-		}
+		components
 	});
 
 	export default view.export();

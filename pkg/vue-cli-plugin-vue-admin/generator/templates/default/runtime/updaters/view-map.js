@@ -8,8 +8,8 @@ const {
 const invalidIdentifierCharRegex = /^\d|[^\w$]/g;
 
 const prefix =
-`// This is an automatically generated file. Do not
-// edit as changes won't be preserved on rebuild
+`// This is an automatically generated file.
+// Do not edit as changes won't persist on rebuild.
 
 `;
 
@@ -30,24 +30,25 @@ module.exports = async function genViewMap() {
 			normalized = normalizeFileName(file),
 			quoted = quoteFileName(file);
 
-		imports.push(`import ${normalizeFileName(file)} from "../../models/${stripped}";`);
+		imports.push(`import ${normalized} from "../../models/${stripped}";`);
 		map.push(`\t${quoted}: {
 \t\tview: _ => import("../../views/${stripped}.vue"),
 \t\tmodel: ${normalized}
 \t}`);
 	}
 
-	const content = prefix + imports.join("\n") + "\n\nconst viewMap = {\n" + map.join(",\n") + suffix;
 	await writeFile(
 		path.join(__dirname, "../gen/view-map.js"),
-		content
+		prefix + imports.join("\n") + "\n\nconst viewMap = {\n" + map.join(",\n") + suffix
 	);
 };
 
 function normalizeFileName(file) {
-	return stripExtension(file).replace(/-(.)/g, (match, capture) => {
-		return capture.toUpperCase();
-	}).replace(invalidIdentifierCharRegex, "_");
+	return stripExtension(file)
+		.replace(/-(.)/g, (match, capture) => {
+			return capture.toUpperCase();
+		})
+		.replace(invalidIdentifierCharRegex, "_");
 }
 
 function quoteFileName(file) {
