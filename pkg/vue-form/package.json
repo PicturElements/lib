@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/vue-form",
-  "version": "2.0.15",
+  "version": "2.0.16",
   "description": "Powerful Vue forms based on @qtxr/form",
   "main": "index.js",
   "scripts": {
@@ -24,7 +24,7 @@
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/vue-form#readme",
   "dependencies": {
     "@qtxr/form": "^1.3.7",
-    "@qtxr/scss-utils": "^1.0.2",
+    "@qtxr/scss-utils": "^1.0.3",
     "@qtxr/utils": "^1.27.0"
   },
   "devDependencies": {},
@@ -34,7 +34,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 53,
+    "pushes": 54,
     "expose": {
       "scripts": [
         "connect/feed.js"
