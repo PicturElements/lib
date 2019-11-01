@@ -9,7 +9,7 @@
 @mixin inputs($theme: ()) {
 	@include input(compose-args($theme, $input-params, "input")...);
 	@include checkbox(compose-args($theme, $checkbox-params, "input", "checkbox")...);
-	@include count(compose-args($theme, $checkbox-params, "input", "count")...);
-	@include dropdown(compose-args($theme, $checkbox-params, "input", "dropdown")...);
-	@include radio(compose-args($theme, $checkbox-params, "input", "radio")...);
+	@include count(compose-args($theme, $count-params, "input", "count")...);
+	@include dropdown(compose-args($theme, $dropdown-params, "input", "dropdown")...);
+	@include radio(compose-args($theme, $radio-params, "input", "radio")...);
 }
