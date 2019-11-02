@@ -8,13 +8,14 @@ import {
 import URL from "@qtxr/url";
 import wc from "@qtxr/vue-wrap-component";
 import { CustomJSON } from "@qtxr/uc";
+import { Hookable } from "@qtxr/bc";
 
 import AdminView from "./admin-view";
 import * as suppliers from "./suppliers";
 
-const validViewIdRegex = /^[\w-]+$/, // /^(?:\w+(?:\s+as\s+\w+)?)(?:\s*,\s*\w+(?:\s+as\s+\w+)?)*$/
+const validViewIdRegex = /^[\w-]+$/,
 	routeViewIdRegex = /([^\s>]+)(?:\s*((?:[\w-]+(?:\s+as\s+[\w-]+)?)(?:\s*,\s*[\w-]+(?:\s+as\s+[\w-]+)?)*))?/,
-	viewIdResolveRegex = /(\w+)\/?$/;
+	viewIdResolveRegex = /([\w-]+)\/?$/;
 
 const storeParams = [
 	{ name: "path", type: "string", default: null },
@@ -25,10 +26,7 @@ const configKeys = {
 	connect: true
 };
 
-// TODO: remove for prod
-// ComponentWrapper.autoSupply();
-
-export default class VueAdmin {
+export default class VueAdmin extends Hookable {
 	constructor(viewMap, config) {
 		config = config || {};
 
@@ -83,6 +81,7 @@ export default class VueAdmin {
 			return;
 
 		this.initialized = true;
+		this.callHooks("init");
 	}
 
 	view(id, component, viewConfig) {
