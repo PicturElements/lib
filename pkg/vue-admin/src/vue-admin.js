@@ -28,6 +28,8 @@ const configKeys = {
 
 export default class VueAdmin extends Hookable {
 	constructor(viewMap, config) {
+		super();
+
 		config = config || {};
 
 		this.views = {};
