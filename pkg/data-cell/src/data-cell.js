@@ -109,7 +109,9 @@ const DEFAULT_PROCESSOR_OPTIONS = {
 	get: {
 		processors: {
 			validate: (cell, runtime, wrappedResponse) => {
-				return wrappedResponse.success ? null : getErrorMsg(cell, wrappedResponse);
+				return wrappedResponse.success && wrappedResponse.payload ?
+					null :
+					getErrorMsg(cell, wrappedResponse);
 			},
 			success: (cell, runtime, wrappedResponse) => wrappedResponse,
 			fail: (cell, runtime, wrappedResponse) => wrappedResponse,
@@ -124,7 +126,9 @@ const DEFAULT_PROCESSOR_OPTIONS = {
 	post: {
 		processors: {
 			validate: (cell, runtime, wrappedResponse) => {
-				return wrappedResponse.success ? null : getErrorMsg(cell, wrappedResponse);
+				return wrappedResponse.success && wrappedResponse.payload ?
+					null :
+					getErrorMsg(cell, wrappedResponse);
 			},
 			success: (cell, runtime, wrappedResponse) => wrappedResponse,
 			fail: (cell, runtime, wrappedResponse) => wrappedResponse,
@@ -139,7 +143,9 @@ const DEFAULT_PROCESSOR_OPTIONS = {
 	custom: {
 		processors: {
 			validate: (cell, runtime, wrappedResponse) => {
-				return wrappedResponse.data ? null : getErrorMsg(cell, wrappedResponse);
+				return wrappedResponse.success && wrappedResponse.payload ?
+					null :
+					getErrorMsg(cell, wrappedResponse);
 			},
 			success: (cell, runtime, response) => response,
 			fail: (cell, runtime, error) => error,
