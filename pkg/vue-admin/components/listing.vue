@@ -35,7 +35,7 @@
 		methods: {
 			mkItem(item, index) {
 				item = {
-					self: item,
+					item,
 					viewMode: this.config.viewMode,
 					index
 				};
