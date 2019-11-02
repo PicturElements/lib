@@ -1,6 +1,7 @@
 module.exports = {
 	// fs
 	collectFileTree: require("./src/fs/collect-file-tree"),
+	collectFiles: require("./src/fs/collect-files"),
 	...require("./src/fs/dir"),
 	...require("./src/fs/file"),
 	...require("./src/fs/general"),
