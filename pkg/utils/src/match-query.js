@@ -11,6 +11,7 @@ import {
 } from "./options";
 import { coerceToObj } from "./coerce";
 import hasOwn from "./has-own";
+import mkAccessor from "./mk-accessor";
 
 export default function matchQuery(value, query, options) {
 	options = createOptionsObject(options, optionsTemplates);
@@ -18,7 +19,7 @@ export default function matchQuery(value, query, options) {
 		guardMatch = typeof hasOwn(options, "guardMatch") ? options.guardMatch : true,
 		nullishMatch = typeof hasOwn(options, "nullishMatch") ? options.nullishMatch : true;
 
-	function match(v, q, matchMap) {
+	function match(v, q, matchRuntime) {
 		if (!isObj(v) || !isObj(q))
 			return false;
 
@@ -30,8 +31,9 @@ export default function matchQuery(value, query, options) {
 				let qVal = q[i];
 
 				if (options.noNullish && qVal == null) {
-					if (matchMap)
-						matchMap[i] = nullishMatch;
+					if (matchRuntime)
+						matchRuntime.matchMap[i] = nullishMatch;
+
 					continue;
 				}
 
@@ -47,8 +49,9 @@ export default function matchQuery(value, query, options) {
 				parsedQueryKey.srcKey = i;
 
 				if (guard && !guard(parsedQueryKey, v, q)) {
-					if (matchMap)
-						matchMap[i] = guardMatch;
+					if (matchRuntime)
+						matchRuntime.matchMap[i] = guardMatch;
+
 					continue;
 				}
 
@@ -68,9 +71,12 @@ export default function matchQuery(value, query, options) {
 				if (isObj(qVal) && options.deep) {
 					if (Array.isArray(qVal) != isArrayLike(v[i]))
 						matched = false;
-					else if (matchMap) {
-						matchMap[i] = coerceToObj(null, q[srcKey]);
-						matched = match(v[i], q[srcKey], matchMap[i]);
+					else if (matchRuntime) {
+						matchRuntime.matchMap[i] = coerceToObj(null, q[srcKey]);
+						matchRuntime.matchMap = matchRuntime.matchMap[i];
+						matchRuntime.accessor.push(srcKey);
+						matched = match(v[i], q[srcKey], matchRuntime);
+						matchRuntime.accessor.pop();
 					} else
 						matched = match(v[i], q[srcKey]);
 				} else {
@@ -78,12 +84,20 @@ export default function matchQuery(value, query, options) {
 						matchType(v[i], qVal, options) :
 						matchValue(v[i], qVal, options);
 
-					if (matchMap)
-						matchMap[i] = options.logReturnedMatch ? lazy || matched : matched;
+					if (matchRuntime)
+						matchRuntime.matchMap[i] = options.logReturnedMatch ? lazy || matched : matched;
 				}
 				
-				if (!lazy && !matched)
+				if (!lazy && !matched) {
+					if (options.throwOnStrictMismatch && strict) {
+						if (matchRuntime)
+							throw new Error(`${i} is a required index (at ${mkAccessor(matchRuntime.accessor)})`);
+						
+						throw new Error(`${i} is a required index`);
+					}
+
 					return false;
+				}
 
 				if (matched)
 					matchCount++;
@@ -98,16 +112,18 @@ export default function matchQuery(value, query, options) {
 					continue;
 				
 				if (options.noNullish && q[k] == null) {
-					if (matchMap)
-						matchMap[k] = nullishMatch;
+					if (matchRuntime)
+						matchRuntime.matchMap[k] = nullishMatch;
+
 					continue;
 				}
 
 				const parsedQueryKey = parsePropStr(k);
 
 				if (guard && !guard(parsedQueryKey, v, q)) {
-					if (matchMap)
-						matchMap[k] = guardMatch;
+					if (matchRuntime)
+						matchRuntime.matchMap[k] = guardMatch;
+
 					continue;
 				}
 
@@ -119,10 +135,8 @@ export default function matchQuery(value, query, options) {
 					typeModifier
 				} = parsedQueryKey;
 
-				if (visitedKeys[key]) {
-					console.warn(`Warning: key "${key}" has already been declared in this query object (as "${visitedKeys[key]}")`);
-					return false;
-				}
+				if (visitedKeys.hasOwnProperty(key))
+					throw new Error(`Key '${key}' has already been declared on this query object (as '${visitedKeys[key]}', at ${mkAccessor(matchRuntime.accessor)})`);
 
 				visitedKeys[key] = srcKey;
 
@@ -134,9 +148,12 @@ export default function matchQuery(value, query, options) {
 				if (isObj(q[srcKey]) && options.deep) {
 					if (Array.isArray(q[srcKey]) != isArrayLike(v[key]))
 						matched = false;
-					else if (matchMap) {
-						matchMap[key] = coerceToObj(null, q[srcKey]);
-						matched = match(v[key], q[srcKey], matchMap[key]);
+					else if (matchRuntime) {
+						matchRuntime.matchMap[key] = coerceToObj(null, q[srcKey]);
+						matchRuntime.matchMap = matchRuntime.matchMap[key];
+						matchRuntime.accessor.push(srcKey);
+						matched = match(v[key], q[srcKey], matchRuntime);
+						matchRuntime.accessor.pop();
 					} else
 						matched = match(v[key], q[srcKey]);
 				} else {
@@ -144,12 +161,20 @@ export default function matchQuery(value, query, options) {
 						matchType(v[key], q[srcKey], options) :
 						matchValue(v[key], q[srcKey], options);
 
-					if (matchMap)
-						matchMap[key] = options.logReturnedMatch ? lazy || matched : matched;
+					if (matchRuntime)
+						matchRuntime.matchMap[key] = options.logReturnedMatch ? lazy || matched : matched;
 				}
 
-				if (!lazy && !matched)
+				if (!lazy && !matched) {
+					if (options.throwOnStrictMismatch && strict) {
+						if (matchRuntime)
+							throw new Error(`${key} is a required property (at ${mkAccessor(matchRuntime.accessor)})`);
+						
+						throw new Error(`${key} is a required property`);
+					}
+
 					return false;
+				}
 
 				if (matched)
 					matchCount++;
@@ -162,12 +187,17 @@ export default function matchQuery(value, query, options) {
 	}
 
 	if (options.returnMatchMap) {
-		const matchMap = coerceToObj(null, query),
-			matched = match(value, query, matchMap);
+		const rootMatchMap = coerceToObj(null, query),
+			matchRuntime = {
+				matchMap: rootMatchMap,
+				rootMatchMap,
+				accessor: []
+			},	
+			matched = match(value, query, matchRuntime);
 
 		return {
 			matched,
-			matchMap
+			matchMap: matchRuntime.rootMatchMap
 		};
 	} else
 		return match(value, query);
@@ -194,5 +224,6 @@ const optionsTemplates = composeOptionsTemplates({
 	typed: true,
 	noNullish: true,
 	logReturnedMatch: true,
-	returnMatchMap: true
+	returnMatchMap: true,
+	throwOnStrictMismatch: true
 });

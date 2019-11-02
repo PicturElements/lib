@@ -14,7 +14,7 @@ import {
 } from "./options";
 
 /*
-	OPTIONS = {	// options, assumed default value, action
+	OPTIONS = {
 		cloneTarget: false		- clone the target object before injecting (boolean)
 		cloneExtender: false	- clone the extender object before injecting
 		clone: false			- clone both target and extender before injecting
@@ -78,7 +78,6 @@ export default function inject(target, extender, options) {
 			schema,
 			ignore
 		} = runtime;
-		let ek = ext[key];
 
 		if (rt.useSchema && options.strictSchema && (!isObj(schema) || !hasOwn(schema, key)))
 			return;
@@ -99,15 +98,20 @@ export default function inject(target, extender, options) {
 				return;
 		}
 	
-		if (hasOwn(ext, key, allowSymbols) && (!options.noUndef || ek !== undefined)) {
-			if (isObj(ek) && (options.preserveInstances || isNativeSimpleObject(ek)) && !options.shallow) {
+		if (hasOwn(ext, key, allowSymbols) && (!options.noUndef || ext[key] !== undefined)) {
+			if (typeof options.preInject == "function")
+				options.preInject(targ[key], key, targ, ext, runtime);
+
+			if (isObj(ext[key]) && (options.preserveInstances || isNativeSimpleObject(ext[key])) && !options.shallow) {
 				runtime.schema = schema && schema[key];
 				runtime.ignore = ignore && ignore[key];
-				targ[key] = inj(targ[key], ek, runtime);
+					
+				targ[key] = inj(targ[key], ext[key], runtime);
+
 				runtime.schema = schema;
 				runtime.ignore = ignore;
 			} else if (!targ.hasOwnProperty(key) || options.override)
-				targ[key] = ek;
+				targ[key] = ext[key];
 		}
 	}
 
@@ -116,11 +120,12 @@ export default function inject(target, extender, options) {
 			extender,
 			options.schema,
 			[
-				"deep|returnMatchMap",
+				"deep|returnMatchMap|throwOnStrictMismatch",
 				options.schemaOptions || "typed"
 			]
 		).matchMap : null,
-		ignore: options.ignore
+		ignore: options.ignore,
+		options
 	};
 
 	rt.useSchema = Boolean(rt.schema);

@@ -1,3 +1,5 @@
+// Important: keep up-to-date with get-prop-str-combinations
+
 export default function parsePropStr(key) {
 	const lastIdx = key.length - 1,
 		ret = {

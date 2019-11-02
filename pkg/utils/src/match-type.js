@@ -22,7 +22,8 @@ const typesCache = {
 	int: val => typeof val == "number" && !isNaN(val) && isFinite(val) && val % 1 == 0,
 	uint: val => typeof val == "number" && !isNaN(val) && isFinite(val) && val % 1 == 0 && val >= 0,
 	nullish: val => val == null,
-	constructor: val => isConstructor(val)
+	constructor: val => isConstructor(val),
+	any: val => true
 };
 
 export default function matchType(val, type, options, forceFalseDefault = false) {
