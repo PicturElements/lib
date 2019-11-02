@@ -40,6 +40,9 @@ const STATE_TRANSFORMS = {
 		const page = Math.floor((oldValue * state.page) / value);
 		newState.page = page;
 		newState.offset = page * value;
+	},
+	offset({ value, oldValue, newState, state }) {
+		newState.page = Math.floor(value / newState.pageSize);
 	}
 };
 

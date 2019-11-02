@@ -93,6 +93,15 @@ const PROCESSOR_TRANSFORMERS = {
 		}
 
 		return proc;
+	},
+	data(proc) {
+		if (typeof proc == "string" || Array.isArray(proc)) {
+			return (cell, runtime, data) => {
+				return get(data, proc);
+			};
+		}
+
+		return proc;
 	}
 };
 
@@ -104,10 +113,12 @@ const DEFAULT_PROCESSOR_OPTIONS = {
 			},
 			success: (cell, runtime, wrappedResponse) => wrappedResponse,
 			fail: (cell, runtime, wrappedResponse) => wrappedResponse,
+			data: (cell, runtime, data) => data,
 			runtime: (cell, runtime) => runtime
 		},
 		transformers: {
-			validate: PROCESSOR_TRANSFORMERS.validate
+			validate: PROCESSOR_TRANSFORMERS.validate,
+			data: PROCESSOR_TRANSFORMERS.data
 		}
 	},
 	post: {
@@ -117,23 +128,27 @@ const DEFAULT_PROCESSOR_OPTIONS = {
 			},
 			success: (cell, runtime, wrappedResponse) => wrappedResponse,
 			fail: (cell, runtime, wrappedResponse) => wrappedResponse,
+			data: (cell, runtime, data) => data,
 			runtime: (cell, runtime) => runtime
 		},
 		transformers: {
-			validate: PROCESSOR_TRANSFORMERS.validate
+			validate: PROCESSOR_TRANSFORMERS.validate,
+			data: PROCESSOR_TRANSFORMERS.data
 		}
 	},
 	custom: {
 		processors: {
 			validate: (cell, runtime, wrappedResponse) => {
-				return wrappedResponse.payload ? null : getErrorMsg(cell, wrappedResponse);
+				return wrappedResponse.data ? null : getErrorMsg(cell, wrappedResponse);
 			},
 			success: (cell, runtime, response) => response,
 			fail: (cell, runtime, error) => error,
+			data: (cell, runtime, data) => data,
 			runtime: (cell, runtime) => runtime
 		},
 		transformers: {
-			validate: PROCESSOR_TRANSFORMERS.validate
+			validate: PROCESSOR_TRANSFORMERS.validate,
+			data: PROCESSOR_TRANSFORMERS.data
 		}
 	}
 };
@@ -316,7 +331,7 @@ export default class DataCell extends Hookable {
 	
 				if (response.success) {
 					this.setState("loaded");
-					this.setData(response.payload);
+					this.setData(this.process("data")(runtime, response.payload));
 				} else {
 					this.setState("error", {
 						errorMsg: response.errorMsg
@@ -500,7 +515,7 @@ function dispatchChanges(cell, changes) {
 				};
 			}
 		} else
-			throw new Error(`Failed to dispatch changes: '${change.property}' is not a valid dispatcher`);
+			throw new Error(`Failed to dispatch changes: '${change.property}' does not have a valid dispatcher`);
 	}
 
 	for (let i = 0, l = tasks.length; i < l; i++) {
