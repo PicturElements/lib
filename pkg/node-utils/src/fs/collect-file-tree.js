@@ -36,4 +36,4 @@ module.exports = async function collectFileTree(root, filter, terse) {
 	}
 
 	return await collect(root);
-}
+};
