@@ -83,8 +83,8 @@ const defaults = {
 			else if (!luhn(val))
 				return "This is not a valid card number";
 		},
-		extract(value) {
-			return value.replace(/\s/g, "");
+		extract(val) {
+			return val.replace(/\s/g, "");
 		}
 	},
 	date: {
@@ -113,8 +113,8 @@ const defaults = {
 			if (monthNo > lastExpiryMonthNo)
 				return "Expiry date too far ahead";
 		},
-		extract(value, inp, payload) {
-			const ex = dateRegex.exec(value);
+		extract(val, inp, payload) {
+			const ex = dateRegex.exec(val);
 			payload.month = Number(ex[1]);
 			payload.year = Number(ex[2]);
 		}
@@ -172,6 +172,27 @@ const defaults = {
 		min: 0,
 		max: 100,
 		checkWord: "int"
+	},
+	image: {
+		type: "image",
+		value: null,
+		validate(val, inp) {
+			if (!inp.enforceSize)
+				return;
+
+			if (!Array.isArray(val))
+				val = val ? [] : [val];
+		},
+		extract(val, inp, payload) {
+			if (inp.multiple) {
+				if (Array.isArray(val))
+					return val;
+
+				return val ? [] : [val];
+			}
+
+			return val;
+		}
 	}
 };
 
@@ -182,7 +203,7 @@ function luhn(str) {
 	for (let i = str.length - 1; i >= 0; i--) {
 		let num = Number(str[i]);
 
-		if (!(ptr++ % 2))
+		if ((ptr++ % 2) == 0)
 			sum += num;
 		else {
 			num *= 2;
@@ -194,7 +215,7 @@ function luhn(str) {
 		}
 	}
 
-	return !(sum % 10);
+	return sum % 10 == 0;
 }
 
 function mkRegexValidator(regex, errorMsg, invert) {
@@ -229,3 +250,9 @@ function mkRangeValidator(min, max, shortMsg = "Text too short. Minimum: $min", 
 }
 
 export default defaults;
+
+export {
+	luhn,
+	mkRegexValidator,
+	mkRangeValidator
+};

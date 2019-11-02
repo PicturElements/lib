@@ -1,17 +1,44 @@
 import {
 	sym,
-	hasOwn
+	inject,
+	injectSchema
 } from "@qtxr/utils";
 import { Hookable } from "@qtxr/bc";
 import { isValidKey, isValidWord } from "@qtxr/evt";
+
+// TODO: in first major version, change hook argument order from
+// oldValue, newValue to newValue, oldValue
 
 const UPDATE = sym("update"),
 	CHECK = sym("check"),
 	TRIGGER = sym("trigger"),
 	SELF_TRIGGER = sym("selfTrigger");
 
+const initOptionsSchema = {
+	name: "string",
+	required: "boolean",
+	type: "string",
+
+	initialized: "boolean",
+	value: "any",
+	valid: "boolean",
+	validationMsg: "string",
+	validationState: "string",
+
+	checkKey: "function",
+	checkWord: "function",
+	validate: "function",
+	process: "function",
+	trigger: "function",
+	update: "function",
+	extract: "function",
+	compare: "function",
+
+	propagate: "any"
+};
+
 export default class Input extends Hookable {
-	constructor(name, options, form, allowedKeys = {}) {
+	constructor(name, options, form, schema = {}) {
 		options = options || {};
 		super();
 
@@ -40,10 +67,10 @@ export default class Input extends Hookable {
 		// Propagation data
 		this.propagate = null;
 
-		for (const k in options) {
-			if ((hasOwn(this, k) || hasOwn(allowedKeys, k)) && hasOwn(options, k) && k !== "hooks")
-				this[k] = options[k];
-		}
+		inject(this, options, {
+			schema: injectSchema(initOptionsSchema, schema, "override|cloneTarget"),
+			strictSchema: true
+		});
 
 		this.hookAll(options.hooks);
 		this.checkKey = mkChecker(this.checkKey, "check");

@@ -1,4 +1,4 @@
-import Input from "./input";
+import Input from "@qtxr/form/src/input";
 
 export default class Checkbox extends Input {
 	constructor(name, options, form) {
