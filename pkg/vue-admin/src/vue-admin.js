@@ -9,6 +9,7 @@ import URL from "@qtxr/url";
 import wc from "@qtxr/vue-wrap-component";
 import { CustomJSON } from "@qtxr/uc";
 import { Hookable } from "@qtxr/bc";
+import { devWarn } from "./dev";
 
 import AdminView from "./admin-view";
 import * as suppliers from "./suppliers";
@@ -23,7 +24,8 @@ const storeParams = [
 ];
 
 const configKeys = {
-	connect: true
+	connect: true,
+	connectAdmin: true
 };
 
 export default class VueAdmin extends Hookable {
@@ -40,6 +42,7 @@ export default class VueAdmin extends Hookable {
 		this.routesMap = {};
 		this.initialized = false;
 		this.interfaces = {};
+		this.methods = {};
 
 		// Utilities
 		if (config.jsonManager instanceof CustomJSON)
@@ -188,6 +191,9 @@ export default class VueAdmin extends Hookable {
 					config: supplier
 				};
 
+				if (supplier.hasOwnProperty("connectAdmin") && typeof supplier.connectAdmin == "function")
+					supplier.connectAdmin(this);
+
 				return this;
 			};
 
@@ -204,6 +210,9 @@ export default class VueAdmin extends Hookable {
 			interface: stripConfigProps(supplier),
 			config: supplier
 		};
+
+		if (supplier.hasOwnProperty("connectAdmin") && typeof supplier.connectAdmin == "function")
+			supplier.connectAdmin(this);
 
 		return this;
 	}
@@ -230,6 +239,44 @@ export default class VueAdmin extends Hookable {
 			}
 
 			return inter[methodName](...args);
+		};
+	}
+
+	addMethod(methodName, method) {
+		if (typeof method != "function") {
+			devWarn();
+			return this;
+		}
+
+		this.methods[methodName] = method;
+		return this;
+	}
+
+	callMethod(methodName, withContext = false, strict = false) {
+		if (!this.methods.hasOwnProperty(methodName)) {
+			if (strict)
+				throw new Error(`Cannot call method: no known method by name '${methodName}'`);
+
+			return noop;
+		}
+
+		if (typeof this.methods[methodName] != "function") {
+			if (strict)
+				throw new Error(`Cannot call method: method '${methodName}' is not a function`);
+
+			return noop;
+		}
+
+		const method = this.methods[methodName];
+
+		return (...args) => {
+			if (withContext) {
+				return method({
+					admin: this
+				}, ...args);
+			}
+			
+			return method(...args);
 		};
 	}
 }
@@ -424,3 +471,5 @@ function stripConfigProps(inter) {
 
 	return stripped;
 }
+
+function noop() {}
