@@ -24,7 +24,7 @@
 				span(v-if="cell.state.total < Infinity")
 					|  of 
 					span.listing-count-num.listing-total {{ cell.state.total }}
-			span.count(v-else) {{ cell.data.length || 0 }}
+			span.listing.count(v-else-if="isArray(cell.data)") {{ cell.data.length }}
 		template(v-slot:header-utils-pre="utilBox")
 			slot(
 				name="header-utils-pre"
@@ -43,9 +43,11 @@
 			slot(name="loading-icon" v-bind="utilBox")
 		template(v-slot:title="utilBox")
 			slot(name="title" v-bind="utilBox")
-		template(v-slot:footer="utilBox")
+		template(
+			v-if="isPagination"
+			v-slot:footer="utilBox")
 			.util-box-footer-left.f.ac
-				.page-selector.f(v-if="isPagination")
+				.page-selector.f
 					button.page-selector-btn.f.c(
 						v-for="page in pages"
 						:class="page.class"
@@ -83,6 +85,7 @@
 			}
 		},
 		methods: {
+			isArray: Array.isArray,
 			mkItem(item, idx) {
 				item = {
 					self: item,
