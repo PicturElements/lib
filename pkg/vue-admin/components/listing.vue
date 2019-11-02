@@ -34,8 +34,10 @@
 		name: "Listing",
 		methods: {
 			mkItem(item, index) {
+				const isPagination = this.cell instanceof DataCellPagination;
+
 				item = {
-					item,
+					item: isPagination ? item.data : item,
 					viewMode: this.config.viewMode,
 					index
 				};
