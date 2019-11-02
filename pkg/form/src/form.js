@@ -9,17 +9,18 @@ import {
 } from "@qtxr/utils";
 import { Hookable } from "@qtxr/bc";
 
+import defaults from "./form-defaults";
+
 // Inputs
-import Input, {
+import {
+	inputTypes,
+	inputConstructors
+} from "./inputs";
+import {
 	CHECK,
 	TRIGGER,
 	SELF_TRIGGER
-} from "./input";
-import Checkbox from "./checkbox";
-import Count from "./count";
-import Dropdown from "./dropdown";
-import Radio from "./radio";
-import defaults from "./form-defaults";
+} from "./inputs/input";
 
 export default class Form extends Hookable {
 	constructor(hooksOrPreset = {}, options = {}) {
@@ -238,35 +239,19 @@ export default class Form extends Hookable {
 
 	static getInputType(optionsOrInput) {
 		if (!optionsOrInput)
-			return "text";
+			return inputTypes.default;
 
-		switch (optionsOrInput.type) {
-			case "checkbox":
-				return "checkbox";
-			case "count":
-				return "count";
-			case "dropdown":
-				return "dropdown";
-			case "radio":
-				return "radio";
-			default:
-				return optionsOrInput.type || "text";
-		}
+		return inputTypes.hasOwnProperty(optionsOrInput.type) ?
+			inputTypes[optionsOrInput.type] :
+			inputTypes.default;
 	}
 
 	static getInputConstructor(optionsOrInput) {
-		switch (this.getInputType(optionsOrInput)) {
-			case "checkbox":
-				return Checkbox;
-			case "count":
-				return Count;
-			case "dropdown":
-				return Dropdown;
-			case "radio":
-				return Radio;
-			default:
-				return Input;
-		}
+		const type = this.getInputType(optionsOrInput);
+
+		return inputConstructors.hasOwnProperty(type) ?
+			inputConstructors[type] :
+			inputConstructors.default;
 	}
 }
 
