@@ -26,7 +26,7 @@ module.exports = async function collectFiles(root) {
 					dir: df.dir,
 					file: df.file,
 					fileName: fe.file,
-					extension: df.extension,
+					extension: fe.extension,
 					path: path.join(...p),
 					fullPath: t[k]
 				});
