@@ -24,7 +24,7 @@
 				span(v-if="cell.state.total < Infinity")
 					|  of 
 					span.listing-count-num.listing-total {{ cell.state.total }}
-			span.listing.count(v-else-if="isArray(cell.data)") {{ cell.data.length }}
+			span.listing-count(v-else-if="isArray(cell.data)") {{ cell.data.length }}
 		template(v-slot:header-utils-pre="utilBox")
 			slot(
 				name="header-utils-pre"
@@ -85,16 +85,7 @@
 			}
 		},
 		methods: {
-			isArray: Array.isArray,
-			mkItem(item, idx) {
-				item = {
-					self: item,
-					viewMode: this.config.viewMode,
-					idx
-				};
-
-				return item;
-			}
+			isArray: Array.isArray
 		},
 		computed: {
 			isPagination() {

@@ -10,13 +10,13 @@
 			.listing-content.table(v-if="config.viewMode == 'table'")
 				table
 					template(v-for="(item, idx) in cell.data")
-						slot(name="item" :self="item.data" :item="mkItem(item.data, idx)")
+						slot(name="item" v-bind="mkItem(item, idx)")
 			.listing-content.grid(v-else-if="config.viewMode == 'grid'")
 				template(v-for="(item, idx) in cell.data")
-					slot(name="item" :self="item.data" :item="mkItem(item.data, idx)")
+					slot(name="item" v-bind="mkItem(item, idx)")
 			.listing-content.list(v-else)
 				template(v-for="(item, idx) in cell.data")
-					slot(name="item" :self="item.data" :item="mkItem(item.data, idx)")
+					slot(name="item" v-bind="mkItem(item, idx)")
 </template>
 
 <script>
