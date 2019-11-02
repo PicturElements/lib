@@ -5,7 +5,7 @@ const {
 	splitFileAndExtension
 } = require("../path/general");
 
-async function collectFiles(root) {
+module.exports = async function collectFiles(root) {
 	const files = [];
 	const tree = await collectFileTree(root);
 

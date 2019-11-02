@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/node-utils",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "Utilities for common tasks in node environments",
   "main": "index.js",
   "scripts": {
@@ -35,7 +35,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 16,
+    "pushes": 17,
     "expose": {
       "scripts": [
         "connect/feed.js"
