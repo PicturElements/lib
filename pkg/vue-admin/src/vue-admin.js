@@ -1,12 +1,12 @@
 import {
 	hasOwn,
 	isObject,
+	forEach,
 	resolveArgs,
 	parseTreeStr
 } from "@qtxr/utils";
 
 import URL from "@qtxr/url";
-import wc from "@qtxr/vue-wrap-component";
 import { CustomJSON } from "@qtxr/uc";
 import { Hookable } from "@qtxr/bc";
 import { devWarn } from "./dev";
@@ -43,6 +43,9 @@ export default class VueAdmin extends Hookable {
 		this.initialized = false;
 		this.interfaces = {};
 		this.methods = {};
+		this.inject = {
+			components: {}
+		};
 
 		// Utilities
 		if (config.jsonManager instanceof CustomJSON)
@@ -81,9 +84,12 @@ export default class VueAdmin extends Hookable {
 		};
 	}
 
-	init() {
+	init(data = {}) {
 		if (this.initialized)
 			return;
+
+		if (data.components)
+			this.inject.components = data.components;
 
 		this.initialized = true;
 		this.callHooks("init");
@@ -156,6 +162,8 @@ export default class VueAdmin extends Hookable {
 		if (!isObject(view))
 			throw new Error(`Cannot wrap view component: supplied view '${idOrComponent}' is not a view object`);
 
+		view.components = resolveComponents(this, view.components);
+
 		const wrapper = wc.wrap(view);
 		this.views[idOrComponent].connect(wrapper);
 		connect(this, wrapper);
@@ -165,6 +173,8 @@ export default class VueAdmin extends Hookable {
 	wrapC(component) {
 		if (!isObject(component))
 			throw new Error(`Cannot wrap component: supplied component is not a component object`);
+
+		component.components = resolveComponents(this, component.components);
 
 		const wrapper = wc.wrap(component);
 		connect(this, wrapper);
@@ -279,6 +289,30 @@ export default class VueAdmin extends Hookable {
 			return method(...args);
 		};
 	}
+}
+
+function resolveComponents(admin, components) {
+	components = Object.assign({}, components);
+
+	const baseComponents = {},
+		scope = components.scope || "";
+
+	delete components.scope;
+
+	const traverse = comps => {
+		forEach(comps, (comp, name) => {
+			if (comp._compiled)
+				baseComponents[name] = comp;
+			else if (isObject(comp))
+				traverse(comp);
+		});
+	};
+
+	traverse(admin.inject.components);
+
+	console.log(baseComponents);
+
+	return Object.assign(baseComponents, components);
 }
 
 function connect(admin, wrapper) {
