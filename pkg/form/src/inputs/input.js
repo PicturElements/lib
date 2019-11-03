@@ -69,7 +69,8 @@ export default class Input extends Hookable {
 
 		inject(this, options, {
 			schema: injectSchema(initOptionsSchema, schema, "override|cloneTarget"),
-			strictSchema: true
+			strictSchema: true,
+			override: true
 		});
 
 		this.hookAll(options.hooks);
