@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/uc",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "Collection of utility classes",
   "main": "index.js",
   "scripts": {
@@ -34,7 +34,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 16,
+    "pushes": 17,
     "expose": {
       "scripts": [
         "connect/feed.js"
