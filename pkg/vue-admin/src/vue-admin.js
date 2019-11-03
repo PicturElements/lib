@@ -7,6 +7,7 @@ import {
 } from "@qtxr/utils";
 
 import URL from "@qtxr/url";
+import wc from "@qtxr/vue-wrap-component";
 import { CustomJSON } from "@qtxr/uc";
 import { Hookable } from "@qtxr/bc";
 import { devWarn } from "./dev";
