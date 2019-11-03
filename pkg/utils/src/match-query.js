@@ -96,7 +96,10 @@ export default function matchQuery(value, query, options) {
 						throw new Error(`${i} is a required index`);
 					}
 
-					return false;
+					if (matchRuntime)
+						continue;
+					else
+						return false;
 				}
 
 				if (matched)
@@ -173,7 +176,10 @@ export default function matchQuery(value, query, options) {
 						throw new Error(`${key} is a required property`);
 					}
 
-					return false;
+					if (matchRuntime)
+						continue;
+					else
+						return false;
 				}
 
 				if (matched)
