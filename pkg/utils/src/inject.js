@@ -106,6 +106,8 @@ export default function inject(target, extender, options) {
 				runtime.schema = schema && schema[key];
 				runtime.ignore = ignore && ignore[key];
 					
+				if (!isObj(targ[key]))
+					targ[key] = coerceToObj(null, ext[key]);
 				targ[key] = inj(targ[key], ext[key], runtime);
 
 				runtime.schema = schema;
