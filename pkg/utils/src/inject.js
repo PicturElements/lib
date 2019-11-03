@@ -79,7 +79,7 @@ export default function inject(target, extender, options) {
 			ignore
 		} = runtime;
 
-		if (rt.useSchema && options.strictSchema && (!isObj(schema) || !hasOwn(schema, key)))
+		if (rt.useSchema && options.strictSchema && (isObj(schema) && !hasOwn(schema, key)))
 			return;
 
 		if (isObj(schema)) {
