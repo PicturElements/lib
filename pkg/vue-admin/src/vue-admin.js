@@ -311,8 +311,6 @@ function resolveComponents(admin, components) {
 
 	traverse(admin.inject.components);
 
-	console.log(baseComponents);
-
 	return Object.assign(baseComponents, components);
 }
 
