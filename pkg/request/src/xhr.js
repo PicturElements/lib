@@ -1,8 +1,9 @@
 import {
 	clone,
-	getConstructorName,
+	casing,
 	isObject,
-	casing
+	isPrimitive,
+	getConstructorName
 } from "@qtxr/utils";
 import URL from "@qtxr/url";
 import { Hookable } from "@qtxr/bc";
@@ -497,10 +498,28 @@ function mkUrl(url, preset) {
 	if (typeof url != "string")
 		url = (preset && typeof preset.url == "string") ? preset.url : "";
 
-	if (preset && preset.baseUrl)
-		return URL.join(preset.baseUrl, url);
+	const urlParams = mkUrlParams(preset.urlParams);
 
-	return URL.join(window.location.href, url);
+	if (preset && preset.baseUrl)
+		return URL.join(preset.baseUrl, url, urlParams);
+
+	return URL.join(window.location.href, url, urlParams);
+}
+
+function mkUrlParams(params) {
+	if (!isObject(params))
+		return "";
+
+	const paramsOut = [];
+
+	for (const k in params) {
+		if (!params.hasOwnProperty(k) || !isPrimitive(params[k]))
+			continue;
+		
+		paramsOut.push(`${k}=${params[k]}`);
+	}
+
+	return `?${paramsOut.join("&")}`;
 }
 
 function setHeaders(xhr, preset) {
