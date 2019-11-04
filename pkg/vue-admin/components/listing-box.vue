@@ -43,6 +43,8 @@
 			slot(name="loading-icon" v-bind="utilBox")
 		template(v-slot:title="utilBox")
 			slot(name="title" v-bind="utilBox")
+		template(v-slot:sub-header="utilBox")
+			slot(name="sub-header" v-bind="utilBox")
 		template(
 			v-if="isPagination"
 			v-slot:footer="utilBox")
