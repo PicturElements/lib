@@ -107,7 +107,7 @@ class XHRManager {
 
 		xhr.onprogress = evt => handleProgress(evt, xId, xs);
 		xhr.onreadystatechange = ({ target }) => handleStateChange(target, xId, xs, preset);
-		xhr.onerror = ({ target }) => handleFail(target, xId, xs, preset);
+		xhr.onerror = ({ target }) => handleFail(xId, target, xs, preset);
 
 		xhr.open("GET", mkUrl(url, preset));
 
@@ -134,7 +134,7 @@ class XHRManager {
 
 		xhr.onprogress = evt => handleProgress(evt, xId, xs);
 		xhr.onreadystatechange = ({ target }) => handleStateChange(target, xId, xs, preset);
-		xhr.onerror = ({ target }) => handleFail(target, xId, xs, preset);
+		xhr.onerror = ({ target }) => handleFail(xId, target, xs, preset);
 
 		xhr.open("POST", mkUrl(url, preset));
 
