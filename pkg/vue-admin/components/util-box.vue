@@ -20,7 +20,12 @@
 					slot(name="header-utils-post" v-bind="this")
 		.util-box-content
 			.util-box-main-content
-				slot(v-bind="this")
+				template(v-if="$scopedSlots['cell-data']")
+					slot(
+						name="cell-data"
+						v-if="cell.state.loaded || cell.state.fetches"
+						v-bind="cell.data")
+				slot(v-else v-bind="this")
 			slot(name="loading-box" v-bind="this")
 				LoadingBox.semi-transparent(
 					v-if="$scopedSlots['loading-icon']"
