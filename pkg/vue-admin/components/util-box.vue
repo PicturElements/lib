@@ -18,6 +18,8 @@
 								@click="cell.fetch()")
 								slot(name="header-utils-reload-icon" v-bind="this") ↻
 					slot(name="header-utils-post" v-bind="this")
+		.util-box-sub-header(v-if="$scopedSlots['sub-header']")
+			slot(name="sub-header" v-bind="this")
 		.util-box-content
 			.util-box-main-content
 				template(v-if="$scopedSlots['cell-data']")

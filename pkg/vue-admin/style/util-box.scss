@@ -24,7 +24,8 @@ $util-box-params: (
 		margin: $outer-margin;
 		padding: $padding;
 
-		.util-box-header {
+		.util-box-header,
+		.util-box-sub-header {
 			margin-bottom: $padding;
 			padding-bottom: $padding;
 			border-bottom: $separator;
@@ -37,6 +38,7 @@ $util-box-params: (
 
 		.util-box-content {
 			position: relative;
+			min-height: 50px;
 		}
 
 		.util-box-footer {
