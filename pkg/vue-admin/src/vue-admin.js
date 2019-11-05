@@ -113,11 +113,40 @@ export default class VueAdmin extends Hookable {
 	}
 	
 	route(routeTree) {
-		collectRoutes(this, routeTree);
+		this.routes = collectRoutes(this, routeTree);
 	}
 
 	getRoutes() {
-		return this.routes;
+		const traverse = (routes, baseRoutes, path) => {
+			const outRoutes = [];
+
+			for (let i = 0, l = routes.length; i < l; i++) {
+				const route = Object.assign({}, routes[i]),
+					origChildren = route.children;
+
+				if (route.isBaseRoute)
+					outRoutes.push(route);
+				else {
+					if (!baseRoutes)
+						throw new Error(`Cannot route: only base routes are allowed at root level (ar '${route.fullPath}')`);
+					
+					route.path = URL.join(path, route.path);
+					baseRoutes.push(route);
+				}
+
+				route.children = traverse(
+					origChildren,
+					route.isBaseRoute ? outRoutes : baseRoutes,
+					route.isBaseRoute ? route.path : URL.join(path, route.path)
+				);
+			}
+
+			return outRoutes;
+		};
+
+		const routes = traverse(this.routes, null, "");
+		console.log(routes);
+		return routes;
 	}
 
 	store(...args) {
@@ -383,6 +412,7 @@ function collectRoutes(inst, routeTree) {
 
 			// Remove any special characters off route paths
 			// more than one level deep to comply with VR's structure
+			route.isBaseRoute = child.path[0] == "/";
 			route.root = accumulator.root || route;
 			route.path = cleanPathComponent(child.path, depth) || "/";
 			route.fullPath = URL.join(accumulator.fullPath, route.path) || "/";
@@ -405,8 +435,8 @@ function collectRoutes(inst, routeTree) {
 			} else
 				route.breadcrumbs = accumulator.breadcrumbs;
 
-			routes.push(route);
 			inst.routesMap[route.meta.id] = route;
+			routes.push(route);
 
 			route.children = traverse(child.children, depth + 1, {
 				fullPath: route.fullPath,
@@ -425,7 +455,7 @@ function collectRoutes(inst, routeTree) {
 	if (tree.length != 1)
 		throw new Error(`Failed to route: root must only be one route (${tree.length} roots found)`);
 
-	inst.routes = traverse(tree, 0, {
+	return traverse(tree, 0, {
 		fullPath: "",
 		breadcrumbs: [],
 		parent: null,

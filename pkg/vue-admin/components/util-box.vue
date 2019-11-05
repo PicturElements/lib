@@ -13,7 +13,7 @@
 					slot(name="header-utils" v-bind="this")
 						slot(name="header-utils-reload" v-bind="this")
 							button.admin-btn.square.expand-disabled.fade-color.reload(
-								v-if="config.reload"
+								v-if="conf.reload"
 								:disabled="cell.state.loading"
 								@click="cell.fetch()")
 								slot(name="header-utils-reload-icon" v-bind="this") ↻
@@ -44,16 +44,17 @@
 
 	export default {
 		name: "UtilBox",
-		data: _ => ({}),
+		data() {
+			return {
+				conf: Object.assign({
+					reload: true
+				}, this.config)
+			};
+		},
 		methods: {},
 		computed: {},
 		props: {
-			config: {
-				type: Object,
-				default: _ => ({
-					reload: true
-				})
-			},
+			config: Object,
 			cell: DataCell
 		},
 		components: {

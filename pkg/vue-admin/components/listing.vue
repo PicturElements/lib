@@ -1,17 +1,31 @@
 <template lang="pug">
 	.listing
-		.listing-content.error(v-if="cell.state.error")
+		.listing-content.error.f.c(v-if="cell.state.error")
 			slot(name="error" v-bind="this")
 				span failed to load data
 		.listing-content.no-results.f.c(v-else-if="cell.state.fetches && (!cell.data || !cell.data.length)")
 			slot(name="no-results" v-bind="this")
 				span No items to show
 		template(v-else)
-			.listing-content.table(v-if="config.viewMode == 'table'")
+			.listing-content.table(v-if="conf.viewMode == 'table'")
 				table
-					template(v-for="(item, idx) in cell.data")
+					tr(v-if="columns")
+						template(v-for="(column, idx) in columns")
+							th(v-if="column == null")
+							th(
+								v-else-if="typeof column == 'number'"
+								:colspan="column")
+							th(v-else-if="typeof column == 'string'") {{ column }}
+							th(v-else-if="typeof column == 'function'") {{ res(column) }}
+							th.sortable(
+								v-else-if="column.sort"
+								:class="sortState.columnIdx == idx ? `sort-${sortState.order}` : null"
+								@click="setSort(column, idx)")
+								| {{ res(column.title) }}
+							th(v-else) {{ res(column.title) }}
+					template(v-for="(item, idx) in getItems()")
 						slot(name="item" v-bind="mkItem(item, idx)")
-			.listing-content.grid(v-else-if="config.viewMode == 'grid'")
+			.listing-content.grid(v-else-if="conf.viewMode == 'grid'")
 				template(v-for="(item, idx) in cell.data")
 					slot(name="item" v-bind="mkItem(item, idx)")
 			.listing-content.list(v-else)
@@ -20,7 +34,11 @@
 </template>
 
 <script>
-	import { sym } from "@qtxr/utils";
+	import {
+		sym,
+		get,
+		mergesort
+	} from "@qtxr/utils";
 	import DataCell, { DataCellPagination } from "@qtxr/data-cell";
 	import Form from "@qtxr/form";
 
@@ -32,26 +50,117 @@
 
 	export default {
 		name: "Listing",
+		data() {
+			return {
+				outputData: [],
+				sortState: {
+					column: null,
+					columnIdx: -1,
+					orderPtr: 0,
+					order: "ascending"
+				},
+				conf: Object.assign({
+					viewMode: "list"
+				}, this.config)
+			};
+		},
 		methods: {
 			mkItem(item, index) {
 				const isPagination = this.cell instanceof DataCellPagination;
 
 				item = {
 					item: isPagination ? item.data : item,
-					viewMode: this.config.viewMode,
+					viewMode: this.conf.viewMode,
 					index
 				};
 
 				return item;
+			},
+			setSort(column, idx) {
+				const sortState = this.sortState,
+					sortOrders = column.sortOrders || this.sortOrders;
+
+				if (idx == sortState.columnIdx)
+					sortState.orderPtr = (sortState.orderPtr + 1) % sortOrders.length; 
+				else {
+					sortState.column = column;
+					sortState.columnIdx = idx;
+					sortState.orderPtr = 0;
+				}
+
+				sortState.order = sortOrders[sortState.orderPtr];
+				this.cell.setState({
+					sortOrder: sortState.order,
+					sortKey: sortState.column && sortState.column.key
+				});
+			},
+			getItems() {
+				const sortState = this.sortState,
+					isPagination = this.cell instanceof DataCellPagination,
+					items = this.cell.data;
+
+				if (!items || !sortState.column || !sortState.column.sort || sortState.order == "neutral")
+					return items;
+
+				const sort = sortState.column.sort,
+					comparator = typeof sort == "string" ?
+						(item, item2) => {
+							const val = get(isPagination ? item.data : item, sort),
+								val2 = get(isPagination ? item2.data : item2, sort);
+
+							if (val == val2)
+								return 0;
+
+							return val > val2 ? 1 : -1;
+						} :
+						(item, item2) => {
+							const val = sort(item, item2, this);
+							return val ? 1 : -1;
+						};
+
+				return mergesort(items, (a, b) => {
+					return sortState.order == "ascending" ?
+						comparator(a, b) :
+						comparator(a, b) * -1;
+				});
+			},
+			res(val) {
+				if (typeof val == "function")
+					return val.call(this, this.cell);
+
+				return val;
 			}
 		},
 		props: {
 			cell: DataCell,
-			config: {
-				type: Object,
-				default: _ => ({
-					viewMode: "list"
-				})
+			columns: Array,
+			config: Object,
+			sortOrders: {
+				type: Array,
+				default: _ => ["ascending", "descending"]
+			}
+		},
+		beforeMount() {
+			if (this.columns) {
+				for (let i = 0, l = this.columns.length; i < l; i++) {
+					const column = this.columns[i];
+
+					if (!column || typeof column != "object" || !column.sort)
+						continue;
+
+					if (column.initial) {
+						this.setSort(column, i, sortState);
+						break;
+					}
+				}
+
+				const sortState = this.sortState;
+
+				this.cell.setState({
+					sortState,
+					sortOrder: sortState.order,
+					sortKey: sortState.column && sortState.column.key
+				});
 			}
 		}
 	}
