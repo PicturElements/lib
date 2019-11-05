@@ -1,11 +1,13 @@
 <template lang="pug">
 	UtilBox.listing-box(
-		:config="config"
+		:config="conf"
 		:cell="cell")
 		
 		Listing(
-			:config="config"
-			:cell="cell")
+			:config="conf"
+			:cell="cell"
+			:columns="columns"
+			:sortOrders="sortOrders")
 			template(v-slot:error="listing")
 				slot(name="error" v-bind="listing")
 			template(v-slot:no-results="listing")
@@ -31,19 +33,21 @@
 				v-bind="utilBox")
 				slot(
 					name="header-utils-pre-form"
-					v-if="form && rows && rows.headerUtilsPre"
-					v-bind="{ form, rows: rows.headerUtilsPre }")
+					v-if="form && formRows && formRows.headerUtilsPre"
+					v-bind="{ form, rows: formRows.headerUtilsPre }")
 					VForm(
-						v-if="form && rows && rows.headerUtilsPre"
+						v-if="form && formRows && formRows.headerUtilsPre"
 						:form="form"
-						:rows="rows.headerUtilsPre")
+						:rows="formRows.headerUtilsPre")
 		template(v-slot:loading-box="utilBox")
 			slot(name="loading-box" v-bind="utilBox")
 		template(v-slot:loading-icon="utilBox")
 			slot(name="loading-icon" v-bind="utilBox")
 		template(v-slot:title="utilBox")
 			slot(name="title" v-bind="utilBox")
-		template(v-slot:sub-header="utilBox")
+		template(
+			v-if="$scopedSlots['sub-header']"
+			v-slot:sub-header="utilBox")
 			slot(name="sub-header" v-bind="utilBox")
 		template(
 			v-if="isPagination"
@@ -58,11 +62,11 @@
 			.util-box-footer-right.f.ac
 				slot(
 					name="footer-right-form"
-					v-if="form && rows && rows.footerRight"
-					v-bind="{ form, rows: rows.footerRight }")
+					v-if="form && formRows && formRows.footerRight"
+					v-bind="{ form, rows: formRows.footerRight }")
 					VForm(
 						:form="form"
-						:rows="rows.footerRight")
+						:rows="formRows.footerRight")
 </template>
 
 <script>
@@ -83,8 +87,14 @@
 			const searchForm = this.form || new Form();
 
 			return {
-				searchForm
-			}
+				searchForm,
+				conf: Object.assign({
+					viewMode: "list",
+					navPadding: 2,
+					pageArrows: true,
+					reload: true
+				}, this.config)
+			};
 		},
 		methods: {
 			isArray: Array.isArray
@@ -98,7 +108,7 @@
 					state = cell.state,
 					page = state.page,
 					pageCount = Math.ceil(state.total / state.pageSize) - 1,
-					padding = Math.min(this.config.navPadding, pageCount / 2),
+					padding = Math.min(this.conf.navPadding, pageCount / 2),
 					floorPad = Math.floor(padding),
 					ceilPad = Math.ceil(padding),
 					fullPadding = padding * 2,
@@ -111,7 +121,7 @@
 						fullPadding - Math.min(floorPad, page) :
 						Math.min(pageCount - page, ceilPad);
 
-				if (this.config.pageArrows) {
+				if (this.conf.pageArrows) {
 					pages.push({
 						id: 0,
 						class: "to-start",
@@ -130,7 +140,7 @@
 					});
 				}
 
-				if (this.config.pageArrows) {
+				if (this.conf.pageArrows) {
 					pages.push({
 						id: page + 1,
 						class: "increment",
@@ -152,16 +162,10 @@
 		props: {
 			cell: DataCell,
 			form: Form,
-			rows: Object,
-			config: {
-				type: Object,
-				default: _ => ({
-					viewMode: "list",
-					navPadding: 2,
-					pageArrows: true,
-					reload: true
-				})
-			}
+			formRows: Object,
+			columns: Array,
+			sortOrders: Array,
+			config: Object
 		},
 		components: {
 			VForm,

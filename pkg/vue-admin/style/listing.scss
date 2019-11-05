@@ -3,6 +3,7 @@
 $listing-params: (
 	"weak-color",
 	"error-color",
+	"highlight",
 	"accent-background",
 	"row-border",
 	"odd-row-background",
@@ -12,6 +13,7 @@ $listing-params: (
 @mixin listing(
 	$weak-color: #555,
 	$error-color: #bb2424,
+	$highlight: #1b66bf,
 	$accent-background: whitesmoke,
 	$row-border: 1px solid #eee,
 	$odd-row-background: white,
@@ -42,11 +44,55 @@ $listing-params: (
 		}
 
 		&.table {
-			border: 1px solid $accent-background;
-
 			table {
 				border-collapse: collapse;
+				white-space: nowrap;
 				width: 100%;
+
+				th.sortable {
+					position: relative;
+					white-space: nowrap;
+					user-select: none;
+					cursor: pointer;
+
+					&.arrow-left {
+						padding-left: 30px;
+
+						&.sort-ascending:after,
+						&.sort-descending:after {
+							left: 20px;
+						}
+					}
+
+					&:not(.arrow-left) {
+						padding-right: 30px;
+					}
+
+					&.sort-ascending,
+					&.sort-descending {
+						color: $highlight;
+
+						&:after {
+							content: "";
+							position: absolute;
+							top: 50%;
+							right: 20px;
+							margin: -8px -9px;
+							border: 2px solid;
+							border-left-color: transparent;
+							border-top-color: transparent;
+							width: 10px;
+							height: 10px;
+							border-radius: 0 2px 2px 2px;
+							transform: rotate(45deg);
+						}
+					}
+
+					&.sort-ascending:after {
+						margin: -2px -9px;
+						transform: rotate(-135deg);
+					}
+				}
 
 				tr:nth-child(even) {
 					background: $accent-background;
@@ -56,6 +102,7 @@ $listing-params: (
 				td {
 					padding: 6px 8px;
 					text-align: left;
+					vertical-align: middle;
 				}
 			}
 		}
@@ -72,6 +119,12 @@ $listing-params: (
 					background: $even-row-background;
 				}
 			}
+		}
+	}
+
+	.borderless {
+		.table {
+			border: none;
 		}
 	}
 }
