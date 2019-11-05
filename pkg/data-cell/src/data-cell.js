@@ -314,8 +314,8 @@ export default class DataCell extends Hookable {
 	}
 
 	_fetch(runtime, ...args) {
-		if (this.state.loading)
-			return Promise.resolve(null);
+		// if (this.state.loading)
+		//	return Promise.resolve(null);
 
 		this.setState("loading");
 
@@ -348,33 +348,56 @@ export default class DataCell extends Hookable {
 					fetches: this.state.fetches + 1
 				});
 				
-				fetcher.fetchResolvers = [];
-				fetcher.enqueuedFetch = null;
+				fetcher.enqueuedResolvers = [];
+				fetcher.deferredFetch = null;
+				fetcher.throttledFetch = null;
+				this.callHooks("fetched", response);
 				return response;
 			};
 
-		if (fetcher.defer) {
-			const frLength = fetcher.fetchResolvers.length,
-				deferResponse = new Promise(resolve => {
-					fetcher.fetchResolvers.push(resolve);
+		if (typeof fetcher.throttle == "number") {
+			const erLength = fetcher.enqueuedResolvers.length,
+				throttledResponse = new Promise(resolve => {
+					fetcher.enqueuedResolvers.push(resolve);					
 				});
 
-			if (frLength >= this.config.maxDefers)
+			clearTimeout(fetcher.throttledFetch);
+			fetcher.throttledFetch = setTimeout(async _ => {
+				const er = fetcher.enqueuedResolvers;
+				const response = await doFetch();
+
+				for (let i = 0, l = er.length; i < l; i++)
+					er[i](response);
+			}, fetcher.throttle);
+
+			if (erLength >= this.config.maxThrottles)
+				console.warn(`Maximum throttles reached: ${this.config.maxThrottles}`);
+			else
+				fetcher.deferredFetch = doFetch;
+
+			return throttledResponse;
+		} else if (fetcher.defer) {
+			const erLength = fetcher.enqueuedResolvers.length,
+				deferredResponse = new Promise(resolve => {
+					fetcher.enqueuedResolvers.push(resolve);
+				});
+
+			if (erLength >= this.config.maxDefers)
 				console.warn(`Maximum defers reached: ${this.config.maxDefers}`);
 			else
-				fetcher.enqueuedFetch = doFetch;
+				fetcher.deferredFetch = doFetch;
 
-			if (!frLength) {
+			if (!erLength) {
 				requestFrame(async _ => {
-					const fetchResolvers = fetcher.fetchResolvers;
-					const response = await fetcher.enqueuedFetch();
+					const er = fetcher.enqueuedResolvers;
+					const response = await fetcher.deferredFetch();
 
-					for (let i = 0, l = fetchResolvers.length; i < l; i++)
-						fetchResolvers[i](response);
+					for (let i = 0, l = er.length; i < l; i++)
+						er[i](response);
 				});
 			}
 
-			return deferResponse;
+			return deferredResponse;
 		} else
 			return doFetch();
 	}
@@ -420,7 +443,6 @@ export default class DataCell extends Hookable {
 
 function applyStateTransforms(cell, newState) {
 	const state = cell.state,
-		transformMap = {},
 		affected = {};
 
 	for (const k in newState) {
@@ -553,10 +575,13 @@ function mkFetcherObject(cell, config) {
 	const fetcher = {
 		method: casing(config.method || "custom").to.camel,
 		fetch: null,
+		throttle: null,
 		defer: true,
 		maxDefers: 1,
-		enqueuedFetch: null,
-		fetchResolvers: [],
+		deferredFetch: null,
+		maxThrottles: Infinity,
+		throttledFetch: null,
+		enqueuedResolvers: [],
 		poll: mkPollingObject(config.poll)
 	};
 
@@ -572,9 +597,12 @@ function mkFetcherObject(cell, config) {
 	inject(fetcher, config, {
 		schema: {
 			defer: "boolean",
-			maxDefers: "number"
+			maxDefers: "number",
+			throttle: "number",
+			maxThrottles: "number"
 		},
-		strictSchema: true
+		strictSchema: true,
+		override: true
 	});
 	
 	switch (fetcher.method) {
