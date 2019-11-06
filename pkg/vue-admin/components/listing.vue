@@ -18,7 +18,7 @@
 							th(v-else-if="typeof column == 'string'") {{ column }}
 							th(v-else-if="typeof column == 'function'") {{ res(column) }}
 							th.sortable(
-								v-else-if="column.sort"
+								v-else-if="column.sort || column.index"
 								:class="sortState.columnIdx == idx ? `sort-${sortState.order}` : null"
 								@click="setSort(column, idx)")
 								| {{ res(column.title) }}
@@ -99,14 +99,15 @@
 					isPagination = this.cell instanceof DataCellPagination,
 					items = this.cell.data;
 
-				if (!items || !sortState.column || !sortState.column.sort || sortState.order == "neutral")
+				if (!items || !sortState.column || (!sortState.column.sort && !sortState.column.index) || sortState.order == "neutral")
 					return items;
 
 				const sort = sortState.column.sort,
+					index = sortState.column.index,
 					comparator = typeof sort == "string" ?
 						(item, item2) => {
-							const val = get(isPagination ? item.data : item, sort),
-								val2 = get(isPagination ? item2.data : item2, sort);
+							const val = get(item, sort),
+								val2 = get(item2, sort);
 
 							if (val == val2)
 								return 0;
@@ -114,14 +115,33 @@
 							return val > val2 ? 1 : -1;
 						} :
 						(item, item2) => {
-							const val = sort(item, item2, this);
-							return val ? 1 : -1;
+							if (typeof sort == "function") {
+								const sortResult = sort(item, item2, this);
+
+								if (typeof sortResult == "number")
+									return sortResult;
+
+								return sortResult ? 1 : -1;
+							}
+
+							if (item == item2)
+								return 0;
+							
+							return item > item2 ? 1 : -1
 						};
 
 				return mergesort(items, (a, b) => {
+					let data = isPagination ? a.data : a,
+						data2 = isPagination ? b.data : b;
+
+					if (typeof index == "function") {
+						data = index(data, this);
+						data2 = index(data2, this);
+					}
+
 					return sortState.order == "ascending" ?
-						comparator(a, b) :
-						comparator(a, b) * -1;
+						comparator(data, data2) :
+						comparator(data, data2) * -1;
 				});
 			},
 			res(val) {

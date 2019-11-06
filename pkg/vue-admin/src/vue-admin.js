@@ -128,7 +128,7 @@ export default class VueAdmin extends Hookable {
 					outRoutes.push(route);
 				else {
 					if (!baseRoutes)
-						throw new Error(`Cannot route: only base routes are allowed at root level (ar '${route.fullPath}')`);
+						throw new Error(`Cannot route: only base routes are allowed at root level (at '${route.fullPath}')`);
 					
 					route.path = URL.join(path, route.path);
 					baseRoutes.push(route);
@@ -425,7 +425,10 @@ function collectRoutes(inst, routeTree) {
 			route.meta.route = route;
 
 			const view = getView(route),
-				crumb = view && view.meta.breadcrumb || cleanBreadcrumb(route.path);
+				crumb = get(view, "meta.breadcrumb", {}) || cleanBreadcrumb(route.path);
+
+			route.sidebarConfig = get(view, "meta.sidebar", {});
+			route.breadcrumbConfig = get(view, "meta.breadcrumb", {});
 
 			// Don't include empty crumbs
 			if (crumb && typeof crumb == "string") {

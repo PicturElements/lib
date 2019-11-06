@@ -20,7 +20,7 @@
 					slot(name="header-utils-post" v-bind="this")
 		.util-box-sub-header(v-if="$scopedSlots['sub-header']")
 			slot(name="sub-header" v-bind="this")
-		.util-box-content
+		.util-box-content(ref="content")
 			.util-box-main-content
 				template(v-if="$scopedSlots['cell-data']")
 					slot(

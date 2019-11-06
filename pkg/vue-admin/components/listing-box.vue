@@ -22,7 +22,7 @@
 			span.listing-count(v-if="isPagination")
 				span.listing-count-num.listing-from {{ cell.state.offset }}
 				|  - 
-				span.listing-count-num.listing-to {{ Math.min(cell.state.offset + cell.state.pageSize, cell.state.total) }}
+				span.listing-count-num.listing-to {{ Math.min(cell.state.offset + Math.min(cell.state.pageSize, cell.data.length), cell.state.total) }}
 				span(v-if="cell.state.total < Infinity")
 					|  of 
 					span.listing-count-num.listing-total {{ cell.state.total }}

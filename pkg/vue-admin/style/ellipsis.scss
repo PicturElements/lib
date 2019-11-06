@@ -1,0 +1,112 @@
+$ellipsis-params: (
+	"width",
+	"padding",
+	"border-width",
+	"border-color",
+	"background"
+);
+
+@mixin ellipsis(
+	$width: 16px,
+	$padding: 8px,
+	$border-width: 1px,
+	$border-color: whitesmoke,
+	$background: white
+) {
+	.ellipsis {
+		position: relative;
+		width: $width;
+		height: $width;
+		z-index: 10000;
+
+		.ellipsis-launcher {
+			position: relative;
+			width: $width;
+			height: $width;
+			padding: $padding;
+			margin: -$padding;
+			box-sizing: content-box;
+			cursor: pointer;
+			z-index: 10;
+
+			.adm-icon {
+				opacity: 0.5;
+			}
+
+			&:hover .adm-icon {
+				opacity: 1;
+			}
+		}
+
+		&.open {
+			transform: translateZ(10px);
+			z-index: 100000;
+
+			.ellipsis-launcher .adm-icon {
+				opacity: 1;
+			}
+		}
+
+		.ellipsis-menu {
+			visibility: hidden;
+			position: absolute;
+			top: 100%;
+			right: -($padding + $border-width);
+			padding: $padding;
+			margin-top: $padding - $border-width;
+			background: $background;
+			border: 1px solid $border-color;
+			border-radius: 2px 0 2px 2px;
+			min-width: 100px;
+
+			&:before {
+				content: "";
+				position: absolute;
+				top: -($width + 2 * $padding);
+				right: -$border-width;
+				width: $width;
+				height: $width;
+				box-sizing: content-box;
+				padding: $padding;
+				background: $background;
+				border: 1px solid $border-color;
+				border-bottom-width: 0;
+			}
+
+			.ellipsis-menu-item {
+				padding: 6px 10px;
+				white-space: nowrap;
+				cursor: pointer;
+
+				&:hover {
+					background: $background;
+				}
+			}
+		}
+
+		&:not(.open) .ellipsis-menu {
+			position: fixed;
+			top: 0;
+			left: 0;
+		}
+
+		&.open .ellipsis-menu {
+			visibility: visible;
+		}
+
+		&.flipped {
+			.ellipsis-menu {
+				top: auto;
+				bottom: 100%;
+				margin: 0 0 ($padding - $border-width) 0;
+
+				&:before {
+					border-top-width: 0;
+					border-bottom-width: $border-width;
+					top: auto;
+					bottom: -($width + 2 * $padding);
+				}
+			}
+		}
+	}
+}

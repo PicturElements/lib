@@ -1,5 +1,6 @@
 @use "~@qtxr/scss-utils" as *;
 
+@use "./ellipsis.scss" as *;
 @use "./listing-box.scss" as *;
 @use "./listing.scss" as *;
 @use "./loading-box.scss" as *;
@@ -8,6 +9,7 @@
 @use "~@qtxr/vue-form/style/inputs" as *;
 
 @mixin all($theme) {
+	@include ellipsis(trim-args(map-get($theme, "ellipsis"), $ellipsis-params)...);
 	@include listing-box(trim-args(map-get($theme, "listing-box"), $listing-box-params)...);
 	@include listing(trim-args(map-get($theme, "listing"), $listing-params)...);
 	@include loading-box(trim-args(map-get($theme, "loading-box"), $loading-box-params)...);
