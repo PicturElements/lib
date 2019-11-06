@@ -13,7 +13,7 @@
 					slot(name="header-utils" v-bind="this")
 						slot(name="header-utils-reload" v-bind="this")
 							button.admin-btn.square.expand-disabled.fade-color.reload(
-								v-if="conf.reload"
+								v-if="conf.reload && cell"
 								:disabled="cell.state.loading"
 								@click="cell.fetch()")
 								slot(name="header-utils-reload-icon" v-bind="this") ↻

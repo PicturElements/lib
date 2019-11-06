@@ -38,9 +38,10 @@
 				
 				if (viewport) {
 					const lbcr = this.$refs.launcher.getBoundingClientRect(),
-						vbcr = viewport.getBoundingClientRect();
+						vbcr = viewport.getBoundingClientRect(),
+						menuBottom = lbcr.bottom + mbcr.height;
 
-					this.flipped = lbcr.bottom + mbcr.height > vbcr.bottom;
+					this.flipped = menuBottom > vbcr.bottom || menuBottom > window.innerHeight;
 				}
 
 				this.open = true;
