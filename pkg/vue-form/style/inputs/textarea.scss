@@ -1,0 +1,70 @@
+$textarea-params: (
+	"background",
+	"error-background",
+	"autofill-background",
+	"border",
+	"focus-border",
+	"error-border",
+	"autofill-border",
+	"focus-border-color",
+	"error-color",
+	"autofill-color"
+);
+
+@mixin textarea(
+	$background: white,
+	$error-background: #ffe1e1,
+	$autofill-background: #edf7ff,
+	$border: 1px solid #dadada,
+	$focus-border: 1px solid #1e2021,
+	$error-border: 1px solid #e02929,
+	$autofill-border: 1px solid #74b4e6,
+	$focus-border-color: #1e2021,
+	$error-color: #9a3131,
+	$autofill-color: #276a9e
+) {
+	.inp-textarea {
+		textarea {
+			width: 100%;
+			padding: 6px 8px;
+			background: transparent;
+			border: $border;
+			font-size: 95%;
+			outline: none;
+			width: 100%;
+			min-width: 100%;
+			max-width: 100%;
+			resize: vertical;
+	
+			&:focus {
+				border: $focus-border;
+			}
+		}
+	
+		.validation-msg {
+			display: none;
+			position: absolute;
+			bottom: 100%;
+			left: 0;
+			width: 100%;
+			font-size: 80%;
+			padding: 3px 7px;
+			background: $focus-border-color;
+			color: $background;
+		}
+	
+		&.error {
+			textarea {
+				&:not(:focus) {
+					background: $error-background;
+					border: $error-border;
+					color: $error-color;
+				}
+	
+				&:focus + .validation-msg {
+					display: block;
+				}
+			}
+		}
+	}
+}

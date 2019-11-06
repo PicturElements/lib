@@ -5,6 +5,7 @@
 @use "./count.scss" as *;
 @use "./dropdown.scss" as *;
 @use "./radio.scss" as *;
+@use "./textarea.scss" as *;
 
 @mixin inputs($theme: ()) {
 	@include input(compose-args($theme, $input-params, "input")...);
@@ -12,4 +13,5 @@
 	@include count(compose-args($theme, $count-params, "input", "count")...);
 	@include dropdown(compose-args($theme, $dropdown-params, "input", "dropdown")...);
 	@include radio(compose-args($theme, $radio-params, "input", "radio")...);
+	@include textarea(compose-args($theme, $textarea-params, "input", "textarea")...);
 }
