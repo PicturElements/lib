@@ -49,6 +49,15 @@ $listing-params: (
 				white-space: nowrap;
 				width: 100%;
 
+				tr:first-child {
+					th {
+						position: sticky;
+						background: $odd-row-background;
+						top: 0;
+						z-index: 100000;
+					}
+				}
+
 				th.sortable {
 					position: relative;
 					white-space: nowrap;

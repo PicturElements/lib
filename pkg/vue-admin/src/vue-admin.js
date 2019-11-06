@@ -1,7 +1,7 @@
 import {
+	get,
 	hasOwn,
 	isObject,
-	forEach,
 	resolveArgs,
 	parseTreeStr
 } from "@qtxr/utils";
@@ -36,6 +36,7 @@ export default class VueAdmin extends Hookable {
 		config = config || {};
 
 		this.views = {};
+		this.viewComponents = {};
 		this.components = {};
 		this.viewCount = 0;
 		this.config = config;
@@ -44,9 +45,6 @@ export default class VueAdmin extends Hookable {
 		this.initialized = false;
 		this.interfaces = {};
 		this.methods = {};
-		this.inject = {
-			components: {}
-		};
 
 		// Utilities
 		if (config.jsonManager instanceof CustomJSON)
@@ -85,12 +83,14 @@ export default class VueAdmin extends Hookable {
 		};
 	}
 
-	init(data = {}) {
+	prepare(config) {
+		if (config.components)
+			this.components = config.components;
+	}
+
+	init() {
 		if (this.initialized)
 			return;
-
-		if (data.components)
-			this.inject.components = data.components;
 
 		this.initialized = true;
 		this.callHooks("init");
@@ -106,7 +106,7 @@ export default class VueAdmin extends Hookable {
 
 		const view = new AdminView(this, viewConfig);
 
-		this.components[id] = component;
+		this.viewComponents[id] = component;
 		this.views[id] = view;
 		this.viewCount++;
 		return this;
@@ -192,7 +192,7 @@ export default class VueAdmin extends Hookable {
 		if (!isObject(view))
 			throw new Error(`Cannot wrap view component: supplied view '${idOrComponent}' is not a view object`);
 
-		view.components = resolveComponents(this, view.components);
+		injectComponents(this, view);
 
 		const wrapper = wc.wrap(view);
 		this.views[idOrComponent].connect(wrapper);
@@ -204,7 +204,7 @@ export default class VueAdmin extends Hookable {
 		if (!isObject(component))
 			throw new Error(`Cannot wrap component: supplied component is not a component object`);
 
-		component.components = resolveComponents(this, component.components);
+		// component.components = resolveComponents(this);
 
 		const wrapper = wc.wrap(component);
 		connect(this, wrapper);
@@ -321,26 +321,32 @@ export default class VueAdmin extends Hookable {
 	}
 }
 
-function resolveComponents(admin, components) {
-	components = Object.assign({}, components);
+function injectComponents(admin, view) {
+	const components = Object.assign({}, admin.components),
+		viewComponents = view.components;
 
-	const baseComponents = {},
-		scope = components.scope || "";
+	for (const k in viewComponents) {
+		if (!viewComponents.hasOwnProperty(k) || typeof viewComponents[k] != "string")
+			continue;
 
-	delete components.scope;
+		const component = get(components, viewComponents[k]);
 
-	const traverse = comps => {
-		forEach(comps, (comp, name) => {
-			if (comp._compiled)
-				baseComponents[name] = comp;
-			else if (isObject(comp))
-				traverse(comp);
-		});
-	};
+		if (!isComponent(component))
+			throw new Error(`Failed to resolve component '${k}' at '${viewComponents[k]}' in ${view.name || "unknown view"}`);
 
-	traverse(admin.inject.components);
+		viewComponents[k] = component;
+	}
 
-	return Object.assign(baseComponents, components);
+	for (const k in components) {
+		if (!components.hasOwnProperty(k) || !isComponent(components[k]) || viewComponents.hasOwnProperty(k))
+			continue;
+
+		viewComponents[k] = components[k];
+	}
+}
+
+function isComponent(candidate) {
+	return Boolean(candidate) && typeof candidate == "object" && candidate.hasOwnProperty("_compiled");
 }
 
 function connect(admin, wrapper) {
@@ -379,11 +385,11 @@ function collectRoutes(inst, routeTree) {
 					}
 				};
 
-			const resolveComponent = id => {
-				if (!inst.components.hasOwnProperty(id))
-					throw new Error(`Failed to route: '${id}' is not a known component`);
+			const resolveViewComponent = id => {
+				if (!inst.viewComponents.hasOwnProperty(id))
+					throw new Error(`Failed to route: '${id}' is not a known view component`);
 
-				return inst.components[id];
+				return inst.viewComponents[id];
 			};
 
 			const resolveView = id => {
@@ -399,14 +405,14 @@ function collectRoutes(inst, routeTree) {
 
 				for (let i = 0, l = child.componentData.length; i < l; i++) {
 					const data = child.componentData[i];
-					components[data.name || data.id] = resolveComponent(data.id);
+					components[data.name || data.id] = resolveViewComponent(data.id);
 					views[data.name || data.id] = resolveView(data.id);
 				}
 
 				route.components = components;
 				route.views = views;
 			} else {
-				route.component = resolveComponent(child.componentData[0].id);
+				route.component = resolveViewComponent(child.componentData[0].id);
 				route.view = resolveView(child.componentData[0].id);
 			}
 
