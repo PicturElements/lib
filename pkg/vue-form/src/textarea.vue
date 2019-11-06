@@ -1,25 +1,29 @@
 <template lang="pug">
-	.input-wrapper.checkbox.inp-checkbox(:class="validationState")
-		button.checkbox(
-			:class="{ checked: input.value }"
-			@click="trigger")
-			slot(name="icon" v-bind="input")
-				.icon {{ input.value ? "&times;" : "" }}
-		.label(v-if="res(label)" @click="trigger") {{ res(label) }}
+	.input-wrapper.textarea.inp-textarea(:class="validationState")
+		textarea(
+			:value="input.value"
+			:placeholder="res(input.placeholder || placeholder)"
+			:name="res(input.name)"
+			@keydown="check"
+			@input="trigger")
+		.validation-msg(:class="validationMsg ? 'active' : null") {{ validationMsg }}
 </template>
 
 <script>
-	import Form, { Checkbox } from "@qtxr/form";
+	import Form, { TextArea } from "@qtxr/form";
 
 	export default {
-		name: "Checkbox",
+		name: "TextArea",
 		data: _ => ({
 			validationMsg: null,
 			validationState: "ok"
 		}),
 		methods: {
-			trigger() {
-				Form.trigger(this.input, !this.input.value);
+			trigger(evt) {
+				Form.trigger(this.input, evt.target.value);
+			},
+			check(evt) {
+				Form.check(this.input, evt, evt.target.value);
 			},
 			res(val) {
 				if (typeof val == "function")
@@ -33,8 +37,8 @@
 			}
 		},
 		props: {
-			input: Checkbox,
-			label: String,
+			input: TextArea,
+			placeholder: String,
 			mobileQuery: String,
 			meta: {
 				type: Object,

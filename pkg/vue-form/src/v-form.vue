@@ -1,7 +1,11 @@
 <template lang="pug">
 	.v-form
-		.input-row(v-for="row in processedRows")
-			.input-box(v-for="cell in row" :class="cell.class.box")
+		.input-row(
+			v-for="(row, idx) in processedRows"
+			:class="`input-row-${idx}`")
+			.input-box(
+				v-for="cell in row"
+				:class="joinCls(cell.class.box, `input-box-${cell.input.type || 'text'}`)")
 				p.title(
 					v-if="cell.title"
 					:class="joinCls({ required: cell.input.required }, cell.class.title)")
@@ -41,6 +45,14 @@
 						template(v-slot:icon="data")
 							slot(:name="`${cell.input.name}-icon`" v-bind="data")
 								slot(name="dropdown-icon" v-bind="data")
+				template(v-else-if="cell.input.type == 'media'")
+					Media(
+						:class="cell.class.input"
+						:input="cell.input"
+						:meta="inputMeta")
+						template(v-slot:loading-icon)
+							slot(:name="`${cell.input.name}-loading-icon`")
+								slot(name="loading-icon")
 				template(v-else-if="cell.input.type == 'radio'")
 					Radio(
 						:class="cell.class.input"
@@ -52,6 +64,12 @@
 						template(v-slot:custom-content="option")
 							slot(:name="`${cell.input.name}-custom-content`" v-bind="option")
 								slot(name="radio-custom-content" v-bind="option")
+				template(v-else-if="cell.input.type == 'textarea'")
+					TextArea(
+						:class="cell.class.input"
+						:input="cell.input"
+						:placeholder="res(cell.placeholder)"
+						:meta="inputMeta")
 				template(v-else)
 					Input(
 						:class="cell.class.input"
@@ -69,7 +87,9 @@
 	import Checkbox from "./checkbox.vue";
 	import Count from "./count.vue";
 	import Dropdown from "./dropdown.vue";
+	import Media from "./media.vue";
 	import Radio from "./radio.vue";
+	import TextArea from "./textarea.vue";
 
 	export default {
 		name: "VForm",
@@ -116,9 +136,12 @@
 								input: cellProcessed.class
 							} : cellProcessed.class || {};
 						}
+
+						const options = cellProcessed.opt;
+						delete cellProcessed.opt;
 						
 						if (!form.inputs.hasOwnProperty(cellProcessed.name))
-							form.connect(cellProcessed.name, cellProcessed.opt);
+							form.connect(cellProcessed.name, options);
 						cellProcessed.input = form.inputs[cellProcessed.name];
 
 						out.push(depth ? cellProcessed : [cellProcessed]);
@@ -177,7 +200,9 @@
 			Checkbox,
 			Count,
 			Dropdown,
-			Radio
+			Media,
+			Radio,
+			TextArea
 		},
 		props: {
 			form: Form, 
@@ -194,6 +219,10 @@
 	.input-row {
 		display: flex;
 		align-items: flex-end;
+
+		.input-box-textarea {
+			align-self: flex-start;
+		}
 
 		+ .input-row {
 			margin-top: 15px;
