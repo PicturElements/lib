@@ -86,9 +86,7 @@
 			data: null,
 			viewport: null
 		},
-		components: {
-			Icon
-		},
+		components: {},
 		mounted() {
 			this.addEventListener(document, "click", _ => this.closeMenu());
 		}
