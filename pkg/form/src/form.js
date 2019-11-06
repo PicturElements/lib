@@ -20,7 +20,7 @@ import {
 	CHECK,
 	TRIGGER,
 	SELF_TRIGGER
-} from "./inputs/input";
+} from "./inputs/base-input";
 
 export default class Form extends Hookable {
 	constructor(hooksOrPreset = {}, options = {}) {

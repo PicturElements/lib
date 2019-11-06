@@ -1,10 +1,10 @@
-import Input from "./input";
+import BaseInput from "./base-input";
 import { inject } from "@qtxr/utils";
 
-export default class Image extends Input {
+export default class Media extends BaseInput {
 	constructor(name, options, form) {
 		options = inject(options, {
-			imageOptions: {
+			mediaOptions: {
 				type: "image/png",
 				quality: 0.92,
 				accept: "image/*"
@@ -18,7 +18,7 @@ export default class Image extends Input {
 			},
 			multiple: "boolean",
 			enforceSize: "boolean",
-			imageOptions: {
+			mediaOptions: {
 				type: "string",
 				quality: "number",
 				accept: "string"

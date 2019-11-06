@@ -173,9 +173,13 @@ const defaults = {
 		max: 100,
 		checkWord: "int"
 	},
-	image: {
-		type: "image",
+	media: {
+		type: "media",
 		value: null,
+		targetSize: {
+			w: 600,
+			h: 600
+		},
 		validate(val, inp) {
 			if (!inp.enforceSize)
 				return;
@@ -192,6 +196,14 @@ const defaults = {
 			}
 
 			return val;
+		}
+	},
+	textarea: {
+		type: "textarea",
+		maxLength: 10000,
+		validate(val, inp, payload) {
+			if (val.length > inp.maxLength)
+				return `Maximum length surpassed: ${val.length}/${inp.maxLength}`;
 		}
 	}
 };

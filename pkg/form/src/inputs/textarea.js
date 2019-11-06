@@ -1,10 +1,9 @@
 import BaseInput from "./base-input";
 
-export default class Count extends BaseInput {
+export default class TextArea extends BaseInput {
 	constructor(name, options, form) {
 		super(name, options, form, {
-			min: "number",
-			max: "number"
+			maxLength: "uint"
 		});
 	}
 }
