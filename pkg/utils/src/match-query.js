@@ -72,10 +72,12 @@ export default function matchQuery(value, query, options) {
 					if (Array.isArray(qVal) != isArrayLike(v[i]))
 						matched = false;
 					else if (matchRuntime) {
+						const currentMatchMap = matchRuntime.matchMap;
 						matchRuntime.matchMap[i] = coerceToObj(null, q[srcKey]);
 						matchRuntime.matchMap = matchRuntime.matchMap[i];
 						matchRuntime.accessor.push(srcKey);
 						matched = match(v[i], q[srcKey], matchRuntime);
+						matchRuntime.matchMap = currentMatchMap;
 						matchRuntime.accessor.pop();
 					} else
 						matched = match(v[i], q[srcKey]);
@@ -152,10 +154,12 @@ export default function matchQuery(value, query, options) {
 					if (Array.isArray(q[srcKey]) != isArrayLike(v[key]))
 						matched = false;
 					else if (matchRuntime) {
+						const currentMatchMap = matchRuntime.matchMap;
 						matchRuntime.matchMap[key] = coerceToObj(null, q[srcKey]);
 						matchRuntime.matchMap = matchRuntime.matchMap[key];
 						matchRuntime.accessor.push(srcKey);
 						matched = match(v[key], q[srcKey], matchRuntime);
+						matchRuntime.matchMap = currentMatchMap;
 						matchRuntime.accessor.pop();
 					} else
 						matched = match(v[key], q[srcKey]);
