@@ -3,7 +3,8 @@ $ellipsis-params: (
 	"padding",
 	"border-width",
 	"border-color",
-	"background"
+	"background",
+	"hover-background"
 );
 
 @mixin ellipsis(
@@ -11,7 +12,8 @@ $ellipsis-params: (
 	$padding: 8px,
 	$border-width: 1px,
 	$border-color: whitesmoke,
-	$background: white
+	$background: white,
+	$hover-background: whitesmoke
 ) {
 	.ellipsis {
 		position: relative;
@@ -79,7 +81,7 @@ $ellipsis-params: (
 				cursor: pointer;
 
 				&:hover {
-					background: $background;
+					background: $hover-background;
 				}
 			}
 		}
