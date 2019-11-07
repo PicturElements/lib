@@ -133,7 +133,7 @@ const defaults = {
 	},
 	phone: {
 		value: "",
-		checkKey: /[0-9+\s-]/,
+		checkKey: /[0-9+\s-+]/,
 		validate: mkRegexValidator(/^[0-9+\s-]+$/, "Please specify a valid phone number")
 	},
 	zip: {
@@ -145,6 +145,11 @@ const defaults = {
 		value: "",
 		checkKey: "name",
 		validate: mkRangeValidator(1, Infinity, "This field cannot be empty")
+	},
+	url: {
+		value: "",
+		checkKey: /[^\s]/,
+		validate: mkRegexValidator(/^(?:https?:\/\/)\w+(?:[.:][\w-]+)+(?:\/[\w-]*)*(?:[#?].*)?$/, "Please specify a valid URL")
 	},
 	checkbox: {
 		type: "checkbox",

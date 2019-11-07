@@ -6,7 +6,7 @@ import {
 import { Hookable } from "@qtxr/bc";
 import { isValidKey, isValidWord } from "@qtxr/evt";
 
-// TODO: in first major version, change hook argument order from
+// TODO: in next major version, change hook argument order from
 // oldValue, newValue to newValue, oldValue
 
 const UPDATE = sym("update"),
@@ -25,8 +25,8 @@ const initOptionsSchema = {
 	validationMsg: "string",
 	validationState: "string",
 
-	checkKey: "function",
-	checkWord: "function",
+	checkKey: "Object|string|function|RegExp",
+	checkWord: "Object|string|function|RegExp",
 	validate: "function",
 	process: "function",
 	trigger: "function",
