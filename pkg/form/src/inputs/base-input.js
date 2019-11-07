@@ -92,6 +92,10 @@ export default class BaseInput extends Hookable {
 	[TRIGGER](value) {
 		// If value is null, don't update internal value
 		if (value !== null) {
+			// If the value is undefined, set it to null to denote an empty value
+			if (value === undefined)
+				value = null;
+
 			const oldVal = this.value;
 
 			if (typeof this.process == "function")

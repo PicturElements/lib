@@ -181,11 +181,8 @@ const defaults = {
 			h: 600
 		},
 		validate(val, inp) {
-			if (!inp.enforceSize)
-				return;
-
-			if (!Array.isArray(val))
-				val = val ? [] : [val];
+			if ((inp.multiple && !val.length) || val === null)
+				return "No media uploaded";
 		},
 		extract(val, inp, payload) {
 			if (inp.multiple) {
