@@ -97,7 +97,9 @@ $media-params: (
 		.upload-prompt {
 			.media-upload-icon {
 				width: 50px;
-				fill: $feature-color;
+				fill: none;
+				stroke: $feature-color;
+				stroke-width: 1.5;
 				z-index: 10;
 			}
 
