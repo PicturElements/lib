@@ -1,27 +1,21 @@
 $textarea-params: (
 	"background",
-	"error-background",
-	"autofill-background",
+	"error-background"
 	"border",
 	"focus-border",
-	"error-border",
-	"autofill-border",
+	"error-border"
 	"focus-border-color",
-	"error-color",
-	"autofill-color"
+	"error-color"
 );
 
 @mixin textarea(
 	$background: white,
 	$error-background: #ffe1e1,
-	$autofill-background: #edf7ff,
 	$border: 1px solid #dadada,
 	$focus-border: 1px solid #1e2021,
 	$error-border: 1px solid #e02929,
-	$autofill-border: 1px solid #74b4e6,
 	$focus-border-color: #1e2021,
-	$error-color: #9a3131,
-	$autofill-color: #276a9e
+	$error-color: #9a3131
 ) {
 	.inp-textarea {
 		textarea {
