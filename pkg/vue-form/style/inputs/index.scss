@@ -4,6 +4,7 @@
 @use "./checkbox.scss" as *;
 @use "./count.scss" as *;
 @use "./dropdown.scss" as *;
+@use "./media.scss" as *;
 @use "./radio.scss" as *;
 @use "./textarea.scss" as *;
 
@@ -12,6 +13,7 @@
 	@include checkbox(compose-args($theme, $checkbox-params, "input", "checkbox")...);
 	@include count(compose-args($theme, $count-params, "input", "count")...);
 	@include dropdown(compose-args($theme, $dropdown-params, "input", "dropdown")...);
+	@include media(compose-args($theme, $media-params, "input", "media")...);
 	@include radio(compose-args($theme, $radio-params, "input", "radio")...);
 	@include textarea(compose-args($theme, $textarea-params, "input", "textarea")...);
 }
