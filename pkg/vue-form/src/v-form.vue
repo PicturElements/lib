@@ -5,7 +5,8 @@
 			:class="`input-row-${idx}`")
 			.input-box(
 				v-for="cell in row"
-				:class="joinCls(cell.class.box, `input-box-${cell.input.type || 'text'}`)")
+				:class="joinCls(cell.class.box, `input-box-${cell.input.type || 'text'}`)"
+				:data-name="cell.input.name")
 				p.title(
 					v-if="cell.title"
 					:class="joinCls({ required: cell.input.required }, cell.class.title)")
@@ -53,6 +54,27 @@
 						template(v-slot:loading-icon)
 							slot(:name="`${cell.input.name}-loading-icon`")
 								slot(name="loading-icon")
+				template(v-else-if="cell.input.type == 'multi'")
+					Multi(
+						:class="cell.class.input"
+						:input="cell.input"
+						:meta="inputMeta")
+						template(
+							v-if="$scopedSlots['selection-item'] || $scopedSlots[`${cell.input.name}-selection-item`]"
+							v-slot:selection-item="d")
+								slot(:name="`${cell.input.name}-selection-item`" v-bind="d")
+									slot(name="selection-item" v-bind="d")
+						template(
+							v-if="$scopedSlots['search-result'] || $scopedSlots[`${cell.input.name}-search-result`]"
+							v-slot:selection-item="d")
+								slot(:name="`${cell.input.name}-search-result`" v-bind="d")
+									slot(name="search-result" v-bind="d")
+						template(v-slot:no-search-results="inp")
+							slot(:name="`${cell.input.name}-no-search-results`")
+								slot(name="no-search-results")
+						template(v-slot:loading-icon)
+							slot(:name="`${cell.input.name}-loading-icon`")
+								slot(name="loading-icon")
 				template(v-else-if="cell.input.type == 'radio'")
 					Radio(
 						:class="cell.class.input"
@@ -88,6 +110,7 @@
 	import Count from "./count.vue";
 	import Dropdown from "./dropdown.vue";
 	import Media from "./media.vue";
+	import Multi from "./multi.vue";
 	import Radio from "./radio.vue";
 	import TextArea from "./textarea.vue";
 
@@ -201,6 +224,7 @@
 			Count,
 			Dropdown,
 			Media,
+			Multi,
 			Radio,
 			TextArea
 		},

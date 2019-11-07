@@ -33,10 +33,6 @@
 				const label = (option && option.hasOwnProperty("label")) ? option.label : option;
 				return typeof label == "object" ? "" : label;
 			},
-			getValue(option) {
-				const value = (option && option.hasOwnProperty("label")) ? option.value : option;
-				return typeof value == "object" ? "" : value;
-			},
 			wrapOption(option) {
 				if (typeof option != "object")
 					return { value: option };

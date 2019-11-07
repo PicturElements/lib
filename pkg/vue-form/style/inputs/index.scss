@@ -5,6 +5,7 @@
 @use "./count.scss" as *;
 @use "./dropdown.scss" as *;
 @use "./media.scss" as *;
+@use "./multi.scss" as *;
 @use "./radio.scss" as *;
 @use "./textarea.scss" as *;
 
@@ -14,6 +15,7 @@
 	@include count(compose-args($theme, $count-params, "input", "count")...);
 	@include dropdown(compose-args($theme, $dropdown-params, "input", "dropdown")...);
 	@include media(compose-args($theme, $media-params, "input", "media")...);
+	@include multi(compose-args($theme, $multi-params, "input", "multi")...);
 	@include radio(compose-args($theme, $radio-params, "input", "radio")...);
 	@include textarea(compose-args($theme, $textarea-params, "input", "textarea")...);
 }

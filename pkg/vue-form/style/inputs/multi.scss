@@ -1,0 +1,155 @@
+@use "~@qtxr/scss-utils" as *;
+
+$multi-params: (
+	"background",
+	"error-background",
+	"border",
+	"focus-border",
+	"error-border",
+	"focus-border-color",
+	"error-color",
+	"highlight",
+	"selection-item-color",
+	"selection-item-height",
+	"selection-item-spacing",
+	"selection-item-border-radius",
+	"search-box-background",
+	"separator-border",
+	"max-height"
+);
+
+@mixin multi(
+	$background: white,
+	$error-background: #ffe1e1,
+	$border: 1px solid #dadada,
+	$focus-border: 1px solid #1e2021,
+	$error-border: 1px solid #e02929,
+	$focus-border-color: #1e2021,
+	$error-color: #9a3131,
+	$highlight: #1b66bf,
+	$selection-item-color: white,
+	$selection-item-height: 24px,
+	$selection-item-spacing: 5px,
+	$selection-item-border-radius: 2px,
+	$search-box-background: whitesmoke,
+	$separator-border: 1px solid rgba(128, 128, 128, 0.15),
+	$max-height: 150px
+) {
+	.inp-multi {
+		font-size: 90%;
+
+		.selection-box {
+			flex-wrap: wrap;
+			min-height: $selection-item-height + 2 * $selection-item-spacing;
+			padding: $selection-item-spacing 0 0 $selection-item-spacing;
+			background: $background;
+			border: $border;
+			max-height: $max-height;
+			overflow: auto;
+
+			.default-selection-item {
+				position: relative;
+				background: $highlight;
+				color: $selection-item-color;
+				height: $selection-item-height;
+				border-radius: $selection-item-border-radius;
+				margin: 0 $selection-item-spacing $selection-item-spacing 0;
+				padding: 8px (5px + $selection-item-height) 8px 10px;
+				user-select: none;
+
+				.delete-section-item {
+					position: absolute;
+					top: 0;
+					right: 0;
+					width: $selection-item-height;
+					height: 100%;
+					font-size: $selection-item-height * 0.8;
+					cursor: pointer;
+				}
+			}
+		}
+
+		&.open .selection-box {
+			border: $focus-border;
+		}
+
+		.search-box {
+			flex-direction: column;
+			border: $border;
+			overflow: hidden;
+			background: $background;
+			z-index: 100000;
+
+			.search-input-box {
+				background: $search-box-background;
+				padding: 10px;
+
+				input {
+					width: 100%;
+					height: 30px;
+					border: $border;
+					text-indent: 0.5em;
+					outline: none;
+					font-size: 100%;
+
+					&:focus {
+						border: $focus-border;
+					}
+				}
+			}
+
+			.search-results-box {
+				position: relative;
+				overflow: auto;
+
+				.loading-overlay {
+					position: absolute;
+					top: 0;
+					left: 0;
+					width: 100%;
+					height: 100%;
+					background: rgba($background, 0.8);
+				}
+			}
+
+			.default-search-result {
+				padding: 8px 10px;
+				user-select: none;
+				cursor: pointer;
+
+				+ .default-search-result {
+					border-top: $separator-border;
+				}
+
+				&.selected {
+					background: $search-box-background;
+				}
+			}
+
+			.no-search-results {
+				height: 60px;
+				font-size: 90%;
+			}
+		}
+
+		&:not(.open) .search-box {
+			display: none;
+		}
+
+		&.error {
+			&:not(.open) {
+				.selection-box {
+					background: $error-background;
+					border: $error-border;
+				}
+			}
+		}
+
+		@include mobile {
+			&.open {
+				box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.35);
+				z-index: 100000;
+			}
+		}
+	}
+}
