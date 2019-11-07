@@ -195,6 +195,14 @@ const defaults = {
 			return val;
 		}
 	},
+	multi: {
+		type: "multi",
+		value: null,
+		validate(val, inp) {
+			if (!val.length)
+				return "No selection";
+		}
+	},
 	textarea: {
 		type: "textarea",
 		maxLength: 10000,

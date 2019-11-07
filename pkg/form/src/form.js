@@ -262,9 +262,11 @@ Form.presets = {
 		hooks: {
 			trigger(form) {
 				let valid = true;
+
 				form.forEach(inp => {
 					valid &= (inp.required === false || (inp.initialized && inp.valid));
 				});
+
 				form.valid = !!valid;
 			}
 		},

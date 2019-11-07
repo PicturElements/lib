@@ -3,6 +3,7 @@ import Checkbox from "./checkbox";
 import Count from "./count";
 import Dropdown from "./dropdown";
 import Media from "./media";
+import Multi from "./multi";
 import Radio from "./radio";
 import TextArea from "./textarea";
 
@@ -13,6 +14,7 @@ const inputTypes = {
 	count: "count",
 	dropdown: "dropdown",
 	media: "media",
+	multi: "multi",
 	radio: "radio",
 	textarea: "textarea"
 };
@@ -23,6 +25,7 @@ const inputConstructors = {
 	count: Count,
 	dropdown: Dropdown,
 	media: Media,
+	multi: Multi,
 	radio: Radio,
 	textarea: TextArea
 };

@@ -7,6 +7,8 @@ export { default as Input } from "./src/inputs/input";
 export { default as Checkbox } from "./src/inputs/checkbox";
 export { default as Count } from "./src/inputs/count";
 export { default as Dropdown } from "./src/inputs/dropdown";
+export { default as Media } from "./src/inputs/media";
+export { default as Multi } from "./src/inputs/multi";
 export { default as Radio } from "./src/inputs/radio";
 export { default as TextArea } from "./src/inputs/textarea";
 export { default as defaults } from "./src/form-defaults";
