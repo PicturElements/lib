@@ -20,7 +20,7 @@
 						:src="enqueuedOutput[0].data")
 				.upload-prompt.f.c.col.a-fill
 					slot(name="upload-icon")
-						svg.media-upload-icon(viewBox="0 0 75 55")
+						svg.media-upload-icon(viewBox="-5 -5 85 65")
 							path(d="M70,10H40L36.78,3.56A6.45,6.45,0,0,0,31,0H19a6.45,6.45,0,0,0-5.77,3.56L10,10H5a5,5,0,0,0-5,5V50a5,5,0,0,0,5,5H70a5,5,0,0,0,5-5V15A5,5,0,0,0,70,10ZM25,47A15,15,0,1,1,40,32,15,15,0,0,1,25,47ZM65,32a3,3,0,0,1-3,3H53a3,3,0,0,1-3-3V23a3,3,0,0,1,3-3H62a3,3,0,0,1,3,3Z")
 					span.upload-prompt-message
 						slot(name="upload-message")
