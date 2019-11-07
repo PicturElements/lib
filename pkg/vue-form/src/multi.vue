@@ -37,8 +37,8 @@
 					@click="triggerAddToSelection(option, idx)"
 					ref="defaultSearchResults")
 					span.search-result.value {{ getLabel(option) }}
-				.loading-overlay(v-if="loading")
-					slot(name="loading-icon")
+			.loading-overlay(v-if="loading")
+				slot(name="loading-icon")
 </template>
 
 <script>

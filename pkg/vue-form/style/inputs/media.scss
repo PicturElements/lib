@@ -152,6 +152,7 @@ $media-params: (
 				padding: 0 8px;
 				box-sizing: border-box;
 				user-select: none;
+				pointer-events: none;
 				transition: transform $reveal-duration;
 				transition-delay: $reveal-delay;
 				z-index: 100;
@@ -400,7 +401,7 @@ $media-params: (
 		}
 
 		.edit-canv {
-			position: absolute;
+			position: fixed;
 			top: 0;
 			left: 0;
 			opacity: 0;

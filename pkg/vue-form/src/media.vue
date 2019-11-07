@@ -42,7 +42,6 @@
 						span {{ fileData.dimensions.w }}&nbsp;&times;&nbsp;{{ fileData.dimensions.h }} ({{ crop.dimensions.w }}&nbsp;&times;&nbsp;{{ crop.dimensions.h }})
 					img.display-image(
 						:style="{ width: `${crop.dimensions.wp}%`, height: `${crop.dimensions.hp}%`, transform: crop.transform }"
-						:src="fileData.data"
 						ref="img")
 					.hit-target.a-fill(
 						@mousedown="startImageMove"
@@ -52,7 +51,6 @@
 						span {{ fileData.dimensions.w }}&nbsp;&times;&nbsp;{{ fileData.dimensions.h }} {{ getTimeStr(fileData.currentTime) }}/{{ getTimeStr(fileData.duration) }}
 					video.display-video(
 						:style="fileData.style"
-						:src="fileData.data"
 						ref="video")
 					.hit-target.a-fill(@click="toggleVideoPlay")
 				template(v-else-if="mediaType == 'error'")
@@ -79,10 +77,12 @@
 				.queued-output-item.f-nshrink(v-for="(output, idx) in enqueuedOutput")
 					img(
 						v-if="output.mediaType == 'image'"
-						:src="output.data")
+						:src="output.data"
+						:key="idx")
 					video(
 						v-else-if="output.mediaType == 'video'"
-						:src="output.data")
+						:src="output.data"
+						:key="idx")
 					.remove-output-item(@click="removeOutput(idx)") &times;
 		.validation-msg(:class="validationMsg ? 'active' : null") {{ validationMsg }}
 		canvas.edit-canv(ref="editCanv")
@@ -239,6 +239,8 @@
 						message: `Failed to load image '${fd.name}'`
 					});
 				};
+
+				img.src = fd.data;
 			},
 			handleVideoInit(data) {
 				const fd = this.fileData,
@@ -266,6 +268,8 @@
 						message: `Failed to load video '${fd.name}'`
 					});
 				};
+
+				video.src = fd.data;
 			},
 			setAspectRatio(fd) {
 				const ts = this.input.targetSize,
