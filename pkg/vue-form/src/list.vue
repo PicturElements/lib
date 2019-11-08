@@ -14,7 +14,7 @@
 	import Form, { Input } from "@qtxr/form";
 
 	export default {
-		name: "Input",
+		name: "List",
 		data: _ => ({
 			validationMsg: null,
 			validationState: "ok"

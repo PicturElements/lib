@@ -40,6 +40,7 @@
 				return option;
 			},
 			updateSelection() {
+				console.log("Updating selection");
 				const options = this.res(this.input.options);
 				
 				if (options.hasOwnProperty(this.activeIndex) && this.input.compare(options[this.activeIndex], this.input.value))
@@ -61,7 +62,7 @@
 			},
 			res(val) {
 				if (typeof val == "function")
-					return val.call(this, this.form, this.input);
+					return val.call(this.input);
 
 				return val;
 			},
@@ -76,6 +77,11 @@
 			meta: {
 				type: Object,
 				default: _ => ({})
+			}
+		},
+		watch: {
+			"input.value"() {
+				this.updateSelection();
 			}
 		},
 		beforeMount() {
