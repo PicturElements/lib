@@ -715,7 +715,7 @@ function fetchRequest(cell, runtime, method = "get", url = null, preset = null) 
 	}
 
 	return new Promise(resolve => {
-		const runtimePreset = cell.process("preset")(runtime.preset);
+		const runtimePreset = cell.process("preset")(runtime, runtime.preset);
 
 		cell.xhrManager
 			.use(cell.xhrPreset, runtimePreset, preset)
