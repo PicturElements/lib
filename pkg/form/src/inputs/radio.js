@@ -7,7 +7,7 @@ import BaseInput, { INJECT } from "./base-input";
 export default class Radio extends BaseInput {
 	constructor(name, options, form) {
 		super(name, options, form, {
-			options: Array,
+			options: "Array|function",
 			autoSet: "boolean",
 			inject: "function|string"
 		});
