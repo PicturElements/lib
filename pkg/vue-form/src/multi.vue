@@ -189,8 +189,8 @@
 
 				this.expanded = true;
 				requestFrame(_ => this.$refs.searchInput.select());
-				this.initUpdateLoop();
 				this.search();
+				this.initUpdateLoop();
 			},
 			collapse(evt) {
 				if (!this.expanded)

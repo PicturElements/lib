@@ -112,11 +112,12 @@
 
 				const style = getComputedStyle(this.$refs.dropdownBox),
 					bcr = this.$refs.dropdownBox.getBoundingClientRect(),
+					borderBox = style.boxSizing == "border-box",
 					sHeight = this.$refs.list.scrollHeight,
-					bTop = parseFloat(style.borderLeftWidth),
-					bRight = parseFloat(style.borderLeftWidth),
-					bBottom = parseFloat(style.borderLeftWidth),
-					bLeft = parseFloat(style.borderLeftWidth),
+					bTop = borderBox ? 0 : parseFloat(style.borderLeftWidth),
+					bRight = borderBox ? 0 : parseFloat(style.borderLeftWidth),
+					bBottom = borderBox ? 0 : parseFloat(style.borderLeftWidth),
+					bLeft = borderBox ? 0 : parseFloat(style.borderLeftWidth),
 					topAvailable = bcr.top - PADDING,
 					bottomAvailable = window.innerHeight - (bcr.top + bcr.height) - PADDING,
 					placeBottom = bottomAvailable > (topAvailable * BOTTOM_BIAS) || sHeight < bottomAvailable,
@@ -148,6 +149,8 @@
 				// -1 with empty array
 				if (this.input.autoSet)
 					idx = Math.max(idx, Math.min(options.length - 1, 0));
+				else if (idx == -1 && this.input.value)
+					this.trigger()
 
 				this.activeIndex = idx;
 				this.activeOption = options[idx] || {};

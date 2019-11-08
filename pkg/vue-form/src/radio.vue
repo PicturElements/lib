@@ -40,7 +40,6 @@
 				return option;
 			},
 			updateSelection() {
-				console.log("Updating selection");
 				const options = this.res(this.input.options);
 				
 				if (options.hasOwnProperty(this.activeIndex) && this.input.compare(options[this.activeIndex], this.input.value))
@@ -55,6 +54,8 @@
 				// -1 with empty array
 				if (this.input.autoSet)
 					idx = Math.max(idx, Math.min(options.length - 1, 0));
+				else if (idx == -1 && this.input.value)
+					this.trigger()
 
 				this.activeIndex = idx;
 				this.activeOption = options[idx] || {};
