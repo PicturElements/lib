@@ -7,7 +7,7 @@
 		.ellipsis-menu(ref="menu")
 			template(v-for="option in options")
 				.ellipsis-menu-item(
-					:v-if="display(option)"
+					v-if="display(option)"
 					@click="dispatchAction(option)") {{ res(option.title, option) }}
 </template>
 
