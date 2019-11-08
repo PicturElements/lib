@@ -67,6 +67,10 @@
 					VForm(
 						:form="form"
 						:rows="formRows.footerRight")
+		template(
+			v-else-if="$scopedSlots['footer']"
+			v-slot:footer="utilBox")
+			slot(name="footer" v-bind="utilBox")
 </template>
 
 <script>
