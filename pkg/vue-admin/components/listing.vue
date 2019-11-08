@@ -3,7 +3,7 @@
 		.listing-content.error.f.c(v-if="cell.state.error")
 			slot(name="error" v-bind="this")
 				span failed to load data
-		.listing-content.no-results.f.c(v-else-if="cell.state.fetches && (!cell.data || !cell.data.length)")
+		.listing-content.no-results.f.c(v-else-if="cell.state.fetches && (!cellData || !cellData.length)")
 			slot(name="no-results" v-bind="this")
 				span No items to show
 		template(v-else)
@@ -26,10 +26,10 @@
 					template(v-for="(item, idx) in getItems()")
 						slot(name="item" v-bind="mkItem(item, idx)")
 			.listing-content.grid(v-else-if="conf.viewMode == 'grid'")
-				template(v-for="(item, idx) in cell.data")
+				template(v-for="(item, idx) in cellData")
 					slot(name="item" v-bind="mkItem(item, idx)")
 			.listing-content.list(v-else)
-				template(v-for="(item, idx) in cell.data")
+				template(v-for="(item, idx) in cellData")
 					slot(name="item" v-bind="mkItem(item, idx)")
 </template>
 
@@ -97,7 +97,7 @@
 			getItems() {
 				const sortState = this.sortState,
 					isPagination = this.cell instanceof DataCellPagination,
-					items = this.cell.data;
+					items = this.cellData;
 
 				if (!items || !sortState.column || (!sortState.column.sort && !sortState.column.index) || sortState.order == "neutral")
 					return items;
@@ -149,6 +149,11 @@
 					return val.call(this, this.cell);
 
 				return val;
+			}
+		},
+		computed: {
+			cellData() {
+				return get(this.cell.data, this.config.accessor || "");
 			}
 		},
 		props: {
