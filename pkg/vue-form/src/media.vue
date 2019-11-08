@@ -15,7 +15,7 @@
 					img.a-fill(
 						v-if="enqueuedOutput[0].mediaType == 'image'"
 						:src="enqueuedOutput[0].data")
-					video(
+					video.result-video(
 						v-else-if="enqueuedOutput[0].mediaType == 'video'"
 						:src="enqueuedOutput[0].data")
 				.upload-prompt.f.c.col.a-fill
@@ -23,7 +23,12 @@
 						svg.media-upload-icon(viewBox="-5 -5 85 65")
 							path(d="M70,10H40L36.78,3.56A6.45,6.45,0,0,0,31,0H19a6.45,6.45,0,0,0-5.77,3.56L10,10H5a5,5,0,0,0-5,5V50a5,5,0,0,0,5,5H70a5,5,0,0,0,5-5V15A5,5,0,0,0,70,10ZM25,47A15,15,0,1,1,40,32,15,15,0,0,1,25,47ZM65,32a3,3,0,0,1-3,3H53a3,3,0,0,1-3-3V23a3,3,0,0,1,3-3H62a3,3,0,0,1,3,3Z")
 					span.upload-prompt-message
-						slot(name="upload-message")
+						slot(
+							v-if="input.ignoreSize"
+							name="upload-message") click to upload
+						slot(
+							v-else
+							name="upload-message")
 							| {{ input.targetSize.w }} &times; {{ input.targetSize.h }}
 							br
 							| click to upload
@@ -41,7 +46,7 @@
 					.edit-header.f.jc
 						span {{ fileData.dimensions.w }}&nbsp;&times;&nbsp;{{ fileData.dimensions.h }} ({{ crop.dimensions.w }}&nbsp;&times;&nbsp;{{ crop.dimensions.h }})
 					img.display-image(
-						:style="{ width: `${crop.dimensions.wp}%`, height: `${crop.dimensions.hp}%`, transform: crop.transform }"
+						:style="input.ignoreSize ? fileData.style : { width: `${crop.dimensions.wp}%`, height: `${crop.dimensions.hp}%`, transform: crop.transform }"
 						ref="img")
 					.hit-target.a-fill(
 						@mousedown="startImageMove"
@@ -61,6 +66,7 @@
 						.elem-icon.a-fill.back
 						.elem-icon.a-fill.front
 					.zoom-slider.f-grow(
+						:style="{ visibility: mediaType == 'image' && input.ignoreSize ? 'hidden' : null }"
 						@mousedown.stop="startSliderMove"
 						@touchstart.stop="startSliderMove"
 						ref="slider")
@@ -296,6 +302,11 @@
 				}
 			},
 			startImageEdit() {
+				if (this.input.ignoreSize) {
+					this.setEditPhase("edit");
+					return;
+				}
+
 				const fd = this.fileData,
 					crop = this.crop,
 					ts = this.input.targetSize;
@@ -487,6 +498,34 @@
 				}
 			},
 			dispatchImage(fd) {
+				const dispatch = (dataUrl, w, h) => {
+					this.addData({
+						data: dataUrl,
+						contentType: fd.contentType,
+						mediaType: fd.mediaType,
+						source: {
+							width: fd.dimensions.w,
+							height: fd.dimensions.h,
+							aspectRatio: fd.aspectRatio,
+							size: fd.size,
+							name: fd.name
+						},
+						width: w,
+						height: h,
+						aspectRatio: h / w
+					});
+
+					const wrapper = this.$refs.enqueuedOutputWrapper;
+					if (wrapper)
+						requestFrame(_ => wrapper.scrollLeft = 10000);
+
+					this.dispatchChange();
+					this.nextAction();
+				};
+
+				if (this.input.ignoreSize)
+					return dispatch(fd.data, fd.dimensions.w, fd.dimensions.h);
+
 				const crop = this.crop,
 					currentScale = crop.scale.current,
 					dim = fd.dimensions,
@@ -503,38 +542,34 @@
 
 				requestFrame(_ => {
 					ctx.drawImage(this.$refs.img, x, y, w, h, 0, 0, ts.w, ts.h);
-					fd.data = canv.toDataURL(
-						this.input.mediaOptions.type,
-						this.input.mediaOptions.quality
+
+					dispatch(
+						canv.toDataURL(
+							this.input.mediaOptions.type,
+							this.input.mediaOptions.quality
+						),
+						w,
+						h
 					);
-
-					fd = Object.assign({}, fd);
-
-					fd.width = fd.dimensions.w;
-					fd.height = fd.dimensions.h;
-					delete fd.dimensions;
-					delete fd.style;
-
-					this.addData(fd);
-
-					const wrapper = this.$refs.enqueuedOutputWrapper;
-					if (wrapper)
-						requestFrame(_ => wrapper.scrollLeft = 10000);
-
-					this.dispatchChange();
-					this.nextAction();
 				});
 			},
 			dispatchVideo(fd) {
-				fd = Object.assign({}, fd);
+				this.addData({
+					data: fd.data,
+					contentType: fd.contentType,
+					mediaType: fd.mediaType,
+					source: {
+						width: fd.dimensions.w,
+						height: fd.dimensions.h,
+						aspectRatio: fd.aspectRatio,
+						size: fd.size,
+						name: fd.name
+					},
+					width: fd.dimensions.w,
+					height: fd.dimensions.h,
+					aspectRatio: fd.aspectRatio
+				});
 
-				fd.width = fd.dimensions.w;
-				fd.height = fd.dimensions.h;
-				delete fd.dimensions;
-				delete fd.style;
-				delete fd.currentTime;
-				
-				this.addData(fd);
 				this.dispatchChange();
 				this.nextAction();
 			},
@@ -558,6 +593,12 @@
 					Form.trigger(this.input, val);
 				} else
 					Form.trigger(this.input, this.enqueuedOutput[0]);
+			},
+			updateOutputQueue() {
+				if (this.input.multiple)
+					this.enqueuedOutput = this.input.value || [];
+				else
+					this.enqueuedOutput = this.input.value ? [this.input.value] : [];
 			},
 			res(val) {
 				if (typeof val == "function")
@@ -584,7 +625,14 @@
 				default: _ => ({})
 			}
 		},
+		watch: {
+			"input.data"() {
+				this.updateOutputQueue();
+			}
+		},
 		beforeMount() {
+			this.updateOutputQueue();
+
 			this.input.hook("update", inp => {
 				this.validationState = inp.validationState;
 				this.validationMsg = inp.validationMsg || this.validationMsg;
