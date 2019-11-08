@@ -16,10 +16,12 @@ import {
 	inputTypes,
 	inputConstructors
 } from "./inputs";
-import {
+import BaseInput, {
 	CHECK,
 	TRIGGER,
-	SELF_TRIGGER
+	SELF_TRIGGER,
+	EXTRACT,
+	SET_VALUE
 } from "./inputs/base-input";
 
 export default class Form extends Hookable {
@@ -123,11 +125,14 @@ export default class Form extends Hookable {
 			send(targets);
 	}
 
-	setValues(values) {
+	setValues(values, noTrigger) {
 		this.forEach(inp => {
 			if (values.hasOwnProperty(inp.name)) {
-				inp.value = values[inp.name];
-				inp[TRIGGER](inp.value);
+				if (values[inp.name] !== null)
+					inp[SET_VALUE](values[inp.name]);
+
+				if (!noTrigger)
+					inp[TRIGGER](inp.value);
 			}
 		});
 	}
@@ -152,24 +157,30 @@ export default class Form extends Hookable {
 	extract() {
 		const out = {};
 
-		this.forEach((inp, name) => {
-			if (typeof inp.extract == "function") {
-				const extracted = inp.extract(inp.value, inp, out, this.inputs);
+		this.forEach((input, name) => {
+			const extracted = this.extractOne(input);
 
-				if (extracted !== undefined)
-					out[name] = extracted;
-			} else
-				out[name] = inp.value;
+			if (extracted !== undefined)
+				out[name] = extracted;
 		});
 
 		return out;
+	}
+
+	extractOne(inputOrName) {
+		const input = typeof inputOrName == "string" ? this.inputs[inputOrName] : inputOrName;
+
+		if (!(input instanceof BaseInput))
+			return;
+
+		return input[EXTRACT]();
 	}
 
 	clear() {
 		this.forEach(inp => {
 			inp.initialized = false;
 			inp.valid = true;
-			inp.value = inp.hasOwnProperty("default") ? inp.default : "";
+			inp[SET_VALUE](inp.hasOwnProperty("default") ? inp.default : "");
 		});
 
 		this.forEach(inp => inp[TRIGGER](inp.value));

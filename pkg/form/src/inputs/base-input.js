@@ -1,5 +1,6 @@
 import {
 	sym,
+	get,
 	inject,
 	injectSchema
 } from "@qtxr/utils";
@@ -9,10 +10,13 @@ import { isValidKey, isValidWord } from "@qtxr/evt";
 // TODO: in next major version, change hook argument order from
 // oldValue, newValue to newValue, oldValue
 
-const UPDATE = sym("update"),
-	CHECK = sym("check"),
+const CHECK = sym("check"),
 	TRIGGER = sym("trigger"),
-	SELF_TRIGGER = sym("selfTrigger");
+	SELF_TRIGGER = sym("selfTrigger"),
+	UPDATE = sym("update"),
+	EXTRACT = sym("extract"),
+	INJECT = sym("inject"),
+	SET_VALUE = sym("setValue");
 
 const initOptionsSchema = {
 	name: "string",
@@ -31,7 +35,8 @@ const initOptionsSchema = {
 	process: "function",
 	trigger: "function",
 	update: "function",
-	extract: "function",
+	extract: "function|string",
+	insert: "function",
 	compare: "function",
 
 	propagate: "any"
@@ -62,6 +67,7 @@ export default class BaseInput extends Hookable {
 		this.trigger = null;
 		this.update = null;
 		this.extract = null;
+		this.insert = null;
 		this.compare = null;
 
 		// Propagation data
@@ -162,6 +168,26 @@ export default class BaseInput extends Hookable {
 		this.form.callHooks(`update:${this.name}`, this);
 		this.callHooks("update");
 	}
+
+	[EXTRACT]() {
+		if (typeof this.extract == "function")
+			return this.extract(this.value, this, this, this.form.inputs);
+		else if (typeof this.extract == "string")
+			return get(this.value, this.extract);
+		else
+			return this.value;
+	}
+
+	[INJECT](value) {
+		if (typeof this.inject == "function")
+			return this.inject(value);
+
+		return value;
+	}
+
+	[SET_VALUE](value) {
+		this.value = this[INJECT](value);
+	}
 }
 
 function mkChecker(checker, checkerKey) {
@@ -190,8 +216,11 @@ function mkComparator(precursor) {
 }
 
 export {
-	UPDATE,
 	CHECK,
 	TRIGGER,
-	SELF_TRIGGER
+	SELF_TRIGGER,
+	UPDATE,
+	EXTRACT,
+	INJECT,
+	SET_VALUE
 };
