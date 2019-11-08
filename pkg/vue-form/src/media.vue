@@ -626,7 +626,7 @@
 			}
 		},
 		watch: {
-			"input.data"() {
+			"input.value"() {
 				this.updateOutputQueue();
 			}
 		},
