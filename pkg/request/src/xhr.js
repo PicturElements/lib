@@ -86,6 +86,7 @@ class XHRManager {
 			return this;
 		}
 
+		this.macroKeys[key] = true;
 		this[key] = handler;
 		return this;
 	}
@@ -95,6 +96,9 @@ class XHRManager {
 			console.warn(`Cannot delete macro: no macro by name '${key}' defined`);
 			return this;
 		}
+
+		delete this[key];
+		delete this.macroKeys[key];
 
 		return this;
 	}
