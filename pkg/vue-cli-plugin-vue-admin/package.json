@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/vue-cli-plugin-vue-admin",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "Plugin used by Vue CLI services to manage @qtxr/v-admin",
   "main": "index.js",
   "scripts": {
@@ -27,7 +27,7 @@
   "dependencies": {
     "@qtxr/node-utils": "^1.7.0",
     "@qtxr/utils": "^1.28.4",
-    "@qtxr/vue-admin": "^1.5.0"
+    "@qtxr/vue-admin": "^1.5.2"
   },
   "devDependencies": {},
   "files": [
@@ -39,7 +39,7 @@
     "/prompts.js"
   ],
   "qlib": {
-    "pushes": 5,
+    "pushes": 6,
     "expose": {
       "scripts": [
         "connect/feed.js"

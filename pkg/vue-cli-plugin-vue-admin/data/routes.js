@@ -1,3 +1,5 @@
+const { serialize } = require("@qtxr/node-utils");
+
 const getRoutes = config => {
 	if (!config) {
 		config = {
@@ -13,13 +15,13 @@ const getRoutes = config => {
 			inject: {
 				dataCells: {
 					loginCell: {
-						fetch(...args) {
-							return new Promise(resolve => {
-								setTimeout(_ => {
-									resolve(Math.random() < 0.5 ? null : { data: "abcd" });
-								}, 1500);
-							});
-						},
+						fetch: serialize.rawReplaceKey(`fetch(...args) {
+	return new Promise(resolve => {
+		setTimeout(_ => {
+			resolve(Math.random() < 0.5 ? null : { data: "abcd" });
+		}, 1500);
+	});
+}`),
 						validate: ["success", true, "Fake Login Error"]
 					}
 				}

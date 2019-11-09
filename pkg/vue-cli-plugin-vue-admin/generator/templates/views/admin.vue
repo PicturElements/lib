@@ -133,12 +133,30 @@
 			}
 
 			.main-logo {
+				width: $overlap-logo-width;
 				height: $overlap-logo-height;
-				color: $highlight;
 
 				.adm-icon {
 					height: 100%;
 				}
+			}
+
+			.logo-text {
+				font-size: 150%;
+				font-weight: 100;
+
+				span + span {
+					font-weight: normal;
+					margin-left: 0.15em;
+				}
+			}
+
+			.logo-separator {
+				margin: 0 10px;
+				width: 1px;
+				height: 50%;
+				background: currentColor;
+				opacity: 0.2;
 			}
 
 			.admin-aside-content {
