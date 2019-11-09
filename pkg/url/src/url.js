@@ -29,6 +29,9 @@ const URL_PARSERS = [
 		regex: /^[^\/:]+/
 	}, {
 		key: "port",
+		guard(inst, otomy) {
+			return Boolean(inst.hostname);
+		},
 		regex: /^:([^\s\/]+)/,
 		capture: 1
 	}, {
@@ -308,8 +311,7 @@ export default class URL {
 
 		let outInstance = null,
 			path = [],
-			hash = "",
-			foundAbsolutePath = false;
+			hash = "";
 		const searchParams = {};
 
 		// Validate / collect data 
