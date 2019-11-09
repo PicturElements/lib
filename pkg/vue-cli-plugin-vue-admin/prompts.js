@@ -1,9 +1,8 @@
 const getRoutes = require("./data/routes");
 const routes = getRoutes();
 
-function viewChoices(answers) {
-	const choices = answers.views || [],
-		choicesOut = [];
+function viewChoices() {
+	const choicesOut = [];
 
 	const traverse = (route, indent, last) => {
 		if (!route.forceRender) {
@@ -19,9 +18,6 @@ function viewChoices(answers) {
 			};
 		
 			choicesOut.push(choice);
-
-			// if (choices.indexOf(choice.value) == -1)
-			//	return;
 		}
 
 		const children = route.children || [];
