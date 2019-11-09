@@ -25,10 +25,7 @@
 						v-if="admin.config.appearance.general.sidebar"
 						@click="expandSidebar")
 						Icon.ico-hamburger
-					.admin-breadcrumbs.f(v-if="admin.config.appearance.general.breadcrumbs")
-						router-link.admin-breadcrumb(
-							v-for="crumb in breadcrumbs"
-							:to="crumb.path") {{ crumb.crumb }}
+					Breadcrumbs(v-if="admin.config.appearance.general.breadcrumbs")
 					.user-box.f
 						.user-name {{ queryState('session.user.firstname') }} {{ queryState('session.user.lastname') }}
 						.logout.faux-link.ml10(@click="logout") Log out
@@ -60,7 +57,7 @@
 		},
 		methods: {
 			logout() {
-				// NB: Requires a store
+				// NB! Requires a store
 				this.commit("session/logout");
 			},
 			expandSidebar() {
@@ -78,12 +75,7 @@
 					this.sidebarExpanded = false;
 			}
 		},
-		computed: {
-			breadcrumbs() {
-				const route = this.$route.meta.route;
-				return (route && route.breadcrumbs) || [];
-			}
-		},
+		computed: {},
 		props: {},
 		components: {}
 	});
@@ -189,34 +181,6 @@
 				cursor: pointer;
 				z-index: 100;
 			}
-
-			.admin-breadcrumb {
-				position: relative;
-
-				+ .admin-breadcrumb {
-					margin-left: 1.6em;
-
-					&:before {
-						content: "";
-						position: absolute;
-						width: 0.6em;
-						height: 0.6em;
-						top: 50%;
-						margin: -0.25em -1.25em;
-						transform: rotate(45deg);
-						border: 1px solid $header-color;
-						border-style: dotted;
-						border-left: none;
-						border-bottom: none;
-						opacity: 0.7;
-					}
-				}
-
-				&:last-child {
-					color: $highlight;
-					font-weight: bold;
-				}
-			}
 		}
 
 		.admin-main-wrapper {
@@ -269,10 +233,10 @@
 				position: fixed;
 				top: 0;
 				left: 0;
-				z-index: 1000000;
 				transition: transform 300ms;
 				will-change: transform;
 				transform: translateX(-100%);
+				z-index: 1000000;
 
 				&.expanded {
 					transform: none;
@@ -288,20 +252,6 @@
 
 				.user-name {
 					display: none;
-				}
-			}
-
-			.admin-breadcrumbs a {
-				&:not(:last-child) {
-					display: none;
-				}
-
-				&:last-child {
-					margin-left: 0;
-					
-					&:before {
-						display: none;
-					}
 				}
 			}
 

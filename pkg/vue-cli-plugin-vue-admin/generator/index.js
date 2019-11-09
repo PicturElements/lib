@@ -10,6 +10,7 @@ const {
 
 const getRoutes = require("../data/routes");
 const getConfig = require("../data/config");
+const getPackage = require("../data/package");
 
 module.exports = function generate(api, settings) {
 	const cwd = process.cwd(),
@@ -62,18 +63,7 @@ module.exports = function generate(api, settings) {
 		srcTarget: "./templates"
 	});
 
-	api.extendPackage({
-		dependencies: {
-			"@qtxr/vue-admin": "file:/Users/pixel/desktop/var/lib/pkg/vue-admin"
-		},
-		devDependencies: {
-			"chokidar": "^3.2.1",
-			"@qtxr/node-utils": "^1.5.0"
-		},
-		sass: {
-			includePaths: ["node_modules"]	// Required to load SCSS files from node_modules
-		}
-	});
+	api.extendPackage(getPackage());
 
 	api.onCreateComplete(async _ => {
 		if (!hasPlugin)
