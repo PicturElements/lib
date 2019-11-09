@@ -210,6 +210,7 @@ const defaults = {
 	},
 	textarea: {
 		type: "textarea",
+		value: "",
 		maxLength: 10000,
 		validate(val, inp, payload) {
 			if (val.length > inp.maxLength)
