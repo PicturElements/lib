@@ -18,12 +18,20 @@ const {
 } = require("@qtxr/node-utils");
 
 const genViewMap = require("./updaters/view-map");
-const genComponentExport = require("./updaters/component-export");
+const genComponents = require("./updaters/components");
 
-const root = path.join(__dirname, "..");
+const ROOT = path.join(__dirname, ".."),
+	ADMIN_PATH = path.join(ROOT, "admin"),
+	MODELS_RELATIVE_PATH = "models",
+	MODELS_PATH = path.join(ROOT, MODELS_RELATIVE_PATH),
+	VIEWS_RELATIVE_PATH = "views",
+	VIEWS_PATH = path.join(ROOT, VIEWS_RELATIVE_PATH),
+	COMPONENTS_RELATIVE_PATH = "components",
+	COMPONENTS_PATH = path.join(ROOT, COMPONENTS_RELATIVE_PATH),
+	STYLE_PATH = path.join(ROOT, "assets/scss");
 
 async function init() {
-	console.log("Running admin service...");
+	console.log("Starting admin service...");
 
 	watchModels();
 	watchViews();
@@ -34,55 +42,60 @@ async function init() {
 
 async function runAll() {
 	await genViewMap();
-	await genComponentExport();
+	await genComponents();
 }
 
 function watchModels() {
-	chokidar.watch(path.join(root, "models"))
+	chokidar.watch(".", {
+			persistent: true,
+			cwd: MODELS_PATH
+		})
 		.on("add", async pth => {
 			info(`Added model at ${pth}`);
-			await trackFile(pth);
+			await trackFile(path.join(MODELS_PATH, pth));
 
 			const {
 					fileName,
 					preset
 				} = extractFileData(pth),
-				correspondent = path.join("views", `${fileName}.vue`);
+				absPath = path.join(MODELS_PATH, pth),
+				strippedFilePath = stripExtension(pth),
+				correspondent = path.join(VIEWS_RELATIVE_PATH, `${strippedFilePath}.vue`);
 
-			const renamed = await getRenamedFile(pth);
+			const renamed = await getRenamedFile(absPath);
 
 			if (renamed) {
-				await updateModel(fileName);
+				await updateModel(strippedFilePath);
 				await renameFile(
-					getViewPath(getFileName(renamed)),
-					getViewPath(fileName)
+					getViewPath(path.join(pth, "..", getFileName(renamed))),
+					getViewPath(strippedFilePath)
 				);
 				return;
 			}
 
-			if (!await exists(path.join(root, correspondent))) {
+			if (!await exists(path.join(ROOT, correspondent))) {
 				const templatePath = await resolveViewTemplatePath(preset);
 
 				renderView({
-					root,
+					root: ROOT,
 					targetPath: correspondent,
 					templatePath,
 					fileName
 				});
 			}
 
-			const currentFileData = await readFileUTF(pth);
+			const currentFileData = await readFileUTF(absPath);
 
 			if (!currentFileData.length) {
 				// Remove old file
-				if (pth != getModelPath(fileName))
-					await unlink(pth);
+				if (pth != getModelPath(strippedFilePath))
+					await unlink(absPath);
 
 				const templatePath = await resolveModelTemplatePath(preset);
 
 				renderModel({
-					root,
-					targetPath: path.join("models", `${fileName}.js`),
+					root: ROOT,
+					targetPath: path.join(MODELS_RELATIVE_PATH, `${fileName}.js`),
 					templatePath,
 					fileName
 				});
@@ -91,58 +104,63 @@ function watchModels() {
 			await genViewMap();
 		})
 		.on("unlink", async pth => {
-			logRemovedFile(pth);
+			logRemovedFile(path.join(MODELS_PATH, pth));
 			info(`Removed model from ${pth}`);
 			await genViewMap();
 		});
 }
 
 function watchViews() {
-	chokidar.watch(path.join(root, "views"))
+	chokidar.watch(".", {
+			persistent: true,
+			cwd: VIEWS_PATH
+		})
 		.on("add", async pth => {
 			info(`Added view at ${pth}`);
-			await trackFile(pth);
+			await trackFile(path.join(VIEWS_PATH, pth));
 
 			const {
 					fileName,
 					preset
 				} = extractFileData(pth),
-				correspondent = path.join("models", `${fileName}.js`);
+				absPath = path.join(VIEWS_PATH, pth),
+				strippedFilePath = stripExtension(pth),
+				correspondent = path.join(MODELS_RELATIVE_PATH, `${strippedFilePath}.js`);
 
-			const renamed = await getRenamedFile(pth);
+			const renamed = await getRenamedFile(absPath);
 
 			if (renamed) {
-				await updateView(fileName);
+				await updateView(strippedFilePath);
 				await renameFile(
-					getModelPath(getFileName(renamed)),
-					getModelPath(fileName)
+					getModelPath(path.join(pth, "..", getFileName(renamed))),
+					getModelPath(strippedFilePath)
 				);
 				return;
 			}
 
-			if (!await exists(path.join(root, correspondent))) {
+			if (!await exists(path.join(ROOT, correspondent))) {
 				const templatePath = await resolveModelTemplatePath(preset);
 
 				renderModel({
-					root,
+					root: ROOT,
 					targetPath: correspondent,
 					templatePath,
 					fileName
 				});
 			}
 
-			const currentFileData = await readFileUTF(pth);
+			const currentFileData = await readFileUTF(absPath);
 
 			if (!currentFileData.length) {
 				// Remove old file
-				if (pth != getViewPath(fileName))
-					await unlink(pth);
+				if (pth != getViewPath(strippedFilePath))
+					await unlink(absPath);
 
 				const templatePath = await resolveViewTemplatePath(preset);
 
 				renderView({
-					root,
-					targetPath: path.join("views", `${fileName}.vue`),
+					root: ROOT,
+					targetPath: path.join(VIEWS_RELATIVE_PATH, `${fileName}.vue`),
 					templatePath,
 					fileName
 				});
@@ -151,14 +169,17 @@ function watchViews() {
 			await genViewMap();
 		})
 		.on("unlink", async pth => {
-			logRemovedFile(pth);
+			logRemovedFile(path.join(VIEWS_PATH, pth));
 			info(`Removed view from ${pth}`);
 			await genViewMap();
 		});
 }
 
 function watchComponents() {
-	chokidar.watch(path.join(root, "components"))
+	chokidar.watch(".", {
+			persistent: true,
+			cwd: COMPONENTS_PATH
+		})
 		.on("add", async pth => {
 			info(`Added component at ${pth}`);
 
@@ -167,34 +188,36 @@ function watchComponents() {
 					fileName,
 					preset
 				} = extractFileData(pth),
-				targetPath = path.join("components", `${fileName}.vue`);
+				absPath = path.join(COMPONENTS_PATH, pth),
+				strippedFilePath = stripExtension(pth),
+				targetPath = path.join(COMPONENTS_RELATIVE_PATH, `${strippedFilePath}.vue`);
 
 			// Omit export file from export generation
 			if (file == "index.js")
 				return;
 
-			const currentFileData = await readFileUTF(pth);
+			const currentFileData = await readFileUTF(absPath);
 
 			if (!currentFileData.length) {
 				const templatePath = await resolveComponentTemplatePath(preset);
 
 				renderComponent({
-					root,
+					root: ROOT,
 					targetPath,
 					templatePath,
 					fileName
 				});
 
 				// Remove old file
-				if (pth != getComponentPath(fileName))
-					await unlink(pth);
+				if (absPath != getComponentPath(strippedFilePath))
+					await unlink(absPath);
 			}
 
-			await genComponentExport();
+			await genComponents();
 		})
 		.on("unlink", async pth => {
 			info(`Removed component from ${pth}`);
-			await genComponentExport();
+			await genComponents();
 		});
 }
 
@@ -210,13 +233,18 @@ async function renderView(args) {
 		root
 	});
 
+	const targetDir = splitDirAndFile(path.join(ROOT, targetPath)).dir;
+
 	render({
 		struct: {
 			[targetPath]: templatePath
 		},
 		templateData: {
 			fileName,
-			viewName: toPascal(fileName)
+			viewName: toPascal(fileName),
+			adminPath: path.relative(targetDir, ADMIN_PATH),
+			componentsPath: path.relative(targetDir, COMPONENTS_PATH),
+			stylePath: path.relative(targetDir, STYLE_PATH)
 		}
 	});
 
@@ -260,13 +288,17 @@ function renderComponent(args) {
 		root
 	});
 
+	const targetDir = splitDirAndFile(path.join(ROOT, targetPath)).dir;
+
 	render({
 		struct: {
 			[targetPath]: templatePath
 		},
 		templateData: {
 			fileName,
-			name: toPascal(fileName)
+			name: toPascal(fileName),
+			adminPath: path.relative(targetDir, ADMIN_PATH),
+			stylePath: path.relative(targetDir, STYLE_PATH)
 		}
 	});
 
@@ -352,7 +384,7 @@ async function renameFile(oldPath, newPath) {
 
 function toGarbage(pth) {
 	const render = mkRenderer({
-			targetPath: path.join(root, "runtime/garbage")
+			targetPath: path.join(ROOT, "runtime/garbage")
 		}),
 		fileName = splitDirAndFile(pth).file;
 
@@ -361,16 +393,16 @@ function toGarbage(pth) {
 	});
 }
 
-function getModelPath(name) {
-	return path.join(root, "models", `${name}.js`);
+function getModelPath(pth) {
+	return path.join(MODELS_PATH, `${pth}.js`);
 }
 
-function getViewPath(name) {
-	return path.join(root, "views", `${name}.vue`);
+function getViewPath(pth) {
+	return path.join(VIEWS_PATH, `${pth}.vue`);
 }
 
-function getComponentPath(name) {
-	return path.join(root, "components", `${name}.vue`);
+function getComponentPath(pth) {
+	return path.join(COMPONENTS_PATH, `${pth}.vue`);
 }
 
 function resolveModelTemplatePath(preset) {
@@ -436,7 +468,7 @@ async function getRenamedFile(pth) {
 async function resolveTemplatePath(pth, preset, defaultName = "default") {
 	const candidate = pth.replace("$file", preset);
 
-	if (!preset || !await exists(path.join(root, candidate)))
+	if (!preset || !await exists(path.join(ROOT, candidate)))
 		return pth.replace("$file", defaultName);
 
 	return candidate;

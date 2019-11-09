@@ -19,6 +19,10 @@ const admin = new VueAdmin(viewMap, {
 
 // ====== ROUTES ====== 
 // Route your app here. Use indentation to nest routes
+// A route prefixed with a forward slash is treated as
+// a base route nested in its parent view (accessible via router-view),
+// while a route not prefixed with one is treated as its own view,
+// but nested within the closest base route
 admin.route(`
 <%- routesTemplate %>
 `);
@@ -30,8 +34,9 @@ admin.route(`
 *			Internally, this dependency will be saved as "store"
 *
 *			Usage:
-*			admin.supply("vuex")(store, partitionPath?, storageName?), where
-*			* store is a Vuex.Store instance
+*			admin.supply("vuex")(storeOrVuex, partitionPath?, storageName?), where
+*			* storeOrVuex is a Vuex.Store instance or the Vuex singleton. If Vuex is passed,
+*			  it will also automatically be used as a plugin
 *			* partitionPath is the optional path to the store partition allotted for VueAdmin.
 *			  Default is "admin"
 *			* storageName is the name used to set state to local/session storage
@@ -43,7 +48,7 @@ admin.route(`
 *		.supply("dep")				// Supply built-in dependency without initializer
 *		.supply("dep")(Dep)			// Supply built-in dependency with initializer and provide init arguments
 *		.supply("dep", { ... })		// Supply custom dependency without initializer directly
-*		.supply("dep", {			// Supply custom with initializer dependency and provide init arguments
+*		.supply("dep", {			// Supply custom dependency with initializer and provide init arguments
 *			init(Dep) {
 *				// init code
 *			}

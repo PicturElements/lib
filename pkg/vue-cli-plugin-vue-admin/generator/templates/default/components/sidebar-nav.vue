@@ -5,22 +5,23 @@
 	.sidebar-nav-box(v-else)
 		template(v-for="route in getRoutes()")
 			router-link.sidebar-link.leaf-link(
-				v-if="!route.children.length"
-				:to="route.path")
+				v-if="!route.childCount"
+				:to="route.path"
+				:class="{ 'leaf-active': route.active, hidden: !route.display }")
 				span.link-text {{ route.sidebarMeta.name }}
 			SidebarNav(
 				v-else-if="route.sidebarMeta.display == 'skip'"
 				:routes="route.children")
 			.sidebar-expando(v-else)
 				router-link.sidebar-link.expando-link(
-					:to="route.path")
+					:to="route.path"
+					:class="{ hidden: !route.display }")
 					span.link-text {{ route.sidebarMeta.name }}
 				SidebarNav(:routes="route.children")
 </template>
 
 <script>
 	import admin from "../admin";
-	import * as components from "@qtxr/vue-admin/components";
 
 	const component = admin.wrapC({
 		name: "SidebarNav",
@@ -42,16 +43,84 @@
 
 				for (let i = 0, l = routes.length; i < l; i++) {
 					const route = routes[i],
-						meta = route.view.meta;
+						meta = route.view.meta,
+						sidebarMeta = meta.sidebar || {},
+						children = route.children || [];
+					let childCount = 0,
+						display = false;
+
+					for (let i = 0, l = children.length; i < l; i++) {
+						const childSidebarMeta = children[i].sidebarConfig;
+
+						switch (childSidebarMeta.display) {
+							case "hidden":
+								break;
+
+							case "active": {
+								if (this.matchedRouteHasNode(children[i]))
+									childCount++;
+								
+								break;
+							}
+
+							case "visible":
+							default:
+								childCount++;
+								break;
+						}
+					}
+
+					switch (sidebarMeta.display) {
+						case "hidden":
+							break;
+
+						case "active": {
+							if (this.matchedRouteHasNode(route))
+								display = true;
+							break;
+						}
+
+						case "visible":
+						default:
+							display = true;
+							break;
+					}
+
+					const hasNode = this.matchedRouteHasNode(route),
+						path = hasNode ? this.resolveParams(route.fullPath) : route.fullPath;
 
 					outRoutes.push({
-						path: route.fullPath,
+						path,
 						children: route.children,
-						sidebarMeta: meta.sidebar || {}
+						active: !childCount && hasNode,
+						sidebarMeta,
+						childCount,
+						display
 					});
 				}
 
 				return outRoutes;
+			},
+			resolveParams(path) {
+				return path.replace(/:(\w+)/, (match, key) => {
+					if (!this.$route.params.hasOwnProperty(key))
+						return match;
+
+					return this.$route.params[key];
+				});
+			},
+			matchedRouteHasNode(node) {
+				const nodeId = node.meta.id,
+					matched = this.$route.matched;
+
+				for (let i = 0, l = matched.length; i < l; i++) {
+					const id = matched[i].meta.id;
+
+					if (id == nodeId)
+						return true;
+				}
+
+				return false;
 			},
 			collectChildRoutes() {
 				let children = [];
@@ -66,16 +135,14 @@
 		props: {
 			routes: Array
 		},
-		components: {
-			...components
-		}
+		components: {}
 	});
 
 	export default component.export();
 </script>
 
 <style lang="scss">
-	@use "../assets/scss/theme.scss" as *;
+	@use "../assets/scss" as *;
 
 	.sidebar-nav-box {
 		.sidebar-nav-box {
@@ -93,7 +160,7 @@
 			padding: 12px 15px;
 			font-size: 120%;
 
-			&:not(.router-link-exact-active):after {
+			&:after {
 				content: "";
 				position: absolute;
 				bottom: 0;
@@ -104,8 +171,17 @@
 				z-index: 0;
 			}
 
-			&.router-link-exact-active {
+			&.expando-link.router-link-exact-active,
+			&.leaf-active {
 				background: $highlight;
+
+				&:after {
+					display: none;
+				}
+			}
+
+			&.hidden {
+				display: none;
 			}
 
 			.link-text {

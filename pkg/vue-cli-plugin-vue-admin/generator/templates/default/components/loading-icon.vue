@@ -1,5 +1,5 @@
 <template lang="pug">
-	.admin-loading-icon
+	.admin-loading-icon.f.c
 		.loading-icon-dots
 			.loading-dot-row.f
 				.loading-dot.dot-1
@@ -11,7 +11,6 @@
 
 <script>
 	import admin from "../admin";
-	import * as components from "@qtxr/vue-admin/components";
 
 	const component = admin.wrapC({
 		name: "LoadingIcon",
@@ -19,16 +18,14 @@
 		methods: {},
 		computed: {},
 		props: {},
-		components: {
-			...components
-		}
+		components: {}
 	});
 
 	export default component.export();
 </script>
 
 <style lang="scss">
-	@use "../assets/scss/theme.scss" as *;
+	@use "../assets/scss" as *;
 
 	$dot-radius: 5px;
 	$dot-spacing: 8px;
@@ -47,6 +44,8 @@
 	$back-pop-opacity: 0.5;
 	$back-normal-scale: 0;
 	$back-pop-scale: $front-pop-scale * 0.3;
+	$resting-rotation: 0deg;
+	$active-rotation: 179deg;
 
 	.admin-loading-icon {
 		.loading-dot {
@@ -126,17 +125,25 @@
 				animation: loading-dot-4-front-scale $animation-duration infinite;
 			}
 		}
+
+		&.full-width {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+		}
 	}
 
 	@keyframes loading-flip-dot-1 {
 		0% {
 			transform-origin: $dot-half-shift 50%;
-			transform: rotate(0);
+			transform: rotate($resting-rotation);
 		}
 
 		25% {
 			transform-origin: $dot-half-shift 50%;
-			transform: rotate(180deg);
+			transform: rotate($active-rotation);
 		}
 
 		25.0001% {
@@ -146,7 +153,7 @@
 
 		50% {
 			transform-origin: 50% $dot-half-shift;
-			transform: translateX($dot-full-shift) rotate(180deg);
+			transform: translateX($dot-full-shift) rotate($active-rotation);
 		}
 
 		50.0001% {
@@ -156,7 +163,7 @@
 
 		75% {
 			transform-origin: (-$dot-spacing / 2) 50%;
-			transform: translate($dot-full-shift, $dot-full-shift) rotate(180deg);
+			transform: translate($dot-full-shift, $dot-full-shift) rotate($active-rotation);
 		}
 
 		75.0001% {
@@ -166,7 +173,7 @@
 
 		100% {
 			transform-origin: 50% (-$dot-spacing / 2);
-			transform: translateY($dot-full-shift) rotate(180deg);
+			transform: translateY($dot-full-shift) rotate($active-rotation);
 		}
 	}
 
@@ -209,13 +216,13 @@
 	@keyframes loading-flip-dot-2 {
 		0% {
 			transform-origin: (-$dot-spacing / 2) 50%;
-			transform: rotate(0);
+			transform: rotate($resting-rotation);
 		}
 
 		25%,
 		75% {
 			transform-origin: (-$dot-spacing / 2) 50%;
-			transform: rotate(180deg);
+			transform: rotate($active-rotation);
 		}
 
 		75.001% {
@@ -225,7 +232,7 @@
 
 		100% {
 			transform-origin: 50% $dot-half-shift;
-			transform: translate(-$dot-full-shift, 0) rotate(180deg);
+			transform: translate(-$dot-full-shift, 0) rotate($active-rotation);
 		}
 	}
 
@@ -269,7 +276,7 @@
 		75%,
 		100% {
 			transform-origin: $dot-half-shift 50%;
-			transform: rotate(180deg);
+			transform: rotate($active-rotation);
 		}
 	}
 
@@ -305,13 +312,13 @@
 		0%,
 		25% {
 			transform-origin: 50% (-$dot-spacing / 2);
-			transform: rotate(0);
+			transform: rotate($resting-rotation);
 		}
 
 		50%,
 		100% {
 			transform-origin: 50% (-$dot-spacing / 2);
-			transform: rotate(180deg);
+			transform: rotate($active-rotation);
 		}
 	}
 

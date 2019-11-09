@@ -4,7 +4,6 @@
 
 <script>
 	import admin from "../admin";
-	import components from "../components";
 
 	const view = admin.wrap("items", {
 		name: "Items",
@@ -12,12 +11,12 @@
 		methods: {},
 		computed: {},
 		props: {},
-		components
+		components: {}
 	});
 
 	export default view.export();
 </script>
 
 <style lang="scss">
-	@use "../assets/scss/theme.scss" as *;
+	@use "../assets/scss" as *;
 </style>

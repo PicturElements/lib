@@ -1,8 +1,8 @@
 const path = require("path");
 const {
-	readdir,
 	writeFile,
-	stripExtension
+	stripExtension,
+	traverseFileTree
 } = require("@qtxr/node-utils");
 
 const invalidIdentifierCharRegex = /^\d|[^\w$]/g;
@@ -21,21 +21,26 @@ export default viewMap;
 `;
 
 module.exports = async function genViewMap() {
-	const files = await readdir(path.join(__dirname, "../../models"));
 	const imports = [],
 		map = [];
 
-	for (const file of files) {
-		const stripped = stripExtension(file),
-			normalized = normalizeFileName(file),
-			quoted = quoteFileName(file);
+	await traverseFileTree({
+		cwd: path.join(__dirname, "../../models"),
+		path: ""
+	}, node => {
+		if (node.type == "directory")
+			return;
 
-		imports.push(`import ${normalized} from "../../models/${stripped}";`);
+		const camelized = toDirCamelCase(node.path),
+			pth = stripExtension(node.path),
+			quoted = quoteFileName(node.fileName);
+
+		imports.push(`import ${camelized} from "../../models/${pth}";`);
 		map.push(`\t${quoted}: {
-\t\tview: _ => import("../../views/${stripped}.vue"),
-\t\tmodel: ${normalized}
+\t\tview: _ => import("../../views/${pth}.vue"),
+\t\tmodel: ${camelized}
 \t}`);
-	}
+	});
 
 	await writeFile(
 		path.join(__dirname, "../gen/view-map.js"),
@@ -43,12 +48,12 @@ module.exports = async function genViewMap() {
 	);
 };
 
-function normalizeFileName(file) {
-	return stripExtension(file)
-		.replace(/-(.)/g, (match, capture) => {
+function toDirCamelCase(pth) {
+	return stripExtension(pth).split(/[\\/]/).map(comp => {
+		return comp.replace(/[_-]+(.)/g, (match, capture) => {
 			return capture.toUpperCase();
-		})
-		.replace(invalidIdentifierCharRegex, "_");
+		}).replace(invalidIdentifierCharRegex, "_");
+	}).join("_");
 }
 
 function quoteFileName(file) {

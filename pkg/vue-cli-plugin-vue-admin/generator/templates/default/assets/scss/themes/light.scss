@@ -7,14 +7,15 @@ $sidebar-alt-background: #38404a;
 $sidebar-color: white;
 $sidebar-default-width: 200px;
 
-$overlap-background: #25282d;
-$overlap-logo-width: 25px;
-$overlap-logo-height: 25px;
+$overlap-background: #17142d;
+$overlap-logo-width: 20px;
+$overlap-logo-height: 20px;
 $overlap-overlay-color: #3e4348;
 
 $header-background: white;
 $header-color: #2e343c;
 $header-height: 50px;
+$header-horizontal-padding: 18px;
 
 $repeating-pattern-foreground: #f9fcff;
 $repeating-pattern-background: #e6eaef;
@@ -22,12 +23,16 @@ $repeating-pattern-background: #e6eaef;
 $card-background: white;
 $card-shadow: 0 2px 3px rgba(0, 0, 0, 0.07);
 
+$accent-background: whitesmoke;
+$accent-haze-background: rgba(62, 63, 66, 0.04);
+
 $highlight: #1b66bf;
 $highlight-complement: white;
 $highlight-light: #6cafff;
 
 $subdued: #e6eaef;
 $subdued-complement: #a9b2bb;
+$subdued-dark-complement: #5a636d;
 
 $sidebar-base-indent: 15px;
 $sidebar-overlay-background: rgba(255, 255, 255, 0.1);
@@ -43,7 +48,15 @@ $error-label-border: 1px solid #efdcf5;
 $error-label-color: #8c0f65;
 $error-label-text-shadow: 0 1px rgba(0, 0, 0, 0.05);
 
-$accent-background: whitesmoke;
+$flat-green-light: #e5f9e7;
+$flat-green-dark: #63bd1f;
+$flat-orange-light: #fff5e0;
+$flat-orange-dark: #ffb300;
+$flat-red-light: #fbe1e1;
+$flat-red-dark: #e63939;
+$flat-outline-width: 2px;
+$flat-dark-front: white;
+$flat-light-front: black;
 
 $theme: (
 	general: (
@@ -63,6 +76,7 @@ $theme: (
 		header-background: $header-background,
 		header-color: $header-color,
 		header-height: $header-height,
+		header-horizontal-padding: $header-horizontal-padding,
 		
 		repeating-pattern-foreground: $repeating-pattern-foreground,
 		repeating-pattern-background: $repeating-pattern-background,
@@ -76,6 +90,7 @@ $theme: (
 		
 		subdued: $subdued,
 		subdued-complement: $subdued-complement,
+		subdued-dark-complement: $subdued-dark-complement,
 		
 		sidebar-base-indent: $sidebar-base-indent,
 		sidebar-overlay-background: $sidebar-overlay-background,
@@ -91,10 +106,21 @@ $theme: (
 		error-label-color: $error-label-color,
 		error-label-text-shadow: $error-label-text-shadow,
 
-		accent-background: $accent-background
+		accent-background: $accent-background,
+		accent-haze-background: $accent-haze-background,
+
+		flat-saved-light: $flat-green-light,
+		flat-saved-dark: $flat-green-dark,
+		flat-removed-light: $flat-orange-light,
+		flat-removed-dark: $flat-orange-dark,
+		flat-deleted-light: $flat-red-light,
+		flat-deleted-dark: $flat-red-dark,
+		flat-outline-width: $flat-outline-width,
+		flat-dark-front: $flat-dark-front,
+		flat-light-front: $flat-light-front
 	),
 	util-box: (
-		card-background: white,
+		card-background: $card-background,
 		card-shadow: 0 2px 4px rgba(0, 0, 0, 0.07),
 
 		border-radius: 2px,
@@ -104,7 +130,7 @@ $theme: (
 		separator: 1px solid whitesmoke
 	),
 	listing-box: (
-		background: white,
+		background: $card-background,
 		shadow: 0 2px 4px rgba(0, 0, 0, 0.07),
 
 		border-radius: 2px,
@@ -123,12 +149,13 @@ $theme: (
 	listing: (
 		weak-color: #555,
 		error-color: #bb2424,
+		highlight: $highlight,
 
 		accent-background: $accent-background,
 
 		row-border: 1px solid #eee,
-		odd-row-background: white,
-		even-row-background: whitesmoke,
+		odd-row-background: $card-background,
+		even-row-background: $accent-background,
 	),
 	inputs: (
 		// This also serves as the base style for
@@ -140,7 +167,7 @@ $theme: (
 			error-color: #9a3131,
 			autofill-color: #276a9e,
 
-			background: white,
+			background: $card-background,
 			focus-background: #eee,
 			error-background: #ffe1e1,
 			autofill-background: #edf7ff,
@@ -173,10 +200,63 @@ $theme: (
 			mobile-padding: 30px,
 			separator-border: 1px solid rgba(128, 128, 128, 0.25)
 		),
-		radio: ()
+		media: (
+			slider-width: 6px,
+			icon-width: 4px,
+			icon-shadow: 0 2px 3px rgba(0, 0, 0, 0.2),
+			shade-color: black,
+			feature-color: $card-background,
+			error-border-color: #e02929,
+			output-preview-spacing: 10px,
+			highlight: $highlight,
+			raster-light: #222,
+			raster-dark: #333,
+			output-preview-height: 100px,
+			output-preview-border-radius: 2px,
+			obscure-duration: 300ms,
+			obscure-delay: 0ms,
+			reveal-duration: 300ms,
+			reveal-delay: 500ms
+		),
+		multi: (
+			background: $card-background,
+			error-background: #ffe1e1,
+			border: 1px solid #dadada,
+			focus-border: 1px solid #1e2021,
+			error-border: 1px solid #e02929,
+			focus-border-color: #1e2021,
+			error-color: #9a3131,
+			highlight: $highlight,
+			selection-item-color: $card-background,
+			selection-item-height: 24px,
+			selection-item-spacing: 5px,
+			selection-item-border-radius: 2px,
+			search-box-background: $accent-background,
+			separator-border: 1px solid rgba(128, 128, 128, 0.15),
+			max-height: 150px
+		),
+		radio: (),
+		textarea: (
+			background: $card-background,
+			error-background: #ffe1e1,
+			border: 1px solid #dadada,
+			focus-border: 1px solid #1e2021,
+			error-border: 1px solid #e02929,
+			focus-border-color: #1e2021,
+			error-color: #9a3131,
+			autofill-color: #276a9e
+		)
 	),
 	loading-box: (
 		background: $card-background,
 		transition: 300ms
+	),
+	ellipsis: (
+		width: 16px,
+		padding: 8px,
+		border-width: 1px,
+		border-color: #eee,
+		background: $card-background,
+		hover-background: $main-background
 	)
 );

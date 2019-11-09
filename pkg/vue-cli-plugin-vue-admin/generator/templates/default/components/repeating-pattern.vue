@@ -18,7 +18,6 @@
 
 <script>
 	import admin from "../admin";
-	import * as components from "@qtxr/vue-admin/components";
 
 	const component = admin.wrapC({
 		name: "RepeatingPattern",
@@ -26,16 +25,14 @@
 		methods: {},
 		computed: {},
 		props: {},
-		components: {
-			...components
-		}
+		components: {}
 	});
 
 	export default component.export();
 </script>
 
 <style lang="scss">
-	@use "../assets/scss/theme.scss" as *;
+	@use "../assets/scss" as *;
 
 	.repeating-pattern {
 		fill: $repeating-pattern-foreground;

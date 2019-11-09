@@ -1,6 +1,6 @@
 <template lang="pug">
 	.admin-login-screen
-		RepatingPattern
+		RepeatingPattern
 		.login-form.card
 			.login-error.error-label(v-if="$parent.loginCell.state.error")
 				| {{ $parent.loginCell.state.errorMsg }}
@@ -19,14 +19,8 @@
 
 <script>
 	import admin from "../admin";
-	import * as components from "@qtxr/vue-admin/components";
 
 	import Form from "@qtxr/form";
-	import VForm from "@qtxr/vue-form";
-
-	import RepatingPattern from "./repeating-pattern.vue";
-	import Icon from "./icon.vue";
-	import LoadingIcon from "./loading-icon.vue";
 
 	const component = admin.wrapC({
 		name: "Login",
@@ -47,29 +41,24 @@
 		},
 		methods: {
 			login() {
-				this.$parent.loginCell.fetch()
+				this.$parent.loginCell
+					.fetch(this.form.extract())
 					.then(response => {
 						if (response.success)
-							this.commit("session/login");
+							this.commit("session/login", response.payload.data);
 					});
 			}
 		},
 		computed: {},
 		props: {},
-		components: {
-			...components,
-			Icon,
-			VForm,
-			RepatingPattern,
-			LoadingIcon
-		}
+		components: {}
 	});
 
 	export default component.export();
 </script>
 
 <style lang="scss">
-	@use "../assets/scss/theme.scss" as *;
+	@use "../assets/scss" as *;
 
 	.admin-login-screen {
 		display: flex;
@@ -99,7 +88,7 @@
 			}
 
 			.input-box p {
-				font-size: 90%;
+				font-size: 80%;
 			}
 
 			button {
@@ -124,6 +113,14 @@
 			span {
 				font-size: 110%;
 				margin-left: 5px;
+			}
+		}
+
+		@include mobile {
+			.login-form {
+				.inp-input input {
+					font-size: 16px;
+				}
 			}
 		}
 	}

@@ -3,8 +3,7 @@
 </template>
 
 <script>
-	import admin from "../admin";
-	import components from "../components";
+	import admin from "%adminPath%";
 
 	const view = admin.wrap("%fileName%", {
 		name: "%viewName%",
@@ -12,12 +11,12 @@
 		methods: {},
 		computed: {},
 		props: {},
-		components
+		components: {}
 	});
 
 	export default view.export();
 </script>
 
 <style lang="scss">
-	@use "../assets/scss/theme.scss" as *;
+	@use "%stylePath%" as *;
 </style>

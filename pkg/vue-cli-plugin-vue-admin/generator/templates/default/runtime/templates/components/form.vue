@@ -1,5 +1,5 @@
 <template lang="pug">
-	.login-form
+	.form
 		VForm(
 			:form="form"
 			:rows="rows")
@@ -7,8 +7,7 @@
 </template>
 
 <script>
-	import admin from "../admin";
-	import * as components from "@qtxr/vue-admin/components";
+	import admin from "%adminPath%";
 
 	import Form from "@qtxr/form";
 
@@ -28,14 +27,12 @@
 		methods: {},
 		computed: {},
 		props: {},
-		components: {
-			...components
-		}
+		components: {}
 	});
 
 	export default component.export();
 </script>
 
 <style lang="scss">
-	@use "../assets/scss/theme.scss" as *;
+	@use "%stylePath%" as *;
 </style>
