@@ -40,13 +40,19 @@ class XHRManager {
 		this.currentGuard = null;
 		this.options = Object.assign({}, defaultXHROptions, options);
 		this.presets = {};
+		this.macroKeys = {};
 	}
 
 	definePreset(name, preset) {
 		const noDuplicates = this.options.noDuplicatePresets;
 
-		if (!name || typeof name != "string" || (noDuplicates && this.presets.hasOwnProperty(name))) {
-			console.warn(`Couldn't make preset: name '${name}' is not valid or is already in use`);
+		if (!name || typeof name != "string") {
+			console.warn(`Cannot define preset: name is not valid`);
+			return this;
+		}
+
+		if (noDuplicates && this.presets.hasOwnProperty(name)) {
+			console.warn(`Cannot define preset: preset by name '${name}' is already in use`);
 			return this;
 		}
 
@@ -56,6 +62,40 @@ class XHRManager {
 
 	deletePreset(name) {
 		delete this.presets[name];
+		return this;
+	}
+
+	defineMacro(key, handler) {
+		if (!key || typeof key != "string") {
+			console.warn(`Cannot define macro: key is invalid`);
+			return this;
+		}
+
+		if (typeof handler != "function") {
+			console.warn(`Cannot define macro: handler is not a function`);
+			return this;
+		}
+
+		if (this.hasOwnProperty(key)) {
+			console.warn(`Cannot define macro: this XHR manager already has a property with key '${key}'`);
+			return this;
+		}
+
+		if (key in this) {
+			console.warn(`Cannot define macro: won't shadow property with key '${key}'`);
+			return this;
+		}
+
+		this[key] = handler;
+		return this;
+	}
+
+	deleteMacro(key) {
+		if (!this.macroKeys.hasOwnProperty(key)) {
+			console.warn(`Cannot delete macro: no macro by name '${key}' defined`);
+			return this;
+		}
+
 		return this;
 	}
 
@@ -498,7 +538,7 @@ function mkUrl(url, preset) {
 	if (typeof url != "string")
 		url = (preset && typeof preset.url == "string") ? preset.url : "";
 
-	const urlParams = mkUrlParams(preset.urlParams);
+	const urlParams = mkUrlParams(preset && preset.urlParams);
 
 	if (preset && preset.baseUrl)
 		return URL.join(preset.baseUrl, url, urlParams);
@@ -532,6 +572,16 @@ function setHeaders(xhr, preset) {
 }
 
 function encodeData(data, preset) {
+	// If the data is a Blob, return it as-is,
+	// as there's no reasonable way to encode it,
+	// and XHR supports sending it
+	if (typeof Blob != "undefined" && data instanceof Blob)
+		return data;
+
+	// Same for ArrayBuffers
+	if (typeof ArrayBuffer != "undefined" && data instanceof ArrayBuffer)
+		return data;
+
 	switch (getContentTypeEncode(preset)) {
 		case "form-encoded":
 			const dataArr = [];
@@ -566,8 +616,6 @@ function encodeData(data, preset) {
 			// Else stringify to plain data
 			return String(data);
 	}
-
-	return data;
 }
 
 function decodeData(xhr) {
