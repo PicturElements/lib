@@ -49,6 +49,7 @@ $radio-params: (
 			outline: none;
 			border-radius: 1px;
 			flex-shrink: 0;
+			cursor: pointer;
 	
 			&:focus {
 				border: $focus-border;

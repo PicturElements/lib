@@ -1,0 +1,47 @@
+$time-params: (
+	"height",
+	"background",
+	"border",
+	"focus-border",
+	"error-background",
+	"error-border"
+);
+
+@mixin time(
+	$height: 30px,
+	$background: white,
+	$border: 1px solid #dadada,
+	$focus-border: 1px solid #1e2021,
+	$error-background: #ffe1e1,
+	$error-border: 1px solid #e02929
+) {
+	.inp-time {
+		.time-display {
+			height: $height;
+			background: $background;
+			border: $border;
+			padding: 5px 15px;
+			outline: none;
+			font: inherit;
+			cursor: pointer;
+
+			&:focus {
+				border: $focus-border;
+			}
+
+			.time-sep {
+				margin: 0 0.1em;
+			}
+
+			.range-sep {
+				margin: 0 0.4em;
+			}
+
+			.meridiem {
+				font-size: 70%;
+				margin: 0 0 0.4em 0.1em;
+				opacity: 0.8;
+			}
+		}
+	}
+}

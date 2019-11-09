@@ -8,6 +8,7 @@
 @use "./multi.scss" as *;
 @use "./radio.scss" as *;
 @use "./textarea.scss" as *;
+@use "./time.scss" as *;
 
 @mixin inputs($theme: ()) {
 	@include input(compose-args($theme, $input-params, "input")...);
@@ -18,4 +19,5 @@
 	@include multi(compose-args($theme, $multi-params, "input", "multi")...);
 	@include radio(compose-args($theme, $radio-params, "input", "radio")...);
 	@include textarea(compose-args($theme, $textarea-params, "input", "textarea")...);
+	@include time(compose-args($theme, $time-params, "input", "time")...);
 }
