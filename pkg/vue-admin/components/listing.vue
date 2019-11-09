@@ -7,8 +7,22 @@
 			slot(name="no-results" v-bind="this")
 				span No items to show
 		template(v-else)
-			.listing-content.table(v-if="conf.viewMode == 'table'")
-				table
+			.listing-content.table(
+				v-if="conf.viewMode == 'table'"
+				:class="{ compact: conf.compact }")
+				template(v-if="conf.compact && $scopedSlots['compact-item']")
+					.compact-table-sort-form.f
+						VForm.f-grow(
+							:form="compactTableForm"
+							:rows="compactTableRows")
+							template(v-slot:dropdown-option="column") {{ res(column.title) }}
+						button.compact-sort-order.ml10(
+							:class="`sort-${sortState.order}`"
+							@click="compactSetSort")
+					.compact-table
+						template(v-for="(item, idx) in getItems()")
+							slot(name="compact-item" v-bind="mkItem(item, idx)")
+				table(v-else)
 					tr(v-if="columns")
 						template(v-for="(column, idx) in columns")
 							th(v-if="column == null")
@@ -43,16 +57,44 @@
 	import Form from "@qtxr/form";
 
 	import VForm from "@qtxr/vue-form";
-	import UtilBox from "./util-box.vue";
-	import LoadingBox from "./loading-box.vue";
 
-	const hookSym = sym("Listing hook");
+	const colIndexSym = sym("column index");
 
 	export default {
 		name: "Listing",
 		data() {
+			const compactTableForm = new Form();
+
+			compactTableForm.hook("change:sortColumn", (form, inp, from, to) => {
+				this.setSort(to, to[colIndexSym]);
+			});
+
 			return {
 				outputData: [],
+				compactTableForm,
+				compactTableRows: [
+					Form.mod("dropdown", {
+						name: "sortColumn",
+						options: _ => {
+							const options = [];
+
+							if (!this.columns)
+								return options;
+
+							for (let i = 0, l = this.columns.length; i < l; i++) {
+								const column = this.columns[i];
+
+								if (column && (column.sort || column.index)) {
+									column[colIndexSym] = i;
+									options.push(column);
+								}
+							}
+
+							return options;
+						},
+						autoSet: true
+					})
+				],
 				sortState: {
 					column: null,
 					columnIdx: -1,
@@ -93,6 +135,10 @@
 					sortOrder: sortState.order,
 					sortKey: sortState.column && sortState.column.key
 				});
+			},
+			compactSetSort() {
+				const sortVal = this.compactTableForm.inputs.sortColumn.value;
+				this.setSort(sortVal, sortVal[colIndexSym]);
 			},
 			getItems() {
 				const sortState = this.sortState,
@@ -165,7 +211,14 @@
 				default: _ => ["ascending", "descending"]
 			}
 		},
-		beforeMount() {
+		watch: {
+			"sortState.column"(to) {
+				this.compactTableForm.setValues({
+					sortColumn: to
+				});
+			}
+		},
+		mounted() {
 			if (this.columns) {
 				for (let i = 0, l = this.columns.length; i < l; i++) {
 					const column = this.columns[i];
@@ -175,6 +228,9 @@
 
 					if (column.initial) {
 						this.setSort(column, i, sortState);
+						this.compactTableForm.setValues({
+							sortColumn: column
+						});
 						break;
 					}
 				}

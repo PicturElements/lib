@@ -114,7 +114,6 @@ export default class VueAdmin extends Hookable {
 	
 	route(routeTree) {
 		this.routes = collectRoutes(this, routeTree);
-		console.log(this.routes);
 	}
 
 	getRoutes() {
@@ -146,7 +145,6 @@ export default class VueAdmin extends Hookable {
 		};
 
 		const routes = traverse(this.routes, null, "");
-		console.log(routes);
 		return routes;
 	}
 

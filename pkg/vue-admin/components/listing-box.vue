@@ -14,6 +14,10 @@
 				slot(name="no-results" v-bind="listing")
 			template(v-slot:item="d")
 				slot(name="item" v-bind="d")
+			template(
+				v-if="$scopedSlots['compact-item']"
+				v-slot:compact-item="item")
+				slot(name="compact-item" v-bind="item")
 
 		//- Slots / templates
 		template(
