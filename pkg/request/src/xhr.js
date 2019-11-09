@@ -560,7 +560,11 @@ function encodeData(data, preset) {
 
 		case "json":
 		default:
-			return JSON.stringify(typeof data == "object" ? data : {});
+			if (typeof data == "object")
+				return JSON.stringify(data);
+
+			// Else stringify to plain data
+			return String(data);
 	}
 
 	return data;
