@@ -1,6 +1,7 @@
 @use "~@qtxr/scss-utils" as *;
 
 $input-params: (
+	"height",
 	"background",
 	"error-background",
 	"autofill-background",
@@ -14,6 +15,7 @@ $input-params: (
 );
 
 @mixin input(
+	$height: 30px,
 	$background: white,
 	$error-background: #ffe1e1,
 	$autofill-background: #edf7ff,
@@ -28,6 +30,7 @@ $input-params: (
 	.inp-input {
 		input {
 			width: 100%;
+			height: $height;
 			padding: 6px 8px;
 			background: transparent;
 			border: $border;
