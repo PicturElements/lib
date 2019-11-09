@@ -10,8 +10,8 @@ import URL from "@qtxr/url";
 import wc from "@qtxr/vue-wrap-component";
 import { CustomJSON } from "@qtxr/uc";
 import { Hookable } from "@qtxr/bc";
-import { devWarn } from "./dev";
 
+import { devWarn } from "./dev";
 import AdminView from "./admin-view";
 import * as suppliers from "./suppliers";
 
@@ -114,6 +114,7 @@ export default class VueAdmin extends Hookable {
 	
 	route(routeTree) {
 		this.routes = collectRoutes(this, routeTree);
+		console.log(this.routes);
 	}
 
 	getRoutes() {
@@ -420,9 +421,15 @@ function collectRoutes(inst, routeTree) {
 			// more than one level deep to comply with VR's structure
 			route.isBaseRoute = child.path[0] == "/";
 			route.root = accumulator.root || route;
-			route.path = cleanPathComponent(child.path, depth) || "/";
-			route.fullPath = URL.join(accumulator.fullPath, route.path) || "/";
+			route.path = cleanPathComponent(child.path, depth) || "";
+			route.fullPath = URL.join(accumulator.fullPath, route.path) || "";
 			route.meta.route = route;
+
+			// Special case: root path
+			if (route.fullPath == "") {
+				route.path = "/";
+				route.fullPath = "/";
+			}
 
 			const view = getView(route),
 				crumb = get(view, "meta.breadcrumb", {}) || cleanBreadcrumb(route.path);
