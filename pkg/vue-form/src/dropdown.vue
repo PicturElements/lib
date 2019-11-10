@@ -23,7 +23,7 @@
 				.dropdown-option(
 					v-if="idx != activeIndex"
 					@mousedown="trigger(option)"
-					@click="triggerCollapse(option)")
+					@click="trigger(option)")
 					.dropdown-option-inner
 						slot(v-bind="wrapOption(option)") {{ getLabel(option) }}
 				.dropdown-option.selected(v-else)
@@ -55,6 +55,7 @@
 			nop() {},
 			trigger(val) {
 				Form.trigger(this.input, val);
+				this.collapse();
 			},
 			getLabel(option) {
 				const label = (option && option.hasOwnProperty("label")) ? option.label : option;
@@ -85,10 +86,6 @@
 			desktopCollapse() {
 				if (!this.isMobile())
 					this.collapse();
-			},
-			triggerCollapse(val) {
-				this.trigger(val);
-				this.collapse();
 			},
 			expand() {
 				this.expanded = true;
