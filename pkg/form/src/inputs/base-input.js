@@ -37,7 +37,7 @@ const initOptionsSchema = {
 	update: "function",
 	extract: "function|string",
 	insert: "function",
-	compare: "function",
+	compare: "function|string",
 
 	propagate: "any"
 };
