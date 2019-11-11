@@ -101,6 +101,7 @@
 					orderPtr: 0,
 					order: "ascending"
 				},
+				cachedItems: null,
 				conf: Object.assign({
 					viewMode: "list"
 				}, this.config)
@@ -110,15 +111,15 @@
 			mkItem(item, index) {
 				const isPagination = this.cell instanceof DataCellPagination;
 
-				item = {
+				return {
 					item: isPagination ? item.data : item,
 					viewMode: this.conf.viewMode,
 					index
 				};
-
-				return item;
 			},
 			setSort(column, idx) {
+				this.invalidateCache();
+
 				const sortState = this.sortState,
 					sortOrders = column.sortOrders || this.sortOrders;
 
@@ -145,7 +146,10 @@
 					isPagination = this.cell instanceof DataCellPagination,
 					items = this.cellData;
 
-				if (!items || !sortState.column || (!sortState.column.sort && !sortState.column.index) || sortState.order == "neutral")
+				if (this.cachedItems)
+					return this.cachedItems;
+
+				if (!Array.isArray(items) || !sortState.column || (!sortState.column.sort && !sortState.column.index) || sortState.order == "neutral")
 					return items;
 
 				const sort = sortState.column.sort,
@@ -176,7 +180,7 @@
 							return item > item2 ? 1 : -1
 						};
 
-				return mergesort(items, (a, b) => {
+				this.cachedItems = mergesort(items, (a, b) => {
 					let data = isPagination ? a.data : a,
 						data2 = isPagination ? b.data : b;
 
@@ -189,6 +193,11 @@
 						comparator(data, data2) :
 						comparator(data, data2) * -1;
 				});
+
+				return this.cachedItems;
+			},
+			invalidateCache() {
+				this.cachedItems = null;
 			},
 			res(val) {
 				if (typeof val == "function")
@@ -219,30 +228,33 @@
 			}
 		},
 		mounted() {
-			if (this.columns) {
-				for (let i = 0, l = this.columns.length; i < l; i++) {
-					const column = this.columns[i];
+			this.cell.hook("fetched", _ => this.invalidateCache());
 
-					if (!column || typeof column != "object" || !column.sort)
-						continue;
+			if (!this.columns)
+				return;
 
-					if (column.initial) {
-						this.setSort(column, i, sortState);
-						this.compactTableForm.setValues({
-							sortColumn: column
-						});
-						break;
-					}
+			for (let i = 0, l = this.columns.length; i < l; i++) {
+				const column = this.columns[i];
+
+				if (!column || typeof column != "object" || !column.sort)
+					continue;
+
+				if (column.initial) {
+					this.setSort(column, i, sortState);
+					this.compactTableForm.setValues({
+						sortColumn: column
+					});
+					break;
 				}
-
-				const sortState = this.sortState;
-
-				this.cell.setState({
-					sortState,
-					sortOrder: sortState.order,
-					sortKey: sortState.column && sortState.column.key
-				});
 			}
+
+			const sortState = this.sortState;
+
+			this.cell.setState({
+				sortState,
+				sortOrder: sortState.order,
+				sortKey: sortState.column && sortState.column.key
+			});
 		}
 	}
 </script>
