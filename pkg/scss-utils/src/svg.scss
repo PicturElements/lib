@@ -1,0 +1,55 @@
+@use "./string.scss" as *;
+
+@function svg-encode-str($str) {
+	$str: "" + $str;
+	$str: str-replace($str, "#", "%23");
+	@return $str;
+}
+
+@function add-attr($out, $attr, $value) {
+	@if ($value) {
+		@return $out + " " + $attr + "='" + svg-encode-str($value) + "'";
+	}
+
+	@return $out;
+}
+
+@function get-svg-str(
+	$path: "",
+	$view-box: "0 0 100 100",
+	$stroke: "",
+	$stroke-width: "",
+	$stroke-dasharray: "",
+	$stroke-dashoffset: "",
+	$stroke-linecap: "",
+	$stroke-linejoin: "",
+	$stroke-miterlimit: "",
+	$stroke-opacity: "",
+	$fill: "none",
+	$fill-opacity: "",
+	$fill-rule: ""
+) {
+	$svg-str: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='" + $view-box + "'%3E%3Cpath";
+
+	// \$([\w-]+).+ / $svg-str: add-attr($svg-str, "$1", $$$1);
+	$svg-str: add-attr($svg-str, "d", $path);
+
+	$svg-str: add-attr($svg-str, "stroke", $stroke);
+	$svg-str: add-attr($svg-str, "stroke-width", $stroke-width);
+	$svg-str: add-attr($svg-str, "stroke-dasharray", $stroke-dasharray);
+	$svg-str: add-attr($svg-str, "stroke-dashoffset", $stroke-dashoffset);
+	$svg-str: add-attr($svg-str, "stroke-linecap", $stroke-linecap);
+	$svg-str: add-attr($svg-str, "stroke-linejoin", $stroke-linejoin);
+	$svg-str: add-attr($svg-str, "stroke-miterlimit", $stroke-miterlimit);
+	$svg-str: add-attr($svg-str, "stroke-opacity", $stroke-opacity);
+
+	$svg-str: add-attr($svg-str, "fill", $fill);
+	$svg-str: add-attr($svg-str, "fill-opacity", $fill-opacity);
+	$svg-str: add-attr($svg-str, "fill-rule", $fill-rule);
+
+	@return $svg-str + "%3E%3C/path%3E%3C/svg%3E";
+}
+
+@mixin inline-svg($args...) {
+	background-image: url(quote(get-svg-str($args...)));
+}
