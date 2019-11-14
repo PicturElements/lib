@@ -6,7 +6,6 @@ import {
 } from "./is";
 import clone from "./clone";
 import hasOwn from "./has-own";
-import matchType from "./match-type";
 import matchQuery from "./match-query";
 import {
 	composeOptionsTemplates,
@@ -147,6 +146,7 @@ const optionsTemplates = composeOptionsTemplates({
 		cloneExtender: true,
 		override: true,
 	},
+	injectSymbols: true,
 	override: true,
 	noUndef: true,
 	shallow: true,
