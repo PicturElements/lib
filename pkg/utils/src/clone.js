@@ -18,6 +18,8 @@ export default function clone(obj, options) {
 			Infinity),
 		clonedSym = options.circular ? sym("cloned") : null;
 
+	console.trace("ENTERING CLONE", obj, options);
+
 	function cl(o, d) {
 		if (typeof o == "object" && o != null) {
 			// Check if the object is a direct instance of anything else than Object
@@ -47,13 +49,16 @@ export default function clone(obj, options) {
 
 				for (let i = 0, l = symbols.length; i < l; i++) {
 					const sym = symbols[i];
+
+					if (sym == clonedSym)
+						continue;
+
 					objOut[sym] = d < depth ? cl(o[sym], d + 1) : o[sym];
 				}
 			}
 
-			if (options.circular) {
+			if (options.circular)
 				delete o[clonedSym];
-			}
 
 			return objOut;
 		}

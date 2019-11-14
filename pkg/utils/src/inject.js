@@ -71,8 +71,12 @@ export default function inject(target, extender, options) {
 		if (options.injectSymbols && typeof Symbol != "undefined") {
 			const symbols = Object.getOwnPropertySymbols(ext);
 
-			for (let i = 0, l = symbols.length; i < l; i++)
+			for (let i = 0, l = symbols.length; i < l; i++) {
+				if (symbols[i] == visitedSym)
+					continue;
+
 				doInject(symbols[i], targ, ext, runtime, true);
+			}
 		}
 
 		if (options.circular) {
