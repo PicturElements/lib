@@ -7,6 +7,7 @@ import {
 import clone from "./clone";
 import hasOwn from "./has-own";
 import matchQuery from "./match-query";
+import { sym } from "./sym";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
@@ -31,10 +32,12 @@ export default function inject(target, extender, options) {
 	target = coerceToObj(target, extender);
 	extender = coerceToObj(extender);
 
+	const visitedSym = options.circular ? sym("inject visited") : null;
+	
 	if (options.clone || options.cloneTarget)
-		target = clone(target);
+		target = clone(target, options);
 	if (options.clone || options.cloneExtender)
-		extender = clone(extender);
+		extender = clone(extender, options);
 
 	if (options.root) {
 		let newExtender = {},
@@ -54,6 +57,9 @@ export default function inject(target, extender, options) {
 		targ = coerceToObj(targ, ext);
 		ext = coerceToObj(ext);
 
+		if (options.circular)
+			ext[visitedSym] = true;
+
 		if (Array.isArray(ext)) {
 			for (let i = 0, l = ext.length; i < l; i++)
 				doInject(i, targ, ext, runtime, false);
@@ -67,6 +73,11 @@ export default function inject(target, extender, options) {
 
 			for (let i = 0, l = symbols.length; i < l; i++)
 				doInject(symbols[i], targ, ext, runtime, true);
+		}
+
+		if (options.circular) {
+			delete ext[visitedSym];
+			delete targ[visitedSym];
 		}
 
 		return targ;
@@ -107,7 +118,11 @@ export default function inject(target, extender, options) {
 					
 				if (!isObj(targ[key]))
 					targ[key] = coerceToObj(null, ext[key]);
-				targ[key] = inj(targ[key], ext[key], runtime);
+
+				if (options.circular)
+					targ[key] = hasOwn(ext[key], visitedSym, true) ? ext[key] : inj(targ[key], ext[key], runtime);
+				else
+					targ[key] = inj(targ[key], ext[key], runtime);
 
 				runtime.schema = schema;
 				runtime.ignore = ignore;
@@ -151,5 +166,6 @@ const optionsTemplates = composeOptionsTemplates({
 	noUndef: true,
 	shallow: true,
 	preserveInstances: true,
-	strictSchema: true
+	strictSchema: true,
+	circular: true
 });

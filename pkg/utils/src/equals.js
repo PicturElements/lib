@@ -4,10 +4,18 @@ import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./options";
+import { sym } from "./sym";
+import { isObj } from "./is";
+
+// TODO: remove runtime object and make equals
+// structurally similar to clone and inject
 
 let eqRuntime = {
-	lazy: false
+	lazy: false,
+	circular: false
 };
+
+const equalSym = sym("equal");
 
 function equals(valA, valB, options) {
 	eqRuntime = createOptionsObject(options, optionsTemplates);
@@ -39,12 +47,20 @@ function eq(a, b) {
 			if (constr != b.constructor)
 				return false;
 
-			if (constr == Array)
-				return eqArray(a, b);
-			else
-				return eqObject(a, b);
+			if (eqRuntime.circular)
+				a[equalSym] = true;
 
-			break;
+			let result;
+
+			if (constr == Array)
+				result = eqArray(a, b);
+			else
+				result = eqObject(a, b);
+
+			if (eqRuntime.circular)
+				delete a[equalSym];
+
+			return result;
 		}
 
 		case "number":
@@ -56,6 +72,9 @@ function eq(a, b) {
 
 function eqArray(a, b) {
 	for (let i = a.length - 1; i >= 0; i--) {
+		if (eqRuntime.circular && isObj(a[i]) && hasOwn(a[i], equalSym, true))
+			continue;
+
 		if (!eq(a[i], b[i]))
 			return false;
 	}
@@ -66,7 +85,9 @@ function eqArray(a, b) {
 function eqObject(a, b) {
 	if (eqRuntime.lazy) {
 		for (const k in a) {
-			if ((hasOwn(a, k) && !hasOwn(b, k)) || !eq(a[k], b[k]))
+			const recursive = !eqRuntime.circular || !(isObj(a[k]) && hasOwn(a[k], equalSym, true));
+
+			if ((hasOwn(a, k) && !hasOwn(b, k)) || (recursive && !eq(a[k], b[k])))
 				return false;
 		}
 	} else {
@@ -77,9 +98,10 @@ function eqObject(a, b) {
 			return false;
 
 		for (let i = ks.length - 1; i >= 0; i--) {
-			const k = ks[i];
+			const k = ks[i],
+				recursive = !eqRuntime.circular || !(isObj(a[k]) && hasOwn(a[k], equalSym, true));
 
-			if (!hasOwn(b, k) || !eq(a[k], b[k]))
+			if (!hasOwn(b, k) || (recursive && !eq(a[k], b[k])))
 				return false;
 		}
 	}
@@ -88,7 +110,8 @@ function eqObject(a, b) {
 }
 
 const optionsTemplates = composeOptionsTemplates({
-	lazy: true
+	lazy: true,
+	circular: true
 });
 
 export default equals;
