@@ -18,8 +18,6 @@ export default function clone(obj, options) {
 			Infinity),
 		clonedSym = options.circular ? sym("cloned") : null;
 
-	console.trace("ENTERING CLONE", obj, options);
-
 	function cl(o, d) {
 		if (typeof o == "object" && o != null) {
 			// Check if the object is a direct instance of anything else than Object
