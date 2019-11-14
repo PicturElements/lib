@@ -14,7 +14,7 @@ import hasOwn from "./has-own";
 export default function clone(obj, options) {
 	options = createOptionsObject(options, optionsTemplates);
 	const depth = options.shallow ? 0 :
-			(options.hasOwnProperty("depth") ? options.depth :
+			(hasOwn(options, "depth") ? options.depth :
 			Infinity),
 		clonedSym = options.circular ? sym("cloned") : null;
 
