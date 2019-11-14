@@ -27,7 +27,7 @@ export default function clone(obj, options) {
 			if (!isNativeSimpleObject(o) && !options.cloneInstances)
 				return o;
 
-			const objOut = isArrResolvable(obj) ? [] : {};
+			const objOut = isArrResolvable(o) ? [] : {};
 
 			if (options.circular)
 				o[clonedSym] = objOut;
