@@ -12,7 +12,8 @@ const dataMap = {
 	methods: "addMethod",
 	computed: "addComputed",
 	props: "addProp",
-	components: "addComponent"
+	components: "addComponent",
+	mixins: "addMixin"
 };
 
 const wc = {
@@ -27,24 +28,24 @@ class ComponentWrapper {
 		this.used = {};
 		this.internal = {};
 
-		const injectors = {
-			data: null,
-			provide: null
+		// Initialize injectors with data. The first partition will be extendable by
+		// calling the addition methods on the wrapper. Functional injectors can also
+		// be added to these partitions, whereupon these are added as sub-injectors on
+		// in their respective partitions
+		this.exporterInjectors = {
+			data: [{}],
+			provide: [{}]
 		};
 
 		// Move over data to injector so tracking of keys
 		// can be done more cleanly
-		for (const k in injectors) {
-			if (!injectors.hasOwnProperty(k))
+		for (const k in this.exporterInjectors) {
+			if (!this.exporterInjectors.hasOwnProperty(k))
 				continue;
 
-			if (isObject(this.component[k])) {
-				injectors[k] = this.component[k];
-				this.component[k] = {};
-			}
+			this.add(k, this.component[k]);
+			delete this.component[k];
 		}
-
-		this.exporterInjectors = injectors;
 	}
 
 	use(endpoint, ...args) {
@@ -60,32 +61,77 @@ class ComponentWrapper {
 		this.used[endpoint] = used;
 	}
 
+	getInjectorPartition(partititonName) {
+		if (!this.exporterInjectors.hasOwnProperty(partititonName))
+			throw new Error(`Cannot get injector partition at '${partititonName}': no partition found`);
+
+		return this.exporterInjectors[partititonName][0];
+	}
+
 	// Generic function for adding data to components
-	add(type, value) {
-		if (!value || !dataMap.hasOwnProperty(type))
+	add(typeOrComponent, value) {
+		if (isObject(typeOrComponent)) {
+			let added = false;
+
+			for (const k in typeOrComponent) {
+				if (!typeOrComponent.hasOwnProperty(k))
+					continue;
+
+				added = this.add(k, typeOrComponent[k]) || added;
+			}
+
+			return added;
+		}
+
+		if (!value || typeof typeOrComponent != "string" || !dataMap.hasOwnProperty(typeOrComponent))
 			return false;
 
-		const addKey = dataMap[type];
+		const addKey = dataMap[typeOrComponent];
 
 		if (Array.isArray(value)) {
 			for (let i = 0, l = value.length; i < l; i++)
 				this[addKey](i, value[i]);
-		} else {
+		} else if (isObject(value)) {
 			for (const k in value) {
 				if (value.hasOwnProperty(k))
 					this[addKey](k, value[k]);
 			}
+		} else if (typeof value == "function") {
+			if (!this.exporterInjectors.hasOwnProperty(typeOrComponent))
+				throw new Error(`Cannot add injector at '${typeOrComponent}': no injector partition defined`);
+
+			this.exporterInjectors[typeOrComponent].push(value);
 		}
 
 		return true;
 	}
 
-	addData(key, value) {
-		return this._addToInjector("data", key, value);
+	addData(keyOrInjector, value) {
+		if (typeof keyOrInjector == "function") {
+			this.exporterInjectors.data.push(keyOrInjector);
+			return;
+		}
+
+		if (typeof keyOrInjector != "string")
+			return null;
+
+		const injector = this.exporterInjectors.data[0];
+		injector[keyOrInjector] = value;
+		return value;
 	}
 
-	addProvision(key, value) {
-		return this._addToInjector("provide", key, value);
+	addProvision(keyOrInjector, value) {
+		if (typeof keyOrInjector == "function") {
+			this.exporterInjectors.provide.push(keyOrInjector);
+			return;
+		}
+
+		if (typeof keyOrInjector != "string")
+			return null;
+		
+		const injector = this.exporterInjectors.provide[0];
+		injector[keyOrInjector] = value;
+		return value;
 	}
 
 	addMethod(key, method) {
@@ -142,22 +188,8 @@ class ComponentWrapper {
 		nestHook(this.component, key, hook);
 	}
 
-	// Returns an exesting partition or creates a new one
-	// on the instance's injector object
-	getInjectorPartition(partitionName) {
-		const partition = this.exporterInjectors[partitionName] || {};
-		this.exporterInjectors[partitionName] = partition;
-		return partition;
-	}
-
-	_addToInjector(partitionName, key, value) {
-		const partition = this.getInjectorPartition(partitionName);
-
-		if (partition.hasOwnProperty(key))
-			throw new Error(`Tried overriding property '${key}' (in ${partitionName})`);
-
-		partition[key] = value;
-		return value;
+	addMixin(key, hook) {
+		
 	}
 
 	export() {
@@ -168,7 +200,7 @@ class ComponentWrapper {
 			if (!injectors.hasOwnProperty(k))
 				continue;
 
-			component[k] = mkInjectorExporter(k, component[k], this);
+			component[k] = mkInjectorExporter(k, this);
 		}
 	
 		return component;
@@ -227,7 +259,8 @@ ComponentWrapper.exporters = {
 			inject(obj, live, {
 				override: true,
 				injectSymbols: true,
-				shallow: true
+				shallow: true,
+				circular: true
 			});
 		}
 
@@ -258,20 +291,22 @@ ComponentWrapper.prototype.assert = {
 
 // By default, data already specified in fields cannot
 // be overwritten but are free to be extended
-function mkInjectorExporter(name, data, wrapper) {
+function mkInjectorExporter(name, wrapper) {
 	return function() {
+		const injectors = wrapper.exporterInjectors[name];
 		let outObj = {};
-			
-		if (typeof data == "function")
-			outObj = data.call(this);
-		else if (isObject(data))
-			outObj = clone(data, "cloneSymbols");
 
-		const injectors = wrapper.exporterInjectors,
-			injectorData = injectors[name];
+		for (let i = 0, l = injectors.length; i < l; i++) {
+			const injector = injectors[i];
+			let resolved;
 
-		if (injectors.hasOwnProperty(name) && injectorData)
-			inject(outObj, injectorData);
+			if (typeof injector == "function")
+				resolved = injector.call(this);
+			else
+				resolved = clone(injector, "cloneSymbols|circular");
+
+			inject(outObj, resolved, "injectSymbols|circular");
+		}
 
 		if (ComponentWrapper.exporters.hasOwnProperty(name))
 			ComponentWrapper.exporters[name](outObj, wrapper, this);
@@ -285,7 +320,8 @@ function mkDefaultOptions() {
 		data: {},
 		props: {},
 		methods: {},
-		computed: {}
+		computed: {},
+		mixins: []
 	};
 }
 
