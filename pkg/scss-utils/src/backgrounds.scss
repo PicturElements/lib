@@ -5,3 +5,23 @@
 	background-position: 0 0, $size $size;
 	background-size: ($size * 2) ($size * 2);
 }
+
+@mixin b-stars($back, $front) {
+	background-image: radial-gradient($back 77%, $front 77%);
+}
+
+@mixin b-dots($back, $front) {
+	background-image: radial-gradient($front 30%, $back 30%);
+}
+
+@mixin b-stripes($back, $front) {
+	background-image: linear-gradient(135deg, $back 40%, $front 40%, $front 50%, $back 50%, $back 90%, $front 90%);
+}
+
+@mixin b-grid($back, $front) {
+	background-image: linear-gradient(45deg, transparent 45%, $front 45%, $front 50%, transparent 50%, transparent 95%, $front 95%), linear-gradient(135deg, $back 45%, $front 45%, $front 50%, $back 50%, $back 95%, $front 95%);
+}
+
+@mixin b-squares($back, $front) {
+	background-image: linear-gradient(155deg, $back 35%, transparent 35%, transparent 65%, $back 65%), linear-gradient(65deg, $back 35%, $front 35%, $front 65%, $back 65%);
+}
