@@ -4,12 +4,12 @@
 			router-link.sidebar-link.leaf-link(
 				v-if="!route.children.length"
 				:to="route.path"
-				:class="{ active: route.active }")
+				:class="{ active: route.active, 'active-route': route.activeRoute }")
 				span.link-text {{ route.name }}
 			.sidebar-expando(v-else)
 				router-link.sidebar-link.expando-link(
 					:to="route.path"
-					:class="{ active: route.active }")
+					:class="{ active: route.active, 'active-route': route.activeRoute }")
 					span.link-text {{ route.name }}
 				SidebarNav(:routes="route.children")
 </template>
@@ -40,7 +40,7 @@
 			border-left: 8px solid $sidebar-overlay-background;
 		}
 		
-		.expando-link.router-link-active + .sidebar-nav-box {
+		.expando-link.active-route + .sidebar-nav-box {
 			display: block;
 		}
 		
@@ -104,17 +104,17 @@
 				transition: transform 300ms;
 			}
 
-			&.router-link-active:before {
+			&.active-route:before {
 				transform: translateY(-2.5px) rotate(135deg);
 			}
 
-			&.router-link-active:not(.router-link-exact-active):after {
+			&.active-route:not(.active):after {
 				height: auto;
 				top: 1px;
 			}
 		}
 			
-		> * + .sidebar-expando > .expando-link.router-link-active:after {
+		> * + .sidebar-expando > .expando-link.active-route:after {
 			top: 0;
 		}
 	}
