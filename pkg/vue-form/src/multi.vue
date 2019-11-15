@@ -15,7 +15,7 @@
 				.delete-section-item.f.c(@click="deleteSelectionItem(idx)") &times;
 		.search-box.f.col(:style="searchBoxStyle"
 			ref="searchBox"
-			@click.stop="noop")
+			@click.stop)
 			.search-input-box
 				input.search-input(
 					v-model="query"
@@ -70,7 +70,6 @@
 			validationState: "ok"
 		}),
 		methods: {
-			noop() {},
 			triggerSearch() {
 				this.lastOptionPtr = -1;
 				this.search();

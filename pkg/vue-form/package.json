@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/vue-form",
-  "version": "2.3.16",
+  "version": "2.3.17",
   "description": "Powerful Vue forms based on @qtxr/form",
   "main": "index.js",
   "scripts": {
@@ -25,8 +25,8 @@
   "dependencies": {
     "@qtxr/evt": "^1.1.1",
     "@qtxr/form": "^1.6.6",
-    "@qtxr/scss-utils": "^1.0.4",
-    "@qtxr/utils": "^1.28.4"
+    "@qtxr/scss-utils": "^1.1.0",
+    "@qtxr/utils": "^1.29.4"
   },
   "devDependencies": {},
   "files": [
@@ -35,7 +35,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 82,
+    "pushes": 83,
     "expose": {
       "scripts": [
         "connect/feed.js"
