@@ -27,7 +27,7 @@ function viewChoices() {
 			traverse(
 				child,
 				route.forceRender ? indent : indent + 1,
-				i == l -1
+				i == l - 1
 			);
 		}
 	};

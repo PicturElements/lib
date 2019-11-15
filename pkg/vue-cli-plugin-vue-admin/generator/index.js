@@ -20,7 +20,7 @@ module.exports = function generate(api, settings) {
 			package: path.join(cwd, "package.json"),
 			adminRelativePath: pathRelative(
 				settings.routeTarget,
-				path.join(settings.directory)
+				path.join(settings.directory, "admin")
 			)
 		},
 		hasPlugin = api.hasPlugin("v-admin"),

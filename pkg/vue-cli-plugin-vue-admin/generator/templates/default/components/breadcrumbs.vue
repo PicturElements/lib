@@ -1,8 +1,8 @@
 <template lang="pug">
 	.admin-breadcrumbs.f
 		router-link.admin-breadcrumb(
-			v-for="crumb in breadcrumbs"
-			:to="resolveParams(crumb.path)") {{ crumb.crumb }}
+			v-for="crumb in crumbs"
+			:to="crumb.path") {{ crumb.name }}
 </template>
 
 <script>
@@ -11,23 +11,10 @@
 	const component = admin.wrapC({
 		name: "Breadcrumbs",
 		data: {},
-		methods: {
-			resolveParams(path) {
-				return path.replace(/:(\w+)/, (match, key) => {
-					if (!this.$route.params.hasOwnProperty(key))
-						return match;
-
-					return this.$route.params[key];
-				});
-			},
+		methods: {},
+		props: {
+			crumbs: Array
 		},
-		computed: {
-			breadcrumbs() {
-				const route = this.$route.meta.route;
-				return (route && route.breadcrumbs) || [];
-			}
-		},
-		props: {},
 		components: {}
 	});
 

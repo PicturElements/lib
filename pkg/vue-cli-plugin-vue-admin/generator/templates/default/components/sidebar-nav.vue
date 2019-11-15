@@ -1,22 +1,16 @@
 <template lang="pug">
-	SidebarNav(
-		v-if="shouldSkipExpando()"
-		:routes="collectChildRoutes()")
 	.sidebar-nav-box(v-else)
-		template(v-for="route in getRoutes()")
+		template(v-for="route in routes")
 			router-link.sidebar-link.leaf-link(
-				v-if="!route.childCount"
+				v-if="!route.children.length"
 				:to="route.path"
-				:class="{ 'leaf-active': route.active, hidden: !route.display }")
-				span.link-text {{ route.sidebarMeta.name }}
-			SidebarNav(
-				v-else-if="route.sidebarMeta.display == 'skip'"
-				:routes="route.children")
+				:class="{ active: route.active }")
+				span.link-text {{ route.name }}
 			.sidebar-expando(v-else)
 				router-link.sidebar-link.expando-link(
 					:to="route.path"
-					:class="{ hidden: !route.display }")
-					span.link-text {{ route.sidebarMeta.name }}
+					:class="{ active: route.active }")
+					span.link-text {{ route.name }}
 				SidebarNav(:routes="route.children")
 </template>
 
@@ -26,111 +20,7 @@
 	const component = admin.wrapC({
 		name: "SidebarNav",
 		data: {},
-		methods: {
-			shouldSkipExpando() {
-				const routes = this.getRoutes();
-
-				for (let i = 0, l = routes.length; i < l; i++) {
-					if (routes[i].sidebarMeta.display != "skip")
-						return false;
-				}
-
-				return true;
-			},
-			getRoutes() {
-				const routes = this.routes,
-					outRoutes = [];
-
-				for (let i = 0, l = routes.length; i < l; i++) {
-					const route = routes[i],
-						meta = route.view.meta,
-						sidebarMeta = meta.sidebar || {},
-						children = route.children || [];
-					let childCount = 0,
-						display = false;
-
-					for (let i = 0, l = children.length; i < l; i++) {
-						const childSidebarMeta = children[i].sidebarConfig;
-
-						switch (childSidebarMeta.display) {
-							case "hidden":
-								break;
-
-							case "active": {
-								if (this.matchedRouteHasNode(children[i]))
-									childCount++;
-								
-								break;
-							}
-
-							case "visible":
-							default:
-								childCount++;
-								break;
-						}
-					}
-
-					switch (sidebarMeta.display) {
-						case "hidden":
-							break;
-
-						case "active": {
-							if (this.matchedRouteHasNode(route))
-								display = true;
-							break;
-						}
-
-						case "visible":
-						default:
-							display = true;
-							break;
-					}
-
-					const hasNode = this.matchedRouteHasNode(route),
-						path = hasNode ? this.resolveParams(route.fullPath) : route.fullPath;
-
-					outRoutes.push({
-						path,
-						children: route.children,
-						active: !childCount && hasNode,
-						sidebarMeta,
-						childCount,
-						display
-					});
-				}
-
-				return outRoutes;
-			},
-			resolveParams(path) {
-				return path.replace(/:(\w+)/, (match, key) => {
-					if (!this.$route.params.hasOwnProperty(key))
-						return match;
-
-					return this.$route.params[key];
-				});
-			},
-			matchedRouteHasNode(node) {
-				const nodeId = node.meta.id,
-					matched = this.$route.matched;
-
-				for (let i = 0, l = matched.length; i < l; i++) {
-					const id = matched[i].meta.id;
-
-					if (id == nodeId)
-						return true;
-				}
-
-				return false;
-			},
-			collectChildRoutes() {
-				let children = [];
-
-				for (let i = 0, l = this.routes.length; i < l; i++)
-					children = children.concat(this.routes[i].children);
-			
-				return children;
-			}
-		},
+		methods: {},
 		computed: {},
 		props: {
 			routes: Array
@@ -171,8 +61,7 @@
 				z-index: 0;
 			}
 
-			&.expando-link.router-link-exact-active,
-			&.leaf-active {
+			&.active {
 				background: $highlight;
 
 				&:after {
@@ -220,8 +109,13 @@
 			}
 
 			&.router-link-active:not(.router-link-exact-active):after {
-				height: 100%;
+				height: auto;
+				top: 1px;
 			}
+		}
+			
+		> * + .sidebar-expando > .expando-link.router-link-active:after {
+			top: 0;
 		}
 	}
 </style>

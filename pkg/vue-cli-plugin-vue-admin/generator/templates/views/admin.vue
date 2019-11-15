@@ -18,14 +18,16 @@
 						@click="headerCollapseSidebar")
 						Icon.ico-hamburger
 				.admin-aside-content(@click="navCollapseSidebar")
-					SidebarNav(:routes="admin.routes")
+					SidebarNav(:routes="admin.ui.routing.sidebarNav")
 			.admin-inner-content
 				header.admin-header
 					.sidebar-expand(
 						v-if="admin.config.appearance.general.sidebar"
 						@click="expandSidebar")
 						Icon.ico-hamburger
-					Breadcrumbs(v-if="admin.config.appearance.general.breadcrumbs")
+					Breadcrumbs(
+						v-if="admin.config.appearance.general.breadcrumbs"
+						:crumbs="admin.ui.routing.breadcrumbs")
 					.user-box.f
 						.user-name {{ queryState('session.user.firstname') }} {{ queryState('session.user.lastname') }}
 						.logout.faux-link.ml10(@click="logout") Log out
@@ -42,7 +44,10 @@
 
 <script>
 	import admin from "../";
-	import { hasAncestor } from "@qtxr/utils";
+	import {
+		get,
+		hasAncestor
+	} from "@qtxr/utils";
 
 	// Load final static assets and finish VueAdmin initialization
 	import "../assets/scss/imports.scss";

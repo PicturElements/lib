@@ -16,12 +16,12 @@ const getRoutes = config => {
 				dataCells: {
 					loginCell: {
 						fetch: serialize.rawReplaceKey(`fetch(...args) {
-	return new Promise(resolve => {
-		setTimeout(_ => {
-			resolve(Math.random() < 0.5 ? null : { data: "abcd" });
-		}, 1500);
-	});
-}`),
+				return new Promise(resolve => {
+					setTimeout(_ => {
+						resolve(Math.random() < 0.5 ? null : { data: "abcd" });
+					}, 1500);
+				});
+			}`),
 						validate: ["success", true, "Fake Login Error"]
 					}
 				}

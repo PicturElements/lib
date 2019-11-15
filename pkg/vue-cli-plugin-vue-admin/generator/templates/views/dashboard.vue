@@ -3,7 +3,7 @@
 </template>
 
 <script>
-	import admin from "../admin";
+	import admin from "../";
 
 	const view = admin.wrap("dashboard", {
 		name: "Dashboard",
