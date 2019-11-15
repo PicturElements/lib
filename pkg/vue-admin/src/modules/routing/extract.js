@@ -1,3 +1,4 @@
+import { mergesort } from "@qtxr/utils";
 import URL from "@qtxr/url";
 
 export default function extractRoutes(routes, baseRoutes, path) {
@@ -25,5 +26,18 @@ export default function extractRoutes(routes, baseRoutes, path) {
 		);
 	}
 
-	return outRoutes;
+	return mergesort(outRoutes, (r, r2) => {
+		const s = r.specificity,
+			s2 = r2.specificity;
+
+		if (s2.length > s.length)
+			return 1;
+
+		for (let i = 0, l = s.length; i < l; i++) {
+			if (s2[i] > s[i])
+				return 1;
+		}
+
+		return 0;
+	});
 }

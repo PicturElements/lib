@@ -66,6 +66,7 @@ export default function parseRoutes(inst, routeTree) {
 			route.path = cleanPathComponent(child.path, depth) || "";
 			route.fullPath = URL.join(accumulator.fullPath, route.path) || "";
 			route.meta.route = route;
+			route.specificity = calculatePathSpecificity(route.fullPath);
 
 			// Special case: root path
 			if (route.fullPath == "") {
@@ -175,4 +176,32 @@ function getView(route) {
 		return route.views.default;
 
 	return null;
+}
+
+// Specificity:
+// 0:	wildcard (least specific)
+// 1:	parameter (more specific)
+// 2:	exact match (most specific)
+// Longer specificity arrays are more specific,
+// and outputted routes are sorted by most specific first.
+// Similarly, specificity are big-endian and are evaluated
+// cell by cell
+function calculatePathSpecificity(path) {
+	const components = path.replace(/^\.?\//, "").split("/"),
+		specificity = [];
+
+	for (let i = 0, l = components.length; i < l; i++) {
+		const component = components[i];
+		let specificityComponent = 2;
+
+		if (component.indexOf(":") == 0)
+			specificityComponent = 1;
+
+		if (/\*/.test(component))
+			specificityComponent = 0;
+
+		specificity.push(specificityComponent);
+	}
+	
+	return specificity;
 }

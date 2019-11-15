@@ -55,6 +55,7 @@ function updateSidebarNav(args) {
 			return [];
 
 		const outRoutes = [];
+		let hasActiveRoute = false;
 
 		for (let i = 0, l = routes.length; i < l; i++) {
 			const route = routes[i],
@@ -62,17 +63,23 @@ function updateSidebarNav(args) {
 				node = {
 					path: resolveParams(route.fullPath, args.nextRoute),
 					...matchMatchedRoute(args.nextRoute, route),
+					activeRoute: false,
 					route,
 					depth,
 					absoluteDepth,
 					children: null,
 					name: resolveVal(sidebarMeta.name, args),
 					display: resolveVal(sidebarMeta.display, args)
-				};
+				},
+				traversalData = node.display == "skip" ?
+					traverse(route.children, depth, absoluteDepth + 1) :
+					traverse(route.children, depth + 1, absoluteDepth + 1);
 
-			node.children = node.display == "skip" ?
-				traverse(route.children, depth, absoluteDepth + 1) :
-				traverse(route.children, depth + 1, absoluteDepth + 1);
+			node.children = traversalData.routes;
+			node.activeRoute = traversalData.hasActiveRoute || (node.matched && node.active);
+			node.active = node.active || (node.activeRoute && !node.children.length);
+
+			hasActiveRoute = node.activeRoute || hasActiveRoute;
 
 			switch (node.display) {
 				case "skip": {
@@ -82,7 +89,7 @@ function updateSidebarNav(args) {
 				}
 
 				case "active":
-					if (node.matched || node.children.length)
+					if (node.activeRoute)
 						outRoutes.push(node);
 					break;
 
@@ -97,10 +104,13 @@ function updateSidebarNav(args) {
 			}
 		}
 
-		return outRoutes;
+		return {
+			routes: outRoutes,
+			hasActiveRoute
+		};
 	};
 
-	args.admin.ui.routing.sidebarNav = traverse([args.rootRoute], 0, 0);
+	args.admin.ui.routing.sidebarNav = traverse([args.rootRoute], 0, 0).routes;
 }
 
 function matchMatchedRoute(route, node) {

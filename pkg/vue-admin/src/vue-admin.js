@@ -129,8 +129,7 @@ export default class VueAdmin extends Hookable {
 	}
 
 	getRoutes() {
-		const routes = extractRoutes(this.routes, null, "");
-		return routes;
+		return extractRoutes(this.routes, null, "");
 	}
 
 	store(...args) {
