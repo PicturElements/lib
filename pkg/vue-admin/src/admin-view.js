@@ -48,11 +48,6 @@ export default class AdminView {
 
 		wrapper.use("computedData", outCells);
 
-		wrapper.add("data", this.component.data);
-		wrapper.add("provide", this.component.provide);
-		wrapper.add("methods", this.component.methods);
-		wrapper.add("computed", this.component.computed);
-		wrapper.add("props", this.component.props);
-		wrapper.add("components", this.component.components);
+		wrapper.add(this.component);
 	}
 }

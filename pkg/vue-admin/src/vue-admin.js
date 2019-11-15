@@ -2,22 +2,29 @@ import {
 	get,
 	hasOwn,
 	isObject,
-	resolveArgs,
-	parseTreeStr
+	resolveArgs
 } from "@qtxr/utils";
 
-import URL from "@qtxr/url";
 import wc from "@qtxr/vue-wrap-component";
 import { CustomJSON } from "@qtxr/uc";
 import { Hookable } from "@qtxr/bc";
 
 import { devWarn } from "./dev";
 import AdminView from "./admin-view";
+
+// Modules for various core tasks
+import {
+	parseRoutes,
+	extractRoutes
+} from "./modules/routing";
+
+// Suppliers (used in .supply())
 import * as suppliers from "./suppliers";
 
-const validViewIdRegex = /^[\w-]+$/,
-	routeViewIdRegex = /([^\s>]+)(?:\s*((?:[\w-]+(?:\s+as\s+[\w-]+)?)(?:\s*,\s*[\w-]+(?:\s+as\s+[\w-]+)?)*))?/,
-	viewIdResolveRegex = /([\w-]+)\/?$/;
+// Plugins used at runtime
+import * as plugins from "./plugins";
+
+const validViewIdRegex = /^[\w-]+$/;
 
 const storeParams = [
 	{ name: "path", type: "string", default: null },
@@ -45,6 +52,10 @@ export default class VueAdmin extends Hookable {
 		this.initialized = false;
 		this.interfaces = {};
 		this.methods = {};
+		this.ui = {};
+		this.mixins = {};
+		this.plugins = Object.assign({}, plugins, config.plugins);
+		this.pluginsMeta = {};
 
 		// Utilities
 		if (config.jsonManager instanceof CustomJSON)
@@ -113,38 +124,12 @@ export default class VueAdmin extends Hookable {
 	}
 	
 	route(routeTree) {
-		this.routes = collectRoutes(this, routeTree);
+		this.routes = parseRoutes(this, routeTree);
+		this.usePlugin("routing", this.routes);
 	}
 
 	getRoutes() {
-		const traverse = (routes, baseRoutes, path) => {
-			const outRoutes = [];
-
-			for (let i = 0, l = routes.length; i < l; i++) {
-				const route = Object.assign({}, routes[i]),
-					origChildren = route.children;
-
-				if (route.isBaseRoute)
-					outRoutes.push(route);
-				else {
-					if (!baseRoutes)
-						throw new Error(`Cannot route: only base routes are allowed at root level (at '${route.fullPath}')`);
-					
-					route.path = URL.join(path, route.path);
-					baseRoutes.push(route);
-				}
-
-				route.children = traverse(
-					origChildren,
-					route.isBaseRoute ? outRoutes : baseRoutes,
-					route.isBaseRoute ? route.path : URL.join(path, route.path)
-				);
-			}
-
-			return outRoutes;
-		};
-
-		const routes = traverse(this.routes, null, "");
+		const routes = extractRoutes(this.routes, null, "");
 		return routes;
 	}
 
@@ -175,6 +160,10 @@ export default class VueAdmin extends Hookable {
 		this.callInterfaceMethod("store", "setupLocalStore")(path, state);
 	}
 
+	mixin(nameOrMixin, mixin) {
+
+	}
+
 	// Signatures:
 	// component - single component with no direct view/model
 	// id, view  - named view with accompanying model
@@ -203,8 +192,6 @@ export default class VueAdmin extends Hookable {
 		if (!isObject(component))
 			throw new Error(`Cannot wrap component: supplied component is not a component object`);
 
-		// component.components = resolveComponents(this);
-
 		const wrapper = wc.wrap(component);
 		connect(this, wrapper);
 		return wrapper;
@@ -219,7 +206,7 @@ export default class VueAdmin extends Hookable {
 			interfaceName = supplier.interfaceName;
 
 		if (!interfaceName || typeof interfaceName != "string")
-			throw new Error(`Cannot supply: interfaceName (${interfaceName}) is not valid`);
+			throw new Error(`Cannot supply: interface (${interfaceName}) is not valid`);
 		if (this.interfaces.hasOwnProperty(interfaceName))
 			throw new Error(`Cannot supply '${interfaceName}': VueAdmin instance aready has an interface with this name`);
 
@@ -262,6 +249,31 @@ export default class VueAdmin extends Hookable {
 				this.supply(k);
 		}
 
+		return this;
+	}
+
+	usePlugin(pluginName, ...args) {
+		if (!this.plugins.hasOwnProperty(pluginName))
+			throw new Error(`Cannot use plugin: '${pluginName}' is not a known plugin`);
+		
+		const plugin = this.plugins[pluginName],
+			meta = this.pluginsMeta[pluginName] || {
+				uses: 0,
+				plugin
+			};
+
+		const pluginValidation = validatePlugin(plugin);
+
+		if (pluginValidation)
+			throw new Error(`Cannot use plugin: ${pluginValidation} (at plugin '${pluginName}')`);
+
+		this.pluginsMeta[pluginName] = meta;
+		if (plugin.useOnce && meta.uses > 0)
+			return this;
+
+		plugin.use(this, meta, ...args);
+
+		meta.uses++;
 		return this;
 	}
 
@@ -365,175 +377,6 @@ function connect(admin, wrapper) {
 	}
 }
 
-function collectRoutes(inst, routeTree) {
-	const traverse = (children, depth, accumulator) => {
-		const routes = [];
-
-		for (let i = 0, l = children.length; i < l; i++) {
-			const child = children[i],
-				route = {
-					path: null,
-					fullPath: null,
-					breadcrumbs: [],
-					children: [],
-					depth,
-					parent: accumulator.parent,
-					root: null,
-					meta: {
-						id: accumulator.id + (depth ? `-${i}` : String(i))
-					}
-				};
-
-			const resolveViewComponent = id => {
-				if (!inst.viewComponents.hasOwnProperty(id))
-					throw new Error(`Failed to route: '${id}' is not a known view component`);
-
-				return inst.viewComponents[id];
-			};
-
-			const resolveView = id => {
-				if (!inst.views.hasOwnProperty(id))
-					throw new Error(`Failed to route: '${id}' is not a known view`);
-
-				return inst.views[id];
-			};
-
-			if (child.hasNamedRoutes || child.componentData.length > 1) {
-				const components = {},
-					views = {};
-
-				for (let i = 0, l = child.componentData.length; i < l; i++) {
-					const data = child.componentData[i];
-					components[data.name || data.id] = resolveViewComponent(data.id);
-					views[data.name || data.id] = resolveView(data.id);
-				}
-
-				route.components = components;
-				route.views = views;
-			} else {
-				route.component = resolveViewComponent(child.componentData[0].id);
-				route.view = resolveView(child.componentData[0].id);
-			}
-
-			// Remove any special characters off route paths
-			// more than one level deep to comply with VR's structure
-			route.isBaseRoute = child.path[0] == "/";
-			route.root = accumulator.root || route;
-			route.path = cleanPathComponent(child.path, depth) || "";
-			route.fullPath = URL.join(accumulator.fullPath, route.path) || "";
-			route.meta.route = route;
-
-			// Special case: root path
-			if (route.fullPath == "") {
-				route.path = "/";
-				route.fullPath = "/";
-			}
-
-			const view = getView(route),
-				crumb = get(view, "meta.breadcrumb", {}) || cleanBreadcrumb(route.path);
-
-			route.sidebarConfig = get(view, "meta.sidebar", {});
-			route.breadcrumbConfig = get(view, "meta.breadcrumb", {});
-
-			// Don't include empty crumbs
-			if (crumb && typeof crumb == "string") {
-				route.breadcrumbs = [...accumulator.breadcrumbs, {
-					path: route.fullPath,
-					crumb
-				}];
-			} else if (crumb && typeof crumb == "object" && crumb.display == "visible"){
-				route.breadcrumbs = [...accumulator.breadcrumbs, {
-					path: route.fullPath,
-					crumb: crumb.name
-				}];
-			} else
-				route.breadcrumbs = accumulator.breadcrumbs;
-
-			inst.routesMap[route.meta.id] = route;
-			routes.push(route);
-
-			route.children = traverse(child.children, depth + 1, {
-				fullPath: route.fullPath,
-				breadcrumbs: route.breadcrumbs,
-				parent: route,
-				root: route.root,
-				id: route.meta.id
-			});
-		}
-
-		return routes;
-	};
-
-	const tree = parseRouteTree(routeTree);
-
-	if (tree.length != 1)
-		throw new Error(`Failed to route: root must only be one route (${tree.length} roots found)`);
-
-	return traverse(tree, 0, {
-		fullPath: "",
-		breadcrumbs: [],
-		parent: null,
-		id: "route-"
-	});
-}
-
-function parseRouteTree(routeTree) {
-	return parseTreeStr(routeTree, {
-		process(item) {
-			const ex = routeViewIdRegex.exec(item.raw);
-			if (!ex)
-				throw SyntaxError(`Invalid route item '${item.raw}'`);
-
-			let path = ex[1],
-				id = ex[2];
-
-			if (!id) {
-				const resolved = viewIdResolveRegex.exec(path);
-				id = resolved && resolved[1];
-			}
-
-			if (!id)
-				throw new Error(`Failed to resolve view ID from route (at '${item.raw}')`);
-
-			let hasNamedRoutes = false;
-
-			const componentData = id.split(/\s*,\s*/).map(comp => {
-				const idNameSplit = comp.split(/\s+as\s+/),
-					data = {
-						id: idNameSplit[0],
-						name: idNameSplit[1] || null
-					};
-
-				hasNamedRoutes = hasNamedRoutes || (data.name && data.name != "default");
-
-				return data;
-			});
-
-			item.hasNamedRoutes = hasNamedRoutes;
-			item.componentData = componentData;
-			item.path = path;
-		}
-	});
-}
-
-function cleanPathComponent(pth, depth) {
-	return depth ? pth.replace(/^\.*\//, "") : pth;
-}
-
-function cleanBreadcrumb(pth) {
-	return pth.replace(/^\.*\//, "").replace(/\/$/, "");
-}
-
-function getView(route) {
-	if (route.view)
-		return route.view;
-
-	if (route.views && route.views.default)
-		return route.views.default;
-
-	return null;
-}
-
 function hasInit(supplier) {
 	return supplier.hasOwnProperty("init") && typeof supplier.init == "function";
 }
@@ -547,6 +390,16 @@ function stripConfigProps(inter) {
 	}
 
 	return stripped;
+}
+
+function validatePlugin(plugin) {
+	if (!isObject(plugin))
+		return "Plugins must be objects";
+
+	if (typeof plugin.use != "function")
+		return "Plugins must define a use method";
+
+	return null;
 }
 
 function noop() {}
