@@ -43,6 +43,7 @@ const commands = new Commander({
 	.cmd("git")
 		.alias("gp", "git push")
 		.alias("p", "git push")
+		.alias("s", "git status")
 	.cmd("?", {
 		handle(options) {
 			options.root.logCommandsList();

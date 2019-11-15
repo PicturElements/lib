@@ -30,6 +30,9 @@ const commands = new Commander({
 	.cmd("unstage", async options => {
 		await spawn("git", ["reset", "--soft", "HEAD~1"]);
 		await spawn("git", ["status"], STD_IO);
+	})
+	.cmd("status", async options => {
+		return await spawn("git", ["status", "."], STD_IO);
 	});
 
 async function push(root) {
@@ -52,9 +55,15 @@ async function push(root) {
 	process.on("beforeExit", async _ => {
 		console.log("\nUndoing changes...");
 
+		const resetStatus = await spawn("git", ["reset", "--soft", "HEAD~1"]);
+		if (resetStatus.code == 0)
+			console.log("Successfully reset commit");
+		else
+			error("Failed to reset commit. Run 'git reset --soft HEAD~1' to reset manually");
+
 		package.qlib.pushes = pushes;
 
-		if (await (writeJSON(jsonPath, package, "  ")))
+		if (await writeJSON(jsonPath, package, "  "))
 			console.log("Successfully undid changes; exiting");
 		else {
 			error("WARNING: failed to update package.json. Please update it manually with the following data:");
@@ -67,7 +76,7 @@ async function push(root) {
 	});
 
 	await spawn("git", ["add", path.join(PKG_DIR, root)], STD_IO);
-	await spawn("git", ["status"], STD_IO);
+	await spawn("git", ["status", "."], STD_IO);
 
 	if (!await booleanQuestion())
 		return console.log("Cancelling");
