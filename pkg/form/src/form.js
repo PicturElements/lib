@@ -47,6 +47,7 @@ export default class Form extends Hookable {
 		this.inputs = {};
 		this.propagateMap = {};
 		this.keys = [];
+		this.updateInitialized = false;
 
 		this.valid = true;
 		this.changed = false;
@@ -126,6 +127,8 @@ export default class Form extends Hookable {
 	}
 
 	setValues(values, noTrigger) {
+		this.updateInitialized = true;
+
 		this.forEach(inp => {
 			if (values.hasOwnProperty(inp.name)) {
 				if (values[inp.name] !== null)
@@ -135,6 +138,9 @@ export default class Form extends Hookable {
 					inp[TRIGGER](inp.value);
 			}
 		});
+
+		this.callHooks("updated", this.inputs);
+		this.updateInitialized = false;
 	}
 
 	setInputs(data) {
@@ -177,6 +183,8 @@ export default class Form extends Hookable {
 	}
 
 	clear() {
+		this.updateInitialized = true;
+
 		this.forEach(inp => {
 			inp.initialized = false;
 			inp.valid = true;
@@ -185,10 +193,18 @@ export default class Form extends Hookable {
 
 		this.forEach(inp => inp[TRIGGER](inp.value));
 		this.changed = false;
+
+		this.callHooks("updated", this.inputs);
+		this.updateInitialized = false;
 	}
 
 	trigger() {
+		this.updateInitialized = true;
+
 		this.forEach(inp => inp[TRIGGER](inp.value));
+
+		this.callHooks("updated", this.inputs);
+		this.updateInitialized = false;
 	}
 
 	val(accessor) {

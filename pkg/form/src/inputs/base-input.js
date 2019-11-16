@@ -125,6 +125,9 @@ export default class BaseInput extends Hookable {
 		this.form.callHooks("trigger", this, this.value);
 		this.form.callHooks(`trigger:${this.name}`, this, this.value);
 		this.callHooks("sourceTrigger");
+
+		if (!this.form.updateInitialized)
+			this.form.callHooks("updated", this.form.inputs);
 	}
 
 	[SELF_TRIGGER](value) {
