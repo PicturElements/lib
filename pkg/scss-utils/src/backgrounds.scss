@@ -1,3 +1,4 @@
+// Sharp backgrounds
 @mixin raster($back, $front, $size: 6px) {
 	background-image:
 		linear-gradient(45deg, $back 20%, transparent 25%, transparent 75%, $back 75%),
@@ -14,6 +15,10 @@
 	background-image: radial-gradient($front 30%, $back 30%);
 }
 
+@mixin b-diagonal-dots($back, $front) {
+	background-image: radial-gradient(circle at 50% 0%, $front 15%, transparent 15%), radial-gradient(circle at 50% 100%, $front 15%, transparent 15%), radial-gradient(circle at 0% 50%, $front 15%, transparent 15%), radial-gradient(circle at 100% 50%, $front 15%, $back 15%);
+}
+
 @mixin b-stripes($back, $front) {
 	background-image: linear-gradient(135deg, $back 40%, $front 40%, $front 50%, $back 50%, $back 90%, $front 90%);
 }
@@ -24,4 +29,29 @@
 
 @mixin b-squares($back, $front) {
 	background-image: linear-gradient(155deg, $back 35%, transparent 35%, transparent 65%, $back 65%), linear-gradient(65deg, $back 35%, $front 35%, $front 65%, $back 65%);
+}
+
+@mixin b-clover($back, $front) {
+	background-image: radial-gradient(circle at 50% 35%, $front 15%, transparent 15%), radial-gradient(circle at 50% 65%, $front 15%, transparent 15%), radial-gradient(circle at 65% 50%, $front 15%, transparent 15%), radial-gradient(circle at 35% 50%, $front 15%, $back 15%);
+}
+
+@mixin b-kissing-dots($back, $front) {
+	background-image: radial-gradient(circle at 50% 0%, $back 29%, transparent 29%), radial-gradient(circle at 50% 100%, $back 29%, transparent 29%), radial-gradient(circle at 0% 50%, $back 29%, transparent 29%), radial-gradient(circle at 100% 50%, $back 29%, $front 29%);
+}
+
+@mixin b-dummy-sticker($back, $front) {
+	background-image: radial-gradient(circle at 0% 0%, $front 17%, transparent 17%), radial-gradient(circle at 100% 100%, $front 17%, $back 17%);
+}
+
+@mixin b-pacman($back, $front) {
+	background-image: radial-gradient(circle at 0% 0%, $front 16%, transparent 16%), radial-gradient(circle at 100% 0%, $front 16%, transparent 16%), radial-gradient(circle at 100% 100%, $front 16%, $back 16%);
+}
+
+@mixin b-party() {
+	background-image: radial-gradient(circle at 100% 0%, $front 15%, transparent 15%), radial-gradient(circle at 50% 50%, $front 15%, transparent 15%), radial-gradient(circle at 50% 50%, $front 15%, transparent 15%), radial-gradient(circle at 0% 100%, $front 15%, $back 15%);
+}
+
+// Blurred backgrounds
+@mixin b-couch($back, $front) {
+	background-image: radial-gradient(circle at 50% 0%, $back 10%, transparent 15%), radial-gradient(circle at 50% 100%, $back 10%, transparent 15%), radial-gradient(circle at 0% 50%, $back 15%, transparent 50%), radial-gradient(circle at 100% 50%, $back 15%, $front 50%);
 }
