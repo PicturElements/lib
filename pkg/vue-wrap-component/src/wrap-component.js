@@ -416,8 +416,8 @@ function nestHook(target, key, hook) {
 		const origHook = target[key];
 
 		target[key] = function(...args) {
-			origHook.call(this, args);
-			hook.call(this, args);
+			origHook.apply(this, args);
+			hook.apply(this, args);
 		};
 	} else 
 		target[key] = hook;
