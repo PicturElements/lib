@@ -5,39 +5,43 @@ import {
 } from "@qtxr/utils";
 
 export default {
-	use(admin, meta, routes) {
+	use(admin) {
 		admin.ui.routing = {
+			currentRoute: null,
 			sidebarNav: [],
 			breadcrumbs: []
 		};
+	},
+	useOnce: true,
+	connect(admin, wrapper, meta) {
+		// Don't apply to normal components
+		if (meta.type != "view")
+			return;
 
-		const rootRoute = routes[0];
+		const dispatchChange = (to, from) => {
+			if (to.path == admin.ui.routing.currentRoute)
+				return;
 
-		const traverse = route => {
-			route.beforeEnter = (to, from, next) => {
-				const args = {
-					nextRoute: to,
-					prevRoute: from,
-					route,
-					rootRoute,
-					admin
-				};
+			admin.ui.routing.currentRoute = to.path;
 
-				updateTitle(args);
-				updateSidebarNav(args);
-				updateBreadcrumbs(args);
-
-				next();
+			const args = {
+				nextRoute: to,
+				prevRoute: from,
+				route: to.meta.route,
+				rootRoute: getRootRoute(to.meta.route),
+				admin
 			};
 
-			const children = route.children || [];
-			for (let i = 0, l = children.length; i < l; i++)
-				traverse(children[i]);
+			updateTitle(args);
+			updateSidebarNav(args);
+			updateBreadcrumbs(args);
 		};
 
-		traverse(rootRoute);
-	},
-	useOnce: true
+		wrapper.addWatcher("$route", dispatchChange);
+		wrapper.addHook("beforeMount", function() {
+			dispatchChange(this.$route, this.$route);
+		});
+	}
 };
 
 function updateTitle(args) {
@@ -166,4 +170,13 @@ function resolveParams(path, nextRoute) {
 
 		return nextRoute.params[key];
 	});
+}
+
+function getRootRoute(route) {
+	while (true) {
+		if (!route.parent)
+			return route;
+
+		route = route.parent;
+	}
 }

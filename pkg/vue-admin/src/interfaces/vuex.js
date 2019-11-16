@@ -8,8 +8,9 @@ import {
 	mkAccessor,
 	isConstructor
 } from "@qtxr/utils";
-import { usePlugin } from "../utils";
 import { Debouncer } from "@qtxr/uc";
+
+import { usePlugin } from "../utils";
 
 export default {
 	interfaceName: "store",

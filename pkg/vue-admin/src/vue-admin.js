@@ -18,8 +18,8 @@ import {
 	extractRoutes
 } from "./modules/routing";
 
-// Suppliers (used in .supply())
-import * as suppliers from "./suppliers";
+// Interfaces (used in .supply() and .autoSupply())
+import * as interfaces from "./interfaces";
 
 // Plugins used at runtime
 import * as plugins from "./plugins";
@@ -31,7 +31,12 @@ const storeParams = [
 	{ name: "state", type: Object, required: true }
 ];
 
-const configKeys = {
+const interfaceConfigKeys = {
+	connect: true,
+	connectAdmin: true
+};
+
+const pluginConfigKeys = {
 	connect: true,
 	connectAdmin: true
 };
@@ -50,12 +55,14 @@ export default class VueAdmin extends Hookable {
 		this.routes = [];
 		this.routesMap = {};
 		this.initialized = false;
+		this.registeredPlugins = Object.assign({}, plugins, config.plugins);
+
+		this.ui = {};
+
 		this.interfaces = {};
 		this.methods = {};
-		this.ui = {};
 		this.mixins = {};
-		this.plugins = Object.assign({}, plugins, config.plugins);
-		this.pluginsMeta = {};
+		this.plugins = {};
 
 		// Utilities
 		if (config.jsonManager instanceof CustomJSON)
@@ -125,7 +132,7 @@ export default class VueAdmin extends Hookable {
 	
 	route(routeTree) {
 		this.routes = parseRoutes(this, routeTree);
-		this.usePlugin("routing", this.routes);
+		this.usePlugin("routing");
 	}
 
 	getRoutes() {
@@ -160,7 +167,17 @@ export default class VueAdmin extends Hookable {
 	}
 
 	mixin(nameOrMixin, mixin) {
+		let name = nameOrMixin;
 
+		if (typeof nameOrMixin != "string") {
+			mixin = nameOrMixin;
+			name = "default";
+		}
+
+		if (!name || typeof name != "string")
+			throw new Error(`Cannot define mixin: invalid mixin name (${name})`);
+
+		this.mixins[name] = mixin;
 	}
 
 	// Signatures:
@@ -181,9 +198,15 @@ export default class VueAdmin extends Hookable {
 
 		injectComponents(this, view);
 
-		const wrapper = wc.wrap(view);
-		this.views[idOrComponent].connect(wrapper);
-		connect(this, wrapper);
+		const wrapper = wrapComponent(this, view),
+			meta = {
+				type: "view",
+				source: view,
+				id: idOrComponent
+			};
+
+		this.views[idOrComponent].connect(wrapper, meta);
+		connect(this, wrapper, meta);
 		return wrapper;
 	}
 
@@ -191,33 +214,38 @@ export default class VueAdmin extends Hookable {
 		if (!isObject(component))
 			throw new Error(`Cannot wrap component: supplied component is not a component object`);
 
-		const wrapper = wc.wrap(component);
-		connect(this, wrapper);
+		const wrapper = wrapComponent(this, component),
+			meta = {
+				type: "component",
+				source: component
+			};
+
+		connect(this, wrapper, meta);
 		return wrapper;
 	}
 
-	supply(interfaceName, supplier) {
-		supplier = supplier || suppliers[interfaceName];
-		if (!isObject(supplier))
-			throw new Error(`Cannot supply '${interfaceName}': supplier is not an object`);
+	supply(interfaceName, inter) {
+		inter = inter || interfaces[interfaceName];
+		if (!isObject(inter))
+			throw new Error(`Cannot supply '${interfaceName}': interface is not an object`);
 
-		if (supplier.hasOwnProperty("interfaceName") && typeof supplier.interfaceName == "string")
-			interfaceName = supplier.interfaceName;
+		if (inter.hasOwnProperty("interfaceName") && typeof inter.interfaceName == "string")
+			interfaceName = inter.interfaceName;
 
 		if (!interfaceName || typeof interfaceName != "string")
 			throw new Error(`Cannot supply: interface (${interfaceName}) is not valid`);
 		if (this.interfaces.hasOwnProperty(interfaceName))
 			throw new Error(`Cannot supply '${interfaceName}': VueAdmin instance aready has an interface with this name`);
 
-		if (hasInit(supplier)) {
+		if (hasInit(inter)) {
 			const initializer = (...args) => {
 				this.interfaces[interfaceName] = {
-					interface: stripConfigProps(supplier.init(this, ...args)),
-					config: supplier
+					interface: stripConfigProps(inter.init(this, ...args), interfaceConfigKeys),
+					config: inter
 				};
 
-				if (supplier.hasOwnProperty("connectAdmin") && typeof supplier.connectAdmin == "function")
-					supplier.connectAdmin(this);
+				if (inter.hasOwnProperty("connectAdmin") && typeof inter.connectAdmin == "function")
+					inter.connectAdmin(this);
 
 				return this;
 			};
@@ -232,47 +260,66 @@ export default class VueAdmin extends Hookable {
 		}
 		
 		this.interfaces[interfaceName] = {
-			interface: stripConfigProps(supplier),
-			config: supplier
+			interface: stripConfigProps(inter),
+			config: inter
 		};
 
-		if (supplier.hasOwnProperty("connectAdmin") && typeof supplier.connectAdmin == "function")
-			supplier.connectAdmin(this);
+		if (inter.hasOwnProperty("connectAdmin") && typeof inter.connectAdmin == "function")
+			inter.connectAdmin(this);
 
 		return this;
 	}
 
 	autoSupply() {
-		for (const k in suppliers) {
-			if (hasOwn(suppliers, k) && !hasInit(suppliers[k]))
+		for (const k in interfaces) {
+			if (hasOwn(interfaces, k) && !hasInit(interfaces[k]))
 				this.supply(k);
 		}
 
 		return this;
 	}
 
-	usePlugin(pluginName, ...args) {
-		if (!this.plugins.hasOwnProperty(pluginName))
-			throw new Error(`Cannot use plugin: '${pluginName}' is not a known plugin`);
-		
-		const plugin = this.plugins[pluginName],
-			meta = this.pluginsMeta[pluginName] || {
-				uses: 0,
-				plugin
-			};
+	registerPlugin(pluginName, pluginConfig) {
+		if (!pluginName || typeof pluginName != "string")
+			throw new Error(`Cannot register plugin: invalid plugin name (${pluginName})`);
 
-		const pluginValidation = validatePlugin(plugin);
+		const pluginValidation = validatePlugin(pluginConfig);
+
+		if (pluginValidation)
+			throw new Error(`Cannot register plugin: ${pluginValidation} (as '${pluginName}')`);
+
+		this.registeredPlugins[pluginName] = pluginConfig;
+		return this;
+	}
+
+	usePlugin(pluginName, ...args) {
+		if (typeof pluginName != "string" || !this.registeredPlugins.hasOwnProperty(pluginName))
+			return this;
+
+		const plugin = this.plugins[pluginName] || {
+			plugin: stripConfigProps(this.registeredPlugins[pluginName], pluginConfigKeys),
+			config: this.registeredPlugins[pluginName],
+			meta: {
+				uses: 0,
+				plugin: this.registeredPlugins[pluginName]
+			}
+		};
+
+		const pluginValidation = validatePlugin(plugin.config);
 
 		if (pluginValidation)
 			throw new Error(`Cannot use plugin: ${pluginValidation} (at plugin '${pluginName}')`);
 
-		this.pluginsMeta[pluginName] = meta;
-		if (plugin.useOnce && meta.uses > 0)
+		if (plugin.config.useOnce && plugin.meta.uses > 0)
 			return this;
 
-		plugin.use(this, meta, ...args);
+		plugin.config.use(this, plugin.meta, ...args);
 
-		meta.uses++;
+		if (plugin.config.hasOwnProperty("connectAdmin") && typeof plugin.config.connectAdmin == "function")
+			plugin.config.connectAdmin(this);
+
+		plugin.meta.uses++;
+		this.plugins[pluginName] = plugin;
 		return this;
 	}
 
@@ -359,9 +406,39 @@ function isComponent(candidate) {
 	return Boolean(candidate) && typeof candidate == "object" && candidate.hasOwnProperty("_compiled");
 }
 
-function connect(admin, wrapper) {
+function wrapComponent(admin, component) {
+	if (!component.mixins && !admin.mixins.hasOwnProperty("default"))
+		return wc.wrap(component);
+
+	component = Object.assign({}, component);
+	const mixins = component.mixins ?
+		Array.isArray(component.mixins) || [component.mixins] :
+		[];
+
+	delete component.mixins;
+
+	component = wc.wrap(component);
+
+	if (admin.mixins.hasOwnProperty("default"))
+		component.addMixin("default", admin.mixins.default);
+
+	for (let i = 0, l = mixins.length; i < l; i++) {
+		if (typeof mixins[i] == "string") {
+			if (!admin.mixins.hasOwnProperty(mixins[i]))
+				throw new Error(`Cannot resolve mixin '${mixins[i]}': no registered mixin found`);
+
+			component.addMixin(mixins[i], admin.mixins[mixins[i]]);
+		} else
+			component.addMixin(`injected-mixin-${i}`, mixins[i]);
+	}
+
+	return component;
+}
+
+function connect(admin, wrapper, meta) {
 	wrapper.addData("admin", admin);
 
+	// Connect interfaces
 	const interfaces = admin.interfaces;
 	for (const k in interfaces) {
 		if (!interfaces.hasOwnProperty(k))
@@ -372,7 +449,21 @@ function connect(admin, wrapper) {
 		if (!config.hasOwnProperty("connect") || typeof config.connect != "function")
 			continue;
 
-		config.connect(admin, wrapper);
+		config.connect(admin, wrapper, meta);
+	}
+
+	// Connect interfaces
+	const plugins = admin.plugins;
+	for (const k in plugins) {
+		if (!plugins.hasOwnProperty(k))
+			continue;
+
+		const { config } = plugins[k];
+
+		if (!config.hasOwnProperty("connect") || typeof config.connect != "function")
+			continue;
+
+		config.connect(admin, wrapper, meta);
 	}
 }
 
@@ -380,11 +471,11 @@ function hasInit(supplier) {
 	return supplier.hasOwnProperty("init") && typeof supplier.init == "function";
 }
 
-function stripConfigProps(inter) {
+function stripConfigProps(inter, keys) {
 	const stripped = {};
 
 	for (const k in inter) {
-		if (inter.hasOwnProperty(k) && !configKeys.hasOwnProperty(k))
+		if (inter.hasOwnProperty(k) && !keys.hasOwnProperty(k))
 			stripped[k] = inter[k];
 	}
 

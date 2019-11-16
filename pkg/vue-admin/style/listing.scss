@@ -50,7 +50,8 @@ $listing-params: (
 				overflow: initial;
 
 				.compact-table {
-					overflow: auto;
+					overflow-x: hidden;
+					overflow-y: auto;
 					margin-top: 10px;
 				}
 
