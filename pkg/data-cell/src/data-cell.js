@@ -338,10 +338,12 @@ export default class DataCell extends Hookable {
 				if (response.success) {
 					this.setState("loaded");
 					this.setData(this.process("data")(runtime, response.payload));
+					this.callHooks("success", response);
 				} else {
 					this.setState("error", {
 						errorMsg: response.errorMsg
 					});
+					this.callHooks("fail", response);
 				}
 	
 				this.setState({
@@ -731,8 +733,6 @@ function fetchRequest(cell, runtime, method = "get", url = null, preset = null) 
 
 				if (!validation) {
 					successResponse = cell.process("success")(runtime, successResponse);
-
-					cell.callHooks("success", successResponse);
 					resolve(successResponse);
 				} else {
 					let failResponse = cell.mkErrorResponse(validation, {
@@ -742,8 +742,6 @@ function fetchRequest(cell, runtime, method = "get", url = null, preset = null) 
 					});
 
 					failResponse = cell.process("fail")(runtime, failResponse);
-
-					cell.callHooks("fail", failResponse);
 					resolve(failResponse);
 				}
 			})
@@ -760,8 +758,6 @@ function fetchRequest(cell, runtime, method = "get", url = null, preset = null) 
 				failResponse = cell.process("fail")(runtime, failResponse);
 				const validation = validate(cell, runtime, failResponse);
 				failResponse.errorMsg = validation;
-
-				cell.callHooks("fail", failResponse);
 				resolve(failResponse);
 			});
 	});
