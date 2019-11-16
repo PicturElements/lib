@@ -9,11 +9,12 @@ import * as suppliers from "./suppliers";
 const dataMap = {
 	data: "addData",
 	provide: "addProvision",
+	mixins: "addMixin",
 	methods: "addMethod",
 	computed: "addComputed",
 	props: "addProp",
 	components: "addComponent",
-	mixins: "addMixin"
+	watch: "addWatcher"
 };
 
 const wc = {
@@ -34,7 +35,8 @@ class ComponentWrapper {
 		// in their respective partitions
 		this.exporterInjectors = {
 			data: [{}],
-			provide: [{}]
+			provide: [{}],
+			mixins: [[]]
 		};
 
 		// Move over data to injector so tracking of keys
@@ -106,7 +108,7 @@ class ComponentWrapper {
 		return true;
 	}
 
-	addData(keyOrInjector, value) {
+	addData(keyOrInjector, data) {
 		if (typeof keyOrInjector == "function") {
 			this.exporterInjectors.data.push(keyOrInjector);
 			return;
@@ -116,11 +118,11 @@ class ComponentWrapper {
 			return null;
 
 		const injector = this.exporterInjectors.data[0];
-		injector[keyOrInjector] = value;
-		return value;
+		injector[keyOrInjector] = data;
+		return data;
 	}
 
-	addProvision(keyOrInjector, value) {
+	addProvision(keyOrInjector, provision) {
 		if (typeof keyOrInjector == "function") {
 			this.exporterInjectors.provide.push(keyOrInjector);
 			return;
@@ -130,8 +132,40 @@ class ComponentWrapper {
 			return null;
 		
 		const injector = this.exporterInjectors.provide[0];
-		injector[keyOrInjector] = value;
-		return value;
+		injector[keyOrInjector] = provision;
+		return provision;
+	}
+
+	addMixin(keyOrInjector, mixin) {
+		if (typeof keyOrInjector == "function") {
+			this.exporterInjectors.mixin.push(keyOrInjector);
+			return keyOrInjector;
+		}
+
+		if (typeof keyOrInjector != "string")
+			return null;
+
+		if (isObject(mixin))
+			mixin = wc.wrap(mixin);
+
+		if (!(mixin instanceof ComponentWrapper))
+			throw new Error(`Cannot add mixin '${keyOrInjector}': supplied mixin is not an object or instance of ComponentWrapper`);
+
+		const injector = this.exporterInjectors.mixins[0],
+			wrappedMixin = {
+				name: keyOrInjector,
+				mixin
+			};
+
+		for (let i = 0, l = injector.length; i < l; i++) {
+			if (injector[i].name == keyOrInjector) {
+				injector[i] = wrappedMixin;
+				return mixin;
+			}
+		}
+
+		injector.push(wrappedMixin);
+		return mixin;
 	}
 
 	addMethod(key, method) {
@@ -188,19 +222,34 @@ class ComponentWrapper {
 		nestHook(this.component, key, hook);
 	}
 
-	addMixin(key, hook) {
-		
+	addWatcher(key, watcher) {
+		if (typeof watcher != "function")
+			throw new Error(`Cannot add watcher '${key}': supplied watcher is not a function`);
+
+		nestHook(this.component.watch, key, watcher);
 	}
 
 	export() {
 		const component = this.component,
-			injectors = this.exporterInjectors;
+			exporterInjectors = this.exporterInjectors;
 
-		for (const k in injectors) {
-			if (!injectors.hasOwnProperty(k))
+		for (const k in exporterInjectors) {
+			if (!exporterInjectors.hasOwnProperty(k))
 				continue;
 
-			component[k] = mkInjectorExporter(k, this);
+			const exporter = ComponentWrapper.exporters[k];
+
+			const args = {
+				wrapper: this,
+				injectors: exporterInjectors[k],
+				exporter,
+				name: k
+			};
+
+			if (typeof exporter.wrap == "function")
+				component[k] = exporter.wrap(args);
+			else
+				component[k] = exporter.export(args);
 		}
 	
 		return component;
@@ -249,26 +298,61 @@ class ComponentWrapper {
 ComponentWrapper.endpoints = {};
 
 ComponentWrapper.exporters = {
-	data(obj, wrapper, vm) {
-		const {
-			live,
-			computedData
-		} = wrapper.internal;
+	data: {
+		wrap: wrapInjectorExporter,
+		export({ out, wrapper, vm }) {
+			const {
+				live,
+				computedData
+			} = wrapper.internal;
 
-		if (live) {
-			inject(obj, live, {
-				override: true,
-				injectSymbols: true,
-				shallow: true,
-				circular: true
-			});
-		}
-
-		if (computedData) {
-			for (const k in computedData) {
-				if (computedData.hasOwnProperty(k) && typeof computedData[k] == "function")
-					obj[k] = computedData[k](wrapper, vm);
+			if (live) {
+				inject(out, live, {
+					override: true,
+					injectSymbols: true,
+					shallow: true,
+					circular: true
+				});
 			}
+
+			if (computedData) {
+				for (const k in computedData) {
+					if (computedData.hasOwnProperty(k) && typeof computedData[k] == "function")
+						out[k] = computedData[k](wrapper, vm);
+				}
+			}
+		}
+	},
+	provide: {
+		wrap: wrapInjectorExporter
+	},
+	mixins: {
+		export(args) {
+			const mixins = [];
+
+			const exp = mixin => {
+				if (typeof mixin == "function")
+					mixin = mixin(args);
+
+				if (mixin instanceof ComponentWrapper)
+					mixin = mixin.export();
+
+				if (!isObject(mixin))
+					throw new Error(`Cannot export mixin: mixin is not a vue component configuration object, component wrapper, or function that resolves to either`);
+			
+				mixins.push(mixin);
+			};
+
+			// Export named mixins
+			const namedMixins = args.injectors[0];
+			for (let i = 0, l = namedMixins.length; i < l; i++)
+				exp(namedMixins[i].mixin);
+
+			// Export anonymous mixins / mixin resolvers
+			for (let i = 1, l = args.injectors.length; i < l; i++)
+				exp(args.injectors[i]);
+
+			return mixins;
 		}
 	}
 };
@@ -289,15 +373,12 @@ ComponentWrapper.prototype.assert = {
 	}
 };
 
-// By default, data already specified in fields cannot
-// be overwritten but are free to be extended
-function mkInjectorExporter(name, wrapper) {
+function wrapInjectorExporter(args) {
 	return function() {
-		const injectors = wrapper.exporterInjectors[name];
-		let outObj = {};
+		let out = {};
 
-		for (let i = 0, l = injectors.length; i < l; i++) {
-			const injector = injectors[i];
+		for (let i = 0, l = args.injectors.length; i < l; i++) {
+			const injector = args.injectors[i];
 			let resolved;
 
 			if (typeof injector == "function")
@@ -305,13 +386,17 @@ function mkInjectorExporter(name, wrapper) {
 			else
 				resolved = clone(injector, "cloneSymbols|circular");
 
-			inject(outObj, resolved, "injectSymbols|circular");
+			inject(out, resolved, "injectSymbols|circular");
 		}
 
-		if (ComponentWrapper.exporters.hasOwnProperty(name))
-			ComponentWrapper.exporters[name](outObj, wrapper, this);
+		if (typeof args.exporter.export == "function") {
+			args.exporter.export(Object.assign({
+				out,
+				vm: this
+			}, args));
+		}
 
-		return outObj;
+		return out;
 	};
 }
 
@@ -321,7 +406,8 @@ function mkDefaultOptions() {
 		props: {},
 		methods: {},
 		computed: {},
-		mixins: []
+		mixins: {},
+		watch: {}
 	};
 }
 
