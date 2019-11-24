@@ -10,63 +10,13 @@ const emailRegex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\
 	nameRegex = /[^\d,./\\"=@#$%^&*(){}[\]!?|~<>;]/;
 
 const defaults = {
-	firstName: {
-		value: "",
-		checkKey: nameRegex,
-		validate: mkRangeValidator(1, 20, "Please specify a first name", "Name too long. Maximum: $max characters"),
-	},
-	lastName: {
-		value: "",
-		checkKey: nameRegex,
-		validate: mkRangeValidator(1, 20, "Please specify a last name", "Name too long. Maximum: $max characters"),
-	},
-	email: {
-		type: "email",
-		value: "",
-		checkKey: /[^\s]/,
-		validate: mkRegexValidator(emailRegex, "Invalid email address")
-	},
-	business: {
-		value: "",
-		validate: mkRangeValidator(1, 48, "Please specify a business name", "Business name too long. Maximum: $max characters")
-	},
 	address: {
 		value: "",
 		validate: mkRangeValidator(1, Infinity, "Please specify an address")
 	},
-	city: {
+	business: {
 		value: "",
-		validate: mkRangeValidator(1, Infinity, "Please specify a city")
-	},
-	state: {
-		value: "",
-		checkKey: "word",
-		checkWord(str) {
-			return str.length <= 2;
-		},
-		validate: mkRangeValidator(2, 2, "Please specify a state in XX form", "Please specify a state in XX form"),
-	},
-	password: {
-		type: "password",
-		value: "",
-		validate(val, inp, inps) {
-			if (val.length < 8)
-				return "Password too short. Minimum: 8 characters";
-		},
-		propagate: "password2"
-	},
-	password2: {
-		type: "password",
-		value: "",
-		validate(val, inp, inps) {
-			if (!inp.initialized)
-				return;
-
-			if (val.length < 8)
-				return "Password too short. Minimum: 8 characters";
-			if (inps.password.value != val)
-				return "These passwords don't match";
-		}
+		validate: mkRangeValidator(1, 48, "Please specify a business name", "Business name too long. Maximum: $max characters")
 	},
 	card: {
 		type: "tel",
@@ -85,6 +35,38 @@ const defaults = {
 		},
 		extract(val) {
 			return val.replace(/\s/g, "");
+		}
+	},
+	checkbox: {
+		type: "checkbox",
+		value: false
+	},
+	city: {
+		value: "",
+		validate: mkRangeValidator(1, Infinity, "Please specify a city")
+	},
+	count: {
+		type: "count",
+		value: 0,
+		min: 0,
+		max: 100,
+		checkWord: "int"
+	},
+	country: {
+		value: "",
+		checkKey: "name",
+		validate: mkRangeValidator(1, Infinity, "This field cannot be empty")
+	},
+	cvv: {
+		type: "tel",
+		value: "",
+		checkKey: "natural",
+		checkWord(str) {
+			return str.length <= 4;
+		},
+		validate(val) {
+			if (!/^\d{3,4}$/.test(val))
+				return "CVV numbers are between 3 and 4 digits in length";
 		}
 	},
 	date: {
@@ -119,42 +101,6 @@ const defaults = {
 			payload.year = Number(ex[2]);
 		}
 	},
-	cvv: {
-		type: "tel",
-		value: "",
-		checkKey: "natural",
-		checkWord(str) {
-			return str.length <= 4;
-		},
-		validate(val) {
-			if (!/^\d{3,4}$/.test(val))
-				return "CVV numbers are between 3 and 4 digits in length";
-		}
-	},
-	phone: {
-		value: "",
-		checkKey: /[0-9+\s-+]/,
-		validate: mkRegexValidator(/^[0-9+\s-]+$/, "Please specify a valid phone number")
-	},
-	zip: {
-		value: "",
-		checkKey: "natural",
-		validate: mkRangeValidator(1, Infinity, "This field cannot be empty")
-	},
-	country: {
-		value: "",
-		checkKey: "name",
-		validate: mkRangeValidator(1, Infinity, "This field cannot be empty")
-	},
-	url: {
-		value: "",
-		checkKey: /[^\s]/,
-		validate: mkRegexValidator(/^(?:https?:\/\/)\w+(?:[.:][\w-]+)+(?:\/[\w-]*)*(?:[#?].*)?$/, "Please specify a valid URL")
-	},
-	checkbox: {
-		type: "checkbox",
-		value: false
-	},
 	dropdown: {
 		type: "dropdown",
 		value: null,
@@ -163,20 +109,27 @@ const defaults = {
 				return "Please select a value";
 		}
 	},
-	radio: {
-		type: "radio",
-		value: null,
-		validate(val) {
-			if (val === null)
-				return "Please select a value";
-		}
+	email: {
+		type: "email",
+		value: "",
+		checkKey: /[^\s]/,
+		validate: mkRegexValidator(emailRegex, "Invalid email address")
 	},
-	count: {
-		type: "count",
-		value: 0,
-		min: 0,
-		max: 100,
-		checkWord: "int"
+	firstName: {
+		value: "",
+		checkKey: nameRegex,
+		validate: mkRangeValidator(1, 20, "Please specify a first name", "Name too long. Maximum: $max characters"),
+	},
+	int: {
+		type: "tel",
+		value: "",
+		checkKey: /[0-9-]/,
+		checkWord: /^-?[0-9]*$/
+	},
+	lastName: {
+		value: "",
+		checkKey: nameRegex,
+		validate: mkRangeValidator(1, 20, "Please specify a last name", "Name too long. Maximum: $max characters"),
 	},
 	media: {
 		type: "media",
@@ -208,15 +161,112 @@ const defaults = {
 				return "No selection";
 		}
 	},
+	number: {
+		type: "tel",
+		value: "",
+		checkKey: /[0-9.,-]/,
+		checkWord: /^-?[0-9]*(\.[0-9]*)?$/
+	},
+	password: {
+		type: "password",
+		value: "",
+		validate(val, inp, inps) {
+			if (val.length < 8)
+				return "Password too short. Minimum: 8 characters";
+		},
+		propagate: "password2"
+	},
+	password2: {
+		type: "password",
+		value: "",
+		validate(val, inp, inps) {
+			if (!inp.initialized)
+				return;
+
+			if (val.length < 8)
+				return "Password too short. Minimum: 8 characters";
+			if (inps.password.value != val)
+				return "These passwords don't match";
+		}
+	},
+	phone: {
+		value: "",
+		checkKey: /[0-9+\s-+]/,
+		validate: mkRegexValidator(/^[0-9+\s-]+$/, "Please specify a valid phone number")
+	},
+	radio: {
+		type: "radio",
+		value: null,
+		validate(val) {
+			if (val === null)
+				return "Please select a value";
+		}
+	},
+	state: {
+		value: "",
+		checkKey: "word",
+		checkWord(str) {
+			return str.length <= 2;
+		},
+		validate: mkRangeValidator(2, 2, "Please specify a state in XX form", "Please specify a state in XX form"),
+	},
 	textarea: {
 		type: "textarea",
 		value: "",
 		maxLength: 10000,
-		validate(val, inp, payload) {
+		validate(val, inp, inps) {
+			if (!val.length)
+				return "Please enter a value";
+
 			if (val.length > inp.maxLength)
 				return `Maximum length surpassed: ${val.length}/${inp.maxLength}`;
 		}
-	}
+	},
+	time: {
+		type: "time",
+		value: null,
+		meridiem: true,
+		validate(val, inp, inps) {
+			if (!inp.range)
+				return val == null ? "Please specify a time" : null;
+
+			for (let i = 0, l = val.length; i < l; i++) {
+				if (val[i] == null)
+					return "Please specify a time";
+			}
+		}
+	},
+	timeRange: {
+		type: "time",
+		value: [null, null],
+		range: true,
+		meridiem: true,
+		validate(val, inp, inps) {
+			if (!inp.range)
+				return val == null ? "Please specify a time" : null;
+
+			for (let i = 0, l = val.length; i < l; i++) {
+				if (val[i] == null)
+					return "Please specify a time";
+			}
+		}
+	},
+	uint: {
+		type: "tel",
+		value: "",
+		checkKey: /[0-9]/,
+		checkWord: /^[0-9]+$/
+	},
+	url: {
+		value: "",
+		checkKey: /[^\s]/,
+		validate: mkRegexValidator(/^(?:https?:\/\/)\w+(?:[.:][\w-]+)+(?:\/[\w-]*)*(?:[#?].*)?$/, "Please specify a valid URL")
+	},
+	zip: {
+		value: "",
+		checkKey: "natural",
+		validate: mkRangeValidator(1, Infinity, "This field cannot be empty")
+	},
 };
 
 function luhn(str) {

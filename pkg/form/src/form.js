@@ -1,9 +1,9 @@
 import {
-	equals,
-	resolveVal,
-	isObject,
-	splitPath,
 	get,
+	splitPath,
+	equals,
+	isObject,
+	resolveVal,
 	composeOptionsTemplates,
 	createOptionsObject
 } from "@qtxr/utils";
@@ -166,7 +166,13 @@ export default class Form extends Hookable {
 		this.forEach((input, name) => {
 			const extracted = this.extractOne(input);
 
-			if (extracted !== undefined)
+			if (extracted === undefined)
+				return;
+
+			if (input.path) {
+				const built = get(out, input.path, null, "context|autoBuild");
+				built.context[built.key] = extracted;
+			} else
 				out[name] = extracted;
 		});
 

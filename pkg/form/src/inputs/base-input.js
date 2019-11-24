@@ -20,6 +20,7 @@ const CHECK = sym("check"),
 
 const initOptionsSchema = {
 	name: "string",
+	path: "string",
 	required: "boolean",
 	type: "string",
 
@@ -84,8 +85,14 @@ export default class BaseInput extends Hookable {
 		this.checkWord = mkChecker(this.checkWord, "validate");
 		this.compare = mkComparator(this.compare);
 
+		this.setValue(this.value);
+
 		this.form = form;
 		this.default = this.value;
+	}
+
+	setValue(value) {
+		return this[SET_VALUE](value);
 	}
 
 	[CHECK](evt) {

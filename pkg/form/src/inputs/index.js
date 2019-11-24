@@ -6,6 +6,7 @@ import Media from "./media";
 import Multi from "./multi";
 import Radio from "./radio";
 import TextArea from "./textarea";
+import Time from "./time";
 
 const inputTypes = {
 	default: "text",
@@ -16,7 +17,8 @@ const inputTypes = {
 	media: "media",
 	multi: "multi",
 	radio: "radio",
-	textarea: "textarea"
+	textarea: "textarea",
+	time: "time"
 };
 
 const inputConstructors = {
@@ -27,7 +29,8 @@ const inputConstructors = {
 	media: Media,
 	multi: Multi,
 	radio: Radio,
-	textarea: TextArea
+	textarea: TextArea,
+	time: Time
 };
 
 export {
