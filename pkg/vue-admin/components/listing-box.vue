@@ -8,20 +8,20 @@
 			:cell="cell"
 			:columns="columns"
 			:sortOrders="sortOrders")
-			template(v-slot:error="listing")
+			template(#error="listing")
 				slot(name="error" v-bind="listing")
-			template(v-slot:no-results="listing")
+			template(#no-results="listing")
 				slot(name="no-results" v-bind="listing")
-			template(v-slot:item="d")
+			template(#item="d")
 				slot(name="item" v-bind="d")
 			template(
 				v-if="$scopedSlots['compact-item']"
-				v-slot:compact-item="item")
+				#compact-item="item")
 				slot(name="compact-item" v-bind="item")
 
 		//- Slots / templates
 		template(
-			v-slot:title-post
+			#title-post
 			v-if="cell.state.fetches")
 			span.listing-count(v-if="isPagination")
 				span.listing-count-num.listing-from {{ cell.state.offset }}
@@ -31,7 +31,7 @@
 					|  of 
 					span.listing-count-num.listing-total {{ cell.state.total }}
 			span.listing-count(v-else-if="isArray(cell.data)") {{ cell.data.length }}
-		template(v-slot:header-utils-pre="utilBox")
+		template(#header-utils-pre="utilBox")
 			slot(
 				name="header-utils-pre"
 				v-bind="utilBox")
@@ -43,19 +43,19 @@
 						v-if="form && formRows && formRows.headerUtilsPre"
 						:form="form"
 						:rows="formRows.headerUtilsPre")
-		template(v-slot:loading-box="utilBox")
+		template(#loading-box="utilBox")
 			slot(name="loading-box" v-bind="utilBox")
-		template(v-slot:loading-icon="utilBox")
+		template(#loading-icon="utilBox")
 			slot(name="loading-icon" v-bind="utilBox")
-		template(v-slot:title="utilBox")
+		template(#title="utilBox")
 			slot(name="title" v-bind="utilBox")
 		template(
 			v-if="$scopedSlots['sub-header']"
-			v-slot:sub-header="utilBox")
+			#sub-header="utilBox")
 			slot(name="sub-header" v-bind="utilBox")
 		template(
 			v-if="isPagination"
-			v-slot:footer="utilBox")
+			#footer="utilBox")
 			.util-box-footer-left.f.ac
 				.page-selector.f
 					button.page-selector-btn.f.c(
@@ -73,7 +73,7 @@
 						:rows="formRows.footerRight")
 		template(
 			v-else-if="$scopedSlots['footer']"
-			v-slot:footer="utilBox")
+			#footer="utilBox")
 			slot(name="footer" v-bind="utilBox")
 </template>
 

@@ -15,7 +15,7 @@
 						VForm.f-grow(
 							:form="compactTableForm"
 							:rows="compactTableRows")
-							template(v-slot:dropdown-option="column") {{ res(column.title) }}
+							template(#dropdown-option="column") {{ res(column.title) }}
 						button.compact-sort-order.ml10(
 							:class="`sort-${sortState.order}`"
 							@click="compactSetSort")
