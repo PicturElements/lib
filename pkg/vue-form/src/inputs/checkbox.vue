@@ -1,34 +1,29 @@
 <template lang="pug">
-	.input-wrapper.input.inp-input(:class="validationState")
-		input(
-			:value="input.value"
-			:type="res(input.type)"
-			:placeholder="res(input.placeholder || placeholder)"
-			:name="res(input.name)"
-			@keydown="check"
-			@input="trigger")
-		.validation-msg(:class="validationMsg ? 'active' : null") {{ validationMsg }}
+	.input-wrapper.checkbox.inp-checkbox(:class="validationState")
+		button.checkbox(
+			:class="{ checked: input.value }"
+			@click="trigger")
+			slot(name="icon" v-bind="input")
+				.icon {{ input.value ? "&times;" : "" }}
+		.label(v-if="res(label)" @click="trigger") {{ res(label) }}
 </template>
 
 <script>
-	import Form, { Input } from "@qtxr/form";
+	import Form, { Checkbox } from "@qtxr/form";
 
 	export default {
-		name: "List",
+		name: "Checkbox",
 		data: _ => ({
 			validationMsg: null,
 			validationState: "ok"
 		}),
 		methods: {
-			trigger(evt) {
-				Form.trigger(this.input, evt.target.value);
-			},
-			check(evt) {
-				Form.check(this.input, evt, evt.target.value);
+			trigger() {
+				Form.trigger(this.input, !this.input.value);
 			},
 			res(val) {
 				if (typeof val == "function")
-					return val.call(this.input);
+					return val.call(this, this.input);
 
 				return val;
 			},
@@ -38,8 +33,8 @@
 			}
 		},
 		props: {
-			input: Input,
-			placeholder: String,
+			input: Checkbox,
+			label: String,
 			mobileQuery: String,
 			meta: {
 				type: Object,

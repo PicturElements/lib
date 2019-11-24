@@ -55,15 +55,21 @@ $media-params: (
 			width: 100%;
 			height: 100%;
 
-			.edited-result:before {
-				content: "";
-				position: absolute;
-				top: 0;
-				left: 0;
-				width: 100%;
-				height: 100%;
-				background: rgba($shade-color, 0.7);
-				z-index: 1;
+			.edited-result {
+				.edited-result-media {
+					object-fit: contain;
+				}
+
+				&:before {
+					content: "";
+					position: absolute;
+					top: 0;
+					left: 0;
+					width: 100%;
+					height: 100%;
+					background: rgba($shade-color, 0.6);
+					z-index: 1;
+				}
 			}
 		
 			&.error {

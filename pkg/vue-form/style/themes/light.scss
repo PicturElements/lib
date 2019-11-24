@@ -4,15 +4,15 @@ $theme: (
 	// in each input map
 	input: (
 		height: 30px,
-		
+
 		color: #1e2021,
 		focus-color: #1e2021,
-		error-color: #9a3131,
+		error-color: #ab0f2f,
 		autofill-color: #276a9e,
 
 		background: white,
 		focus-background: #eee,
-		error-background: #ffe1e1,
+		error-background: #ffe7ec,
 		autofill-background: #edf7ff,
 
 		border-width: 1px,
@@ -27,8 +27,8 @@ $theme: (
 
 		error-border-width: 1px,
 		error-border-style: solid,
-		error-border-color: #e02929,
-		error-border: 1px solid #e02929,
+		error-border-color: #e8879b,
+		error-border: 1px solid #e8879b,
 
 		autofill-border-width: 1px,
 		autofill-border-style: solid,
@@ -49,7 +49,7 @@ $theme: (
 		icon-shadow: 0 2px 3px rgba(0, 0, 0, 0.2),
 		shade-color: black,
 		feature-color: white,
-		error-border-color: #e02929,
+		error-border-color: #e8879b,
 		output-preview-spacing: 10px,
 		highlight: #1b66bf,
 		raster-light: #222,
@@ -63,11 +63,12 @@ $theme: (
 	),
 	multi: (
 		background: white,
-		error-background: #ffe1e1,
+		error-background: #ffe7ec,
 		border: 1px solid #dadada,
 		focus-border: 1px solid #1e2021,
-		error-border: 1px solid #e02929,
-		error-color: #9a3131,
+		error-border: 1px solid #e8879b,
+		focus-border-color: #1e2021,
+		error-color: #ab0f2f,
 		highlight: #1b66bf,
 		selection-item-color: white,
 		selection-item-height: 24px,
@@ -75,19 +76,32 @@ $theme: (
 		selection-item-border-radius: 2px,
 		search-box-background: whitesmoke,
 		separator-border: 1px solid rgba(128, 128, 128, 0.15),
-		max-height: 150px,
-		search-box-padding: 10px,
-		search-input-height: 30px
+		max-height: 150px
 	),
 	radio: (),
 	textarea: (
 		background: white,
-		error-background: #ffe1e1,
+		error-background: #ffe7ec,
 		border: 1px solid #dadada,
 		focus-border: 1px solid #1e2021,
-		error-border: 1px solid #e02929,
+		error-border: 1px solid #e8879b,
 		focus-border-color: #1e2021,
+		error-color: #ab0f2f
+	),
+	time: (
+		height: 30px,
+		background: white,
+		error-background: #ffe7ec,
+		dial-background: whitesmoke,
+		dial-background-dark: #dadee2,
+		border: 1px solid #dadada,
+		error-border: 1px solid #e8879b,
 		error-color: #9a3131,
-		autofill-color: #276a9e
+		blob-radius: 15px,
+		delimination-padding: 20px,
+		tight-delimination-padding: 15px,
+		highlight: #1b66bf,
+		highlight-complement: white,
+		transition-duration: 300ms
 	)
 );

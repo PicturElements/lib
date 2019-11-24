@@ -132,7 +132,10 @@ $multi-params: (
 		}
 
 		&:not(.open) .search-box {
-			display: none;
+			visibility: hidden;
+			position: fixed;
+			top: 0;
+			left: 0;
 		}
 
 		&.error {

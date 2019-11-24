@@ -1,46 +1,288 @@
 $time-params: (
 	"height",
 	"background",
-	"border",
-	"focus-border",
 	"error-background",
-	"error-border"
+	"dial-background",
+	"dial-background-dark",
+	"border",
+	"error-border",
+	"error-color",
+	"blob-radius",
+	"delimination-padding",
+	"tight-delimination-padding",
+	"highlight",
+	"highlight-complement",
+	"transition-duration"
 );
 
 @mixin time(
 	$height: 30px,
 	$background: white,
-	$border: 1px solid #dadada,
-	$focus-border: 1px solid #1e2021,
 	$error-background: #ffe1e1,
-	$error-border: 1px solid #e02929
+	$dial-background: whitesmoke,
+	$dial-background-dark: #dadee2,
+	$border: 1px solid #dadada,
+	$error-border: 1px solid #e02929,
+	$error-color: #9a3131,
+	$blob-radius: 15px,
+	$delimination-padding: 20px,
+	$tight-delimination-padding: 15px,
+	$highlight: #1b66bf,
+	$highlight-complement: white,
+	$transition-duration: 300ms
 ) {
 	.inp-time {
 		.time-display {
 			height: $height;
 			background: $background;
 			border: $border;
-			padding: 5px 15px;
+			padding: 5px 12px;
 			outline: none;
 			font: inherit;
+			font-size: 90%;
 			cursor: pointer;
 
-			&:focus {
-				border: $focus-border;
-			}
-
 			.time-sep {
-				margin: 0 0.1em;
+				margin: 0 0.2em;
+				opacity: 0.6;
 			}
 
 			.range-sep {
-				margin: 0 0.4em;
+				margin: 0 0.5em;
 			}
 
 			.meridiem {
 				font-size: 70%;
-				margin: 0 0 0.4em 0.1em;
+				margin: 0 0 0.4em 0.25em;
 				opacity: 0.8;
+			}
+
+			.time-display-cell.active {
+				position: relative;
+				color: $highlight-complement;
+				z-index: 1000;
+
+				&:before {
+					content: "";
+					position: absolute;
+					top: -0.1em;
+					bottom: -0.1em;
+					left: -0.5em;
+					right: -0.5em;
+					background: $highlight;
+					border-radius: 2px;
+					z-index: -1;
+				}
+			}
+		}
+
+		.time-modal {
+			background: $background;
+			border: $border;
+			padding: 10px;
+			z-index: 100000;
+
+			.dials-wrapper + .dials-wrapper {
+				margin-left: 10px;
+				padding-left: 10px;
+				border-left: 1px solid $dial-background;
+			}
+
+			.dials {
+				position: relative;
+				border-radius: 50%;
+
+				&.hovering {
+					z-index: 1000;
+
+					&:before {
+						content: "";
+						position: absolute;
+						top: -30%;
+						left: -30%;
+						width: 160%;
+						height: 160%;
+						border-radius: 50%;
+					}
+
+					.dial-selector-hand {
+						&.active-hand {
+							background: $dial-background-dark;
+							color: inherit;
+						}
+
+						&.guide {
+							opacity: 1;
+						}
+					}
+				}
+			}
+
+			.dial {
+				position: relative;
+				width: 150px;
+				height: 150px;
+				border-radius: 50%;
+				font-size: 90%;
+				transition: transform $transition-duration, opacity $transition-duration;
+				transition-timing-function: cubic-bezier(0.5, -0.15, 0.5, 1.15);
+				user-select: none;
+				cursor: default;
+
+				&.background-dial {
+					background: $dial-background;
+				}
+
+				&.edit-dial,
+				&.result-dial {
+					position: absolute;
+					top: 0;
+					left: 0;
+				}
+
+				&.result-dial {
+					cursor: pointer;
+
+					.result-hand {
+						position: absolute;
+						top: 50%;
+						left: 43%;
+						width: 50%;
+						height: 2px;
+						border-radius: 2px;
+						transform-origin: 13.4% 50%;
+
+						.result-hand-fill {
+							position: absolute;
+							top: 0;
+							left: 0;
+							width: 100%;
+							height: 100%;
+							border-radius: inherit;
+							background: $highlight;
+							transform-origin: 0 50%;
+						}
+					}
+				}
+
+				&.hidden {
+					visibility: hidden;
+					transform: scale(0);
+					opacity: 0;
+				}
+
+				&.collapsed {
+					transform: scale(0);
+					opacity: 0;
+				}
+
+				.hand-blob {
+					position: absolute;
+					top: 50%;
+					left: 50%;
+					width: 4px;
+					height: 4px;
+					border-radius: 50%;
+					background: $highlight;
+					transform: translate(-50%, -50%);
+					box-shadow: 0 0 0 1px $dial-background, 0 0 0 2px $highlight;
+				}
+
+				.dial-delimination-bounds {
+					position: absolute;
+					top: $delimination-padding;
+					bottom: $delimination-padding;
+					left: $delimination-padding;
+					right: $delimination-padding;
+					// Purely aesthetic
+					border-radius: 50%;
+
+					&.tight {
+						top: $tight-delimination-padding;
+						bottom: $tight-delimination-padding;
+						left: $tight-delimination-padding;
+						right: $tight-delimination-padding;
+					}
+				}
+
+				.dial-delimination {
+					position: absolute;
+					opacity: 0.8;
+					transform: translate(-50%, -50%);
+				}
+
+				.dial-delimination-tick {
+					position: absolute;
+					width: 2px;
+					height: 2px;
+					border-radius: 50%;
+					background: currentColor;
+					opacity: 0.3;
+					transform: translate(-50%, -50%);
+				}
+
+				.dial-selector-hand {
+					position: absolute;
+					top: 50%;
+					left: 50%;
+					width: 50%;
+					height: 2px;
+					border-radius: 2px;
+					transform-origin: 0 50%;
+					background: $highlight;
+					color: $highlight-complement;
+					transition: background $transition-duration, color $transition-duration;
+
+					&.guide {
+						opacity: 0;
+						transition: opacity $transition-duration;
+					}
+
+					.dial-selector-blob {
+						position: absolute;
+						top: 50%;
+						right: 0;
+						width: $blob-radius * 2;
+						height: $blob-radius * 2;
+						border-radius: 50%;
+						background: inherit;
+						cursor: pointer;
+					}
+				}
+			}
+
+			.short-action-button {
+				width: $blob-radius * 2.2;
+				height: $blob-radius * 2.2;
+				border: none;
+				border-radius: 50%;
+				outline: none;
+				background: $dial-background;
+				font-size: 80%;
+				cursor: pointer;
+				z-index: 1001;
+
+				&.active {
+					background: $highlight;
+					color: $highlight-complement;
+					font-weight: bold;
+					box-shadow: inset 0 0 0 2px $highlight, inset 0 0 0 3px $highlight-complement;
+				}
+			}
+		}
+
+		&:not(.open) .time-modal {
+			visibility: hidden;
+			position: fixed;
+			top: 0;
+			left: 0;
+		}
+
+		&.error {
+			&:not(.open) .time-display {
+				background: $error-background;
+				border: $error-border;
+				color: $error-color;
 			}
 		}
 	}

@@ -19,7 +19,7 @@
 						:input="cell.input"
 						:label="res(cell.label)"
 						:meta="inputMeta")
-						template(v-slot:icon="inp")
+						template(#icon="inp")
 							slot(:name="`${cell.input.name}-icon`" v-bind="inp")
 								slot(name="checkbox-icon" v-bind="inp")
 				template(v-else-if="cell.input.type == 'count'")
@@ -28,10 +28,10 @@
 						:input="cell.input"
 						:symbols="res(cell.symbols)"
 						:meta="inputMeta")
-						template(v-slot:down-symbol="inp")
+						template(#down-symbol="inp")
 							slot(:name="`${cell.input.name}-down-symbol`" v-bind="inp")
 								slot(name="count-down-symbol" v-bind="inp")
-						template(v-slot:up-symbol="inp")
+						template(#up-symbol="inp")
 							slot(:name="`${cell.input.name}-up-symbol`" v-bind="inp")
 								slot(name="count-up-symbol" v-bind="inp")
 				template(v-else-if="cell.input.type == 'dropdown'")
@@ -43,7 +43,7 @@
 						template(v-slot="option")
 							slot(:name="`${cell.input.name}-option`" v-bind="option")
 								slot(name="dropdown-option" v-bind="option")
-						template(v-slot:icon="data")
+						template(#icon="data")
 							slot(:name="`${cell.input.name}-icon`" v-bind="data")
 								slot(name="dropdown-icon" v-bind="data")
 				template(v-else-if="cell.input.type == 'media'")
@@ -51,7 +51,7 @@
 						:class="cell.class.input"
 						:input="cell.input"
 						:meta="inputMeta")
-						template(v-slot:loading-icon)
+						template(#loading-icon)
 							slot(:name="`${cell.input.name}-loading-icon`")
 								slot(name="loading-icon")
 				template(v-else-if="cell.input.type == 'multi'")
@@ -61,18 +61,18 @@
 						:meta="inputMeta")
 						template(
 							v-if="$scopedSlots['selection-item'] || $scopedSlots[`${cell.input.name}-selection-item`]"
-							v-slot:selection-item="d")
+							#selection-item="d")
 								slot(:name="`${cell.input.name}-selection-item`" v-bind="d")
 									slot(name="selection-item" v-bind="d")
 						template(
 							v-if="$scopedSlots['search-result'] || $scopedSlots[`${cell.input.name}-search-result`]"
-							v-slot:selection-item="d")
+							#selection-item="d")
 								slot(:name="`${cell.input.name}-search-result`" v-bind="d")
 									slot(name="search-result" v-bind="d")
-						template(v-slot:no-search-results="inp")
+						template(#no-search-results="inp")
 							slot(:name="`${cell.input.name}-no-search-results`")
 								slot(name="no-search-results")
-						template(v-slot:loading-icon)
+						template(#loading-icon)
 							slot(:name="`${cell.input.name}-loading-icon`")
 								slot(name="loading-icon")
 				template(v-else-if="cell.input.type == 'radio'")
@@ -80,10 +80,10 @@
 						:class="cell.class.input"
 						:input="cell.input"
 						:meta="inputMeta")
-						template(v-slot:label="option")
+						template(#label="option")
 							slot(:name="`${cell.input.name}-label`" v-bind="option")
 								slot(name="radio-label" v-bind="option")
-						template(v-slot:custom-content="option")
+						template(#custom-content="option")
 							slot(:name="`${cell.input.name}-custom-content`" v-bind="option")
 								slot(name="radio-custom-content" v-bind="option")
 				template(v-else-if="cell.input.type == 'textarea'")
@@ -91,6 +91,11 @@
 						:class="cell.class.input"
 						:input="cell.input"
 						:placeholder="res(cell.placeholder)"
+						:meta="inputMeta")
+				template(v-else-if="cell.input.type == 'time'")
+					Time(
+						:class="cell.class.input"
+						:input="cell.input"
 						:meta="inputMeta")
 				template(v-else)
 					Input(
@@ -105,14 +110,15 @@
 <script>
 	import Form from "@qtxr/form";
 	
-	import Input from "./input.vue";
-	import Checkbox from "./checkbox.vue";
-	import Count from "./count.vue";
-	import Dropdown from "./dropdown.vue";
-	import Media from "./media.vue";
-	import Multi from "./multi.vue";
-	import Radio from "./radio.vue";
-	import TextArea from "./textarea.vue";
+	import Input from "./inputs/input.vue";
+	import Checkbox from "./inputs/checkbox.vue";
+	import Count from "./inputs/count.vue";
+	import Dropdown from "./inputs/dropdown.vue";
+	import Media from "./inputs/media.vue";
+	import Multi from "./inputs/multi.vue";
+	import Radio from "./inputs/radio.vue";
+	import TextArea from "./inputs/textarea.vue";
+	import Time from "./inputs/time.vue";
 
 	export default {
 		name: "VForm",
@@ -226,7 +232,8 @@
 			Media,
 			Multi,
 			Radio,
-			TextArea
+			TextArea,
+			Time
 		},
 		props: {
 			form: Form, 

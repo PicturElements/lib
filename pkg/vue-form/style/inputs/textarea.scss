@@ -1,9 +1,9 @@
 $textarea-params: (
 	"background",
-	"error-background"
+	"error-background",
 	"border",
 	"focus-border",
-	"error-border"
+	"error-border",
 	"focus-border-color",
 	"error-color"
 );
@@ -29,6 +29,7 @@ $textarea-params: (
 			min-width: 100%;
 			max-width: 100%;
 			min-height: 100px;
+			color: inherit;
 			resize: vertical;
 	
 			&:focus {

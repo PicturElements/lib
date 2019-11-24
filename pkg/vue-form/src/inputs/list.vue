@@ -1,7 +1,8 @@
 <template lang="pug">
-	.input-wrapper.textarea.inp-textarea(:class="validationState")
-		textarea(
+	.input-wrapper.input.inp-input(:class="validationState")
+		input(
 			:value="input.value"
+			:type="res(input.type)"
 			:placeholder="res(input.placeholder || placeholder)"
 			:name="res(input.name)"
 			@keydown="check"
@@ -10,10 +11,10 @@
 </template>
 
 <script>
-	import Form, { TextArea } from "@qtxr/form";
+	import Form, { Input } from "@qtxr/form";
 
 	export default {
-		name: "TextArea",
+		name: "List",
 		data: _ => ({
 			validationMsg: null,
 			validationState: "ok"
@@ -27,7 +28,7 @@
 			},
 			res(val) {
 				if (typeof val == "function")
-					return val.call(this.input);
+					return val.call(this, this.input);
 
 				return val;
 			},
@@ -37,7 +38,7 @@
 			}
 		},
 		props: {
-			input: TextArea,
+			input: Input,
 			placeholder: String,
 			mobileQuery: String,
 			meta: {

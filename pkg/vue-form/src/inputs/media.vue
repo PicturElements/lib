@@ -12,10 +12,10 @@
 			ref="box")
 			template(v-if="editPhase == 'prompt'")
 				.edited-result.a-fill(v-if="!input.multiple && enqueuedOutput.length")
-					img.a-fill(
+					img.edited-result-media.a-fill(
 						v-if="enqueuedOutput[0].mediaType == 'image'"
 						:src="enqueuedOutput[0].data")
-					video.result-video(
+					video.edited-result-media.result-video(
 						v-else-if="enqueuedOutput[0].mediaType == 'video'"
 						:src="enqueuedOutput[0].data")
 				.upload-prompt.f.c.col.a-fill
@@ -602,7 +602,7 @@
 			},
 			res(val) {
 				if (typeof val == "function")
-					return val.call(this.input);
+					return val.call(this, this.input);
 
 				return val;
 			},

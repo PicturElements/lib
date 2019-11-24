@@ -63,7 +63,7 @@
 			},
 			res(val) {
 				if (typeof val == "function")
-					return val.call(this.input);
+					return val.call(this, this.input);
 
 				return val;
 			},

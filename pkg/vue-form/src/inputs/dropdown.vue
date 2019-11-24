@@ -110,9 +110,9 @@
 				const style = getComputedStyle(this.$refs.dropdownBox),
 					bcr = this.$refs.dropdownBox.getBoundingClientRect(),
 					sHeight = this.$refs.list.scrollHeight,
-					bTop = parseFloat(style.borderLeftWidth),
-					bRight = parseFloat(style.borderLeftWidth),
-					bBottom = parseFloat(style.borderLeftWidth),
+					bTop = parseFloat(style.borderTopWidth),
+					bRight = parseFloat(style.borderRightWidth),
+					bBottom = parseFloat(style.borderBottomWidth),
 					bLeft = parseFloat(style.borderLeftWidth),
 					topAvailable = bcr.top - PADDING,
 					bottomAvailable = window.innerHeight - (bcr.top + bcr.height) - PADDING,
@@ -154,7 +154,7 @@
 			},
 			res(val) {
 				if (typeof val == "function")
-					return val.call(this.input);
+					return val.call(this, this.input);
 
 				return val;
 			},

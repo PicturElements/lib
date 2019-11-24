@@ -214,9 +214,9 @@
 					bcr = this.$refs.selectionBox.getBoundingClientRect(),
 					borderBox = style.boxSizing == "border-box",
 					sHeight = this.$refs.searchBox.scrollHeight,
-					bTop = borderBox ? 0 : parseFloat(style.borderLeftWidth),
-					bRight = borderBox ? 0 : parseFloat(style.borderLeftWidth),
-					bBottom = borderBox ? 0 : parseFloat(style.borderLeftWidth),
+					bTop = borderBox ? 0 : parseFloat(style.borderTopWidth),
+					bRight = borderBox ? 0 : parseFloat(style.borderRightWidth),
+					bBottom = borderBox ? 0 : parseFloat(style.borderBottomWidth),
 					bLeft = borderBox ? 0 : parseFloat(style.borderLeftWidth),
 					topAvailable = bcr.top - PADDING,
 					bottomAvailable = window.innerHeight - (bcr.top + bcr.height) - PADDING,
@@ -276,7 +276,7 @@
 			},
 			res(val) {
 				if (typeof val == "function")
-					return val.call(this.input);
+					return val.call(this, this.input);
 
 				return val;
 			},
@@ -315,6 +315,9 @@
 						break;
 					case "enter":
 						this.selectOptionWithPtr();
+						break;
+					case "escape":
+						this.collapse();
 						break;
 				}
 			};

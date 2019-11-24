@@ -88,6 +88,21 @@ $theme: (
 		error-border: 1px solid #e02929,
 		focus-border-color: #d1d3da,
 		error-color: #fff4f4,
-		autofill-color: #fafcff
+	),
+	time: (
+		height: 30px,
+		background: #151515,
+		error-background: #a02222,
+		dial-background: #333,
+		dial-background-dark: #222,
+		border: 1px solid #797b82,
+		error-border: 1px solid #e02929,
+		error-color: #fff4f4,
+		blob-radius: 15px,
+		delimination-padding: 20px,
+		tight-delimination-padding: 15px,
+		highlight: #1b66bf,
+		highlight-complement: white,
+		transition-duration: 300ms
 	)
 );

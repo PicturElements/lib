@@ -18,10 +18,12 @@
 		name: "Count",
 		methods: {
 			up() {
-				this.fitCount(this.input.value + 1);
+				const step = this.input.step || 1;
+				this.fitCount(this.input.value + step);
 			},
 			down() {
-				this.fitCount(this.input.value - 1);
+				const step = this.input.step || 1;
+				this.fitCount(this.input.value - step);
 			},
 			change(evt) {
 				this.fitCount(Number(evt.target.value) || 0);
@@ -41,7 +43,7 @@
 			},
 			res(val) {
 				if (typeof val == "function")
-					return val.call(this.input);
+					return val.call(this, this.input);
 
 				return val;
 			},
@@ -63,7 +65,7 @@
 			}
 		},
 		mounted() {
-			this.fitCount(this.$props.count);
+			this.fitCount(this.input.value);
 		}
 	}
 </script>
