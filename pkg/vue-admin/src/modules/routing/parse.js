@@ -79,6 +79,7 @@ export default function parseRoutes(inst, routeTree) {
 
 			route.sidebarConfig = get(view, "meta.sidebar", {});
 			route.breadcrumbConfig = get(view, "meta.breadcrumb", {});
+			route.linkConfig = get(view, "meta.link", {});
 
 			if (!isObject(crumb)) {
 				crumb = {

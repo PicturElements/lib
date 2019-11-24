@@ -14,7 +14,7 @@ export default {
 	},
 	useOnce: true,
 	connect(admin, wrapper, meta) {
-		// Don't apply to normal components
+		// Only apply to view components
 		if (meta.type != "view")
 			return;
 
@@ -40,6 +40,13 @@ export default {
 		wrapper.addWatcher("$route", dispatchChange);
 		wrapper.addHook("beforeMount", function() {
 			dispatchChange(this.$route, this.$route);
+		});
+
+		wrapper.addComputed("ownRoute", function () {
+			return getOwnRoute(this);
+		});
+		wrapper.addComputed("subroutes", function () {
+			return getSubroutes(this);
 		});
 	}
 };
@@ -179,4 +186,59 @@ function getRootRoute(route) {
 
 		route = route.parent;
 	}
+}
+
+function getOwnRoute(vm) {
+	const matched = vm.$route.matched;
+
+	for (let i = matched.length - 1; i >= 0; i--) {
+		const match = matched[i];
+
+		for (const k in match.instances) {
+			if (match.instances.hasOwnProperty(k) && match.instances[k] == vm)
+				return match.meta.route;
+		}
+	}
+
+	return null;
+}
+
+function getSubroutes(vm) {
+	const route = getOwnRoute(vm);
+	if (!route)
+		return [];
+
+	const children = route.meta.route.children,
+		outChildren = [];
+
+	for (let i = 0, l = children.length; i < l; i++) {
+		const child = children[i],
+			outRoute = {
+				route: child
+			},
+			linkConfig = child.linkConfig,
+			navConfig = child.sidebarConfig,
+			args = {
+				route,
+				rootRoute: getRootRoute(route),
+				admin: vm.admin
+			};
+
+		outRoute.path = resolveParams(child.fullPath, vm.$route);
+		outRoute.name = resolveVal(linkConfig.name || navConfig.name, args);
+		outRoute.display = resolveVal(linkConfig.display, args) || "visible";
+
+		switch (outRoute.display) {
+			case "hidden":
+			case false:
+				break;
+
+			case "visible":
+			case true:
+			default:
+				outChildren.push(outRoute);
+		}
+	}
+
+	return outChildren;
 }
