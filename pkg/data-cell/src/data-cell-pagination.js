@@ -116,7 +116,7 @@ export default class DataCellPagination extends DataCell {
 	}
 
 	insert(arr) {
-		if (!Array.isArray(arr) || !arr.length)
+		if (!Array.isArray(arr))
 			return false;
 
 		let insertion = [];
@@ -135,7 +135,7 @@ export default class DataCellPagination extends DataCell {
 			});
 		}
 
-		if (this.meta.useSequencing) {
+		if (this.meta.useSequencing && arr.length) {
 			insertion = mergesort(insertion, (a, b) => {
 				return b.seq - a.seq;
 			});
