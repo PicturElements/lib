@@ -11,7 +11,7 @@
 				v-if="conf.viewMode == 'table'"
 				:class="{ compact: conf.compact }")
 				template(v-if="conf.compact && $scopedSlots['compact-item']")
-					.compact-table-sort-form.f
+					.compact-table-sort-form.f.nshrink
 						VForm.f-grow(
 							:form="compactTableForm"
 							:rows="compactTableRows")
