@@ -23,10 +23,10 @@
 		template(
 			#title-post
 			v-if="cell.state.fetches")
-			span.listing-count(v-if="isPagination")
+			span.listing-count(v-if="isPagination && !conf.hideListingCount")
 				span.listing-count-num.listing-from {{ cell.state.offset }}
 				|  - 
-				span.listing-count-num.listing-to {{ Math.min(cell.state.offset + Math.min(cell.state.pageSize, cell.data.length), cell.state.total) }}
+				span.listing-count-num.listing-to {{ Math.min(cell.state.offset + Math.min(cell.state.pageSize, cell.state.fetchedLength), cell.state.total) }}
 				span(v-if="cell.state.total < Infinity")
 					|  of 
 					span.listing-count-num.listing-total {{ cell.state.total }}
@@ -100,7 +100,8 @@
 					viewMode: "list",
 					navPadding: 2,
 					pageArrows: true,
-					reload: true
+					reload: true,
+					hideListingCount: false
 				}, this.config)
 			};
 		},

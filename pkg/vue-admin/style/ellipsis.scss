@@ -42,7 +42,7 @@ $ellipsis-params: (
 
 		&.open {
 			transform: translateZ(10px);
-			z-index: 100000;
+			z-index: 10000000;
 
 			.ellipsis-launcher .adm-icon {
 				opacity: 1;
