@@ -27,7 +27,7 @@ import { isObject } from "./is";
 //	   ...args		- arguments the prepend to the processor call. Good practice is that
 //					  all processors receive these arguments no matter what they do
 
-// The return processor must implement the following spec:
+// The returned processor must implement the following spec:
 // 1. The processor function takes the following arguments:
 //	  type			- the processor type (string, required)
 //	  processors	- temporary override for any number of processors (object, optional)
