@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/scss-utils",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Various functions, mixins, and other utilities for SCSS",
   "main": "index.js",
   "scripts": {
@@ -33,7 +33,7 @@
     "/index.scss"
   ],
   "qlib": {
-    "pushes": 6,
+    "pushes": 7,
     "expose": {
       "scripts": [
         "connect/feed.js"
