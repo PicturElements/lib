@@ -80,7 +80,7 @@ $time-params: (
 			background: $background;
 			border: $border;
 			padding: 10px;
-			z-index: 100000;
+			z-index: 10000000;
 
 			.dials-wrapper + .dials-wrapper {
 				margin-left: 10px;

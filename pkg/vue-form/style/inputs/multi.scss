@@ -76,7 +76,7 @@ $multi-params: (
 			border: $border;
 			overflow: hidden;
 			background: $background;
-			z-index: 100000;
+			z-index: 10000000;
 
 			.search-input-box {
 				background: $search-box-background;
@@ -150,7 +150,7 @@ $multi-params: (
 		@include mobile {
 			&.open {
 				box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.35);
-				z-index: 100000;
+				z-index: 10000000;
 			}
 		}
 	}
