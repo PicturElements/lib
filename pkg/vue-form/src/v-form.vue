@@ -46,6 +46,11 @@
 						template(#icon="data")
 							slot(:name="`${cell.input.name}-icon`" v-bind="data")
 								slot(name="dropdown-icon" v-bind="data")
+				template(v-else-if="cell.input.type == 'formatted'")
+					Formatted(
+						:class="cell.class.input"
+						:input="cell.input"
+						:meta="inputMeta")
 				template(v-else-if="cell.input.type == 'media'")
 					Media(
 						:class="cell.class.input"
@@ -114,6 +119,7 @@
 	import Checkbox from "./inputs/checkbox.vue";
 	import Count from "./inputs/count.vue";
 	import Dropdown from "./inputs/dropdown.vue";
+	import Formatted from "./inputs/formatted.vue";
 	import Media from "./inputs/media.vue";
 	import Multi from "./inputs/multi.vue";
 	import Radio from "./inputs/radio.vue";
@@ -229,6 +235,7 @@
 			Checkbox,
 			Count,
 			Dropdown,
+			Formatted,
 			Media,
 			Multi,
 			Radio,
