@@ -2,6 +2,7 @@ import Input from "./input";
 import Checkbox from "./checkbox";
 import Count from "./count";
 import Dropdown from "./dropdown";
+import Formatted from "./formatted";
 import Media from "./media";
 import Multi from "./multi";
 import Radio from "./radio";
@@ -14,6 +15,7 @@ const inputTypes = {
 	check: "checkbox",
 	count: "count",
 	dropdown: "dropdown",
+	formatted: "formatted",
 	media: "media",
 	multi: "multi",
 	radio: "radio",
@@ -26,6 +28,7 @@ const inputConstructors = {
 	checkbox: Checkbox,
 	count: Count,
 	dropdown: Dropdown,
+	formatted: Formatted,
 	media: Media,
 	multi: Multi,
 	radio: Radio,
