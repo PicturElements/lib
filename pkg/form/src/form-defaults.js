@@ -120,6 +120,10 @@ const defaults = {
 		checkKey: nameRegex,
 		validate: mkRangeValidator(1, 20, "Please specify a first name", "Name too long. Maximum: $max characters"),
 	},
+	formatted: {
+		type: "formatted",
+		value: ""
+	},
 	int: {
 		type: "tel",
 		value: "",
