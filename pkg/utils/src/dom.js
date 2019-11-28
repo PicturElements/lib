@@ -1,11 +1,36 @@
 import { nub } from "./arr";
 
-function hasAncestor(elem, cls, maxDepth = Infinity) {
+function hasAncestor(elem, clsOrElem, maxDepth = Infinity) {
+	const searchByClass = typeof clsOrElem == "string";
+
 	while (true) {
 		if (!elem || elem == document.documentElement)
 			return false;
 
-		if (elem.classList.contains(cls))
+		if (searchByClass) {
+			if (elem.classList && elem.classList.contains(clsOrElem))
+				return true;
+		} else if (elem == clsOrElem)
+			return true;
+
+		if (--maxDepth < 0)
+			return false;
+
+		elem = elem.parentNode;
+	}
+}
+
+function hasAncestorBySelector(elem, selectorOrElem, maxDepth = Infinity) {
+	const searchBySelector = typeof selectorOrElem == "string";
+
+	while (true) {
+		if (!elem || elem == document.documentElement)
+			return false;
+
+		if (searchBySelector) {
+			if (elem.nodeType == 1 && elem.matches(selectorOrElem))
+				return true;
+		} else if (elem == selectorOrElem)
 			return true;
 
 		if (--maxDepth < 0)
@@ -50,6 +75,7 @@ function cleanAttributes(attrs) {
 
 export {
 	hasAncestor,
+	hasAncestorBySelector,
 	overrideAttributes,
 	cleanAttributes
 };
