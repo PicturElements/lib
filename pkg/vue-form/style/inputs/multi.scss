@@ -35,10 +35,12 @@ $multi-params: (
 	$separator-border: 1px solid rgba(128, 128, 128, 0.15),
 	$max-height: 150px,
 	$search-box-padding: 10px,
-	$search-input-height: 30px
+	$search-input-height: 30px,
+	$add-icon-background: #e6eaef,
+	$add-icon-color: #8291a5
 ) {
 	.inp-multi {
-		font-size: 90%;
+		font-size: 95%;
 
 		.selection-box {
 			flex-wrap: wrap;
@@ -48,6 +50,25 @@ $multi-params: (
 			border: $border;
 			max-height: $max-height;
 			overflow: auto;
+
+			&:empty:before {
+				content: "+";
+				position: relative;
+				display: flex;
+				flex-shrink: 0;
+				flex-grow: 0;
+				justify-content: center;
+				align-items: center;
+				width: $selection-item-height;
+				height: $selection-item-height;
+				background: $add-icon-background;
+				color: $add-icon-color;
+				border-radius: $selection-item-border-radius;
+				font-size: $selection-item-height * 0.8;
+				font-weight: 100;
+				margin-bottom: $selection-item-spacing;
+				cursor: pointer;
+			}
 
 			.default-selection-item {
 				position: relative;

@@ -1,49 +1,40 @@
-@use "~@qtxr/scss-utils" as *;
-
-$input-params: (
-	"height",
+$formatted-params: (
 	"background",
 	"error-background",
-	"autofill-background",
 	"border",
 	"focus-border",
 	"error-border",
-	"autofill-border",
 	"focus-border-color",
-	"error-color",
-	"autofill-color"
+	"error-color"
 );
 
-@mixin input(
-	$height: 30px,
+@mixin formatted(
 	$background: white,
 	$error-background: #ffe1e1,
-	$autofill-background: #edf7ff,
 	$border: 1px solid #dadada,
 	$focus-border: 1px solid #1e2021,
 	$error-border: 1px solid #e02929,
-	$autofill-border: 1px solid #74b4e6,
 	$focus-border-color: #1e2021,
-	$error-color: #9a3131,
-	$autofill-color: #276a9e
+	$error-color: #9a3131
 ) {
-	.inp-input {
-		input {
+	.inp-formatted {
+		.formatted-content-editable {
 			width: 100%;
-			height: $height;
 			padding: 6px 8px;
 			background: transparent;
 			border: $border;
-			color: inherit;
-			font: inherit;
 			font-size: 95%;
 			outline: none;
-	
+			width: 100%;
+			min-width: 100%;
+			max-width: 100%;
+			min-height: 100px;
+			color: inherit;
+			resize: vertical;
+
 			&:focus {
 				border: $focus-border;
 			}
-	
-			@include autofill($autofill-background, $autofill-color, $autofill-border);
 		}
 	
 		.validation-msg {
@@ -59,12 +50,11 @@ $input-params: (
 		}
 	
 		&.error {
-			input {
+			.formatted-content-editable  {
 				&:not(:focus) {
 					background: $error-background;
 					border: $error-border;
 					color: $error-color;
-					@include autofill($error-background, $error-color, $error-border);
 				}
 	
 				&:focus + .validation-msg {
