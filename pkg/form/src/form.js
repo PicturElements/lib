@@ -1,7 +1,9 @@
 import {
 	get,
 	splitPath,
+	hasOwn,
 	equals,
+	inject,
 	isObject,
 	resolveVal,
 	composeOptionsTemplates,
@@ -25,23 +27,36 @@ import BaseInput, {
 } from "./inputs/base-input";
 
 export default class Form extends Hookable {
-	constructor(hooksOrPreset = {}, options = {}) {
+	constructor(...optionsAndPresets) {
 		super();
-		
-		let hooks = hooksOrPreset,
-			preset = null;
 
-		if (isPreset(hooksOrPreset)) {
-			if (typeof hooksOrPreset == "string") {
-				if (!Form.presets.hasOwnProperty(hooksOrPreset))
-					throw new Error(`Invalid preset '${hooksOrPreset}'`);
+		const masterPreset = {
+			hooks: {},
+			options: {}
+		};
 
-				preset = Form.presets[hooksOrPreset];
-			} else
-				preset = hooksOrPreset;
+		for (let i = 0, l = optionsAndPresets.length; i < l; i++) {
+			const item = optionsAndPresets[i];
 
-			hooks = resolveVal(preset.hooks, this) || {};
-			options = Object.assign({}, resolveVal(preset.options, this), options);
+			if (isPreset(item)) {
+				let preset = null;
+	
+				if (typeof hooksOrPreset == "string") {
+					if (!Form.presets.hasOwnProperty(item))
+						throw new Error(`Invalid preset '${item}'`);
+	
+					preset = Form.presets[item];
+				} else
+					preset = item;
+
+				inject(masterPreset, {
+					hooks: resolveVal(preset.hooks, this) || {},
+					options: resolveVal(preset.options, this) || {}
+				});
+			} else if (isObject(item))
+				inject(masterPreset.options, item, "override");
+			else
+				console.warn("Failed to resolve argument as it's neither a preset nor an options object:", item);
 		}
 
 		this.inputs = {};
@@ -54,12 +69,13 @@ export default class Form extends Hookable {
 		// Only validate required inputs
 		// Invalid non-required inputs will be marked as valid
 		this.validateRequiredOnly = false;
+		this.persistentInputs = false;
 
-		this.hookAll(hooks);
+		this.hookAll(masterPreset.hooks);
 
-		for (const k in options) {
-			if (this.hasOwnProperty(k) && options.hasOwnProperty(k))
-				this[k] = options[k];
+		for (const k in masterPreset.options) {
+			if (hasOwn(this, k) && hasOwn(masterPreset.options, k))
+				this[k] = masterPreset.options[k];
 		}
 	}
 
@@ -76,17 +92,20 @@ export default class Form extends Hookable {
 			return this;
 		}
 
-		const constr = Form.getInputConstructor(options),
-			input = new constr(
-				name,
-				options,
-				this
-			);
-
 		if (!this.inputs.hasOwnProperty(name))
 			this.keys.push(name);
-		
-		this.inputs[name] = input;
+
+		if (!hasOwn(this.inputs, name) || !this.persistentInputs) {
+			const constr = Form.getInputConstructor(options),
+				input = new constr(
+					name,
+					options,
+					this
+				);
+			
+			this.inputs[name] = input;
+		}
+
 		return this;
 	}
 
@@ -286,6 +305,51 @@ export default class Form extends Hookable {
 			inputConstructors[type] :
 			inputConstructors.default;
 	}
+
+	static defineDefault(name, def) {
+		return this.define("default", name, def, "defaults", isObject, "supplied default is not an object");
+	}
+
+	static definePreset(name, preset) {
+		return this.define("preset", name, preset, "presets", isObject, "supplied preset is not an object");
+	}
+
+	static define(type, name, data, partitionName = type, validate = null, validationMsg = null) {
+		if (!type || typeof type != "string") {
+			console.warn("Cannot define: type must be a truthy string");
+			return this;
+		}
+
+		if (!hasOwn(this, partitionName) || !isObject(this[partitionName])) {
+			console.warn(`Cannot define ${type}: invalid partition target`);
+			return this;
+		}
+
+		if (!name || typeof name != "string") {
+			console.warn(`Cannot define ${type}: name must be a truthy string`);
+			return this;
+		}
+
+		if (hasOwn(this[partitionName], name)) {
+			console.warn(`Cannot define ${type}: '${name}' is already a known preset`);
+			return this;
+		}
+
+		if (typeof validate == "function") {
+			const validation = validate(data);
+
+			if (typeof validation == "string") {
+				console.warn(`Cannot define ${type}: ${validation}`);
+				return this;
+			} else if (validation === false) {
+				console.warn(`Cannot define ${type}: ${validationMsg || "validation failed"}`);
+				return this;
+			}
+		}
+
+		this[partitionName][name] = data;
+		return this;
+	}
 }
 
 Form.defaults = composeOptionsTemplates(defaults);
@@ -344,5 +408,5 @@ function isPreset(candidate) {
 	if (typeof candidate == "string")
 		return true;
 
-	return Boolean(candidate) && candidate.hasOwnProperty("hooks") && candidate.hasOwnProperty("options");
+	return Boolean(candidate) && (hasOwn(candidate, "hooks") || hasOwn(candidate, "options"));
 }
