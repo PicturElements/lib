@@ -181,7 +181,7 @@ export default class BaseInput extends Hookable {
 
 	[EXTRACT]() {
 		if (typeof this.extract == "function")
-			return this.extract(this.value, this, this, this.form.inputs);
+			return this.extract(this.value, this, this.form.inputs);
 		else if (typeof this.extract == "string")
 			return get(this.value, this.extract);
 		else

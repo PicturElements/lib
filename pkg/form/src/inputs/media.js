@@ -77,7 +77,7 @@ const dataUrlRegex = /^data:(.+)\/.+?;/i,
 	videoExtensionRegex = /\.(?:mp4|flv|ogg|avi|mov|qt|wmw|webm)\b/i;
 
 function getMediaType(url) {
-	const dex = dataUrlRegex.exec(url);
+	const dex = dataUrlRegex.exec(getDataUrlHeader(url));
 	if (dex)
 		return dex[1];
 
@@ -88,5 +88,18 @@ function getMediaType(url) {
 		return "video";
 
 	return "image";
+}
+
+function getDataUrlHeader(url) {
+	if (url[0] != "d")
+		return "";
+
+	let header = "",
+		ptr = 0;
+
+	while (ptr < 200 && url[ptr] != ",")
+		header += url[ptr++];
+
+	return header;
 }
 
