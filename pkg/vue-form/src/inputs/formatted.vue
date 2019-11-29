@@ -5,6 +5,7 @@
 			contentEditable="true"
 			@click="updateSelection"
 			@focus="updateSelection"
+			@paste="paste"
 			ref="content")
 			| test, 
 			span in span, 
@@ -27,6 +28,9 @@
 			},
 			updateSelection() {
 				this.input.updateSelectionData(this.$refs.content);
+			},
+			paste() {
+				this.input.catchPaste(this.$refs.content);
 			},
 			res(val) {
 				if (typeof val == "function")

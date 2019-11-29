@@ -164,6 +164,11 @@ $multi-params: (
 				.selection-box {
 					background: $error-background;
 					border: $error-border;
+
+					&:empty:before {
+						background: $error-color;
+						color: $error-background;
+					}
 				}
 			}
 		}

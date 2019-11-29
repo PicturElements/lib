@@ -101,7 +101,7 @@
 				}
 			},
 			updateFixedList() {
-				if (!this.expanded || this.isMobile()) {
+				if (!this.expanded || this.isMobile() || !this.$refs.dropdownBox) {
 					this.listStyle = null;
 					this.updateLoopInitialized = false;
 					return;

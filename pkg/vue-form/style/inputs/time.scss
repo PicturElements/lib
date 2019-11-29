@@ -32,6 +32,8 @@ $time-params: (
 	$transition-duration: 300ms
 ) {
 	.inp-time {
+		font-size: 95%;
+		
 		.time-display {
 			height: $height;
 			background: $background;
@@ -39,7 +41,6 @@ $time-params: (
 			padding: 5px 12px;
 			outline: none;
 			font: inherit;
-			font-size: 90%;
 			cursor: pointer;
 
 			.time-sep {

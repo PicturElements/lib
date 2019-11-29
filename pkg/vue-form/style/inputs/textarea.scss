@@ -23,14 +23,16 @@ $textarea-params: (
 			padding: 6px 8px;
 			background: transparent;
 			border: $border;
-			font-size: 95%;
-			outline: none;
 			width: 100%;
 			min-width: 100%;
 			max-width: 100%;
 			min-height: 100px;
 			color: inherit;
 			resize: vertical;
+			color: inherit;
+			font: inherit;
+			font-size: 95%;
+			outline: none;
 	
 			&:focus {
 				border: $focus-border;

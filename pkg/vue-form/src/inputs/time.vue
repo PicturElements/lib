@@ -115,7 +115,7 @@
 				}
 			},
 			updateFixedBox() {
-				if (!this.expanded) {
+				if (!this.expanded || !this.$refs.modal) {
 					this.modalStyle = null;
 					this.updateLoopInitialized = false;
 					return;

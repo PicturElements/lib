@@ -204,7 +204,7 @@
 				}
 			},
 			updateFixedBox() {
-				if (!this.expanded) {
+				if (!this.expanded || !this.$refs.searchBox) {
 					this.searchBoxStyle = null;
 					this.updateLoopInitialized = false;
 					return;

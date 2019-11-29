@@ -12,13 +12,14 @@ $checkbox-params: (
 	$error-border: 1px solid #e02929
 ) {
 	.inp-checkbox {
+		font-size: 95%;
+
 		.checkbox {
 			display: flex;
 			align-items: center;
 			position: relative;
 			width: 1.8em;
 			height: 1.8em;
-			font-size: 90%;
 			background: transparent;
 			border: $border;
 			padding: 0;
@@ -47,7 +48,6 @@ $checkbox-params: (
 		.label {
 			cursor: pointer;
 			margin-left: 10px;
-			font-size: 90%;
 			user-select: none;
 		}
 	}
