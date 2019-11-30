@@ -1,0 +1,49 @@
+{
+  "name": "@qtxr/ds",
+  "version": "1.0.0",
+  "description": "Data structure implementations, and non-standard custom data structures",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node ../server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PicturElements/lib.git",
+    "directory": "pkg/ds"
+  },
+  "keywords": [
+    "data",
+    "structure",
+    "data structure"
+  ],
+  "author": "qtxr",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/PicturElements/lib/issues"
+  },
+  "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/ds#readme",
+  "dependencies": {
+    "@qtxr/utils": "^1.31.0"
+  },
+  "devDependencies": {},
+  "files": [
+    "/src",
+    "/index.d.ts"
+  ],
+  "qlib": {
+    "pushes": 1,
+    "expose": {
+      "scripts": [
+        "connect/feed.js"
+      ],
+      "styles": []
+    },
+    "ui": [
+      {
+        "type": "console",
+        "config": {}
+      }
+    ]
+  }
+}
