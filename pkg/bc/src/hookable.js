@@ -4,12 +4,14 @@ import {
 	isObject,
 	queryFilterMut
 } from "@qtxr/utils";
+import { Keys } from "@qtxr/ds";
 import Hook from "./hook";
 
-// TODO: in first major version, rename nickname to identifier
+// TODO: in next major version, rename nickname to identifier
 
 const reservedFields = {
-	last: true
+	last: true,
+	keys: true
 };
 
 const hookParams = [
@@ -18,7 +20,8 @@ const hookParams = [
 	{ name: "nickname", type: ["string", "symbol"], default: null },
 	{ name: "namespace", type: ["string", "symbol"], default: null },
 	{ name: "ttl", type: "number", default: Infinity },
-	{ name: "guard", type: "function", default: null }
+	{ name: "guard", type: "function", default: null },
+	{ name: "argTemplate", type: "string", default: null }
 ];
 
 const hookNSParams = [
@@ -27,7 +30,8 @@ const hookNSParams = [
 	{ name: "handler", type: "function", required: true },
 	{ name: "nickname", type: ["string", "symbol"], default: null },
 	{ name: "ttl", type: "number", default: Infinity },
-	{ name: "guard", type: "function", default: null }
+	{ name: "guard", type: "function", default: null },
+	{ name: "argTemplate", type: "string", default: null }
 ];
 
 const unhookParams = [
@@ -37,7 +41,8 @@ const unhookParams = [
 	{ name: "nickname", type: ["string", "symbol"], default: null },
 	{ name: "namespace", type: ["string", "symbol"], default: null },
 	{ name: "ttl", type: "number", default: null },
-	{ name: "guard", type: "function", default: null }
+	{ name: "guard", type: "function", default: null },
+	{ name: "argTemplate", type: "string", default: null }
 ];
 
 const unhookNSParams = [
@@ -47,14 +52,16 @@ const unhookNSParams = [
 	{ name: "handler", type: "function", default: null },
 	{ name: "nickname", type: ["string", "symbol"], default: null },
 	{ name: "ttl", type: "number", default: null },
-	{ name: "guard", type: "function", default: null }
+	{ name: "guard", type: "function", default: null },
+	{ name: "argTemplate", type: "string", default: null }
 ];
 
 export default class Hookable {
 	constructor() {
 		Object.defineProperty(this, "hooks", {
 			value: {
-				last: null
+				last: null,
+				keys: new Keys()
 			},
 			configurable: false,
 			enumerable: true,
@@ -107,32 +114,39 @@ export default class Hookable {
 	}
 
 	callHooks(partitionName, ...args) {
-		const hooks = this.hooks[partitionName];
+		this.hooks.keys.forEach(partitionName, (key, keyType) => {
+			const hooks = this.hooks[key],
+				contextArgs = {
+					key: partitionName,
+					keyType
+				};
+			
+			filterMut(hooks, hook => {
+				if (hook.spent)
+					return false;
+	
+				if (hook.proceed(args, contextArgs)) {
+					hook.handle(args, contextArgs);
+					return hook.decTTL() > 0;
+				} else
+					return true;
+			});
 
-		if (!Array.isArray(hooks) || reservedFields.hasOwnProperty(partitionName))
-			return this;
-
-		filterMut(hooks, hook => {
-			if (hook.spent)
-				return false;
-
-			if (hook.proceed(args)) {
-				hook.handle(args);
-				return hook.decTTL() > 0;
-			} else
-				return true;
+			if (!hooks.length) {
+				delete this.hooks[key];
+				this.hooks.keys.delete(key);
+			}
 		});
-
-		if (!hooks.length)
-			delete this.hooks[partitionName];
 
 		return this;
 	}
 
 	clearHooks() {
 		for (const k in this.hooks) {
-			if (this.hooks.hasOwnProperty(k) && !reservedFields.hasOwnProperty(k))
+			if (this.hooks.hasOwnProperty(k) && !reservedFields.hasOwnProperty(k)) {
 				delete this.hooks[k];
+				this.hooks.keys.delete(k);
+			}
 		}
 
 		return this;
@@ -142,8 +156,10 @@ export default class Hookable {
 		this.forEachHookPartition((partition, key) => {
 			filterMut(partition, h => h.namespace != ns);
 
-			if (!partition.length)
+			if (!partition.length) {
 				delete this.hooks[key];
+				this.hooks.keys.delete(key);
+			}
 		});
 		
 		return this;
@@ -180,6 +196,7 @@ function addHook(inst, paramMap, args) {
 	inst.hooks[partitionName] = hooks;
 
 	const hook = new Hook(inst, data);
+	inst.hooks.keys.add(partitionName);
 	inst.hooks.last = hook;
 	hooks.push(hook);
 	return hook;
@@ -196,8 +213,10 @@ function removeHook(inst, paramMap, args) {
 		inst.forEachHookPartition((partition, key) => {
 			filterMut(partition, hook => hook != data.instance);
 
-			if (!partition.length)
+			if (!partition.length) {
 				delete inst.hooks[key];
+				inst.hooks.keys.delete(key);
+			}
 		});
 
 		return;
@@ -217,7 +236,9 @@ function removeHook(inst, paramMap, args) {
 			guard: parsedKey => !ignoredQueryKeys.hasOwnProperty(parsedKey.key)
 		});
 
-		if (!partition.length)
+		if (!partition.length) {
 			delete inst.hooks[key];
+			inst.hooks.keys.delete(key);
+		}
 	}
 }
