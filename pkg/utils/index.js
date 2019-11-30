@@ -5,6 +5,7 @@ export * from "./src/convert";
 export * from "./src/dom";
 export * from "./src/env";
 export * from "./src/func";
+export * from "./src/glob";
 export * from "./src/hash";
 export * from "./src/is";
 export * from "./src/num";
