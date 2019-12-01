@@ -1,9 +1,5 @@
 import { getWrappedRange } from "./range";
 
-function cleanRegex(str) {
-	return str.replace(/[$^()\[\]\/\\{}.*+?|]/g, "\\$&");
-}
-
 function cleanPath(str) {
 	return escape(str).replace(/(\])/g, "\\$&");
 }
@@ -81,7 +77,6 @@ function splitClean(str, splitter) {
 }
 
 export {
-	cleanRegex,
 	cleanPath,
 	escape,
 	unescape,

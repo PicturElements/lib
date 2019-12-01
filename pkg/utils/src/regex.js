@@ -1,3 +1,7 @@
+function cleanRegex(str) {
+	return str.replace(/[$^()\[\]\/\\{}.*+?|]/g, "\\$&");
+}
+
 function matchAll(str, regex, captureOrCapturePriority = 0) {
 	if (!regex.global) {
 		const ex = regex.exec(str);
@@ -35,5 +39,6 @@ function matchAll(str, regex, captureOrCapturePriority = 0) {
 }
 
 export {
+	cleanRegex,
 	matchAll
 };

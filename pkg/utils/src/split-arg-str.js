@@ -1,4 +1,4 @@
-import { cleanRegex } from "./str";
+import { cleanRegex } from "./regex";
 
 const argSeparatorCache = {};
 

@@ -1,5 +1,6 @@
 import { matchAll } from "./regex";
 import { splitClean } from "./str";
+import { isObject } from "./is";
 import concatMut from "./concat-mut";
 
 // This library assumes only ASCII A-Z letters are being
@@ -146,22 +147,77 @@ casing.to = type => {
 	return joiner(splitter(str));
 };
 
+casing.define = (type, config = {}) => {
+	if (!type || typeof type != "string") {
+		console.error(`Cannot define casing transform: type must be a truthy string`);
+		return casing;
+	}
+
+	if (casing(type).to.camel != type) {
+		console.error(`Cannot define casing transform: type must be camelCased for consistency and to enable shorthand functionality`);
+		return casing;
+	}
+
+	if (splitters.hasOwnProperty(type)) {
+		console.error(`Cannot define casing transform: type '${type}' is already defined`);
+		return casing;
+	}
+
+	if (!isObject(config)) {
+		console.error(`Cannot define casing transform: config must be an object with at least a .split and .join method`);
+		return casing;
+	}
+
+	if (typeof config.split != "function") {
+		console.error(`Cannot define casing transform: splitter must be a function (as method 'split')`);
+		return casing;
+	}
+
+	if (typeof config.join != "function") {
+		console.error(`Cannot define casing transform: joiner must be a function (as method 'join')`);
+		return casing;
+	}
+
+	splitters[type] = config.split;
+	joiners[type] = config.join;
+
+	Object.defineProperty(casing.from, type, {
+		get:  _ => casing.from(type)
+	});
+	Object.defineProperty(casing.to, type, {
+		get:  _ => casing.to(type)
+	});
+
+	return casing;
+};
+
 function resetCasingSession() {
 	casing.session.str = null;
 	casing.session.from = null;
 }
 
 (_ => {
-	const descriptors = {};
+	const splitterDescriptors = {},
+		joinerDescriptors = {};
+
+	for (const k in splitters) {
+		if (!splitters.hasOwnProperty(k))
+			continue;
+
+		splitterDescriptors[k] = {
+			get: _ => casing.from(k)
+		};
+	}
 
 	for (const k in joiners) {
 		if (!joiners.hasOwnProperty(k))
 			continue;
 
-		descriptors[k] = {
+		joinerDescriptors[k] = {
 			get: _ => casing.to(k)
 		};
 	}
 
-	Object.defineProperties(casing.to, descriptors);
+	Object.defineProperties(casing.from, splitterDescriptors);
+	Object.defineProperties(casing.to, joinerDescriptors);
 })();
