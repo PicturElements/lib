@@ -43,6 +43,7 @@ $multi-params: (
 		font-size: 95%;
 
 		.selection-box {
+			display: flex;
 			flex-wrap: wrap;
 			min-height: $selection-item-height + 2 * $selection-item-spacing;
 			padding: $selection-item-spacing 0 0 $selection-item-spacing;
@@ -72,6 +73,8 @@ $multi-params: (
 
 			.default-selection-item {
 				position: relative;
+				display: flex;
+				align-items: center;
 				background: $highlight;
 				color: $selection-item-color;
 				height: $selection-item-height;
@@ -82,6 +85,9 @@ $multi-params: (
 
 				.delete-section-item {
 					position: absolute;
+					display: flex;
+					justify-content: center;
+					align-items: center;
 					top: 0;
 					right: 0;
 					width: $selection-item-height;
@@ -93,6 +99,7 @@ $multi-params: (
 		}
 
 		.search-box {
+			display: flex;
 			flex-direction: column;
 			border: $border;
 			overflow: hidden;
@@ -137,6 +144,9 @@ $multi-params: (
 			}
 
 			.no-search-results {
+				display: flex;
+				justify-content: center;
+				align-items: center;
 				height: 60px;
 				font-size: 90%;
 			}

@@ -15,13 +15,13 @@
 						.dial-delimination-tick(
 							v-if="delimination.isTick"
 							:style="delimination.position")
-						.dial-delimination.f.c(
+						.dial-delimination(
 							v-else
 							:style="delimination.position") {{ delimination.value }}
 					.dial-selector-hand.active-hand(:style="getSelectorHandStyle(dialData)")
-						.dial-selector-blob.f.c(:style="getSelectorBlobStyle(dialData)") {{ dialData.displayVal }}
+						.dial-selector-blob(:style="getSelectorBlobStyle(dialData)") {{ dialData.displayVal }}
 					.dial-selector-hand.guide(:style="guideHandStyle")
-						.dial-selector-blob.f.c(:style="guideBlobStyle") {{ guideData.displayVal }}
+						.dial-selector-blob(:style="guideBlobStyle") {{ guideData.displayVal }}
 					.hand-blob
 			.dial.result-dial(:class="{ active: activeIdx == dials.length, collapsed: activeIdx != dials.length }")
 				.dial-delimination-bounds.tight
@@ -29,7 +29,7 @@
 						.dial-delimination-tick(
 							v-if="delimination.isTick"
 							:style="delimination.position")
-						.dial-delimination.f.c(
+						.dial-delimination(
 							v-else
 							:style="delimination.position") {{ delimination.value }}
 					.result-hands
@@ -40,8 +40,8 @@
 						.hand-blob
 		.short-actions
 			template(v-for="action in getShortActions()")
-				.sort-action-row.f.jsb
-					button.short-action-button.f.c(
+				.short-action-row
+					button.short-action-button(
 						v-for="button in action.buttons"
 						:class="button.class"
 						@click="button.act") {{ button.label }}

@@ -35,6 +35,9 @@ $time-params: (
 		font-size: 95%;
 		
 		.time-display {
+			display: flex;
+			justify-content: center;
+			align-items: center;
 			height: $height;
 			background: $background;
 			border: $border;
@@ -43,13 +46,19 @@ $time-params: (
 			font: inherit;
 			cursor: pointer;
 
+			.range-sep {
+				margin: 0 0.5em;
+			}
+
+			.time-display-item {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+			}
+
 			.time-sep {
 				margin: 0 0.2em;
 				opacity: 0.6;
-			}
-
-			.range-sep {
-				margin: 0 0.5em;
 			}
 
 			.meridiem {
@@ -78,6 +87,7 @@ $time-params: (
 		}
 
 		.time-modal {
+			display: flex;
 			background: $background;
 			border: $border;
 			padding: 10px;
@@ -208,6 +218,9 @@ $time-params: (
 
 				.dial-delimination {
 					position: absolute;
+					display: flex;
+					justify-content: center;
+					align-items: center;
 					opacity: 0.8;
 					transform: translate(-50%, -50%);
 				}
@@ -241,6 +254,9 @@ $time-params: (
 
 					.dial-selector-blob {
 						position: absolute;
+						display: flex;
+						justify-content: center;
+						align-items: center;
 						top: 50%;
 						right: 0;
 						width: $blob-radius * 2;
@@ -252,7 +268,15 @@ $time-params: (
 				}
 			}
 
+			.short-action-row {
+				display: flex;
+				justify-content: space-between;
+			}
+
 			.short-action-button {
+				display: flex;
+				justify-content: center;
+				align-items: center;
 				width: $blob-radius * 2.2;
 				height: $blob-radius * 2.2;
 				border: none;

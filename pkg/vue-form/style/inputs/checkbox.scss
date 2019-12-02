@@ -12,9 +12,11 @@ $checkbox-params: (
 	$error-border: 1px solid #e02929
 ) {
 	.inp-checkbox {
+		display: flex;
+		align-items: center;
 		font-size: 95%;
 
-		.checkbox {
+		button {
 			display: flex;
 			align-items: center;
 			position: relative;

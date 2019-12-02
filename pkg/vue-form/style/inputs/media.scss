@@ -52,6 +52,9 @@ $media-params: (
 
 		.media-upload {
 			position: relative;
+			display: flex;
+			justify-content: center;
+			align-items: center;
 			width: 100%;
 			height: 100%;
 
@@ -81,6 +84,9 @@ $media-params: (
 			}
 
 			.error-msg {
+				display: flex;
+				justify-content: center;
+				align-items: center;
 				color: $feature-color;
 				font-size: 80%;
 				padding: 20px;
@@ -101,6 +107,11 @@ $media-params: (
 		}
 
 		.upload-prompt {
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+
 			.media-upload-icon {
 				width: 50px;
 				fill: none;
@@ -152,6 +163,8 @@ $media-params: (
 
 			.edit-header {
 				position: absolute;
+				display: flex;
+				justify-content: center;
 				top: 0;
 				left: 0;
 				width: 100%;
@@ -226,6 +239,8 @@ $media-params: (
 
 			.edit-footer {
 				position: absolute;
+				display: flex;
+				align-items: center;
 				bottom: 0;
 				left: 0;
 				width: 100%;
@@ -263,6 +278,7 @@ $media-params: (
 
 			.action {
 				position: relative;
+				flex-shrink: 0;
 				width: 24px;
 				height: 24px;
 				border-radius: 50%;
@@ -324,6 +340,7 @@ $media-params: (
 
 			.zoom-slider {
 				position: relative;
+				flex-grow: 1;
 				height: $slider-width;
 				margin: 0 20px;
 				background: $feature-color;
@@ -354,6 +371,7 @@ $media-params: (
 		}
 
 		.queued-output {
+			display: flex;
 			height: $output-preview-height;
 			border-radius: $output-preview-border-radius;
 
@@ -367,6 +385,7 @@ $media-params: (
 			
 			.queued-output-item {
 				position: relative;
+				flex-shrink: 0;
 				height: 100%;
 				box-sizing: content-box;
 				border-radius: $output-preview-border-radius;

@@ -1,6 +1,6 @@
 <template lang="pug">
 	.input-wrapper.media.inp-media
-		.media-upload.a-fill.f.c(
+		.media-upload.a-fill(
 			:class="[ validationState, editPhase != 'prompt' ? 'in-use' : null ]"
 			:style="{ paddingTop: `${(input.targetSize.h / input.targetSize.w) * 100}%` }"
 			@mousemove="move"
@@ -18,7 +18,7 @@
 					video.edited-result-media.result-video(
 						v-else-if="enqueuedOutput[0].mediaType == 'video'"
 						:src="enqueuedOutput[0].data")
-				.upload-prompt.f.c.col.a-fill
+				.upload-prompt.a-fill
 					slot(name="upload-icon")
 						svg.media-upload-icon(viewBox="-5 -5 85 65")
 							path(d="M70,10H40L36.78,3.56A6.45,6.45,0,0,0,31,0H19a6.45,6.45,0,0,0-5.77,3.56L10,10H5a5,5,0,0,0-5,5V50a5,5,0,0,0,5,5H70a5,5,0,0,0,5-5V15A5,5,0,0,0,70,10ZM25,47A15,15,0,1,1,40,32,15,15,0,0,1,25,47ZM65,32a3,3,0,0,1-3,3H53a3,3,0,0,1-3-3V23a3,3,0,0,1,3-3H62a3,3,0,0,1,3,3Z")
@@ -43,7 +43,7 @@
 				v-show="editPhase == 'edit'"
 				:class="[moveMode, moveMode ? 'editing' : null, mediaType ? `media-${mediaType}` : null]")
 				template(v-if="mediaType == 'image'")
-					.edit-header.f.jc
+					.edit-header
 						span {{ fileData.dimensions.w }}&nbsp;&times;&nbsp;{{ fileData.dimensions.h }} ({{ crop.dimensions.w }}&nbsp;&times;&nbsp;{{ crop.dimensions.h }})
 					img.display-image(
 						:style="input.ignoreSize ? fileData.style : { width: `${crop.dimensions.wp}%`, height: `${crop.dimensions.hp}%`, transform: crop.transform }"
@@ -52,20 +52,20 @@
 						@mousedown="startImageMove"
 						@touchstart="startImageMove")
 				template(v-else-if="mediaType == 'video'")
-					.edit-header.f.jc
+					.edit-header
 						span {{ fileData.dimensions.w }}&nbsp;&times;&nbsp;{{ fileData.dimensions.h }} {{ getTimeStr(fileData.currentTime) }}/{{ getTimeStr(fileData.duration) }}
 					video.display-video(
 						:style="fileData.style"
 						ref="video")
 					.hit-target.a-fill(@click="toggleVideoPlay")
 				template(v-else-if="mediaType == 'error'")
-					.a-fill.error-msg.f.c
+					.a-fill.error-msg
 						slot(name="error-message" v-bind="error") {{ error.message }}
-				.edit-footer.f.ac
-					.action.cancel.f-nshrink(@click="cancelCurrentEdit")
+				.edit-footer
+					.action.cancel(@click="cancelCurrentEdit")
 						.elem-icon.a-fill.back
 						.elem-icon.a-fill.front
-					.zoom-slider.f-grow(
+					.zoom-slider(
 						:style="{ visibility: mediaType == 'image' && input.ignoreSize ? 'hidden' : null }"
 						@mousedown.stop="startSliderMove"
 						@touchstart.stop="startSliderMove"
@@ -73,14 +73,14 @@
 						.nub(
 							:style="{ left: sliderPos }"
 							ref="sliderNub")
-					.action.confirm.f-nshrink(@click="dispatchEdit")
+					.action.confirm(@click="dispatchEdit")
 						.elem-icon.a-fill.back
 						.elem-icon.a-fill.front
 		.queued-output-wrapper(
 			v-if="input.multiple && enqueuedOutput.length"
 			ref="enqueuedOutputWrapper")
-			.queued-output.f
-				.queued-output-item.f-nshrink(v-for="(output, idx) in enqueuedOutput")
+			.queued-output
+				.queued-output-item(v-for="(output, idx) in enqueuedOutput")
 					img(
 						v-if="output.mediaType == 'image'"
 						:src="output.data"

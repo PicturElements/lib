@@ -1,6 +1,6 @@
 <template lang="pug">
 	.input-wrapper.multi.inp-multi(:class="[ expanded ? 'open' : null, validationState ]")
-		.selection-box.f(
+		.selection-box(
 			@click="bufferExpand"
 			ref="selectionBox")
 			template(v-if="$scopedSlots['selection-item']")
@@ -8,12 +8,12 @@
 					slot(
 						name="selection-item"
 						v-bind="{ index: idx, item, delete: _ => deleteSelectionItem(idx) }")
-			.default-selection-item.f.ac(
+			.default-selection-item(
 				v-else
 				v-for="(item, idx) in input.value")
 				span.selection-item.value {{ getLabel(item) }}
-				.delete-section-item.f.c(@click="deleteSelectionItem(idx)") &times;
-		.search-box.f.col(:style="searchBoxStyle"
+				.delete-section-item(@click="deleteSelectionItem(idx)") &times;
+		.search-box(:style="searchBoxStyle"
 			ref="searchBox"
 			@click.stop)
 			.search-input-box
@@ -24,7 +24,7 @@
 			.search-results-box(ref="searchResultsBox")
 				template(v-if="!options.length")
 					slot(name="no-search-results" v-bind="this")
-						.no-search-results.f.c No results found
+						.no-search-results No results found
 				template(v-else-if="$scopedSlots['search-result']")
 					template(v-for="(option, idx) in options")
 						slot(

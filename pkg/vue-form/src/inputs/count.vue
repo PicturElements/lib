@@ -2,7 +2,7 @@
 	.input-wrapper.count.inp-count
 		button.count-btn.down(@click="down")
 			slot(name="down-symbol") {{ res(symbols.down) || "-" }}
-		input.f-grow(
+		input(
 			type="tel" 
 			:value="input.value"
 			@keydown="check"

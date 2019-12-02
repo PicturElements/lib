@@ -1,17 +1,17 @@
 <template lang="pug">
 	.input-wrapper.time.inp-time(
 		:class="[ expanded ? 'open' : null, validationState ]")
-		button.time-display.f.c(
+		button.time-display(
 			ref="expandoBox"
 			@click="bufferExpand")
 			template(v-for="(runtime, i) in dialsData")
 				.range-sep(v-if="i > 0") {{ typeof input.rangeSeparator == "string" ? input.rangeSeparator : "-" }}
-				.time-display-item.f.c
+				.time-display-item
 					template(v-for="(dial, j) in runtime.dials")
 						span.time-sep(v-if="j > 0") {{ typeof input.timeSeparator == "string" ? input.timeSeparator : ":" }}
 						span.time-display-cell(:class="[ dial.class, (expanded && activeIndices[i] == j) ? 'active' : null ]") {{ dial.displayVal }}
 					span.meridiem(v-if="input.meridiem && runtime.meridiem") {{ runtime.meridiem }}
-		.time-modal.f(
+		.time-modal(
 			:style="modalStyle"
 			ref="modal"
 			@click.stop)

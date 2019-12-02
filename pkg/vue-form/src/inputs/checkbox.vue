@@ -1,6 +1,6 @@
 <template lang="pug">
 	.input-wrapper.checkbox.inp-checkbox(:class="validationState")
-		button.checkbox(
+		button(
 			:class="{ checked: input.value }"
 			@click="trigger")
 			slot(name="icon" v-bind="input")
