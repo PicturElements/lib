@@ -36,8 +36,8 @@ const initOptionsSchema = {
 	process: "function",
 	trigger: "function",
 	update: "function",
+	inject: "function",
 	extract: "function|string",
-	insert: "function",
 	compare: "function|string",
 
 	propagate: "any"
@@ -68,7 +68,7 @@ export default class BaseInput extends Hookable {
 		this.trigger = null;
 		this.update = null;
 		this.extract = null;
-		this.insert = null;
+		this.inject = null;
 		this.compare = null;
 
 		// Propagation data
