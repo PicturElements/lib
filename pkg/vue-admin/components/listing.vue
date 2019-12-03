@@ -208,7 +208,7 @@
 		},
 		computed: {
 			cellData() {
-				return get(this.cell.data, this.config.accessor || "");
+				return get(this.cell.data, this.conf.accessor || "");
 			}
 		},
 		props: {

@@ -1,6 +1,6 @@
 <template lang="pug">
-	.util-box
-		.util-box-header.f.jsb.ac
+	.util-box(:class="{ minimal: conf.minimal }")
+		.util-box-header.f.jsb.ac(v-if="!conf.minimal")
 			.util-box-header-left.f.ac
 				.util-box-title-box.f.ac
 					slot(name="title-pre" v-bind="this")

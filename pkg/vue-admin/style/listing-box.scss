@@ -28,11 +28,13 @@ $listing-box-params: (
 	$highlight-light: #6cafff
 ) {
 	.listing-box {
-		background: $background;
-		box-shadow: $shadow;
-		border-radius: $border-radius;
-		margin: $outer-margin;
-		padding: $padding;
+		&:not(.minimal) {
+			background: $background;
+			box-shadow: $shadow;
+			border-radius: $border-radius;
+			margin: $outer-margin;
+			padding: $padding;
+		}
 		
 		.util-box-title-box .listing-count {
 			padding: 3px 8px;
@@ -140,14 +142,4 @@ $listing-box-params: (
 			margin-left: -3px;
 		}
 	}
-
-	/*@include mobile {
-		.listing-tools {
-			flex-direction: column;
-
-			input {
-				margin-top: 5px;
-			}
-		}
-	}*/
 }
