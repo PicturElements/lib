@@ -21,11 +21,11 @@ $multi-params: (
 
 @mixin multi(
 	$background: white,
-	$error-background: #ffe1e1,
+	$error-background: #ffe7ec,
 	$border: 1px solid #dadada,
 	$focus-border: 1px solid #1e2021,
-	$error-border: 1px solid #e02929,
-	$error-color: #9a3131,
+	$error-border: 1px solid #e8879b,
+	$error-color: #ab0f2f,
 	$highlight: #1b66bf,
 	$selection-item-color: white,
 	$selection-item-height: 24px,

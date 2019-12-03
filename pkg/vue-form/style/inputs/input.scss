@@ -17,14 +17,14 @@ $input-params: (
 @mixin input(
 	$height: 30px,
 	$background: white,
-	$error-background: #ffe1e1,
+	$error-background: #ffe7ec,
 	$autofill-background: #edf7ff,
 	$border: 1px solid #dadada,
 	$focus-border: 1px solid #1e2021,
-	$error-border: 1px solid #e02929,
+	$error-border: 1px solid #e8879b,
 	$autofill-border: 1px solid #74b4e6,
 	$focus-border-color: #1e2021,
-	$error-color: #9a3131,
+	$error-color: #ab0f2f,
 	$autofill-color: #276a9e
 ) {
 	.inp-input {

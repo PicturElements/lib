@@ -10,12 +10,12 @@ $formatted-params: (
 
 @mixin formatted(
 	$background: white,
-	$error-background: #ffe1e1,
+	$error-background: #ffe7ec,
 	$border: 1px solid #dadada,
 	$focus-border: 1px solid #1e2021,
-	$error-border: 1px solid #e02929,
+	$error-border: 1px solid #e8879b,
 	$focus-border-color: #1e2021,
-	$error-color: #9a3131
+	$error-color: #ab0f2f
 ) {
 	.inp-formatted {
 		.formatted-content-editable {

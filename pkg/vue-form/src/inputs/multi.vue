@@ -274,9 +274,9 @@
 
 				searchResultsBox.scrollTop = scroll;
 			},
-			res(val) {
+			res(val, ...args) {
 				if (typeof val == "function")
-					return val.call(this, this.input);
+					return val.call(this, this.input, ...args);
 
 				return val;
 			},

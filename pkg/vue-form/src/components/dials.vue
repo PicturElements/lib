@@ -10,28 +10,28 @@
 			.dial.edit-dial(
 				v-for="(dialData, idx) in dials"
 				:class="{ active: idx == activeIdx, collapsed: idx < activeIdx, hidden: idx > activeIdx }")
-				.dial-delimination-bounds
-					template(v-for="delimination in getDelimiters(dialData.dial)")
-						.dial-delimination-tick(
-							v-if="delimination.isTick"
-							:style="delimination.position")
-						.dial-delimination(
+				.dial-delimitation-bounds
+					template(v-for="delimitation in getDelimiters(dialData.dial)")
+						.dial-delimitation-tick(
+							v-if="delimitation.isTick"
+							:style="delimitation.position")
+						.dial-delimitation(
 							v-else
-							:style="delimination.position") {{ delimination.value }}
+							:style="delimitation.position") {{ delimitation.value }}
 					.dial-selector-hand.active-hand(:style="getSelectorHandStyle(dialData)")
 						.dial-selector-blob(:style="getSelectorBlobStyle(dialData)") {{ dialData.displayVal }}
 					.dial-selector-hand.guide(:style="guideHandStyle")
 						.dial-selector-blob(:style="guideBlobStyle") {{ guideData.displayVal }}
 					.hand-blob
 			.dial.result-dial(:class="{ active: activeIdx == dials.length, collapsed: activeIdx != dials.length }")
-				.dial-delimination-bounds.tight
-					template(v-for="delimination in getDelimiters(input.resultDial)")
-						.dial-delimination-tick(
-							v-if="delimination.isTick"
-							:style="delimination.position")
-						.dial-delimination(
+				.dial-delimitation-bounds.tight
+					template(v-for="delimitation in getDelimiters(input.resultDial)")
+						.dial-delimitation-tick(
+							v-if="delimitation.isTick"
+							:style="delimitation.position")
+						.dial-delimitation(
 							v-else
-							:style="delimination.position") {{ delimination.value }}
+							:style="delimitation.position") {{ delimitation.value }}
 					.result-hands
 						.result-hand(
 							v-for="dialData in dials"
@@ -138,6 +138,24 @@
 
 				return value / this.getDisplayExtent(dial);
 			},
+			getGeometricPerc(dial) {
+				// Dial positions are calculated using a geometric-like series
+				const dials = this.dials;
+				let lastPerc = 0;
+
+				for (let i = dials.length - 1; i >= 0; i--) {
+					const d = dials[i].dial,
+						val = (dials[i].value || 0) + lastPerc,
+						perc = this.getPerc(d, val);
+
+					if (d == dial)
+						return perc;
+
+					lastPerc = perc;
+				}
+
+				return lastPerc
+			},
 			getVal(dial, perc) {
 				if (typeof dial.toVal == "function")
 					return dial.toVal(this.input, perc);
@@ -164,8 +182,13 @@
 				}
 			},
 			getResultHandStyle(dialData) {
+				const hand = this.res(get(dialData, "dial.hand")),
+					perc = this.input.geometricHands === false || hand.geometric === false ?
+						this.getPerc(dialData.dial, dialData.value) :
+						this.getGeometricPerc(dialData.dial);
+
 				return {
-					transform: `translateY(-50%) rotate(${this.getPerc(dialData.dial, dialData.value) - 0.25}turn)`
+					transform: `translateY(-50%) rotate(${perc - 0.25}turn)`
 				};
 			},
 			getResultHandFillStyle(dialData) {

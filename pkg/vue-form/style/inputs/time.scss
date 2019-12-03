@@ -8,8 +8,8 @@ $time-params: (
 	"error-border",
 	"error-color",
 	"blob-radius",
-	"delimination-padding",
-	"tight-delimination-padding",
+	"delimitation-padding",
+	"tight-delimitation-padding",
 	"highlight",
 	"highlight-complement",
 	"transition-duration"
@@ -18,15 +18,15 @@ $time-params: (
 @mixin time(
 	$height: 30px,
 	$background: white,
-	$error-background: #ffe1e1,
+	$error-background: #ffe7ec,
 	$dial-background: whitesmoke,
 	$dial-background-dark: #dadee2,
 	$border: 1px solid #dadada,
-	$error-border: 1px solid #e02929,
-	$error-color: #9a3131,
+	$error-border: 1px solid #e8879b,
+	$error-color: #ab0f2f,
 	$blob-radius: 15px,
-	$delimination-padding: 20px,
-	$tight-delimination-padding: 15px,
+	$delimitation-padding: 20px,
+	$tight-delimitation-padding: 15px,
 	$highlight: #1b66bf,
 	$highlight-complement: white,
 	$transition-duration: 300ms
@@ -199,24 +199,24 @@ $time-params: (
 					box-shadow: 0 0 0 1px $dial-background, 0 0 0 2px $highlight;
 				}
 
-				.dial-delimination-bounds {
+				.dial-delimitation-bounds {
 					position: absolute;
-					top: $delimination-padding;
-					bottom: $delimination-padding;
-					left: $delimination-padding;
-					right: $delimination-padding;
+					top: $delimitation-padding;
+					bottom: $delimitation-padding;
+					left: $delimitation-padding;
+					right: $delimitation-padding;
 					// Purely aesthetic
 					border-radius: 50%;
 
 					&.tight {
-						top: $tight-delimination-padding;
-						bottom: $tight-delimination-padding;
-						left: $tight-delimination-padding;
-						right: $tight-delimination-padding;
+						top: $tight-delimitation-padding;
+						bottom: $tight-delimitation-padding;
+						left: $tight-delimitation-padding;
+						right: $tight-delimitation-padding;
 					}
 				}
 
-				.dial-delimination {
+				.dial-delimitation {
 					position: absolute;
 					display: flex;
 					justify-content: center;
@@ -225,7 +225,7 @@ $time-params: (
 					transform: translate(-50%, -50%);
 				}
 
-				.dial-delimination-tick {
+				.dial-delimitation-tick {
 					position: absolute;
 					width: 2px;
 					height: 2px;

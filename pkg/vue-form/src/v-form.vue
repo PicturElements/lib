@@ -223,9 +223,9 @@
 
 				return out;
 			},
-			res(val) {
+			res(val, ...args) {
 				if (typeof val == "function")
-					return val.call(this, this.form);
+					return val.call(this, this.form, ...args);
 
 				return val;
 			}

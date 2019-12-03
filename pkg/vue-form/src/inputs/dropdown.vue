@@ -152,9 +152,9 @@
 				this.activeOption = options[idx] || {};
 				this.options = options;
 			},
-			res(val) {
+			res(val, ...args) {
 				if (typeof val == "function")
-					return val.call(this, this.input);
+					return val.call(this, this.input, ...args);
 
 				return val;
 			},

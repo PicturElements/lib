@@ -13,9 +13,9 @@ $dropdown-params: (
 
 @mixin dropdown(
 	$background: white,
-	$error-background: #ffe1e1,
+	$error-background: #ffe7ec,
 	$border: 1px solid #dadada,
-	$error-border: 1px solid #e02929,
+	$error-border: 1px solid #e8879b,
 	$height: 30px,
 	$padding: 10px,
 	$mobile-padding: 30px,

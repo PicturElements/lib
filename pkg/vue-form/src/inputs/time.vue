@@ -325,11 +325,11 @@
 						break;
 
 					case "left":
-						this.moveActiveIdx(1);
+						this.moveActiveIdx(-1);
 						break;
 
 					case "right":
-						this.moveActiveIdx(-1);
+						this.moveActiveIdx(1);
 						break;
 				}
 			};

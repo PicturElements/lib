@@ -8,8 +8,8 @@ $radio-params: (
 @mixin radio(
 	$border: 1px solid #dadada,
 	$focus-border: 1px solid #1e2021,
-	$error-background: #ffe1e1,
-	$error-border: 1px solid #e02929
+	$error-background: #ffe7ec,
+	$error-border: 1px solid #e8879b
 ) {
 	.inp-radio {
 		position: relative;
