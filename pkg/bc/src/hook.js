@@ -23,7 +23,7 @@ export default class Hook {
 		if (typeof func != "function")
 			return;
 
-		this.data.handler = bindFunc(func, this);
+		this.data.guard = bindFunc(func, this);
 		this.data.originalGuard = func;
 	}
 
