@@ -42,7 +42,8 @@ const DIALS = {
 		hand: {
 			length: 0.7,
 			width: 1.2,
-			opacity: 1
+			opacity: 1,
+			geometric: true
 		}
 	},
 	minutes: {
@@ -61,7 +62,8 @@ const DIALS = {
 		hand: {
 			length: 0.95,
 			width: 1.2,
-			opacity: 0.7
+			opacity: 0.7,
+			geometric: true
 		}
 	},
 	seconds: {
@@ -80,7 +82,8 @@ const DIALS = {
 		hand: {
 			length: 1,
 			width: 0.7,
-			opacity: 0.5
+			opacity: 0.5,
+			geometric: true
 		}
 	}
 };
@@ -98,7 +101,8 @@ export default class Time extends BaseInput {
 			ampmLabels: Array,
 			rangeSeparator: "string",
 			timeSeparator: "string",
-			placeholderChar: "string"
+			placeholderChar: "string",
+			geometricHands: "boolean"
 		});
 
 		if (!this.dials)
