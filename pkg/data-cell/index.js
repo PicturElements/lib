@@ -1,4 +1,3 @@
-export { default } from "./src/data-cell";
+export { default, mkDataCell } from "./src";
+export { default as DataCellComposite } from "./src/data-cell-composite";
 export { default as DataCellPagination } from "./src/data-cell-pagination";
-
-export { default as mkDataCell } from "./src/factory";

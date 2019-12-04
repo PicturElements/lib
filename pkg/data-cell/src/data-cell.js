@@ -1,7 +1,6 @@
 import {
 	sym,
 	get,
-	casing,
 	clone,
 	inject,
 	isObject,
@@ -35,6 +34,8 @@ const DEFAULT_STATE_PRESETS = {
 		errorMsg: "Unspecified error"
 	}
 };
+
+const DEFAULT_METHOD = "custom";
 
 const PROCESSOR_TRANSFORMERS = {
 	validate(proc) {
@@ -219,7 +220,7 @@ export default class DataCell extends Hookable {
 		if (newConfig.xhrPreset)
 			this.xhrPreset.push(newConfig.xhrPreset);
 
-		this.fetcher = mkFetcherObject(this, newConfig);
+		this.fetcher = this.mkFetcherObject(newConfig);
 		this.stateTransforms = inject(
 			newConfig.stateTransforms,
 			initConfig.stateTransforms,
@@ -238,10 +239,7 @@ export default class DataCell extends Hookable {
 			newConfig.watchTaskDispatchers
 		);
 
-		this.watcher = mkWatcherObject(
-			this,
-			newConfig.watch || newConfig.watch
-		);
+		this.watcher = this.mkWatcherObject(newConfig.watch);
 
 		// The base runtime. External code may inject data
 		// here. Third party code may mutate this
@@ -314,10 +312,8 @@ export default class DataCell extends Hookable {
 	}
 
 	_fetch(runtime, ...args) {
-		// if (this.state.loading)
-		//	return Promise.resolve(null);
-
 		this.setState("loading");
+		this.callHooks("loading", runtime);
 
 		const fetcher = this.fetcher,
 			doFetch = async _ => {
@@ -420,6 +416,183 @@ export default class DataCell extends Hookable {
 		return mergeStateAndDispatchChanges(this, newState);
 	}
 	
+	getFetcherMethod(fetcher) {
+		if (!isObject(fetcher))
+			return null;
+
+		if (typeof fetcher.method == "string")
+			return fetcher.method;
+		if (fetcher.method == null)
+			return DEFAULT_METHOD;
+
+		return null;
+	}
+
+	getFetcherCharacteristics(fetcher) {
+		const method = this.getFetcherMethod(fetcher),
+			characteristics = {
+				method,
+				hasHandler: true,
+				error: null
+			};
+
+		if (!method) {
+			characteristics.hasHandler = false;
+			characteristics.error = "invalid fetch method";
+		} else switch (method) {
+			case "get":
+			case "post":
+				break;
+			
+			case "custom":
+				characteristics.hasHandler = typeof (fetcher.fetch || fetcher.handler) == "function";
+				if (!characteristics.hasHandler)
+					characteristics.error = "no fetcher defined";
+				break;
+
+			default:
+				characteristics.hasHandler = false;
+				characteristics.error = `invalid fetch method '${method}'`;
+		}
+
+		return characteristics;
+	}
+
+	mkFetcherObject(config) {
+		const fetcher = {
+			method: null,
+			throttle: null,
+			defer: true,
+			maxDefers: 1,
+			deferredFetch: null,
+			maxThrottles: Infinity,
+			throttledFetch: null,
+			enqueuedResolvers: [],
+			poll: this.mkPollingObject(config.poll)
+		};
+	
+		if (typeof config == "function") {
+			config = {
+				fetch: config
+			};
+		}
+	
+		if (!isObject(config))
+			throw new TypeError("Failed to make fetcher object: fetcher config is invalid");
+	
+		inject(fetcher, config, {
+			schema: {
+				method: "string",
+				fetch: "function",
+				handler: "function",
+				defer: "boolean",
+				maxDefers: "number",
+				throttle: "number",
+				maxThrottles: "number"
+			},
+			override: true
+		});
+	
+		const characteristics = this.getFetcherCharacteristics(fetcher);
+	
+		if (characteristics.error != null)
+			throw new Error(`Failed to make fetcher object: ${characteristics.error}`);
+	
+		switch (characteristics.method) {
+			case "get":
+				fetcher.fetch = (runtime, url = null, preset = null) => {
+					return fetchRequest(this, runtime, "get", url, preset);
+				};
+				break;
+			
+			case "post":
+				fetcher.fetch = (runtime, url = null, preset = null) => {
+					return fetchRequest(this, runtime, "post", url, preset);
+				};
+				break;
+	
+			case "custom": {
+				const fetchHandler = config.fetch || config.handler;
+	
+				fetcher.fetch = async (runtime, ...args) => {
+					return fetchCustom(this, runtime, fetchHandler, ...args);
+				};
+				break;
+			}
+		}
+	
+		fetcher.method = characteristics.method;
+		return fetcher;
+	}
+
+	mkPollingObject(config) {
+		const poll = {
+			interval: 1000,
+			iterations: Infinity,
+			running: true,
+			// Internal fields
+			iterationCount: 0,
+			lastTimestamp: 0
+		};
+	
+		if (typeof config == "number") {
+			poll.interval = config;
+			return poll;
+		}
+	
+		if (!isObject(config))
+			return null;
+	
+		inject(poll, config, {
+			schema: {
+				interval: "number",
+				iterations: "number",
+				running: "boolean"
+			},
+			strictSchema: true
+		});
+	
+		return poll;
+	}
+
+	mkWatcherObject(watchers) {
+		const watcher = {
+			dispatchers: {}
+		};
+	
+		if (!watchers)
+			return watcher;
+	
+		if (Array.isArray(watchers)) {
+			for (let i = 0, l = watchers.length; i < l; i++) {
+				const watch = watchers[i];
+	
+				// By default, watchers dispatch a fetch
+				if (typeof watch == "string")
+					watcher.dispatchers[watch] = "fetch";
+				else if (isObject(watch) && watch.hasOwnProperty("watch"))
+					watcher.dispatchers[watch.watch] = watch;
+				else
+					throw new TypeError(`Failed to make watcher object (at index ${i}): array watchers must contain a string specifying the watched property, or a dispatcher object with a 'watch' key`);
+			}
+		} else if (isObject(watchers)) {
+			for (const k in watchers) {
+				if (!watchers.hasOwnProperty(k))
+					continue;
+	
+				const watch = watchers[k];
+	
+				if (!matchType(watch, "string|function|Object"))
+					throw new TypeError(`Failed to make watcher object (at key '${k}'): properties must be a string refrence to a dispatcher, a dispatcher function, or a dispatcher object`);
+			
+				watcher.dispatchers[k] = watch;
+			}
+		} else
+			throw new TypeError("Failed to make watcher object: invalid watcher input, must be array or object");
+	
+		return watcher;
+	}
+
 	mkSuccessResponse(payload, config) {
 		return Object.assign({
 			cell: this,
@@ -440,6 +613,28 @@ export default class DataCell extends Hookable {
 			// Internal data; do not modify
 			isDataCellResponse: true
 		}, config);
+	}
+
+	static isCellConfig(candidate) {
+		if (!isObject(candidate))
+			return false;
+
+		if (candidate.isCell || typeof candidate.autoFetch == "boolean")
+			return true;
+
+		if (candidate.type && typeof candidate.type == "string")
+			return true;
+
+		if (candidate.method && typeof candidate.method == "string")
+			return true;
+
+		if (typeof candidate.fetch == "function" || typeof candidate.handler == "function")
+			return true;
+
+		if (isObject(candidate.processors))
+			return true;
+
+		return false;
 	}
 }
 
@@ -571,139 +766,6 @@ function dispatchChanges(cell, changes) {
 				return dispatcher.dispatch;
 		} 
 	}
-}
-
-function mkFetcherObject(cell, config) {
-	const fetcher = {
-		method: casing(config.method || "custom").to.camel,
-		fetch: null,
-		throttle: null,
-		defer: true,
-		maxDefers: 1,
-		deferredFetch: null,
-		maxThrottles: Infinity,
-		throttledFetch: null,
-		enqueuedResolvers: [],
-		poll: mkPollingObject(config.poll)
-	};
-
-	if (typeof config == "function") {
-		config = {
-			fetch: config
-		};
-	}
-
-	if (!isObject(config))
-		throw new TypeError("Failed to make fetcher object: fetcher config is invalid");
-
-	inject(fetcher, config, {
-		schema: {
-			defer: "boolean",
-			maxDefers: "number",
-			throttle: "number",
-			maxThrottles: "number"
-		},
-		strictSchema: true,
-		override: true
-	});
-	
-	switch (fetcher.method) {
-		case "get":
-			fetcher.fetch = (runtime, url = null, preset = null) => {
-				return fetchRequest(cell, runtime, "get", url, preset);
-			};
-			break;
-		
-		case "post":
-			fetcher.fetch = (runtime, url = null, preset = null) => {
-				return fetchRequest(cell, runtime, "post", url, preset);
-			};
-			break;
-
-		case "custom":
-			const fetchHandler = config.fetch || config.handler;
-
-			if (typeof fetchHandler != "function")
-				throw new TypeError(`Failed to make fetcher object: no fetcher defined`);
-
-			fetcher.fetch = async (runtime, ...args) => {
-				return fetchCustom(cell, runtime, fetchHandler, ...args);
-			};
-			break;
-
-		default:
-			throw new Error(`Failed to make fetcher object: '${fetcher.method}' is not a valid fetch method`);
-	}
-
-	return fetcher;
-}
-
-function mkPollingObject(pollConfig) {
-	const poll = {
-		interval: 1000,
-		iterations: Infinity,
-		running: true,
-		// Internal fields
-		iterationCount: 0,
-		lastTimestamp: 0
-	};
-
-	if (typeof pollConfig == "number") {
-		poll.interval = pollConfig;
-		return poll;
-	}
-
-	if (!isObject(pollConfig))
-		return null;
-
-	inject(poll, pollConfig, {
-		schema: {
-			interval: "number",
-			iterations: "number",
-			running: "boolean"
-		},
-		strictSchema: true
-	});
-
-	return poll;
-}
-
-function mkWatcherObject(cell, watchers) {
-	const watcher = {
-		dispatchers: {}
-	};
-
-	if (!watchers)
-		return watcher;
-
-	if (Array.isArray(watchers)) {
-		for (let i = 0, l = watchers.length; i < l; i++) {
-			const watch = watchers[i];
-
-			// By default, watchers dispatch a fetch
-			if (typeof watch == "string")
-				watcher.dispatchers[watch] = "fetch";
-			else if (isObject(watch) && watch.hasOwnProperty("watch"))
-				watcher.dispatchers[watch.watch] = watch;
-			else
-				throw new TypeError(`Failed to make watcher object (at index ${i}): array watchers must contain a string specifying the watched property, or a dispatcher object with a 'watch' key`);
-		}
-	} else if (isObject(watchers)) {
-		for (const k in watchers) {
-			if (!watchers.hasOwnProperty(k))
-				continue;
-
-			const watch = watchers[k];
-
-			if (!matchType(watch, "string|function|Object"))
-				throw new TypeError(`Failed to make watcher object (at key '${k}'): properties must be a string refrence to a dispatcher, a dispatcher function, or a dispatcher object`);
-		
-			watcher.dispatchers[k] = watch;
-		}
-	} else
-		throw new TypeError("Failed to make watcher object: invalid watcher input, must be array or object");
-
-	return watcher;
 }
 
 function fetchRequest(cell, runtime, method = "get", url = null, preset = null) {
