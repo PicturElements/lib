@@ -30,16 +30,10 @@ export default class DataCellComposite extends DataCell {
 
 		const children = config.scope || config.cells;
 		this.data = coerceToObj(null, children);
-		this.setState({
-			defaultState: {
-				pageSize: config.pageSize || 25,
-				page: config.page || 0,
-				offset: (config.pageSize || 25) * (config.page || 0),
-				total: config.total || Infinity,
-				fetchedLength: 0
-			},
-		});
 		this.addChildren(children);
+
+		if (this.config.autoFetch)
+			this.fetch();
 	}
 
 	hasChild(cellOrConfig) {
