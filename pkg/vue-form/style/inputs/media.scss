@@ -35,7 +35,8 @@ $media-params: (
 	$obscure-duration: 300ms,
 	$obscure-delay: 0ms,
 	$reveal-duration: 300ms,
-	$reveal-delay: 500ms
+	$reveal-delay: 500ms,
+	$pop-duration: 300ms
 ) {
 	.inp-media {
 		position: relative;
@@ -88,9 +89,10 @@ $media-params: (
 				justify-content: center;
 				align-items: center;
 				color: $feature-color;
-				font-size: 80%;
+				font-size: 90%;
 				padding: 20px;
 				text-align: center;
+				white-space: pre-line;
 			}
 		}
 
@@ -100,8 +102,8 @@ $media-params: (
 			bottom: 0;
 			left: 0;
 			width: 100%;
-			font-size: 80%;
-			padding: 3px 7px;
+			font-size: 90%;
+			padding: 5px 8px;
 			background: $shade-color;
 			color: $feature-color;
 		}
@@ -112,12 +114,79 @@ $media-params: (
 			justify-content: center;
 			align-items: center;
 
-			.media-upload-icon {
+			&:before {
+				content: "";
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				$disc-color: rgba($feature-color, 0.2);
+				background: radial-gradient(circle at center, $disc-color 40%, transparent 40%), radial-gradient(circle at center, $disc-color 55%, transparent 55%), radial-gradient(circle at center, $disc-color 70%, transparent 70%), radial-gradient(circle at center, $disc-color 85%, transparent 85%), radial-gradient(circle at center, $disc-color 100%, transparent 100%);
+				opacity: 0;
+				transition: opacity $pop-duration * 1.5;
+			}
+
+			.media-upload-icon-wrapper {
+				position: relative;
 				width: 50px;
-				fill: none;
-				stroke: $feature-color;
-				stroke-width: 1.5;
+				height: 50px;
+			}
+
+			.media-upload-icon-source {
+				display: none;
+			}
+
+			.media-upload-icon {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				transform-origin: 50% 50%;
 				z-index: 10;
+
+				&.fill {
+					fill: $feature-color;
+				}
+
+				&.outline {
+					fill: none;
+					stroke: $feature-color;
+					stroke-width: 1.5;
+				}
+
+				&.ripple {
+					fill: none;
+					stroke: $feature-color;
+					stroke-width: 1;
+				}
+			}
+
+			.mask-disc {
+				transform: scale(0);
+				transition: transform $pop-duration;
+				transform-origin: 50% 50%;
+			}
+
+			&.dragging {
+				&:before {
+					opacity: 0.4;
+				}
+
+				.mask-disc {
+					transform: scale(1);
+				}
+				
+				.media-upload-icon {
+					&.ripple {
+						opacity: 0;
+						transform: scale(1.6);
+						transform-origin: 50% 55%;
+						transition: transform $pop-duration * 2 cubic-bezier(0.11, 0.94, 1, 1), opacity $pop-duration * 2;
+						transition-delay: $pop-duration / 2;
+					}
+				}
 			}
 
 			.upload-prompt-message {
@@ -155,6 +224,7 @@ $media-params: (
 			}
 
 			&.media-error {
+				.edit-footer:before,
 				.zoom-slider,
 				.action.cancel {
 					visibility: hidden;
@@ -398,7 +468,7 @@ $media-params: (
 					top: 0;
 					left: 0;
 					width: 100%;
-					height: 25%;
+					height: 30%;
 					background: linear-gradient(to bottom, rgba($shade-color, 0.6) 0%, rgba($shade-color, 0) 100%);
 					z-index: 1;
 				}
@@ -429,15 +499,8 @@ $media-params: (
 			}
 		}
 
-		.edit-canv {
-			position: fixed;
-			top: 0;
-			left: 0;
-			opacity: 0;
-			z-index: -1;
-		}
-
-		@include mobile {
+		// Mobile styling
+		&.mobi {
 			.edit-box {
 				.edit-header {
 					font-size: 80%;

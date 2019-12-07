@@ -1,7 +1,7 @@
 <template lang="pug">
 	.input-wrapper.media.inp-media
 		.media-upload.a-fill(
-			:class="[ validationState, editPhase != 'prompt' ? 'in-use' : null ]"
+			:class="[ editPhase != 'prompt' ? 'in-use' : null, isMobile() ? 'mobi' : null, validationState ]"
 			:style="{ paddingTop: `${(input.targetSize.h / input.targetSize.w) * 100}%` }"
 			@mousemove="move"
 			@touchmove="move"
@@ -9,6 +9,8 @@
 			@touchend="leave"
 			@mouseleave="leave"
 			@touchleave="leave"
+			@dragenter="dragging = true"
+			@dragleave="dragging = false"
 			ref="box")
 			template(v-if="editPhase == 'prompt'")
 				.edited-result.a-fill(v-if="!input.multiple && enqueuedOutput.length")
@@ -18,10 +20,28 @@
 					video.edited-result-media.result-video(
 						v-else-if="enqueuedOutput[0].mediaType == 'video'"
 						:src="enqueuedOutput[0].data")
-				.upload-prompt.a-fill
-					slot(name="upload-icon")
-						svg.media-upload-icon(viewBox="-5 -5 85 65")
-							path(d="M70,10H40L36.78,3.56A6.45,6.45,0,0,0,31,0H19a6.45,6.45,0,0,0-5.77,3.56L10,10H5a5,5,0,0,0-5,5V50a5,5,0,0,0,5,5H70a5,5,0,0,0,5-5V15A5,5,0,0,0,70,10ZM25,47A15,15,0,1,1,40,32,15,15,0,0,1,25,47ZM65,32a3,3,0,0,1-3,3H53a3,3,0,0,1-3-3V23a3,3,0,0,1,3-3H62a3,3,0,0,1,3,3Z")
+				.upload-prompt.a-fill(:class="{ dragging }")
+					.media-upload-icon-wrapper
+						.media-upload-icon-source
+							svg.media-upload-icon(:id="`mui-src-${id}`")
+								slot(name="upload-icon")
+									svg(viewBox="-5 -5 85 65")
+										path(d="M70,10H40L36.78,3.56A6.45,6.45,0,0,0,31,0H19a6.45,6.45,0,0,0-5.77,3.56L10,10H5a5,5,0,0,0-5,5V50a5,5,0,0,0,5,5H70a5,5,0,0,0,5-5V15A5,5,0,0,0,70,10ZM25,47A15,15,0,1,1,40,32,15,15,0,0,1,25,47ZM65,32a3,3,0,0,1-3,3H53a3,3,0,0,1-3-3V23a3,3,0,0,1,3-3H62a3,3,0,0,1,3,3Z")
+						svg.media-upload-icon.fill
+							mask(:id="`mui-mask-${id}`")
+								rect(w="100%" h="100%" fill="black")
+								circle.mask-disc(cx="50%" cy="50%" r="70.7%" fill="white")
+							g(:mask="`url(#mui-mask-${id})`")
+								slot(name="upload-icon-fill")
+									slot(name="upload-icon")
+										use(:href="`#mui-src-${id}`")
+						svg.media-upload-icon.outline
+							slot(name="upload-icon-outline")
+								use(:href="`#mui-src-${id}`")
+						svg.media-upload-icon.ripple
+							slot(name="upload-icon-ripple")
+								slot(name="upload-icon")
+									use(:href="`#mui-src-${id}`")
 					span.upload-prompt-message
 						slot(
 							v-if="input.ignoreSize"
@@ -91,7 +111,6 @@
 						:key="idx")
 					.remove-output-item(@click="removeOutput(idx)") &times;
 		.validation-msg(:class="validationMsg ? 'active' : null") {{ validationMsg }}
-		canvas.edit-canv(ref="editCanv")
 </template>
 
 <script>
@@ -113,6 +132,8 @@
 			
 		return bytes + "bytes";
 	}
+
+	let id = 0;
 
 	export default {
 		name: "Media",
@@ -148,9 +169,11 @@
 				},
 				uploadIdx: 0,
 				sliderPos: "",
+				dragging: false,
+				id: id++,
 				error: null,
 				validationMsg: null,
-				validationState: "ok"
+				validationState: "ok",
 			};
 		},
 		methods: {
@@ -319,7 +342,7 @@
 				if (this.input.enforceSize && (w < ts.w || h < ts.h)) {
 					return this.setError({
 						type: "image-too-small",
-						message: `Image too small: upload an image that's minimum ${ts.w} × ${ts.h}px in size`
+						message: `Image too small:\nupload an image that's minimum\n${ts.w} × ${ts.h}px in size`
 					});
 				}
 
@@ -364,6 +387,7 @@
 				this.setEditPhase("edit");
 			},
 			setEditPhase(phase) {
+				this.dragging = false;
 				this.editPhase = phase;
 			},
 			setError(error) {
@@ -534,7 +558,7 @@
 					h = ts.h / currentScale,
 					x = crop.center.x - w / 2,
 					y = crop.center.y - h / 2,
-					canv = this.$refs.editCanv,
+					canv = document.createElement("canvas"),
 					ctx = canv.getContext("2d");
 
 				canv.width = ts.w;

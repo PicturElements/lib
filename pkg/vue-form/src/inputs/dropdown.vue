@@ -1,5 +1,5 @@
 <template lang="pug">
-	.input-wrapper.dropdown.inp-dropdown(:class="[ expanded ? 'open' : null, validationState ]"
+	.input-wrapper.dropdown.inp-dropdown(:class="[ expanded ? 'open' : null, isMobile() ? 'mobi' : null, validationState ]"
 		ref="dropdownBox")
 		button.mobi-focus(@click="expand")
 		textarea.focus-probe(
@@ -52,7 +52,6 @@
 			options: []
 		}),
 		methods: {
-			nop() {},
 			trigger(val) {
 				Form.trigger(this.input, val);
 				this.collapse();

@@ -121,10 +121,9 @@ $dropdown-params: (
 				}
 			}
 		}
-	}
-	
-	@include mobile {
-		.inp-dropdown {
+
+		// Mobile styling
+		&.mobi {
 			&.open {
 				.collapse-target {
 					position: fixed;
