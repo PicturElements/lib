@@ -631,6 +631,17 @@ export default class DataCell extends Hookable {
 			isDataCellResponse: true
 		}, config);
 	}
+
+	getKey(item) {
+		if (!item)
+			return null;
+
+		return this.process("key")(item);
+	}
+
+	getData(item) {
+		return item;
+	}
 }
 
 function injectPresets(config) {

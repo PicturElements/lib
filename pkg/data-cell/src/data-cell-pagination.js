@@ -135,7 +135,8 @@ export default class DataCellPagination extends DataCell {
 			for (let i = 0, l = insertionData.length; i < l; i++) {
 				const item = insertionData[i],
 					seq = this.process("sequence")(item),
-					tag = this.process("tag")(item);
+					tag = this.process("tag")(item),
+					key = this.process("key")(item);
 	
 				if (this.meta.useSequencing && (!isFiniteNum(seq) || seq % 1 != 0))
 					throw new TypeError("Found non-integer sequence number");
@@ -143,7 +144,9 @@ export default class DataCellPagination extends DataCell {
 				insertion.push({
 					seq,
 					tag,
-					data: item
+					key,
+					data: item,
+					idx: i
 				});
 			}
 
@@ -230,6 +233,25 @@ export default class DataCellPagination extends DataCell {
 			if (i < amount)
 				delete partition[i];
 		}
+	}
+
+	getKey(item) {
+		if (item && item.key != null)
+			return item.key;
+
+		const key = super.getKey(item);
+
+		if (key != null)
+			return key;
+
+		if (!item)
+			return null;
+
+		return item.idx + this.state.offset;
+	}
+
+	getData(item) {
+		return item.data;
 	}
 }
 
