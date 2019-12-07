@@ -43,13 +43,20 @@ class XHRManager {
 		this.macroKeys = {};
 	}
 
-	definePreset(name, preset) {
-		const noDuplicates = this.options.noDuplicatePresets;
+	definePreset(nameOrPreset, preset) {
+		let name = nameOrPreset;
+
+		if (typeof nameOrPreset != "string") {
+			preset = nameOrPreset;
+			name = "default";
+		}
 
 		if (!name || typeof name != "string") {
 			console.warn(`Cannot define preset: name is not valid`);
 			return this;
 		}
+
+		const noDuplicates = this.options.noDuplicatePresets;
 
 		if (noDuplicates && this.presets.hasOwnProperty(name)) {
 			console.warn(`Cannot define preset: preset by name '${name}' is already in use`);
@@ -105,7 +112,7 @@ class XHRManager {
 
 	use(...presets) {
 		let outPreset = this.pendingPreset,
-			added = false;
+			added = Boolean(this.pendingPreset);
 
 		const inject = presetsArr => {
 			for (let i = 0, l = presetsArr.length; i < l; i++) {
@@ -120,6 +127,9 @@ class XHRManager {
 
 				if (!isObject(preset))
 					continue;
+
+				if (!added && this.presets.hasOwnProperty("default"))
+					outPreset = injectPreset(outPreset, this.presets.default);
 
 				added = true;
 				outPreset = injectPreset(outPreset, preset);
@@ -145,7 +155,7 @@ class XHRManager {
 		const xhr = new XMLHttpRequest(),
 			xs = getState(this),
 			xId = xs.link(this, xhr),
-			preset = this.pendingPreset;
+			preset = resolvePreset(this);
 
 		injectStateDependencies(xs, this);
 
@@ -172,7 +182,7 @@ class XHRManager {
 		const xhr = new XMLHttpRequest(),
 			xs = getState(this),
 			xId = xs.link(this, xhr),
-			preset = this.pendingPreset;
+			preset = resolvePreset(this);
 
 		injectStateDependencies(xs, this);
 
@@ -536,6 +546,16 @@ function mergeData(acc, data) {
 		return acc.concat(data);
 
 	return Object.assign(acc, clone(data));
+}
+
+function resolvePreset(manager) {
+	if (manager.pendingPreset)
+		return manager.pendingPreset;
+
+	if (manager.presets.hasOwnProperty("default"))
+		return injectPreset(null, manager.presets.default)
+
+	return null;
 }
 
 function mkUrl(url, preset) {
