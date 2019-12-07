@@ -4,7 +4,9 @@ import {
 	clone,
 	inject,
 	isObject,
+	isPrimitive,
 	matchType,
+	serialize,
 	partition,
 	resolveVal,
 	mkProcessor,
@@ -37,127 +39,128 @@ const DEFAULT_STATE_PRESETS = {
 
 const DEFAULT_METHOD = "custom";
 
-const PROCESSOR_TRANSFORMERS = {
-	validate(proc) {
-		if (typeof proc == "string") {
-			const [ accessor, errorMsg ] = proc.trim().split(/\s*:\s*/);
-
-			return (cell, runtime, wrappedResponse) => {
-				if (get(wrappedResponse, accessor) && wrappedResponse.success)
-					return null;
-
-				return getErrorMsg(cell, wrappedResponse, errorMsg);
-			};
-		} else if (Array.isArray(proc)) {
-			const [ accessor, value, errorMsg ] = proc;
-
-			return (cell, runtime, wrappedResponse) => {
-				if (get(wrappedResponse, accessor) == value && wrappedResponse.success)
-					return null;
-
-				return getErrorMsg(cell, wrappedResponse, errorMsg);
-			};
-		} else if (isObject(proc)) {
-			let {
-				matches,
-				value,
-				errorMsg,
-				errorMsgPath
-			} = proc;
-
-			return (cell, runtime, wrappedResponse) => {
-				let match = true;
-
-				if (Array.isArray(matches)) {
-					const [ accessor, value, errMsg ] = matches;
-
-					if (errMsg)
-						errorMsg = errMsg;
-
-					match = get(wrappedResponse, accessor) == value;
-				} else if (typeof matches == "string") {
-					if (value !== undefined)
-						match = get(wrappedResponse, matches) == value;
-					else
-						match = Boolean(get(wrappedResponse, matches));
-				} else if (typeof matches == "function")
-					match = Boolean(matches(cell, wrappedResponse));
-
-				if (match && wrappedResponse.success)
-					return null;
-
-				if (typeof errorMsgPath == "string")
-					return getErrorMsg(cell, wrappedResponse, get(wrappedResponse, errorMsgPath));
-
-				return getErrorMsg(cell, wrappedResponse, errorMsg);
-			};
-		}
-
-		return proc;
+const COMMON_PROCESSOR_OPTIONS = {
+	processors: {
+		validate: (cell, runtime, wrappedResponse) => {
+			return wrappedResponse.success && wrappedResponse.payload ?
+				null :
+				getErrorMsg(cell, wrappedResponse);
+		},
+		success: (cell, runtime, wrappedResponse) => wrappedResponse,
+		fail: (cell, runtime, wrappedResponse) => wrappedResponse,
+		data: (cell, runtime, data) => data,
+		runtime: (cell, runtime) => runtime
 	},
-	data(proc) {
-		if (typeof proc == "string" || Array.isArray(proc)) {
-			return (cell, runtime, data) => {
-				return get(data, proc);
+	transformers: {
+		validate(proc) {
+			if (typeof proc == "string") {
+				const [ accessor, errorMsg ] = proc.trim().split(/\s*:\s*/);
+	
+				return (cell, runtime, wrappedResponse) => {
+					if (get(wrappedResponse, accessor) && wrappedResponse.success)
+						return null;
+	
+					return getErrorMsg(cell, wrappedResponse, errorMsg);
+				};
+			} else if (Array.isArray(proc)) {
+				const [ accessor, value, errorMsg ] = proc;
+	
+				return (cell, runtime, wrappedResponse) => {
+					if (get(wrappedResponse, accessor) == value && wrappedResponse.success)
+						return null;
+	
+					return getErrorMsg(cell, wrappedResponse, errorMsg);
+				};
+			} else if (isObject(proc)) {
+				let {
+					matches,
+					value,
+					errorMsg,
+					errorMsgPath
+				} = proc;
+	
+				return (cell, runtime, wrappedResponse) => {
+					let match = true;
+	
+					if (Array.isArray(matches)) {
+						const [ accessor, value, errMsg ] = matches;
+	
+						if (errMsg)
+							errorMsg = errMsg;
+	
+						match = get(wrappedResponse, accessor) == value;
+					} else if (typeof matches == "string") {
+						if (value !== undefined)
+							match = get(wrappedResponse, matches) == value;
+						else
+							match = Boolean(get(wrappedResponse, matches));
+					} else if (typeof matches == "function")
+						match = Boolean(matches(cell, wrappedResponse));
+	
+					if (match && wrappedResponse.success)
+						return null;
+	
+					if (typeof errorMsgPath == "string")
+						return getErrorMsg(cell, wrappedResponse, get(wrappedResponse, errorMsgPath));
+	
+					return getErrorMsg(cell, wrappedResponse, errorMsg);
+				};
+			}
+	
+			return proc;
+		},
+		data(proc) {
+			if (typeof proc == "string" || Array.isArray(proc)) {
+				return (cell, runtime, data) => {
+					return get(data, proc);
+				};
+			}
+	
+			return proc;
+		},
+		key(proc) {
+			let keyer;
+
+			switch (typeof proc) {
+				case "string":
+					keyer = (cell, runtime, item) => get(item, proc);
+					break;
+
+				case "function":
+					keyer = proc;
+					break;
+
+				default:
+					return null;
+			}
+
+			return (cell, runtime, item) => {
+				const key = keyer(cell, runtime, item);
+
+				if (!isPrimitive(key))
+					console.warn("Suboptimal key: key value is not primitive");
+				else if (key == null)
+					console.warn("Suboptimal key: key is null or undefined");
+
+				return key;
 			};
 		}
-
-		return proc;
 	}
 };
 
 const DEFAULT_PROCESSOR_OPTIONS = {
-	get: {
-		processors: {
-			validate: (cell, runtime, wrappedResponse) => {
-				return wrappedResponse.success && wrappedResponse.payload ?
-					null :
-					getErrorMsg(cell, wrappedResponse);
-			},
-			success: (cell, runtime, wrappedResponse) => wrappedResponse,
-			fail: (cell, runtime, wrappedResponse) => wrappedResponse,
-			data: (cell, runtime, data) => data,
-			runtime: (cell, runtime) => runtime
-		},
-		transformers: {
-			validate: PROCESSOR_TRANSFORMERS.validate,
-			data: PROCESSOR_TRANSFORMERS.data
-		}
-	},
-	post: {
-		processors: {
-			validate: (cell, runtime, wrappedResponse) => {
-				return wrappedResponse.success && wrappedResponse.payload ?
-					null :
-					getErrorMsg(cell, wrappedResponse);
-			},
-			success: (cell, runtime, wrappedResponse) => wrappedResponse,
-			fail: (cell, runtime, wrappedResponse) => wrappedResponse,
-			data: (cell, runtime, data) => data,
-			runtime: (cell, runtime) => runtime
-		},
-		transformers: {
-			validate: PROCESSOR_TRANSFORMERS.validate,
-			data: PROCESSOR_TRANSFORMERS.data
-		}
-	},
-	custom: {
-		processors: {
-			validate: (cell, runtime, wrappedResponse) => {
-				return wrappedResponse.success && wrappedResponse.payload ?
-					null :
-					getErrorMsg(cell, wrappedResponse);
-			},
-			success: (cell, runtime, response) => response,
-			fail: (cell, runtime, error) => error,
-			data: (cell, runtime, data) => data,
-			runtime: (cell, runtime) => runtime
-		},
-		transformers: {
-			validate: PROCESSOR_TRANSFORMERS.validate,
-			data: PROCESSOR_TRANSFORMERS.data
-		}
-	}
+	get: inject({
+		processors: {},
+		transformers: {}
+	}, COMMON_PROCESSOR_OPTIONS),
+	post: inject({
+		processors: {},
+		transformers: {}
+	}, COMMON_PROCESSOR_OPTIONS),
+	custom: inject({
+		processors: {},
+		transformers: {}
+	}, COMMON_PROCESSOR_OPTIONS),
 };
 
 const DEFAULT_WATCHER_TASK_DISPATCHERS = {
@@ -174,12 +177,15 @@ const DEFAULT_PARTITION_CLASSIFIER = {
 	baseUrl: "xhrPreset",
 	// Irrelevant data
 	type: "garbage",
+	species: "garbage",
 	persistent: "garbage"
 };
 
 export default class DataCell extends Hookable {
 	constructor(config = {}, initConfig = {}) {
 		super();
+
+		config = injectPresets(config);
 
 		const classifier = inject(
 			DEFAULT_PARTITION_CLASSIFIER,
@@ -307,6 +313,10 @@ export default class DataCell extends Hookable {
 		return this;
 	}
 
+	use(...runtimes) {
+		return this.with(...runtimes);
+	}
+
 	fetch(...args) {
 		return this._fetch({}, ...args);
 	}
@@ -398,6 +408,13 @@ export default class DataCell extends Hookable {
 			return deferredResponse;
 		} else
 			return doFetch();
+	}
+
+	retrieve(...args) {
+		if (this.state.loaded)
+			return this.data;
+
+		return this.fetch(...args);
 	}
 
 	setState(...states) {
@@ -614,28 +631,35 @@ export default class DataCell extends Hookable {
 			isDataCellResponse: true
 		}, config);
 	}
+}
 
-	static isCellConfig(candidate) {
-		if (!isObject(candidate))
-			return false;
+function injectPresets(config) {
+	let injected = false;
 
-		if (candidate.isCell || typeof candidate.autoFetch == "boolean")
-			return true;
+	const inj = name => {
+		if (typeof name != "string" || !DataCell.presets.hasOwnProperty(name))
+			throw new Error(`Cannot inject preset: ${serialize(name)} is not a valid name`);
 
-		if (candidate.type && typeof candidate.type == "string")
-			return true;
+		if (injected)
+			config = inject(config, DataCell.presets[name], "override");
+		else
+			config = inject(config, DataCell.presets[name], "cloneTarget|override");
 
-		if (candidate.method && typeof candidate.method == "string")
-			return true;
+		injected = true;
+	};
 
-		if (typeof candidate.fetch == "function" || typeof candidate.handler == "function")
-			return true;
+	if (DataCell.presets.hasOwnProperty("default"))
+		inj("default");
 
-		if (isObject(candidate.processors))
-			return true;
+	if (typeof config.preset == "string")
+		inj(config.preset);
 
-		return false;
+	if (Array.isArray(config.presets)) {
+		for (let i = 0, l = config.presets.length; i < l; i++)
+			inj(config.presets[i]);
 	}
+
+	return config;
 }
 
 function applyStateTransforms(cell, newState) {
