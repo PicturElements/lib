@@ -5,13 +5,14 @@ import {
 import {
 	isObj,
 	isObject,
-	isArrResolvable,
-	isNativeSimpleObject
+	isPrimitive,
+	isArrResolvable
 } from "./is";
 import splitPath from "./split-path";
 import hasOwn from "./has-own";
 import resolveArgs from "./resolve-args";
 import map from "./map";
+import serialize from "./serialize";
 
 // allowNonexistent - inject property values for
 // properties that don't exist on the object
@@ -22,7 +23,7 @@ const objToArrParamSignature = [
 	{ name: "allowNonexistent", type: "boolean", default: true }
 ];
 
-export default function objToArr(...args) {
+function objToArr(...args) {
 	let {
 		obj,
 		order,
@@ -148,11 +149,14 @@ function uncirculate(obj, options) {
 
 	let circularCount = 0;
 
-	const ucirc = o => {
-		o[circularIdKey] = -1;
+	const uncirc = o => {
+		const isFrozen = Object.isFrozen(o);
+
+		if (!isFrozen)
+			o[circularIdKey] = -1;
 
 		const out = map(o, v => {
-			if (!isNativeSimpleObject(v))
+			if (!v || typeof v != "object")
 				return v;
 
 			if (v.hasOwnProperty(circularIdKey)) {
@@ -164,17 +168,22 @@ function uncirculate(obj, options) {
 				};
 			}
 
-			return ucirc(v);
+			return uncirc(v);
 		}, options);
 		
-		if (o[circularIdKey] > -1)
-			out[circularIdKey] = o[circularIdKey];
+		if (!isFrozen) {
+			if (o[circularIdKey] > -1)
+				out[circularIdKey] = o[circularIdKey];
+			else
+				delete out[circularIdKey];
 
-		delete o[circularIdKey];
+			delete o[circularIdKey];
+		}
+
 		return out;
 	};
 
-	const uncirculated = ucirc(obj);
+	const uncirculated = uncirc(obj);
 
 	if (circularCount) {
 		return {
@@ -277,6 +286,49 @@ function revokeWriteProtect(obj, key) {
 	return true;
 }
 
+function earmark(markKey, items, aliases) {
+	const marked = {};
+
+	if (typeof markKey != "symbol" && typeof markKey != "string") {
+		console.warn("Cannot earmark: mark is not a string or symbol");
+		return marked;
+	}
+
+	if (!isObject(items)) {
+		console.warn("Cannot earmark: no items to mark");
+		return marked;
+	}
+
+	const addEarmark = (item, name) => {
+		if (isPrimitive(item)) {
+			console.warn("Cannot earmark: target is primitive");
+			return;
+		}
+
+		if (hasOwn(marked, name, true)) {
+			console.warn(`Cannot earmark: correspondence between a target and earmark ${serialize(name)} has already been establised`);
+			return;
+		}
+
+		marked[name] = item;
+	};
+
+	for (const k in items) {
+		if (!hasOwn(items, k))
+			continue;
+
+		addEarmark(items[k], k);
+		items[k][markKey] = k;
+
+		if (aliases && Array.isArray(aliases[k])) {
+			for (let i = 0, l = aliases[k].length; i < l; i++)
+				addEarmark(items[k], aliases[k][i]);
+		}
+	}
+
+	return marked;
+}
+
 export {
 	objToArr,
 	keys,
@@ -287,7 +339,11 @@ export {
 	isCircular,
 	getCircularId,
 	setCircularId,
+	circularIdKey,
+	circularRefKey,
+	circularIsKey,
 	unenum,
 	writeProtect,
-	revokeWriteProtect
+	revokeWriteProtect,
+	earmark
 };
