@@ -109,12 +109,11 @@
 		},
 		methods: {
 			mkItem(item, index) {
-				const isPagination = this.cell instanceof DataCellPagination;
-
 				return {
-					item: isPagination ? item.data : item,
-					viewMode: this.conf.viewMode,
-					index
+					index,
+					key: this.cell.getData(item),
+					item: this.cell.getData(item),
+					viewMode: this.conf.viewMode
 				};
 			},
 			setSort(column, idx) {
@@ -143,7 +142,6 @@
 			},
 			getItems() {
 				const sortState = this.sortState,
-					isPagination = this.cell instanceof DataCellPagination,
 					items = this.cellData;
 
 				if (this.cachedItems)
@@ -181,8 +179,8 @@
 						};
 
 				this.cachedItems = mergesort(items, (a, b) => {
-					let data = isPagination ? a.data : a,
-						data2 = isPagination ? b.data : b;
+					let data = this.cell.getData(a),
+						data2 = this.cell.getData(b);
 
 					if (typeof index == "function") {
 						data = index(data, this);
