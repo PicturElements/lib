@@ -553,7 +553,7 @@ function resolvePreset(manager) {
 		return manager.pendingPreset;
 
 	if (manager.presets.hasOwnProperty("default"))
-		return injectPreset(null, manager.presets.default)
+		return injectPreset(null, manager.presets.default);
 
 	return null;
 }
