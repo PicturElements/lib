@@ -2,9 +2,12 @@ import {
 	createOptionsObject,
 	composeOptionsTemplates
 } from "./options";
+import { escape } from "./str";
+import { cleanRegex } from "./regex";
 
 const globRegex = /\\([^\\\/])|(\?|\*\*|\*)|\[(!)?([^\\\/]*?)\]|([$^()\[\]\/\\{}.*+?|])/g,
-	globCache = {};
+	globCache = {},
+	boundaryCache = {};
 
 function compileGlob(glob, options) {
 	if (typeof glob != "string")
@@ -14,11 +17,22 @@ function compileGlob(glob, options) {
 
 	const matchStart = !options.noMatchStart && !options.noMatchFull,
 		matchEnd = !options.noMatchEnd && !options.noMatchFull,
+		boundaryPrecursor = typeof options.boundary == "string" ? options.boundary : "\\/",
 		flags = options.flags || "",
-		globKey = `${glob}@${flags}/${+matchStart}${+matchEnd}`;
+		globKey = `${glob}@${flags}/${+matchStart}${+matchEnd}@@${boundaryPrecursor}`;
 
 	if (globCache.hasOwnProperty(globKey))
 		return globCache[globKey];
+
+	if (!boundaryCache.hasOwnProperty(boundaryPrecursor)) {
+		// First escape properly, then clean that for regex construction
+		const regexStr = cleanRegex(escape(boundaryPrecursor));
+		boundaryCache[boundaryPrecursor] = regexStr ?
+			`[^${regexStr}]` :
+			".";
+	}
+
+	const boundary = boundaryCache[boundaryPrecursor];
 
 	let isGlob = false,
 		regex = glob.replace(globRegex, (match, escaped, wildcard, negate, charset, special) => {
@@ -30,9 +44,9 @@ function compileGlob(glob, options) {
 
 				switch (wildcard) {
 					case "?":
-						return `[^\\\\\\/]`;
+						return boundary;
 					case "*":
-						return `[^\\\\\\/]*`;
+						return `${boundary}*`;
 					case "**":
 						return ".*";
 				}
