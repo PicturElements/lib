@@ -71,9 +71,27 @@ function trimStr(str, start, end) {
 	return str.substr(start, str.length - (end || 0) - start);
 }
 
-function splitClean(str, splitter) {
-	const split = str.split(splitter);
-	return split.filter(str => str.trim().length);
+function splitClean(str, splitter, subTrim = true) {
+	if (!splitter && splitter !== "") {
+		splitter = /\s+/;
+		subTrim = false;
+	}
+
+	const split = str.trim().split(splitter);
+
+	if (!subTrim)
+		return split;
+
+	const splitOut = [];
+
+	for (let i = 0, l = split.length; i < l; i++) {
+		const item = split[i].trim();
+
+		if (item)
+			splitOut.push(item);
+	}
+
+	return splitOut;
 }
 
 export {
