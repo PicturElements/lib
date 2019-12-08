@@ -84,15 +84,19 @@ function joinClassAsArray(...classes) {
 	return join(true, classes);
 }
 
-function join(returnAsArr, classes) {
+function join(returnAsArr, classes, callArgs) {
 	const map = {},
 		arr = [];
 
 	for (let i = 0, l = classes.length; i < l; i++) {
 		let clsData = classes[i];
 
-		if (typeof clsData == "function")
-			clsData = clsData.call(this, this.form);
+		if (typeof clsData == "function") {
+			if (Array.isArray(callArgs))
+				clsData = clsData.call(...callArgs, classes);
+			else
+				clsData = clsData(classes);
+		}
 
 		if (typeof clsData == "string")
 			clsData = splitClean(clsData);
