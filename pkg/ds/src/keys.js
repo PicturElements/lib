@@ -4,7 +4,7 @@ import {
 } from "@qtxr/utils";
 
 export default class Keys {
-	constructor() {
+	constructor(compileConfig = {}) {
 		this.partitions = {
 			plaintext: {
 				keys: [],
@@ -22,10 +22,11 @@ export default class Keys {
 				lookup: {}
 			}
 		};
+		this.compileConfig = compileConfig;
 		this.length = 0;
 	}
 
-	add(key) {
+	add(key, compileConfig = null) {
 		if (typeof key != "string" || this.has(key))
 			return this;
 
@@ -35,7 +36,7 @@ export default class Keys {
 		if (isAny(key))
 			partition = this.partitions.any;
 		else {
-			const compiled = compileGlob(key);
+			const compiled = compileGlob(key, compileConfig || this.compileConfig);
 
 			if (compiled.isGlob) {
 				partition = this.partitions.glob;
