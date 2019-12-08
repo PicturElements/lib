@@ -111,7 +111,7 @@
 			mkItem(item, index) {
 				return {
 					index,
-					key: this.cell.getData(item),
+					key: this.cell.getKey(item),
 					item: this.cell.getData(item),
 					viewMode: this.conf.viewMode
 				};
