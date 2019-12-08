@@ -76,7 +76,7 @@ export default class DataCellComposite extends DataCell {
 		if (this.hasChild(cellOrConfig))
 			return this;
 
-		const cell = resolveCell(cellOrConfig, this);
+		const cell = resolveCell(cellOrConfig, this, path);
 
 		cell.parent = this;
 		this.children.push({
@@ -105,12 +105,12 @@ export default class DataCellComposite extends DataCell {
 		return this;
 	}
 
-	setData(data) {
+	setData(data, runtime) {
 		const set = (inputData, cellData) => {
 			forEach(inputData, (d, k) => {
 				if (cellData[k] instanceof DataCell) {
 					if (cellData[k].passive)
-						cellData[k].setData(d);
+						cellData[k].setData(cellData[k].process("data")(runtime || {}, d));
 				} else {
 					cellData[k] = d;
 
@@ -178,7 +178,7 @@ export default class DataCellComposite extends DataCell {
 	}
 }
 
-function resolveCell(cellOrConfig, parentCell) {
+function resolveCell(cellOrConfig, parentCell, path) {
 	let cell;
 	
 	if (cellOrConfig instanceof DataCell) {
@@ -201,7 +201,8 @@ function resolveCell(cellOrConfig, parentCell) {
 				if (!parent)
 					return null;
 
-				return await parent.fetch(...args);
+				const parentResponse = await parent.fetch(...args);
+				return wrapParentResponse(cell, parentResponse, path);
 			};
 		}
 
@@ -222,6 +223,18 @@ function resolveCell(cellOrConfig, parentCell) {
 	});
 
 	return cell;
+}
+
+function wrapParentResponse(cell, response, path) {
+	if (response.success) {
+		return cell.mkSuccessResponse(get(response.payload.data, path), {
+			sourceResponse: response
+		});
+	} else {
+		return cell.mkErrorResponse(response.errorMsg, {
+			sourceResponse: response
+		});
+	}
 }
 
 function handleHooks(context) {

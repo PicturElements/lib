@@ -343,7 +343,7 @@ export default class DataCell extends Hookable {
 	
 				if (response.success) {
 					this.setState("loaded");
-					this.setData(this.process("data")(runtime, response.payload));
+					this.setData(this.process("data")(runtime, response.payload), runtime);
 					this.callHooks("success", response);
 				} else {
 					this.setState("error", {
@@ -366,7 +366,7 @@ export default class DataCell extends Hookable {
 		if (typeof fetcher.throttle == "number") {
 			const erLength = fetcher.enqueuedResolvers.length,
 				throttledResponse = new Promise(resolve => {
-					fetcher.enqueuedResolvers.push(resolve);					
+					fetcher.enqueuedResolvers.push(resolve);
 				});
 
 			clearTimeout(fetcher.throttledFetch);
@@ -862,9 +862,12 @@ function fetchRequest(cell, runtime, method = "get", url = null, preset = null) 
 
 async function fetchCustom(cell, runtime, handler, ...args) {
 	const response = await handler(cell, runtime, ...args);
-	let wrappedResponse = response == null ?
-		cell.mkErrorResponse(response) :
-		cell.mkSuccessResponse(response);
+	let wrappedResponse = response && response.isDataCellResponse ? 
+		response : (
+			response == null ?
+				cell.mkErrorResponse(response) :
+				cell.mkSuccessResponse(response)
+		);
 
 	const validation = validate(cell, runtime, wrappedResponse);
 
