@@ -52,6 +52,7 @@ export default class BaseInput extends Hookable {
 		super();
 
 		// Constants (during runtime)
+		this.form = form;
 		this.name = name;
 		this.required = true;
 		this.type = "text";
@@ -89,8 +90,6 @@ export default class BaseInput extends Hookable {
 
 		this.hookAll(options.hooks);
 		this.setValue(this.value);
-
-		this.form = form;
 		this.default = this.value;
 	}
 
@@ -267,6 +266,13 @@ export default class BaseInput extends Hookable {
 	set trigger(handler) {
 		this.handlers.trigger = handler;
 	}
+	get check() {
+		return this[CHECK];
+	}
+
+	set check(handler) {
+		this.handlers.check = handler;
+	}
 
 	get update() {
 		return this[UPDATE];
@@ -297,7 +303,7 @@ export default class BaseInput extends Hookable {
 		if (typeof this.handlers.if == "boolean")
 			return this.handlers.if;
 
-		return typeof this.handlers.if != "function" || !this.handlers.if(
+		return typeof this.handlers.if != "function" || this.handlers.if(
 			this.value,
 			this.form,
 			this.form.inputs

@@ -61,18 +61,23 @@ export default class Form extends Hookable {
 				console.warn("Failed to resolve argument as it's neither a preset nor an options object:", item);
 		}
 
+		// Input tracking
+		this.keys = [];
+		this.inputId = 0;
 		this.inputs = {};
 		this.inputsStruct = {};
 		this.propagateMap = {};
-		this.keys = [];
 		this.updateInitialized = false;
 
+		// State
 		this.valid = true;
 		this.changed = false;
+
+		// Flags / general config
 		// Only validate required inputs
 		// Invalid non-required inputs will be marked as valid
 		this.validateRequiredOnly = false;
-		this.persistentInputs = false;
+		this.noDuplicateNames = true;
 
 		this.hookAll(masterPreset.hooks);
 
@@ -95,6 +100,8 @@ export default class Form extends Hookable {
 
 		if (!hasField)
 			this.keys.push(name);
+		else if (this.noDuplicateNames)
+			return this.inputs[name];
 
 		const constr = Form.getInputConstructor(options),
 			inp = new constr(
@@ -103,9 +110,11 @@ export default class Form extends Hookable {
 				this
 			);
 
+		inp.id = this.inputId++;
+
 		if (hasField) { 
 			if (!Array.isArray(this.inputs[name]))
-				this.inputs[name] = [this.inputs.name];
+				this.inputs[name] = [this.inputs[name]];
 
 			this.inputs[name].push(inp);
 		} else
@@ -115,6 +124,8 @@ export default class Form extends Hookable {
 	}
 
 	connectRows(rows) {
+		const foundNames = {};
+		
 		const connect = (row, depth) => {
 			if (!Array.isArray(row)) {
 				if (!depth && isObject(row) && typeof row.name != "string") {
@@ -169,11 +180,21 @@ export default class Form extends Hookable {
 						} : cellProcessed.class || {};
 					}
 
-					const options = cellProcessed.opt;
+					const options = cellProcessed.opt,
+						name = cellProcessed.name;
 					delete cellProcessed.opt;
 					
+					// Clear old inputs when necessary
+					if (!foundNames.hasOwnProperty(name)) {
+						if (!this.noDuplicateNames)
+							delete this.inputs[name];
+
+						foundNames[name] = true;
+					} else if (this.noDuplicateNames)
+						throw new Error(`Cannot connectL duplicate inputs by name "${name}"`);
+
+					cellProcessed.input = this.connect(name, options);
 					cellProcessed.isInputCell = true;
-					cellProcessed.input = this.connect(cellProcessed.name, options);
 					out.push(depth ? cellProcessed : [cellProcessed]);
 				}
 			}
@@ -246,17 +267,10 @@ export default class Form extends Hookable {
 		});
 	}
 
-	forEach(callback) {
-		if (typeof callback != "function")
-			return;
+	extract(inputOrName = null) {
+		if (typeof inputOrName == "string" || inputOrName instanceof BaseInput)
+			return this.extractOne(inputOrName);
 
-		const keys = this.keys;
-
-		for (let i = 0, l = this.keys.length; i < l; i++)
-			callback(this.inputs[keys[i]], keys[i], this.inputs);
-	}
-
-	extract() {
 		const out = {};
 
 		this.forEach((inp, name) => {
@@ -268,15 +282,24 @@ export default class Form extends Hookable {
 			if (typeof inp.path == "string") {
 				const built = get(out, inp.path, null, "context|autoBuild");
 				built.context[built.key] = extracted;
-			} else
-				out[name] = extracted;
+			} else {
+				if (out.hasOwnProperty(name)) {
+					if (!Array.isArray(out[name]))
+						out[name] = [out[name]];
+
+					out[name].push(extracted);
+				} else
+					out[name] = extracted;
+			}
 		});
 
 		return out;
 	}
 
 	extractOne(inputOrName) {
-		const inp = typeof inputOrName == "string" ? this.inputs[inputOrName] : inputOrName;
+		const inp = typeof inputOrName == "string" ?
+			this.inputs[inputOrName] :
+			inputOrName;
 
 		if (!(inp instanceof BaseInput))
 			return;
@@ -316,6 +339,31 @@ export default class Form extends Hookable {
 		return get(val, path, null, {
 			pathOffset: 1
 		});
+	}
+
+	forEach(callback) {
+		if (typeof callback != "function")
+			return;
+
+		const dispatch = (inp, key) => {
+			if (!inp.exists)
+				return;
+
+			callback(inp, key, this.inputs);
+		};
+
+		const keys = this.keys;
+
+		for (let i = 0, l = this.keys.length; i < l; i++) {
+			const key = keys[i],
+				item = this.inputs[key];
+
+			if (Array.isArray(item)) {
+				for (let j = 0, l2 = item.length; j < l2; j++)
+					dispatch(item[j], key);
+			} else
+				dispatch(item, key);
+		}
 	}
 
 	static trigger(inp, ...args) {

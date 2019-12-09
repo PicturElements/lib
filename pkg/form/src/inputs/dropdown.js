@@ -10,6 +10,7 @@ export default class Dropdown extends BaseInput {
 			options: "Array|function",
 			autoSet: "boolean"
 		});
+		this.selectedIndex = -1;
 	}
 
 	[INJECT](value) {
