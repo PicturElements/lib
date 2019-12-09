@@ -664,9 +664,9 @@ function injectPresets(config) {
 			throw new Error(`Cannot inject preset: ${serialize(name)} is not a valid name`);
 
 		if (injected)
-			config = inject(config, DataCell.presets[name], "override");
+			config = inject(config, DataCell.presets[name]);
 		else
-			config = inject(config, DataCell.presets[name], "cloneTarget|override");
+			config = inject(config, DataCell.presets[name], "cloneTarget");
 
 		injected = true;
 	};
