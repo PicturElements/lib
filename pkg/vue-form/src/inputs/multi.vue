@@ -1,5 +1,5 @@
 <template lang="pug">
-	.input-wrapper.multi.inp-multi(:class="[ expanded ? 'open' : null, isMobile() ? 'mobi' : null, validationState ]")
+	.input-wrapper.multi.inp-multi(:class="[ expanded ? 'open' : null, isMobile() ? 'mobi' : null, validationState, dropdownDirection ]")
 		.selection-box(
 			@click="bufferExpand"
 			ref="selectionBox")
@@ -63,6 +63,7 @@
 		name: "Multi",
 		data: _ => ({
 			expanded: false,
+			dropdownDirection: null,
 			searchBoxStyle: null,
 			updateLoopInitialized: false,
 			loading: false,
@@ -171,7 +172,7 @@
 				this.search();
 			},
 			trigger(val) {
-				Form.trigger(this.input, val);
+				this.input.trigger(val);
 			},
 			getLabel(option) {
 				const label = (option && option.hasOwnProperty("label")) ? option.label : option;
@@ -202,6 +203,7 @@
 					return;
 
 				this.expanded = false;
+				this.dropdownDirection = null;
 			},
 			initUpdateLoop() {
 				if (!this.updateLoopInitialized) {
@@ -239,6 +241,8 @@
 					width: `${bcr.width - bLeft - bRight}px`,
 					maxHeight: `${maxHeight}px`
 				};
+			
+				this.dropdownDirection = placeBottom ? "place-bottom" : "place-top",
 
 				requestFrame(_ => this.updateFixedBox());
 			},

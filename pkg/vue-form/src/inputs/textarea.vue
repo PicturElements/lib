@@ -20,10 +20,10 @@
 		}),
 		methods: {
 			trigger(evt) {
-				Form.trigger(this.input, evt.target.value);
+				this.input.trigger(evt.target.value);
 			},
 			check(evt) {
-				Form.check(this.input, evt, evt.target.value);
+				this.input.check(evt, evt.target.value);
 			},
 			res(val, ...args) {
 				if (typeof val == "function")

@@ -614,9 +614,9 @@
 					for (let i = 0, l = this.enqueuedOutput.length; i < l; i++)
 						val.push(this.enqueuedOutput[i]);
 
-					Form.trigger(this.input, val);
+					this.input.trigger(val);
 				} else
-					Form.trigger(this.input, this.enqueuedOutput[0]);
+					this.input.trigger(this.enqueuedOutput[0]);
 			},
 			updateOutputQueue() {
 				if (this.input.multiple)

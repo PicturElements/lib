@@ -1,4 +1,5 @@
 $formatted-params: (
+	"border-radius",
 	"background",
 	"error-background",
 	"border",
@@ -9,6 +10,7 @@ $formatted-params: (
 );
 
 @mixin formatted(
+	$border-radius: 1px,
 	$background: white,
 	$error-background: #ffe7ec,
 	$border: 1px solid #dadada,
@@ -23,6 +25,7 @@ $formatted-params: (
 			padding: 6px 8px;
 			background: transparent;
 			border: $border;
+			border-radius: $border-radius;
 			font-size: 95%;
 			outline: none;
 			width: 100%;

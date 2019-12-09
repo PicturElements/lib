@@ -19,7 +19,7 @@
 		}),
 		methods: {
 			trigger() {
-				Form.trigger(this.input, !this.input.value);
+				this.input.trigger(!this.input.value);
 			},
 			res(val, ...args) {
 				if (typeof val == "function")

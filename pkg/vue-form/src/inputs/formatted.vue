@@ -21,10 +21,10 @@
 		name: "Formatted",
 		methods: {
 			trigger(count) {
-				Form.trigger(this.input, null);
+				this.input.trigger(null);
 			},
 			check(evt) {
-				Form.check(this.input, evt, evt.target.value);
+				this.input.check(evt, evt.target.value);
 			},
 			updateSelection() {
 				this.input.updateSelectionData(this.$refs.content);

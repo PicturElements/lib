@@ -1,4 +1,5 @@
 $checkbox-params: (
+	"border-radius",
 	"border",
 	"focus-border",
 	"error-background",
@@ -6,6 +7,7 @@ $checkbox-params: (
 );
 
 @mixin checkbox(
+	$border-radius: 1px,
 	$border: 1px solid #dadada,
 	$focus-border: 1px solid #1e2021,
 	$error-background: #ffe7ec,
@@ -24,10 +26,11 @@ $checkbox-params: (
 			height: 1.8em;
 			background: transparent;
 			border: $border;
+			border-radius: $border-radius;
 			padding: 0;
 			outline: none;
-			border-radius: 1px;
 			flex-shrink: 0;
+			cursor: pointer;
 	
 			&:focus {
 				border: $focus-border;

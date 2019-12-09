@@ -1,25 +1,30 @@
 $count-params: (
+	"border-radius",
 	"border",
-	"focus-background"
+	"focus-background",
+	"height"
 );
 
 @mixin count(
+	$border-radius: 1px,
 	$border: 1px solid #dadada,
-	$focus-background: #eee
+	$focus-background: #eee,
+	$height: 30px
 ) {
 	.inp-count {
 		display: flex;
-		height: 30px;
-		width: 100px;
+		height: $height;
+		width: 120px;
 		border: $border;
-		border-radius: 3px;
+		border-radius: $border-radius;
+		font-size: 95%;
 	
 		.count-btn {
 			display: flex;
 			align-items: center;
 			justify-content: center;
 			flex-shrink: 0;
-			width: 30px;
+			width: $height;
 			height: 100%;
 			user-select: none;
 			border: none;
@@ -27,7 +32,7 @@ $count-params: (
 			background: transparent;
 			cursor: pointer;
 			font: inherit;
-			font-size: 100%;
+			font-size: 120%;
 			color: inherit;
 	
 			&:active {
@@ -46,15 +51,15 @@ $count-params: (
 	
 		input {
 			flex-grow: 1;
-			width: 30px;
 			border: none;
 			padding: 0 5px;
+			width: 10px;
 			text-align: center;
 			background: transparent;
 			margin: 0;
 			cursor: text;
 			font: inherit;
-			font-size: 85%;
+			font-size: 100%;
 			color: inherit;
 			outline: none;
 	

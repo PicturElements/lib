@@ -1,6 +1,6 @@
 <template lang="pug">
 	.input-wrapper.time.inp-time(
-		:class="[ expanded ? 'open' : null, validationState ]")
+		:class="[ expanded ? 'open' : null, validationState, dropdownDirection ]")
 		button.time-display(
 			ref="expandoBox"
 			@click="bufferExpand")
@@ -44,6 +44,7 @@
 		name: "Time",
 		data: _ => ({
 			expanded: false,
+			dropdownDirection: null,
 			modalStyle: null,
 			updateLoopInitialized: false,
 			globalClickListener: null,
@@ -76,9 +77,9 @@
 					for (let i = 0, l = this.dialsData.length; i < l; i++)
 						value.push(reduce(this.dialsData[i].dials));
 
-					Form.trigger(this.input, value);
+					this.input.trigger(value);
 				} else
-					Form.trigger(this.input, reduce(this.dialsData[0].dials));
+					this.input.trigger(reduce(this.dialsData[0].dials));
 			},
 			toggleExpansion(expanded) {
 				expanded = typeof expanded == "boolean" ? expanded : !this.expanded;
@@ -107,6 +108,7 @@
 
 				this.trigger();
 				this.expanded = false;
+				this.dropdownDirection = null;
 			},
 			initUpdateLoop() {
 				if (!this.updateLoopInitialized) {
@@ -127,25 +129,39 @@
 					bTop = parseFloat(style.borderTopWidth),
 					bRight = parseFloat(style.borderRightWidth),
 					bBottom = parseFloat(style.borderBottomWidth),
+					brTopLeft = parseFloat(style.borderTopRightRadius),
+					brTopRight = parseFloat(style.borderTopRightRadius),
+					brBottomLeft = parseFloat(style.borderBottomLeftRadius),
+					brBottomRight = parseFloat(style.borderBottomRightRadius),
 					bLeft = parseFloat(style.borderLeftWidth),
 					topAvailable = bcr.top - PADDING,
 					bottomAvailable = window.innerHeight - (bcr.top + bcr.height) - PADDING,
 					placeBottom = bottomAvailable > (topAvailable * BOTTOM_BIAS) || mbcr.height < bottomAvailable - 100,
 					maxHeight = placeBottom ? bottomAvailable : topAvailable,
-					left = bcr.left + mbcr.width < window.innerWidth - PADDING ?
-						bcr.left :
-						window.innerWidth - PADDING - mbcr.width,
-					leftNormalized = left < PADDING ?
-						Math.max((left + PADDING) / 2, 0) :
-						left;
+					flushLeft = bcr.left + mbcr.width < window.innerWidth - PADDING,
+					leftShift = flushLeft ?
+						0 :
+						bcr.left - (window.innerWidth - PADDING - mbcr.width),
+					left = bcr.left - leftShift,
+					rightShift = mbcr.width - bcr.width - leftShift;
 
 				this.modalStyle = {
 					position: "fixed",
 					top: placeBottom ? `${bcr.top + bcr.height - bBottom}px` : null,
 					bottom: placeBottom ? null : `${window.innerHeight - bcr.top - bTop}px`,
-					left: `${leftNormalized}px`,
+					left: `${left - Math.min(rightShift, 0)}px`,
 					maxHeight: `${maxHeight}px`
 				};
+
+				this.dropdownDirection = placeBottom ? "place-bottom" : "place-top";
+				
+				if (placeBottom) {
+					this.modalStyle.borderTopLeftRadius = `${Math.min(brBottomLeft, leftShift)}px`;
+					this.modalStyle.borderTopRightRadius = `${Math.min(brBottomRight, Math.max(rightShift, 0))}px`;
+				} else {
+					this.modalStyle.borderBottomLeftRadius = `${Math.min(brTopLeft, leftShift)}px`;
+					this.modalStyle.borderBottomRightRadius = `${Math.min(brTopRight, Math.max(rightShift, 0))}px`;
+				}
 
 				requestFrame(_ => this.updateFixedBox());
 			},

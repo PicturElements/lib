@@ -1,5 +1,6 @@
 $time-params: (
 	"height",
+	"border-radius",
 	"background",
 	"error-background",
 	"dial-background",
@@ -17,6 +18,7 @@ $time-params: (
 
 @mixin time(
 	$height: 30px,
+	$border-radius: 1px,
 	$background: white,
 	$error-background: #ffe7ec,
 	$dial-background: whitesmoke,
@@ -33,6 +35,46 @@ $time-params: (
 ) {
 	.inp-time {
 		font-size: 95%;
+
+		&.place-bottom .time-display,
+		&.place-top .time-modal {
+			border-radius: $border-radius $border-radius 0 0;
+		}
+
+		&.place-bottom .time-display {
+			&:before {
+				top: 100%;
+			}
+		}
+
+		&.place-top .time-display,
+		&.place-bottom .time-modal {
+			border-radius: 0 0 $border-radius $border-radius;
+		}
+
+		&.place-top .time-display {
+			&:before {
+				bottom: 100%;
+			}
+		}
+
+		&.open {
+			.time-display {
+				position: relative;
+				z-index: 10000001;
+
+				&:before {
+					content: "";
+					position: absolute;
+					left: 0;
+					width: 100%;
+					height: 10px;
+					margin: -1px 0;
+					background: $background;
+					pointer-events: none;
+				}
+			}
+		}
 		
 		.time-display {
 			display: flex;
@@ -41,6 +83,8 @@ $time-params: (
 			height: $height;
 			background: $background;
 			border: $border;
+			border-radius: $border-radius;
+			border-radius: $border-radius;
 			padding: 5px 12px;
 			outline: none;
 			font: inherit;
@@ -104,7 +148,7 @@ $time-params: (
 				border-radius: 50%;
 
 				&.hovering {
-					z-index: 1000;
+					z-index: 10000002;
 
 					&:before {
 						content: "";
@@ -285,7 +329,7 @@ $time-params: (
 				background: $dial-background;
 				font-size: 80%;
 				cursor: pointer;
-				z-index: 1001;
+				z-index: 10000003;
 
 				&.active {
 					background: $highlight;

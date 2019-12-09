@@ -26,7 +26,7 @@
 		}),
 		methods: {
 			trigger(val) {
-				Form.trigger(this.input, val);
+				this.input.trigger(val);
 				this.updateSelection();
 			},
 			getLabel(option) {
@@ -88,7 +88,7 @@
 		beforeMount() {
 			this.updateSelection();
 			if (this.activeIndex != -1)
-				Form.trigger(this.input, this.activeOption);
+				this.input.trigger(this.activeOption);
 			
 			this.input.hook("update", inp => {
 				this.validationState = inp.validationState;

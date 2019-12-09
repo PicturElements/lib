@@ -18,7 +18,8 @@
 						:class="cell.class.input"
 						:cell="cell"
 						:meta="inputMeta"
-						:verifiedVisibility="true")
+						:verifiedVisibility="true"
+						:key="cell.input.id")
 						template(
 							v-for="(_, name) in $scopedSlots"
 							v-slot:[name]="d")

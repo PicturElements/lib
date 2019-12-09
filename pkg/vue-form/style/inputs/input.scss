@@ -2,6 +2,7 @@
 
 $input-params: (
 	"height",
+	"border-radius",
 	"background",
 	"error-background",
 	"autofill-background",
@@ -16,6 +17,7 @@ $input-params: (
 
 @mixin input(
 	$height: 30px,
+	$border-radius: 1px,
 	$background: white,
 	$error-background: #ffe7ec,
 	$autofill-background: #edf7ff,
@@ -34,6 +36,7 @@ $input-params: (
 			padding: 6px 8px;
 			background: transparent;
 			border: $border;
+			border-radius: $border-radius;
 			color: inherit;
 			font: inherit;
 			font-size: 95%;

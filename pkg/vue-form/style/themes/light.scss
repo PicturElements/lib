@@ -4,6 +4,7 @@ $theme: (
 	// in each input map
 	input: (
 		height: 30px,
+		border-radius: 1px,
 
 		color: #1e2021,
 		focus-color: #1e2021,
@@ -38,7 +39,6 @@ $theme: (
 	checkbox: (),
 	count: (),
 	dropdown: (
-		height: 30px,
 		padding: 10px,
 		mobile-padding: 30px,
 		separator-border: 1px solid rgba(128, 128, 128, 0.25)
@@ -92,7 +92,6 @@ $theme: (
 		error-color: #ab0f2f
 	),
 	time: (
-		height: 30px,
 		background: white,
 		error-background: #ffe7ec,
 		dial-background: whitesmoke,

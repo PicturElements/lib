@@ -1,6 +1,7 @@
 @use "~@qtxr/scss-utils" as *;
 
 $multi-params: (
+	"border-radius",
 	"background",
 	"error-background",
 	"border",
@@ -20,6 +21,7 @@ $multi-params: (
 );
 
 @mixin multi(
+	$border-radius: 1px,
 	$background: white,
 	$error-background: #ffe7ec,
 	$border: 1px solid #dadada,
@@ -42,6 +44,16 @@ $multi-params: (
 	.inp-multi {
 		font-size: 95%;
 
+		&.place-bottom .selection-box,
+		&.place-top .search-box {
+			border-radius: $border-radius $border-radius 0 0;
+		}
+
+		&.place-top .selection-box,
+		&.place-bottom .search-box {
+			border-radius: 0 0 $border-radius $border-radius;
+		}
+
 		.selection-box {
 			display: flex;
 			flex-wrap: wrap;
@@ -49,6 +61,7 @@ $multi-params: (
 			padding: $selection-item-spacing 0 0 $selection-item-spacing;
 			background: $background;
 			border: $border;
+			border-radius: $border-radius;
 			max-height: $max-height;
 			overflow: auto;
 
@@ -148,7 +161,7 @@ $multi-params: (
 				justify-content: center;
 				align-items: center;
 				height: 60px;
-				font-size: 90%;
+				font-size: 95%;
 			}
 
 			.loading-overlay {

@@ -1,4 +1,5 @@
 $radio-params: (
+	"border-radius",
 	"border",
 	"focus-border",
 	"error-background",
@@ -6,6 +7,7 @@ $radio-params: (
 );
 
 @mixin radio(
+	$border-radius: 1px,
 	$border: 1px solid #dadada,
 	$focus-border: 1px solid #1e2021,
 	$error-background: #ffe7ec,
@@ -29,6 +31,7 @@ $radio-params: (
 					left: 0;
 					width: 100%;
 					height: 100%;
+					border-radius: inherit;
 					transform: scale(0.6);
 					background: currentColor;
 				}
@@ -46,9 +49,9 @@ $radio-params: (
 			height: 1.8em;
 			background: transparent;
 			border: $border;
+			border-radius: $border-radius;
 			padding: 0;
 			outline: none;
-			border-radius: 1px;
 			flex-shrink: 0;
 			cursor: pointer;
 	

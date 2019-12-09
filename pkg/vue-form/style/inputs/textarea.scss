@@ -1,4 +1,5 @@
 $textarea-params: (
+	"border-radius",
 	"background",
 	"error-background",
 	"border",
@@ -9,6 +10,7 @@ $textarea-params: (
 );
 
 @mixin textarea(
+	$border-radius: 1px,
 	$background: white,
 	$error-background: #ffe7ec,
 	$border: 1px solid #dadada,
@@ -23,6 +25,7 @@ $textarea-params: (
 			padding: 6px 8px;
 			background: transparent;
 			border: $border;
+			border-radius: $border-radius;
 			width: 100%;
 			min-width: 100%;
 			max-width: 100%;

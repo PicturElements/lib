@@ -36,10 +36,10 @@
 				if (isNaN(newCount))
 					newCount = min;
 
-				Form.trigger(this.input, newCount);
+				this.input.trigger(newCount);
 			},
 			check(evt) {
-				Form.check(this.input, evt, evt.target.value);
+				this.input.check(evt, evt.target.value);
 			},
 			res(val, ...args) {
 				if (typeof val == "function")

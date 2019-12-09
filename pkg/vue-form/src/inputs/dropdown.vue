@@ -1,5 +1,5 @@
 <template lang="pug">
-	.input-wrapper.dropdown.inp-dropdown(:class="[ expanded ? 'open' : null, isMobile() ? 'mobi' : null, validationState ]"
+	.input-wrapper.dropdown.inp-dropdown(:class="[ expanded ? 'open' : null, isMobile() ? 'mobi' : null, validationState, dropdownDirection ]"
 		ref="dropdownBox")
 		button.mobi-focus(@click="expand")
 		textarea.focus-probe(
@@ -42,6 +42,7 @@
 		name: "Dropdown",
 		data: _ => ({
 			expanded: false,
+			dropdownDirection: null,
 			bufferedExpanded: false,
 			activeIndex: -1,
 			activeOption: {},
@@ -53,7 +54,7 @@
 		}),
 		methods: {
 			trigger(val) {
-				Form.trigger(this.input, val);
+				this.input.trigger(val);
 				this.collapse();
 			},
 			getLabel(option) {
@@ -92,6 +93,7 @@
 			},
 			collapse(evt) {
 				this.expanded = false;
+				this.dropdownDirection = null;
 			},
 			initUpdateLoop() {
 				if (!this.updateLoopInitialized) {
@@ -127,6 +129,8 @@
 					maxHeight: `${maxHeight}px`
 				};
 
+				this.dropdownDirection = placeBottom ? "place-bottom" : "place-top";
+
 				requestFrame(_ => this.updateFixedList());
 			},
 			updateSelection() {
@@ -150,6 +154,7 @@
 				this.activeIndex = idx;
 				this.activeOption = options[idx] || {};
 				this.options = options;
+				this.input.selectedIndex = idx;
 			},
 			res(val, ...args) {
 				if (typeof val == "function")

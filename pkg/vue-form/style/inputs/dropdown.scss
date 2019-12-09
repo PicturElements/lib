@@ -1,6 +1,7 @@
 @use "~@qtxr/scss-utils" as *;
 
 $dropdown-params: (
+	"border-radius",
 	"background",
 	"error-background",
 	"border",
@@ -12,6 +13,7 @@ $dropdown-params: (
 );
 
 @mixin dropdown(
+	$border-radius: 1px,
 	$background: white,
 	$error-background: #ffe7ec,
 	$border: 1px solid #dadada,
@@ -28,11 +30,22 @@ $dropdown-params: (
 		max-width: 100%;
 		font-size: 95%;
 		border: $border;
+		border-radius: $border-radius;
 		outline: none;
 		text-align: left;
 		padding: 0;
 		background: $background;
 		user-select: none;
+
+		&.place-bottom,
+		&.place-top .dropdown-list {
+			border-radius: $border-radius $border-radius 0 0;
+		}
+
+		&.place-top,
+		&.place-bottom .dropdown-list {
+			border-radius: 0 0 $border-radius $border-radius;
+		}
 	
 		.mobi-focus,
 		.focus-probe {
