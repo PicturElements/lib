@@ -200,7 +200,8 @@ export default class DataCell extends Hookable {
 		} = partition(config, {
 			newConfig: {},
 			processors: {},
-			xhrPreset: {}
+			xhrPreset: {},
+			instance: this
 		}, (val, k) => k[0] == "$" ? "processors" : classifier[k], "newConfig");
 
 		// Remove "$" from root level processor keys
@@ -322,6 +323,16 @@ export default class DataCell extends Hookable {
 	}
 
 	_fetch(runtime, ...args) {
+		if (this.state.loading) {
+			return new Promise(resolve => {
+				this.hook({
+					partitionName: "fetched",
+					ttl: 1,
+					handler: (cell, response) => resolve(response)
+				});
+			});
+		}
+
 		this.setState("loading");
 		this.callHooks("loading", runtime);
 
@@ -359,6 +370,7 @@ export default class DataCell extends Hookable {
 				fetcher.enqueuedResolvers = [];
 				fetcher.deferredFetch = null;
 				fetcher.throttledFetch = null;
+				response.runtime = runtime;
 				this.callHooks("fetched", response);
 				return response;
 			};

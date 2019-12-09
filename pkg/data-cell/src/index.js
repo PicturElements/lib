@@ -36,12 +36,14 @@ function definePreset(nameOrPreset, preset) {
 
 function mkDataCell(config, initConfig) {
 	if (config) {
-		const species = typeof config.species == "string" ?
+		const species = typeof config.species == "string" || (config.species && config.species[DATA_CELL_SPECIES_SYM]) ?
 			config.species :
 			config.type;
 		let constr;
 
-		if (typeof species == "string")
+		if (species && species[DATA_CELL_SPECIES_SYM])
+			constr = DataCell.constructors[species[DATA_CELL_SPECIES_SYM]];
+		else if (typeof species == "string")
 			constr = DataCell.constructors[species];
 		else if (config[DATA_CELL_SPECIES_SYM])
 			constr = DataCell.constructors[config[DATA_CELL_SPECIES_SYM]];
@@ -55,6 +57,12 @@ function mkDataCell(config, initConfig) {
 
 function isCellConfig(candidate) {
 	if (candidate && candidate[DATA_CELL_SPECIES_SYM])
+		return true;
+
+	if (candidate.type && candidate.type[DATA_CELL_SPECIES_SYM])
+		return true;
+	
+	if (candidate.species && candidate.species[DATA_CELL_SPECIES_SYM])
 		return true;
 
 	return matchQuery(candidate, {

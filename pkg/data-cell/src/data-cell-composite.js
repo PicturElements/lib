@@ -2,6 +2,7 @@ import DataCell from "./data-cell";
 import {
 	sym,
 	get,
+	inject,
 	forEach,
 	isObject,
 	mkAccessor,
@@ -11,8 +12,8 @@ import {
 const HOOK_SYM = sym("composite data cell hook");
 
 export default class DataCellComposite extends DataCell {
-	constructor(config = {}) {
-		super(config, {
+	constructor(config = {}, initConfig = {}) {
+		super(config, inject({
 			defaultState: {
 				fullyLoaded: false,
 				pendingChildrenCount: 0
@@ -20,7 +21,7 @@ export default class DataCellComposite extends DataCell {
 			preventDataSet: true,
 			preventStateSet: true,
 			preventAutoFetch: true
-		});
+		}, initConfig, "override"));
 
 		this.passive = false;
 		this.parent = null;
@@ -76,17 +77,25 @@ export default class DataCellComposite extends DataCell {
 		if (this.hasChild(cellOrConfig))
 			return this;
 
-		const cell = resolveCell(cellOrConfig, this, path);
-
-		cell.parent = this;
-		this.children.push({
-			path,
-			cell
-		});
+		const cell = resolveCell(cellOrConfig, this, path),
+			ownPath = path;
 
 		const gotten = get(this.data, path, null, "autoBuild|context");
 		if (!gotten.match)
 			gotten.context[gotten.key] = cell;
+
+		if (this.path && typeof this.path == "string")
+			path = `${this.path}.${path}`;
+
+		cell.path = path;
+		cell.parent = this;
+		// cell.data = get(this, ownPath);
+		this.children.push(cell);
+
+		cell.setState({
+			fullyLoaded: false,
+			pendingChildrenCount: 0
+		});
 
 		return this;
 	}
@@ -124,11 +133,23 @@ export default class DataCellComposite extends DataCell {
 	}
 
 	propagateState(...states) {
-		return propagateState(this, false, ...states);
+		return propagateState(this, null, ...states);
 	}
 
 	propagateStatePassive(...states) {
-		return propagateState(this, true, ...states);
+		return propagateState(this, "passive", ...states);
+	}
+
+	propagateStateActive(...states) {
+		return propagateState(this, "active", ...states);
+	}
+
+	propagateStatePassiveChild(...states) {
+		return propagateState(this, "passive-child", ...states);
+	}
+
+	propagateStateActiveChild(...states) {
+		return propagateState(this, "active-child", ...states);
 	}
 
 	async fetch(...args) {
@@ -138,7 +159,7 @@ export default class DataCellComposite extends DataCell {
 
 		const fetchChildren = children => {
 			for (let i = 0, l = children.length; i < l; i++) {
-				const cell = children[i].cell;
+				const cell = children[i];
 
 				if (cell.state.loading)
 					continue;
@@ -170,7 +191,7 @@ export default class DataCellComposite extends DataCell {
 		else
 			this.propagateStatePassive("error");
 
-		this.propagateStatePassive({
+		propagateState(this, c => c.passive && c != response.runtime.initiator, {
 			fetches: this.state.fetches
 		});
 
@@ -192,7 +213,9 @@ function resolveCell(cellOrConfig, parentCell, path) {
 			pendingChildrenCount: 0
 		});
 	} else {
-		const config = Object.assign({}, cellOrConfig),
+		const config = Object.assign({
+				path
+			}, cellOrConfig),
 			characteristics = parentCell.getFetcherCharacteristics(config);
 
 		if (!characteristics.hasHandler) {
@@ -201,8 +224,12 @@ function resolveCell(cellOrConfig, parentCell, path) {
 				if (!parent)
 					return null;
 
-				const parentResponse = await parent.fetch(...args);
-				return wrapParentResponse(cell, parentResponse, path);
+				const parentResponse = await parent.with({
+					initiator: cell
+				})
+				.fetch(...args);
+
+				return wrapParentResponse(cell, parentResponse, cell.path);
 			};
 		}
 
@@ -210,6 +237,9 @@ function resolveCell(cellOrConfig, parentCell, path) {
 			defaultState: {
 				fullyLoaded: false,
 				pendingChildrenCount: 0
+			},
+			partitionClassifier: {
+				path: "instance"
 			}
 		});
 		cell.passive = !characteristics.hasHandler;
@@ -227,7 +257,7 @@ function resolveCell(cellOrConfig, parentCell, path) {
 
 function wrapParentResponse(cell, response, path) {
 	if (response.success) {
-		return cell.mkSuccessResponse(get(response.payload.data, path), {
+		return cell.mkSuccessResponse(get(response.payload, path), {
 			sourceResponse: response
 		});
 	} else {
@@ -242,12 +272,13 @@ function handleHooks(context) {
 
 	switch (context.key) {
 		case "loading":
-			if (cell.passive)
-				break;
-
 			bubbleUp(cell, c => {
-				if (c == cell)
+				if (c == cell) {
+					c.setState({
+						fullyLoaded: false
+					});
 					return;
+				}
 
 				c.setState({
 					fullyLoaded: false,
@@ -257,9 +288,6 @@ function handleHooks(context) {
 			break;
 
 		case "fetched":
-			if (cell.passive)
-				break;
-
 			bubbleUp(cell, c => {
 				if (c == cell) {
 					if (!c.state.pendingChildrenCount) {
@@ -282,16 +310,26 @@ function handleHooks(context) {
 	}
 }
 
-function propagateState(cell, passiveOnly, ...states) {
+function propagateState(cell, mode, ...states) {
 	const propagate = c => {
-		if (!passiveOnly || c.passive)
+		if (!mode || (mode == "passive" && c.passive))
+			c.setState(...states);
+		else if (mode == "active" && !c.passive)
+			c.setState(...states);
+		else if (c != cell && mode == "passive-child" && c.passive) {
+			c.setState(...states);
+			return;
+		} else if (c != cell && mode == "active-child" && !c.passive) {
+			c.setState(...states);
+			return;
+		} else if (typeof mode == "function" && mode(c, cell, states))
 			c.setState(...states);
 
 		if (!Array.isArray(c.children))
 			return;
 
 		for (let i = 0, l = c.children.length; i < l; i++)
-			propagate(cell.children[i].cell);
+			propagate(c.children[i]);
 	};
 
 	propagate(cell);
