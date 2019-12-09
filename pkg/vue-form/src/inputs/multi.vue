@@ -7,14 +7,14 @@
 				template(v-for="(item, idx) in input.value")
 					slot(
 						name="selection-item"
-						v-bind="{ index: idx, item, delete: _ => deleteSelectionItem(idx) }")
+						v-bind="{ index: idx, item, data: item, delete: _ => deleteSelectionItem(idx) }")
 			.default-selection-item(
 				v-else
 				v-for="(item, idx) in input.value")
 				span.selection-item.value
 					slot(
 						name="selection-item-value"
-						v-bind="{ index: idx, item, delete: _ => deleteSelectionItem(idx) }") {{ getLabel(item) }}
+						v-bind="{ index: idx, item, data: item, delete: _ => deleteSelectionItem(idx) }") {{ getLabel(item) }}
 				.delete-section-item(@click="deleteSelectionItem(idx)") &times;
 		.search-box(:style="searchBoxStyle"
 			ref="searchBox"
@@ -32,7 +32,7 @@
 					template(v-for="(option, idx) in options")
 						slot(
 							name="search-result"
-							v-bind="{ index: idx, option, optionPtr, select: _ => triggerAddToSelection(option) }")
+							v-bind="{ index: idx, option, data: option, optionPtr, select: _ => triggerAddToSelection(option) }")
 				.default-search-result(
 					v-else
 					v-for="(option, idx) in options"
@@ -42,7 +42,7 @@
 					span.search-result.value
 						slot(
 							name="search-result-value"
-							v-bind="{ index: idx, option, optionPtr, select: _ => triggerAddToSelection(option) }") {{ getLabel(option) }}
+							v-bind="{ index: idx, option, data: option, optionPtr, select: _ => triggerAddToSelection(option) }") {{ getLabel(option) }}
 			.loading-overlay(v-if="loading")
 				slot(name="loading-icon")
 </template>

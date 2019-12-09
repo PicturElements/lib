@@ -1,5 +1,7 @@
 @use "~@qtxr/scss-utils" as *;
 
+@use "./general" as *;
+
 @use "./input.scss" as *;
 @use "./checkbox.scss" as *;
 @use "./count.scss" as *;
@@ -12,14 +14,18 @@
 @use "./time.scss" as *;
 
 @mixin inputs($theme: ()) {
-	@include input(compose-args($theme, $input-params, "input")...);
-	@include checkbox(compose-args($theme, $checkbox-params, "input", "checkbox")...);
-	@include count(compose-args($theme, $count-params, "input", "count")...);
-	@include dropdown(compose-args($theme, $dropdown-params, "input", "dropdown")...);
-	@include formatted(compose-args($theme, $formatted-params, "input", "formatted")...);
-	@include media(compose-args($theme, $media-params, "input", "media")...);
-	@include multi(compose-args($theme, $multi-params, "input", "multi")...);
-	@include radio(compose-args($theme, $radio-params, "input", "radio")...);
-	@include textarea(compose-args($theme, $textarea-params, "input", "textarea")...);
-	@include time(compose-args($theme, $time-params, "input", "time")...);
+	// General styling
+	@include general(compose-args($theme, $general-params)...);
+
+	// Input style
+	@include input(compose-args($theme, $input-params, "general", "input")...);
+	@include checkbox(compose-args($theme, $checkbox-params, "general", "input", "checkbox")...);
+	@include count(compose-args($theme, $count-params, "general", "input", "count")...);
+	@include dropdown(compose-args($theme, $dropdown-params, "general", "input", "dropdown")...);
+	@include formatted(compose-args($theme, $formatted-params, "general", "input", "formatted")...);
+	@include media(compose-args($theme, $media-params, "general", "input", "media")...);
+	@include multi(compose-args($theme, $multi-params, "general", "input", "multi")...);
+	@include radio(compose-args($theme, $radio-params, "general", "input", "radio")...);
+	@include textarea(compose-args($theme, $textarea-params, "general", "input", "textarea")...);
+	@include time(compose-args($theme, $time-params, "general", "input", "time")...);
 }
