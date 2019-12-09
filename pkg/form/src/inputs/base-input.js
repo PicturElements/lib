@@ -39,6 +39,9 @@ const initOptionsSchema = {
 	inject: "function",
 	extract: "function|string",
 	compare: "function|string",
+	if: "function|boolean",
+	show: "function|boolean",
+	disabled: "function|boolean",
 
 	propagate: "any"
 };
@@ -61,15 +64,19 @@ export default class BaseInput extends Hookable {
 		this.validationState = "ok";
 
 		// Handlers
+		this.handlers = {};
 		this.checkKey = null;
 		this.checkWord = null;
 		this.validate = null;
 		this.process = null;
 		this.trigger = null;
 		this.update = null;
-		this.extract = null;
 		this.inject = null;
+		this.extract = null;
 		this.compare = null;
+		this.if = null;
+		this.show = null;
+		this.disabled = null;
 
 		// Propagation data
 		this.propagate = null;
@@ -81,24 +88,16 @@ export default class BaseInput extends Hookable {
 		});
 
 		this.hookAll(options.hooks);
-		this.checkKey = mkChecker(this.checkKey, "check");
-		this.checkWord = mkChecker(this.checkWord, "validate");
-		this.compare = mkComparator(this.compare);
-
 		this.setValue(this.value);
 
 		this.form = form;
 		this.default = this.value;
 	}
 
-	setValue(value) {
-		return this[SET_VALUE](value);
-	}
-
 	[CHECK](evt) {
-		if (!isValidKey(evt, this.checkKey))
+		if (!isValidKey(evt, this.handlers.checkKey))
 			evt.preventDefault();
-		else if (!isValidWord(evt, this.checkWord))
+		else if (!isValidWord(evt, this.handlers.checkWord))
 			evt.preventDefault();
 	}
 
@@ -111,8 +110,8 @@ export default class BaseInput extends Hookable {
 
 			const oldVal = this.value;
 
-			if (typeof this.process == "function")
-				this.value = this.process(value, this, this.form.inputs);
+			if (typeof this.handlers.process == "function")
+				this.value = this.handlers.process(value, this, this.form.inputs);
 			else
 				this.value = value;
 
@@ -138,8 +137,8 @@ export default class BaseInput extends Hookable {
 	}
 
 	[SELF_TRIGGER](value) {
-		if (typeof this.trigger == "function")
-			this.trigger(value, this, this.form.inputs);
+		if (typeof this.handlers.trigger == "function")
+			this.handlers.trigger(value, this, this.form.inputs);
 
 		this[UPDATE]();
 		this.form.propagate(this.propagate);
@@ -149,8 +148,8 @@ export default class BaseInput extends Hookable {
 	[UPDATE]() {
 		let validationResult = null;
 		
-		if (typeof this.validate == "function")
-			validationResult = this.validate(this.value, this, this.form.inputs);
+		if (typeof this.handlers.validate == "function")
+			validationResult = this.handlers.validate(this.value, this, this.form.inputs);
 
 		const validBcVRO = this.required === false && this.form.validateRequiredOnly,
 			validBcNullResult = !validationResult || typeof validationResult != "object";
@@ -171,32 +170,184 @@ export default class BaseInput extends Hookable {
 		this.validationState = validationResult.validationState;
 		this.valid = this.validationState != "error";
 
-		if (typeof this.update == "function")
-			this.update(this, this.form.inputs);
+		if (typeof this.handlers.update == "function")
+			this.handlers.update(this, this.form.inputs);
 
 		this.form.callHooks("update", this);
 		this.form.callHooks(`update:${this.name}`, this);
 		this.callHooks("update");
 	}
 
-	[EXTRACT]() {
-		if (typeof this.extract == "function")
-			return this.extract(this.value, this, this.form.inputs);
-		else if (typeof this.extract == "string")
-			return get(this.value, this.extract);
-		else
-			return this.value;
-	}
-
 	[INJECT](value) {
-		if (typeof this.inject == "function")
-			return this.inject(value);
+		if (typeof this.handlers.inject == "function")
+			return this.handlers.inject(value);
 
 		return value;
 	}
 
+	[EXTRACT]() {
+		if (typeof this.handlers.extract == "function")
+			return this.handlers.extract(this.value, this, this.form.inputs);
+		else if (typeof this.handlers.extract == "string")
+			return get(this.value, this.handlers.extract);
+		else
+			return this.value;
+	}
+
 	[SET_VALUE](value) {
 		this.value = this[INJECT](value);
+	}
+
+	setValue(value) {
+		return this[SET_VALUE](value);
+	}
+
+	// Aliases for public handlers
+	get checkKey() {
+		return this.handlers.checkKey;
+	}
+
+	set checkKey(handler) {
+		this.handlers.checkKey = mkChecker(handler, "check");
+	}
+
+	get checkWord() {
+		return this.handlers.checkWord;
+	}
+
+	set checkWord(handler) {
+		this.handlers.checkWord = mkChecker(handler, "validate");
+	}
+
+	get validate() {
+		return this.handlers.validate;
+	}
+
+	set validate(handler) {
+		this.handlers.validate = handler;
+	}
+
+	get process() {
+		return this.handlers.process;
+	}
+
+	set process(handler) {
+		this.handlers.process = handler;
+	}
+
+	get compare() {
+		return this.handlers.compare;
+	}
+
+	set compare(handler) {
+		this.handlers.compare = mkComparator(handler);
+	}
+
+	get if() {
+		return this.handlers.if;
+	}
+
+	set if(handler) {
+		this.handlers.if = handler;
+	}
+
+	get show() {
+		return this.handlers.show;
+	}
+
+	set show(handler) {
+		this.handlers.show = handler;
+	}
+
+	// Aliases for private handlers
+	get trigger() {
+		return this[TRIGGER];
+	}
+
+	set trigger(handler) {
+		this.handlers.trigger = handler;
+	}
+
+	get update() {
+		return this[UPDATE];
+	}
+
+	set update(handler) {
+		this.handlers.update = handler;
+	}
+
+	get inject() {
+		return this[INJECT];
+	}
+
+	set inject(handler) {
+		this.handlers.inject = handler;
+	}
+
+	get extract() {
+		return this[EXTRACT];
+	}
+
+	set extract(handler) {
+		this.handlers.extract = handler;
+	}
+
+	// Dynamic state
+	get exists() {
+		if (typeof this.handlers.if == "boolean")
+			return this.handlers.if;
+
+		return typeof this.handlers.if != "function" || !this.handlers.if(
+			this.value,
+			this.form,
+			this.form.inputs
+		);
+	}
+
+	set exists(handler) {
+		this.handlers.if = handler;
+	}
+
+	get visible() {
+		if (this.handlers.if === false)
+			return false;
+
+		if (typeof this.handlers.show == "boolean")
+			return this.handlers.show;
+
+		const val = this.value,
+			form = this.form,
+			inps = this.form.inputs;
+
+		if (typeof this.handlers.if == "function" && !this.handlers.if(val, form, inps))
+			return false;
+
+		if (typeof this.handlers.show == "function" && !this.handlers.show(val, form, inps))
+			return false;
+
+		return true;
+	}
+
+	set visible(handler) {
+		this.handlers.show = handler;
+	}
+
+	get disabled() {
+		if (typeof this.handlers.disabled == "boolean")
+			return this.handlers.disabled;
+
+		if (typeof this.handlers.disabled != "function")
+			return false;
+
+		return this.handlers.disabled(
+			this.value,
+			this.form,
+			this.form.inputs
+		);
+	}
+
+	set disabled(handler) {
+		this.handlers.disabled = handler;
 	}
 }
 

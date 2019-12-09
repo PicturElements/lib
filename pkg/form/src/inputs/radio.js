@@ -14,11 +14,13 @@ export default class Radio extends BaseInput {
 	}
 
 	[INJECT](value) {
-		if (typeof this.inject == "function")
+		if (typeof this.handlers.inject == "function")
 			return super[INJECT](value);
 
 		const options = resolveVal(this.options, this),
-			injectAccessor = typeof this.inject == "string" ? this.inject : this.extract;
+			injectAccessor = typeof this.handlers.inject == "string" ?
+				this.handlers.inject :
+				this.handlers.extract;
 
 		if (!Array.isArray(options) || typeof injectAccessor != "string")
 			return value;

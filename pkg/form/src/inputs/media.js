@@ -40,8 +40,8 @@ export default class Media extends BaseInput {
 		if (!value)
 			return value;
 
-		if (typeof this.inject == "function")
-			return this.inject(value);
+		if (typeof this.handlers.inject == "function")
+			return super[INJECT](value);
 
 		if (this.multiple) {
 			const outValue = [];

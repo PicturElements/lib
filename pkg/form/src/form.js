@@ -6,6 +6,7 @@ import {
 	inject,
 	isObject,
 	resolveVal,
+	splitClean,
 	composeOptionsTemplates,
 	createOptionsObject
 } from "@qtxr/utils";
@@ -25,6 +26,7 @@ import BaseInput, {
 	EXTRACT,
 	SET_VALUE
 } from "./inputs/base-input";
+import FormRows from "./form-rows";
 
 export default class Form extends Hookable {
 	constructor(...optionsAndPresets) {
@@ -60,6 +62,7 @@ export default class Form extends Hookable {
 		}
 
 		this.inputs = {};
+		this.inputsStruct = {};
 		this.propagateMap = {};
 		this.keys = [];
 		this.updateInitialized = false;
@@ -82,31 +85,104 @@ export default class Form extends Hookable {
 	connect(name, options) {
 		options = Form.normalizeOptions(options);
 
-		if (!name || typeof name != "string") {
-			console.error("Invalid input name");
-			return this;
-		}
+		if (!name || typeof name != "string")
+			throw new TypeError("Cannot connect: input name must be a truthy string");
 
-		if (!options || typeof options != "object") {
-			console.error("Invalid input options");
-			return this;
-		}
+		if (!options || typeof options != "object")
+			throw new TypeError("Cannot connect: input options must be an object");
 
-		if (!this.inputs.hasOwnProperty(name))
+		const hasField = this.inputs.hasOwnProperty(name);
+
+		if (!hasField)
 			this.keys.push(name);
 
-		if (!hasOwn(this.inputs, name) || !this.persistentInputs) {
-			const constr = Form.getInputConstructor(options),
-				input = new constr(
-					name,
-					options,
-					this
-				);
-			
-			this.inputs[name] = input;
-		}
+		const constr = Form.getInputConstructor(options),
+			inp = new constr(
+				name,
+				options,
+				this
+			);
 
-		return this;
+		if (hasField) { 
+			if (!Array.isArray(this.inputs[name]))
+				this.inputs[name] = [this.inputs.name];
+
+			this.inputs[name].push(inp);
+		} else
+			this.inputs[name] = inp;
+		
+		return inp;
+	}
+
+	connectRows(rows) {
+		const connect = (row, depth) => {
+			if (!Array.isArray(row)) {
+				if (!depth && isObject(row) && typeof row.name != "string") {
+					const partition = {};
+
+					for (const k in row) {
+						if (!row.hasOwnProperty(k))
+							continue;
+
+						partition[k] = connect(row[k], 0);
+					}
+
+					return partition;
+				} else
+					row = [row];
+			}
+
+			const out = new FormRows();
+
+			if (depth > 1)
+				throw new RangeError("Failed to process rows: row data nested past one level");
+
+			for (let i = 0, l = row.length; i < l; i++) {
+				const cell = row[i];
+
+				if (Array.isArray(cell))
+					out.push(connect(cell, depth + 1));
+				else {
+					let cellProcessed = null;
+
+					if (typeof cell == "string") {
+						const nameOptions = splitClean(cell, /\s*:\s*/);
+
+						cellProcessed = {
+							name: nameOptions[1] || nameOptions[0],
+							opt: nameOptions[0]
+						};
+					} else {
+						cellProcessed = Object.assign({}, cell);
+
+						if (cellProcessed.opt)
+							Form.mod({}, cellProcessed.opt, cellProcessed);
+						else
+							cellProcessed.opt = cellProcessed;
+					}
+
+					if (cellProcessed.classes)
+						cellProcessed.class = cellProcessed.classes;
+					else {
+						cellProcessed.class = typeof cellProcessed.class == "string" ? {
+							input: cellProcessed.class
+						} : cellProcessed.class || {};
+					}
+
+					const options = cellProcessed.opt;
+					delete cellProcessed.opt;
+					
+					cellProcessed.isInputCell = true;
+					cellProcessed.input = this.connect(cellProcessed.name, options);
+					out.push(depth ? cellProcessed : [cellProcessed]);
+				}
+			}
+
+			return out;
+		};
+
+		this.inputsStruct = connect(rows, 0);
+		return this.inputsStruct;
 	}
 
 	// TODO: make polymorphic
@@ -145,17 +221,18 @@ export default class Form extends Hookable {
 			send(targets);
 	}
 
-	setValues(values, noTrigger) {
+	setValues(values, noTrigger = false) {
 		this.updateInitialized = true;
 
 		this.forEach(inp => {
-			if (values.hasOwnProperty(inp.name)) {
-				if (values[inp.name] !== null)
-					inp[SET_VALUE](values[inp.name]);
+			if (!values.hasOwnProperty(inp.name))
+				return;
 
-				if (!noTrigger)
-					inp[TRIGGER](inp.value);
-			}
+			if (values[inp.name] !== null)
+				inp[SET_VALUE](values[inp.name]);
+
+			if (!noTrigger)
+				inp[TRIGGER](inp.value);
 		});
 
 		this.callHooks("updated", this.inputs);
@@ -182,14 +259,14 @@ export default class Form extends Hookable {
 	extract() {
 		const out = {};
 
-		this.forEach((input, name) => {
-			const extracted = this.extractOne(input);
+		this.forEach((inp, name) => {
+			const extracted = this.extractOne(inp);
 
 			if (extracted === undefined)
 				return;
 
-			if (input.path) {
-				const built = get(out, input.path, null, "context|autoBuild");
+			if (typeof inp.path == "string") {
+				const built = get(out, inp.path, null, "context|autoBuild");
 				built.context[built.key] = extracted;
 			} else
 				out[name] = extracted;
@@ -199,12 +276,12 @@ export default class Form extends Hookable {
 	}
 
 	extractOne(inputOrName) {
-		const input = typeof inputOrName == "string" ? this.inputs[inputOrName] : inputOrName;
+		const inp = typeof inputOrName == "string" ? this.inputs[inputOrName] : inputOrName;
 
-		if (!(input instanceof BaseInput))
+		if (!(inp instanceof BaseInput))
 			return;
 
-		return input[EXTRACT]();
+		return inp[EXTRACT]();
 	}
 
 	clear() {
@@ -241,12 +318,12 @@ export default class Form extends Hookable {
 		});
 	}
 
-	static trigger(input, ...args) {
-		input[TRIGGER](...args);
+	static trigger(inp, ...args) {
+		inp[TRIGGER](...args);
 	}
 
-	static check(input, ...args) {
-		input[CHECK](...args);
+	static check(inp, ...args) {
+		inp[CHECK](...args);
 	}
 
 	static normalizeOptions(options) {

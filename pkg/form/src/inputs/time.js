@@ -112,8 +112,8 @@ export default class Time extends BaseInput {
 	}
 
 	[INJECT](value) {
-		if (typeof this.inject == "function")
-			return this.inject(value);
+		if (typeof this.handlers.inject == "function")
+			return super[INJECT](value);
 
 		if (this.range) {
 			if (Array.isArray(value))

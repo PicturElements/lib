@@ -2,6 +2,7 @@ export * from "./src/inputs/base-input";
 export * from "./src/form-defaults";
 
 export { default } from "./src/form";
+export { default as FormRows } from "./src/form-rows";
 
 export { default as Input } from "./src/inputs/input";
 export { default as Checkbox } from "./src/inputs/checkbox";
