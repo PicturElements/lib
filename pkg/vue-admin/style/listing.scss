@@ -98,8 +98,8 @@ $listing-params: (
 				tr:first-child {
 					th {
 						position: sticky;
+						top: -1px;
 						background: $odd-row-background;
-						top: 0;
 						z-index: 100000;
 					}
 				}
