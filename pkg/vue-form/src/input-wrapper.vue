@@ -188,37 +188,3 @@
 		}
 	};
 </script>
-
-<style lang="scss">
-	.input-row {
-		display: flex;
-		align-items: flex-end;
-
-		.input-box-textarea {
-			align-self: flex-start;
-		}
-
-		+ .input-row {
-			margin-top: 15px;
-		}
-
-		.input-wrapper {
-			position: relative;
-		}
-
-		.input-box {
-			flex-grow: 1;
-
-			+ .input-box {
-				margin-left: 20px;
-			}
-
-			p {
-				margin: 0;
-				font-size: 75%;
-				text-transform: uppercase;
-				margin-bottom: 4px;
-			}
-		}
-	}
-</style>

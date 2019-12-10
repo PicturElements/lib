@@ -342,10 +342,12 @@
 
 					case "left":
 						this.moveActiveIdx(-1);
+						evt.preventDefault();
 						break;
 
 					case "right":
 						this.moveActiveIdx(1);
+						evt.preventDefault();
 						break;
 				}
 			};

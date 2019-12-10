@@ -3,9 +3,10 @@
 		ref="dropdownBox")
 		button.mobi-focus(@click="expand")
 		textarea.focus-probe(
-			@focus="focusExpand"
-			@click="expand"
-			@blur="desktopCollapse")
+			@focus="expand"
+			@click="triggerExpand"
+			@blur="collapse"
+			ref="focusProbe")
 		.collapse-target(@click="collapse")
 		.dropdown-option.dropdown-active-option
 			slot(name="icon" v-bind="$data")
@@ -18,7 +19,7 @@
 					| {{ getLabel(activeOption) }}
 		.dropdown-list(:style="listStyle"
 			ref="list"
-			@mousedown.stop="desktopCollapse")
+			@mousedown.stop="triggerCollapse")
 			template(v-for="(option, idx) in options")
 				.dropdown-option(
 					v-if="idx != activeIndex"
@@ -32,8 +33,9 @@
 </template>
 
 <script>
-	import Form, { Dropdown } from "@qtxr/form";
 	import { requestFrame } from "@qtxr/utils";
+	import Form, { Dropdown } from "@qtxr/form";
+	import EVT from "@qtxr/evt";
 	
 	const PADDING = 30,
 		BOTTOM_BIAS = 0.4;
@@ -48,6 +50,7 @@
 			activeOption: {},
 			listStyle: null,
 			updateLoopInitialized: false,
+			globalKeyListener: null,
 			validationMsg: null,
 			validationState: "ok",
 			options: []
@@ -55,7 +58,7 @@
 		methods: {
 			trigger(val) {
 				this.input.trigger(val);
-				this.collapse();
+				this.triggerCollapse();
 			},
 			getLabel(option) {
 				const label = (option && option.hasOwnProperty("label")) ? option.label : option;
@@ -70,30 +73,6 @@
 					return { value: option };
 
 				return option;
-			},
-			toggleExpansion(expanded) {
-				expanded = typeof expanded == "boolean" ? expanded : !this.expanded;
-
-				if (expanded)
-					this.collapse();
-				else
-					this.expand();
-			},
-			focusExpand() {
-				if (!this.isMobile())
-					this.expand();
-			},
-			desktopCollapse() {
-				if (!this.isMobile())
-					this.collapse();
-			},
-			expand() {
-				this.expanded = true;
-				this.initUpdateLoop();
-			},
-			collapse(evt) {
-				this.expanded = false;
-				this.dropdownDirection = null;
 			},
 			initUpdateLoop() {
 				if (!this.updateLoopInitialized) {
@@ -149,12 +128,32 @@
 				if (this.input.autoSet)
 					idx = Math.max(idx, Math.min(options.length - 1, 0));
 				else if (idx == -1 && this.input.value)
-					this.trigger()
+					this.trigger();
 
 				this.activeIndex = idx;
 				this.activeOption = options[idx] || {};
 				this.options = options;
 				this.input.selectedIndex = idx;
+			},
+			triggerExpand() {
+				if (this.isMobile())
+					this.expand();
+				else
+					this.$refs.focusProbe.focus();
+			},
+			triggerCollapse() {
+				if (this.isMobile())
+					this.collapse();
+				else
+					this.$refs.focusProbe.blur();
+			},
+			expand() {
+				this.expanded = true;
+				this.initUpdateLoop();
+			},
+			collapse(evt) {
+				this.expanded = false;
+				this.dropdownDirection = null;
 			},
 			res(val, ...args) {
 				if (typeof val == "function")
@@ -185,14 +184,26 @@
 			this.updateSelection();
 			if (this.activeIndex != -1)
 				Form.trigger(this.input, this.activeOption);
+
+			this.globalKeyListener = evt => {
+				if (!this.expanded)
+					return;
+
+				switch (EVT.getKey(evt)) {
+					case "escape":
+						this.triggerCollapse();
+						break;
+				}
+			};
+			document.body.addEventListener("keydown", this.globalKeyListener);
 			
 			this.input.hook("update", inp => {
 				this.validationState = inp.validationState;
 				this.validationMsg = inp.validationMsg || this.validationMsg;
 			});
 		},
-		beforeUpdate() {
-			this.updateSelection();
+		beforeDestroy() {
+			document.body.removeEventListener("keydown", this.globalKeyListener);
 		}
 	};
 </script>

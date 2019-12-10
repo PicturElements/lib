@@ -9,8 +9,8 @@
 			@touchend="leave"
 			@mouseleave="leave"
 			@touchleave="leave"
-			@dragenter="dragging = true"
-			@dragleave="dragging = false"
+			@dragenter="focused = true"
+			@dragleave="focused = false"
 			ref="box")
 			template(v-if="editPhase == 'prompt'")
 				.edited-result.a-fill(v-if="!input.multiple && enqueuedOutput.length")
@@ -20,7 +20,7 @@
 					video.edited-result-media.result-video(
 						v-else-if="enqueuedOutput[0].mediaType == 'video'"
 						:src="enqueuedOutput[0].data")
-				.upload-prompt.a-fill(:class="{ dragging }")
+				.upload-prompt.a-fill(:class="{ focused }")
 					.media-upload-icon-wrapper
 						.media-upload-icon-source
 							svg.media-upload-icon(:id="`mui-src-${id}`")
@@ -56,6 +56,8 @@
 					type="file"
 					:accept="input.mediaOptions.accept"
 					:multiple="input.multiple"
+					@focus="focused = true"
+					@blur="focused = false"
 					@change="initEdit")
 			template(v-else-if="editPhase == 'loading'")
 				slot(name="loading-icon")
@@ -169,7 +171,7 @@
 				},
 				uploadIdx: 0,
 				sliderPos: "",
-				dragging: false,
+				focused: false,
 				id: id++,
 				error: null,
 				validationMsg: null,
@@ -387,7 +389,7 @@
 				this.setEditPhase("edit");
 			},
 			setEditPhase(phase) {
-				this.dragging = false;
+				this.focused = false;
 				this.editPhase = phase;
 			},
 			setError(error) {

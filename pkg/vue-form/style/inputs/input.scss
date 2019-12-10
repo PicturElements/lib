@@ -31,6 +31,7 @@ $input-params: (
 ) {
 	.inp-input {
 		input {
+			-webkit-appearance: none;
 			width: 100%;
 			height: $height;
 			padding: 6px 8px;

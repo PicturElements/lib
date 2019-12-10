@@ -1,7 +1,13 @@
 <template lang="pug">
 	.input-wrapper.multi.inp-multi(:class="[ expanded ? 'open' : null, isMobile() ? 'mobi' : null, validationState, dropdownDirection ]")
+		textarea.focus-probe(
+			@focus="expand"
+			@blur="enqueueCollapse"
+			ref="focusProbe")
+		.collapse-target(@click="collapse")
 		.selection-box(
-			@click="bufferExpand"
+			@mousedown="triggerExpand"
+			@touchstart="triggerExpand"
 			ref="selectionBox")
 			template(v-if="$scopedSlots['selection-item']")
 				template(v-for="(item, idx) in input.value")
@@ -17,12 +23,16 @@
 						v-bind="{ index: idx, item, data: item, delete: _ => deleteSelectionItem(idx) }") {{ getLabel(item) }}
 				.delete-section-item(@click="deleteSelectionItem(idx)") &times;
 		.search-box(:style="searchBoxStyle"
-			ref="searchBox"
-			@click.stop)
+			@mousedown="triggerExpand"
+			@touchstart="triggerExpand"
+			ref="searchBox")
 			.search-input-box
 				input.search-input(
 					v-model="query"
 					@input="triggerSearch"
+					@focus="expand"
+					@blur="enqueueCollapse"
+					tabindex="-1"
 					ref="searchInput")
 			.search-results-box(ref="searchResultsBox")
 				template(v-if="!options.length")
@@ -63,6 +73,7 @@
 		name: "Multi",
 		data: _ => ({
 			expanded: false,
+			expansionRequested: false,
 			dropdownDirection: null,
 			searchBoxStyle: null,
 			updateLoopInitialized: false,
@@ -178,33 +189,6 @@
 				const label = (option && option.hasOwnProperty("label")) ? option.label : option;
 				return typeof label == "object" ? "" : label;
 			},
-			toggleExpansion(expanded) {
-				expanded = typeof expanded == "boolean" ? expanded : !this.expanded;
-
-				if (expanded)
-					this.expand();
-				else
-					this.collapse();
-			},
-			bufferExpand() {
-				requestFrame(_ => this.expand());
-			},
-			expand() {
-				if (this.expanded)
-					return;
-
-				this.expanded = true;
-				requestFrame(_ => this.$refs.searchInput.select());
-				this.search();
-				this.initUpdateLoop();
-			},
-			collapse(evt) {
-				if (!this.expanded)
-					return;
-
-				this.expanded = false;
-				this.dropdownDirection = null;
-			},
 			initUpdateLoop() {
 				if (!this.updateLoopInitialized) {
 					this.updateLoopInitialized = true;
@@ -284,6 +268,41 @@
 
 				searchResultsBox.scrollTop = scroll;
 			},
+			triggerExpand() {
+				if (!this.isMobile() && !this.expansionRequested) {
+					this.expansionRequested = true;
+					setTimeout(_ => this.expansionRequested = false, 200);
+				}
+				
+				this.expand();
+			},
+			triggerCollapse() {
+				if (this.isMobile())
+					this.collapse();
+				else
+					this.$refs.focusProbe.blur();
+			},
+			enqueueCollapse() {
+				requestFrame(_ => {
+					const active = document.activeElement;
+
+					if (active != this.$refs.focusProbe && active != this.$refs.searchInput)
+						this.collapse();
+				});
+			},
+			expand() {
+				this.expanded = true;
+				this.search();
+				this.initUpdateLoop();
+				requestFrame(_ => this.$refs.searchInput.focus());
+			},
+			collapse(evt) {
+				if (this.expansionRequested)
+					return;
+
+				this.expanded = false;
+				this.dropdownDirection = null;
+			},
 			res(val, ...args) {
 				if (typeof val == "function")
 					return val.call(this, this.input, ...args);
@@ -309,9 +328,6 @@
 				this.validationMsg = inp.validationMsg || this.validationMsg;
 			});
 
-			this.globalClickListener = _ => this.collapse();
-			document.body.addEventListener("click", this.globalClickListener);
-
 			this.globalKeyListener = evt => {
 				if (!this.expanded)
 					return;
@@ -319,9 +335,11 @@
 				switch (EVT.getKey(evt)) {
 					case "up":
 						this.decrementOptionPtr();
+						evt.preventDefault();
 						break;
 					case "down":
 						this.incrementOptionPtr();
+						evt.preventDefault();
 						break;
 					case "enter":
 						this.selectOptionWithPtr();
@@ -334,7 +352,6 @@
 			document.body.addEventListener("keydown", this.globalKeyListener);
 		},
 		beforeDestroy() {
-			document.body.removeEventListener("click", this.globalClickListener);
 			document.body.removeEventListener("keydown", this.globalKeyListener);
 		}
 	};

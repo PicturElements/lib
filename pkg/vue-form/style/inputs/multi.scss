@@ -43,6 +43,7 @@ $multi-params: (
 ) {
 	.inp-multi {
 		font-size: 95%;
+		background: $background;
 
 		&.place-bottom .selection-box,
 		&.place-top .search-box {
@@ -56,6 +57,7 @@ $multi-params: (
 
 		.selection-box {
 			display: flex;
+			position: relative;
 			flex-wrap: wrap;
 			min-height: $selection-item-height + 2 * $selection-item-spacing;
 			padding: $selection-item-spacing 0 0 $selection-item-spacing;
@@ -124,6 +126,7 @@ $multi-params: (
 				padding: $search-box-padding;
 
 				input {
+					-webkit-appearance: none;
 					width: 100%;
 					height: $search-input-height;
 					border: $border;
@@ -196,11 +199,20 @@ $multi-params: (
 			}
 		}
 
+		&.open {
+			.focus-probe {
+				display: none;
+			}
+		}
+
 		// Mobile styling
 		&.mobi {
 			&.open {
-				box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.35);
 				z-index: 10000000;
+
+				.selection-box {
+					z-index: 10000000;
+				}
 			}
 		}
 	}

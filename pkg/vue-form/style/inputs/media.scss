@@ -32,7 +32,7 @@ $media-params: (
 	$highlight: #1b66bf,
 	$raster-light: #222,
 	$raster-dark: #333,
-	$output-preview-height: 100px,
+	$output-preview-height: 80px,
 	$output-preview-border-radius: 2px,
 	$obscure-duration: 300ms,
 	$obscure-delay: 0ms,
@@ -44,6 +44,7 @@ $media-params: (
 		position: relative;
 		width: 200px;
 		border-radius: $border-radius;
+		overflow: hidden;
 		@include raster($raster-light, $raster-dark);
 
 		.a-fill {
@@ -172,7 +173,7 @@ $media-params: (
 				transform-origin: 50% 50%;
 			}
 
-			&.dragging {
+			&.focused {
 				&:before {
 					opacity: 0.4;
 				}
@@ -210,7 +211,6 @@ $media-params: (
 
 		.edit-box {
 			user-select: none;
-			border-radius: $border-radius;
 			overflow: hidden;
 			-webkit-tap-highlight-color: transparent;
 			cursor: grab;
@@ -493,7 +493,6 @@ $media-params: (
 					right: 0;
 					z-index: 100;
 					color: $feature-color;
-					font-weight: bold;
 					font-size: 20px;
 					text-shadow: $icon-shadow;
 					line-height: 0.6;
