@@ -113,7 +113,10 @@
 				requestFrame(_ => this.updateFixedList());
 			},
 			updateSelection() {
-				const options = this.res(this.input.options);
+				let options = this.res(this.input.options);
+
+				if (!Array.isArray(options))
+					options = [];
 
 				if (options.hasOwnProperty(this.activeIndex) && this.input.compare(options[this.activeIndex], this.input.value))
 					return;

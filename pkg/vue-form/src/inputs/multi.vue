@@ -96,7 +96,10 @@
 				this.optionPtr = -1;
 				this.loading = true;
 
-				const options = await this.res(this.input.options);
+				let options = await this.res(this.input.options);
+
+				if (!Array.isArray(options))
+					options = [];
 
 				const val = this.input.value,
 					outOptions = [],
