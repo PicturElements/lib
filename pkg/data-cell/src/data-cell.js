@@ -424,11 +424,21 @@ export default class DataCell extends Hookable {
 			return doFetch();
 	}
 
-	retrieve(...args) {
+	async retrieve(...args) {
 		if (this.state.loaded)
 			return this.data;
 
-		return this.fetch(...args);
+		await this.fetch(...args);
+		return this.data;
+	}
+
+	get(accessor, def) {
+		return async (...args) => {
+			if (!this.state.loaded)
+				await this.fetch(...args);
+
+			return get(this.data, accessor, def);
+		};
 	}
 
 	setState(...states) {
