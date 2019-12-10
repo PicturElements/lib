@@ -78,9 +78,8 @@ export default class DataCellComposite extends DataCell {
 			return this;
 
 		const cell = resolveCell(cellOrConfig, this, path),
-			ownPath = path;
+			gotten = get(this.data, path, null, "autoBuild|context");
 
-		const gotten = get(this.data, path, null, "autoBuild|context");
 		if (!gotten.match)
 			gotten.context[gotten.key] = cell;
 
@@ -89,7 +88,6 @@ export default class DataCellComposite extends DataCell {
 
 		cell.path = path;
 		cell.parent = this;
-		// cell.data = get(this, ownPath);
 		this.children.push(cell);
 
 		cell.setState({
@@ -257,7 +255,7 @@ function resolveCell(cellOrConfig, parentCell, path) {
 
 function wrapParentResponse(cell, response, path) {
 	if (response.success) {
-		return cell.mkSuccessResponse(get(response.payload, path), {
+		return cell.mkSuccessResponse(get(response.processedData, path), {
 			sourceResponse: response
 		});
 	} else {

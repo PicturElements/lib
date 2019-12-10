@@ -354,12 +354,14 @@ export default class DataCell extends Hookable {
 	
 				if (response.success) {
 					this.setState("loaded");
-					this.setData(this.process("data")(runtime, response.payload), runtime);
+					response.processedData = this.process("data")(runtime, response.payload);
+					this.setData(response.processedData, runtime);
 					this.callHooks("success", response);
 				} else {
 					this.setState("error", {
 						errorMsg: response.errorMsg
 					});
+					response.processedData = null;
 					this.callHooks("fail", response);
 				}
 	
