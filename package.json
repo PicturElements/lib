@@ -27,6 +27,7 @@
     "express": "^4.16.4",
     "jshint": "^2.10.2",
     "pug": "^2.0.3",
+    "serialize-javascript": "^2.1.2",
     "webpack": "^4.41.0"
   },
   "devDependencies": {
