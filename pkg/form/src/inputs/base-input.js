@@ -15,6 +15,7 @@ const CHECK = sym("check"),
 	SELF_TRIGGER = sym("selfTrigger"),
 	UPDATE = sym("update"),
 	EXTRACT = sym("extract"),
+	SELF_EXTRACT = sym("selfExtract"),
 	INJECT = sym("inject"),
 	SET_VALUE = sym("setValue");
 
@@ -110,9 +111,9 @@ export default class BaseInput extends Hookable {
 			const oldVal = this.value;
 
 			if (typeof this.handlers.process == "function")
-				this.value = this.handlers.process(value, this, this.form.inputs);
+				this.setValue(this.handlers.process(value, this, this.form.inputs));
 			else
-				this.value = value;
+				this.setValue(value);
 
 			if (!this.compare(oldVal, this.value)) {
 				this.form.callHooks("change", this, oldVal, this.value);
@@ -185,12 +186,16 @@ export default class BaseInput extends Hookable {
 	}
 
 	[EXTRACT]() {
+		return this[SELF_EXTRACT](this.value);
+	}
+
+	[SELF_EXTRACT](value) {
 		if (typeof this.handlers.extract == "function")
-			return this.handlers.extract(this.value, this, this.form.inputs);
+			return this.handlers.extract(value, this, this.form.inputs);
 		else if (typeof this.handlers.extract == "string")
-			return get(this.value, this.handlers.extract);
+			return get(value, this.handlers.extract);
 		else
-			return this.value;
+			return value;
 	}
 
 	[SET_VALUE](value) {
@@ -388,6 +393,7 @@ export {
 	SELF_TRIGGER,
 	UPDATE,
 	EXTRACT,
+	SELF_EXTRACT,
 	INJECT,
 	SET_VALUE
 };
