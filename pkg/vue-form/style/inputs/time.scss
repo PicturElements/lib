@@ -35,55 +35,14 @@ $time-params: (
 ) {
 	.inp-time {
 		font-size: 95%;
-
-		&.place-bottom .time-display,
-		&.place-top .time-modal {
-			border-radius: $border-radius $border-radius 0 0;
-		}
-
-		&.place-bottom .time-display {
-			&:before {
-				top: 100%;
-			}
-		}
-
-		&.place-top .time-display,
-		&.place-bottom .time-modal {
-			border-radius: 0 0 $border-radius $border-radius;
-		}
-
-		&.place-top .time-display {
-			&:before {
-				bottom: 100%;
-			}
-		}
-
-		&.open {
-			.time-display {
-				position: relative;
-				z-index: 10000001;
-
-				&:before {
-					content: "";
-					position: absolute;
-					left: 0;
-					width: 100%;
-					height: 10px;
-					margin: -1px 0;
-					background: $background;
-					pointer-events: none;
-				}
-			}
-		}
 		
-		.time-display {
+		.drop-expando-box {
 			display: flex;
 			justify-content: center;
 			align-items: center;
 			height: $height;
 			background: $background;
 			border: $border;
-			border-radius: $border-radius;
 			border-radius: $border-radius;
 			padding: 5px 12px;
 			outline: none;
@@ -130,12 +89,16 @@ $time-params: (
 			}
 		}
 
-		.time-modal {
-			display: flex;
+		.drop-dropdown {
 			background: $background;
 			border: $border;
+			border-radius: $border-radius;
 			padding: 10px;
 			z-index: 10000000;
+
+			.dials-wrapper-wrapper {
+				display: flex;
+			}
 
 			.dials-wrapper + .dials-wrapper {
 				margin-left: 10px;
@@ -338,13 +301,6 @@ $time-params: (
 					box-shadow: inset 0 0 0 2px $highlight, inset 0 0 0 3px $highlight-complement;
 				}
 			}
-		}
-
-		&:not(.open) .time-modal {
-			visibility: hidden;
-			position: fixed;
-			top: 0;
-			left: 0;
 		}
 
 		&.error {

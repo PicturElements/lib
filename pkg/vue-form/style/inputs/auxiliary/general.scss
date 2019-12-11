@@ -2,7 +2,7 @@
 
 $general-params: ();
 
-@mixin general() {
+@mixin general {
 	.input-row {
 		display: flex;
 		align-items: flex-end;

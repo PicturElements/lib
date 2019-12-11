@@ -1,0 +1,56 @@
+$drop-params: ();
+
+@mixin drop {
+	.drop-wrapper {
+		&:not(.open) {
+			.drop-dropdown {
+				visibility: hidden;
+				position: fixed;
+				top: 0;
+				left: 0;
+			}
+		}
+
+		&.open {
+			.drop-expando-box {
+				position: relative;
+				z-index: 10000001;
+
+				&:before {
+					content: "";
+					position: absolute;
+					left: 0;
+					width: 100%;
+					height: 10px;
+					margin: -1px 0;
+					background: inherit;
+					pointer-events: none;
+				}
+			}
+		}
+
+		&.place-bottom .drop-expando-box,
+		&.place-top .drop-dropdown {
+			border-bottom-left-radius: 0;
+			border-bottom-right-radius: 0;
+		}
+
+		&.place-bottom .drop-expando-box {
+			&:before {
+				top: 100%;
+			}
+		}
+
+		&.place-top .drop-expando-box,
+		&.place-bottom .drop-dropdown {
+			border-top-left-radius: 0;
+			border-top-right-radius: 0;
+		}
+
+		&.place-top .drop-expando-box {
+			&:before {
+				bottom: 100%;
+			}
+		}
+	}
+}

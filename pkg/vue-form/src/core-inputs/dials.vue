@@ -350,6 +350,7 @@
 		},
 		props: {
 			input: Time,
+			updates: Number,
 			dials: Array,
 			activeIdx: Number
 		}

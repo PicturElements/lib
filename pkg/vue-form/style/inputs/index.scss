@@ -1,6 +1,7 @@
 @use "~@qtxr/scss-utils" as *;
 
-@use "./general" as *;
+@use "./auxiliary/general" as *;
+@use "./auxiliary/drop" as *;
 
 @use "./input.scss" as *;
 @use "./checkbox.scss" as *;
@@ -14,8 +15,9 @@
 @use "./time.scss" as *;
 
 @mixin inputs($theme: ()) {
-	// General styling
+	// Auxiliary styling
 	@include general(compose-args($theme, $general-params)...);
+	@include drop(compose-args($theme, $drop-params)...);
 
 	// Input style
 	@include input(compose-args($theme, $input-params, "general", "input")...);
