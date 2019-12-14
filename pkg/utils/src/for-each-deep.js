@@ -1,6 +1,4 @@
 import forEach from "./for-each";
-// An issue with circular references makes
-// import { isObj } from "./is";
 
 export default function forEachDeep(obj, callback, options) {
 	if (!obj || typeof callback != "function")

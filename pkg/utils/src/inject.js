@@ -115,23 +115,34 @@ export default function inject(target, extender, options) {
 		if (hasOwn(ext, key, allowSymbols) && (!options.noUndef || ext[key] !== undefined)) {
 			if (typeof options.preInject == "function")
 				options.preInject(targ[key], key, targ, ext, runtime);
+			
+			let val = targ[key];
 
 			if (isObj(ext[key]) && (options.preserveInstances || isNativeSimpleObject(ext[key])) && !options.shallow) {
 				runtime.schema = schema && schema[key];
 				runtime.ignore = ignore && ignore[key];
-					
-				if (!isObj(targ[key]))
-					targ[key] = coerceToObj(null, ext[key]);
 
-				if (options.circular)
-					targ[key] = hasOwn(ext[key], visitedSym, true) ? ext[key] : inj(targ[key], ext[key], runtime);
-				else
-					targ[key] = inj(targ[key], ext[key], runtime);
+				if (!isObj(targ[key]))
+					val = coerceToObj(null, ext[key]);
+				
+				if (options.circular) {
+					val = hasOwn(ext[key], visitedSym, true) ?
+						ext[key] :
+						inj(val, ext[key], runtime);
+				} else
+					val = inj(val, ext[key], runtime);
 
 				runtime.schema = schema;
 				runtime.ignore = ignore;
 			} else if (!targ.hasOwnProperty(key) || options.override)
-				targ[key] = ext[key];
+				val = ext[key];
+			else
+				return;
+
+			if (typeof options.inject == "function")
+				targ[key] = options.inject(val, key, targ, ext, runtime);
+			else
+				targ[key] = val;
 		}
 	}
 
