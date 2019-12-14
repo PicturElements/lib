@@ -169,17 +169,13 @@ function logOrder(type, tracking) {
 	};
 
 	const lastField = tracking.lastField,
-		isGlobalValidator = type == "validateTo" || type == "validateFrom",
-		missingTransforms = !tracking.addedTo || !tracking.addedFrom;
+		isGlobalValidator = type == "validateTo" || type == "validateFrom";
 
 	if (tracking.addedAllValidator && !isGlobalValidator)
 		err(`cannot add ${species} after global validators`);
 
 	if (type == "else" && tracking.addedElse)
 		err("cannot add multiple else directives");
-
-	if (tracking.ifs && type != "validate" && !isGlobalValidator && species != "transform" && missingTransforms)
-		err("if/else directive must contain a 'to' and 'from' transformer");
 
 	switch (type) {
 		case "if":
