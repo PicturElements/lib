@@ -7,11 +7,11 @@
 }
 
 @function add-attr($out, $attr, $value) {
-	@if ($value) {
-		@return $out + " " + $attr + "='" + svg-encode-str($value) + "'";
+	@if (type-of($value) == "string" and $value == "") {
+		@return $out;
 	}
 
-	@return $out;
+	@return $out + " " + $attr + "='" + svg-encode-str($value) + "'";
 }
 
 @function get-svg-str(
@@ -31,7 +31,6 @@
 ) {
 	$svg-str: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='" + $view-box + "'%3E%3Cpath";
 
-	// \$([\w-]+).+ / $svg-str: add-attr($svg-str, "$1", $$$1);
 	$svg-str: add-attr($svg-str, "d", $path);
 
 	$svg-str: add-attr($svg-str, "stroke", $stroke);
