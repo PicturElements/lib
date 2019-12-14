@@ -3,6 +3,8 @@
 		v-if="is('checkbox')"
 		:input="cl.input"
 		:label="res(cl.label)"
+		:disabled="dis"
+		:class="{ disabled: dis }"
 		:meta="meta")
 		template(#icon="inp")
 			slot(:name="`${cl.input.name}-icon`" v-bind="inp")
@@ -12,6 +14,8 @@
 		v-else-if="is('count')"
 		:input="cl.input"
 		:symbols="res(cl.symbols)"
+		:disabled="dis"
+		:class="{ disabled: dis }"
 		:meta="meta")
 		template(#down-symbol="inp")
 			slot(:name="`${cl.input.name}-down-symbol`" v-bind="inp")
@@ -20,10 +24,19 @@
 			slot(:name="`${cl.input.name}-up-symbol`" v-bind="inp")
 				slot(name="count-up-symbol" v-bind="inp")
 	
+	Date(
+		v-else-if="is('date')"
+		:input="cl.input"
+		:disabled="dis"
+		:class="{ disabled: dis }"
+		:meta="meta")
+	
 	Dropdown(
 		v-else-if="is('dropdown')"
 		:input="cl.input"
 		:placeholder="res(cl.placeholder)"
+		:disabled="dis"
+		:class="{ disabled: dis }"
 		:meta="meta")
 		template(v-slot="option")
 			slot(:name="`${cl.input.name}-option`" v-bind="option")
@@ -35,11 +48,24 @@
 	Formatted(
 		v-else-if="is('formatted')"
 		:input="cl.input"
+		:disabled="dis"
+		:class="{ disabled: dis }"
 		:meta="meta")
+
+	List(
+		v-else-if="is('list')"
+		:input="cl.input"
+		:disabled="dis"
+		:class="{ disabled: dis }"
+		:meta="meta")
+		template(#form="d")
+			slot(name="form" v-bind="d")
 
 	Media(
 		v-else-if="is('media')"
 		:input="cl.input"
+		:disabled="dis"
+		:class="{ disabled: dis }"
 		:meta="meta")
 		template(#upload-icon)
 			slot(:name="`${cl.input.name}-upload-icon`")
@@ -66,6 +92,8 @@
 	Multi(
 		v-else-if="is('multi')"
 		:input="cl.input"
+		:disabled="dis"
+		:class="{ disabled: dis }"
 		:meta="meta")
 		template(
 			v-if="$scopedSlots['selection-item'] || $scopedSlots[`${cl.input.name}-selection-item`]"
@@ -97,6 +125,8 @@
 	Radio(
 		v-else-if="is('radio')"
 		:input="cl.input"
+		:disabled="dis"
+		:class="{ disabled: dis }"
 		:meta="meta")
 		template(#label="option")
 			slot(:name="`${cl.input.name}-label`" v-bind="option")
@@ -109,17 +139,23 @@
 		v-else-if="is('textarea')"
 		:input="cl.input"
 		:placeholder="res(cl.placeholder)"
+		:disabled="dis"
+		:class="{ disabled: dis }"
 		:meta="meta")
 	
 	Time(
 		v-else-if="is('time')"
 		:input="cl.input"
+		:disabled="dis"
+		:class="{ disabled: dis }"
 		:meta="meta")
 
 	Input(
 		v-else-if="is(null)"
 		:input="cl.input"
 		:placeholder="res(cl.placeholder)"
+		:disabled="dis"
+		:class="{ disabled: dis }"
 		:meta="meta")
 </template>
 
@@ -129,8 +165,10 @@
 	import Input from "./inputs/input.vue";
 	import Checkbox from "./inputs/checkbox.vue";
 	import Count from "./inputs/count.vue";
+	import Date from "./inputs/date.vue";
 	import Dropdown from "./inputs/dropdown.vue";
 	import Formatted from "./inputs/formatted.vue";
+	import List from "./inputs/list.vue";
 	import Media from "./inputs/media.vue";
 	import Multi from "./inputs/multi.vue";
 	import Radio from "./inputs/radio.vue";
@@ -138,7 +176,7 @@
 	import Time from "./inputs/time.vue";
 
 	export default {
-		name: "VForm",
+		name: "InputWrapper",
 		data() {
 			if (this.cell && this.cell.isInputCell) {
 				return {
@@ -152,7 +190,6 @@
 				};
 			}
 		},
-		computed: {},
 		methods: {
 			is(name) {
 				const inp = this.cl.input;
@@ -168,12 +205,19 @@
 				return val;
 			}
 		},
+		computed: {
+			dis() {
+				return this.disabled == "boolean" ? this.disabled : this.cl.input.disabled;
+			}
+		},
 		components: {
 			Input,
 			Checkbox,
 			Count,
+			Date,
 			Dropdown,
 			Formatted,
+			List,
 			Media,
 			Multi,
 			Radio,
@@ -183,6 +227,7 @@
 		props: {
 			input: null,	// Input instance
 			cell: Object,
+			disabled: Boolean,
 			meta: Object,
 			verifiedVisibility: Boolean
 		}

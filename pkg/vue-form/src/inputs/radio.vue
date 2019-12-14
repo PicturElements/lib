@@ -3,7 +3,9 @@
 		.radio-section(v-for="(option, idx) in options"
 			:class="{ active: idx == activeIndex }")
 			.radio-top
-				button.radio-option(@click="trigger(option)")
+				button.radio-option(
+					:disabled="disabled"
+					@click="trigger(option)")
 				.label(@click="trigger(option)")
 					slot(name="label" v-bind="wrapOption(option)")
 						| {{ getLabel(option) }}
@@ -26,7 +28,8 @@
 		}),
 		methods: {
 			trigger(val) {
-				this.input.trigger(val);
+				if (!this.disabled)
+					this.input.trigger(val);
 				this.updateSelection();
 			},
 			getLabel(option) {
@@ -74,6 +77,7 @@
 		},
 		props: {
 			input: Radio,
+			disabled: Boolean,
 			mobileQuery: String,
 			meta: {
 				type: Object,

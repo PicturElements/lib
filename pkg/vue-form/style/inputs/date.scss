@@ -1,0 +1,76 @@
+$date-params: (
+	"height",
+	"border-radius",
+	"background",
+	"error-background",
+	"dial-background",
+	"dial-background-dark",
+	"border",
+	"error-border",
+	"error-color",
+	"blob-radius",
+	"delimitation-padding",
+	"tight-delimitation-padding",
+	"highlight",
+	"highlight-complement",
+	"transition-duration"
+);
+
+@mixin date(
+	$height: 30px,
+	$border-radius: 1px,
+	$background: white,
+	$error-background: #ffe7ec,
+	$dial-background: whitesmoke,
+	$dial-background-dark: #dadee2,
+	$border: 1px solid #dadada,
+	$error-border: 1px solid #e8879b,
+	$error-color: #ab0f2f,
+	$blob-radius: 15px,
+	$delimitation-padding: 20px,
+	$tight-delimitation-padding: 15px,
+	$highlight: #1b66bf,
+	$highlight-complement: white,
+	$transition-duration: 300ms
+) {
+	.inp-date {
+		.drop-expando-box {
+			height: $height;
+			background: $background;
+			border: $border;
+			border-radius: $border-radius;
+
+			.date-display-cell.active {
+				position: relative;
+				color: $highlight-complement;
+				z-index: 1000;
+
+				&:before {
+					content: "";
+					position: absolute;
+					top: -0.1em;
+					bottom: -0.1em;
+					left: -0.5em;
+					right: -0.5em;
+					background: $highlight;
+					border-radius: 2px;
+					z-index: -1;
+				}
+			}
+		}
+
+		.drop-dropdown {
+			background: $background;
+			border: $border;
+			border-radius: $border-radius;
+		}
+
+		&.error {
+			&:not(.open) .drop-expando-box {
+				background: $error-background;
+				border: $error-border;
+				color: $error-color;
+			}
+		}
+	}
+}

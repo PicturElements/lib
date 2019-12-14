@@ -2,6 +2,7 @@
 	.input-wrapper.checkbox.inp-checkbox(:class="validationState")
 		button(
 			:class="{ checked: input.value }"
+			:disabled="disabled"
 			@click="trigger")
 			slot(name="icon" v-bind="input")
 				.icon {{ input.value ? "&times;" : "" }}
@@ -19,7 +20,8 @@
 		}),
 		methods: {
 			trigger() {
-				this.input.trigger(!this.input.value);
+				if (!this.disabled)
+					this.input.trigger(!this.input.value);
 			},
 			res(val, ...args) {
 				if (typeof val == "function")
@@ -34,6 +36,7 @@
 		},
 		props: {
 			input: Checkbox,
+			disabled: Boolean,
 			label: String,
 			mobileQuery: String,
 			meta: {

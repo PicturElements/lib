@@ -20,6 +20,7 @@
 
 <script>
 	import {
+		get,
 		numLen,
 		repeat,
 		padStart
@@ -39,17 +40,20 @@
 		}),
 		methods: {
 			trigger() {
+				if (this.disabled)
+					return;
+					
 				const reduce = dials => {
-					let timestamp = 0;
+					const timeData = {};
 
 					for (let i = 0, l = dials.length; i < l; i++) {
 						const dialData = dials[i],
-							multiplier = this.res(dialData.dial.multiplier) || 1;
+							gotten = get(timeData, dialData.dial.accessor, null, "autoBuild|context");
 
-						timestamp += (dialData.value || 0) * multiplier;
+						gotten.context[gotten.key] = dialData.value;
 					}
 
-					return timestamp;
+					return timeData;
 				};
 
 				const dialsData = this.timeDisplayData.dialsData;
@@ -98,6 +102,7 @@
 		},
 		props: {
 			input: Time,
+			disabled: Boolean,
 			mobileQuery: String,
 			meta: {
 				type: Object,

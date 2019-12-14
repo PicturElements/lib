@@ -1,30 +1,18 @@
 <template lang="pug">
-	.dials-wrapper-wrapper
-		template(v-for="(d, i) in dialsData")
-			Dials(
-				:updates="updates"
-				:input="input"
-				:dials="d.dials"
-				:activeIdx="activeIndices[i]"
-				@select="payload => select(payload, i)"
-				@focus="activeDialsIdx = i"
-				@change="change(i)")
+	
 </template>
 
 <script>
 	import {
-		get,
 		numLen,
 		repeat,
 		padStart
 	} from "@qtxr/utils";
 	import EVT from "@qtxr/evt";
-	import Form, { Time } from "@qtxr/form";
-
-	import Dials from "./dials.vue";
+	import Form, { Date as DateInput } from "@qtxr/form";
 
 	export default {
-		name: "TimeSelector",
+		name: "DateSelector",
 		data: _ => ({
 			updates: 0,
 			dialsData: [],
@@ -33,49 +21,46 @@
 		}),
 		methods: {
 			updateDialsData(mergeIndices) {
-				const dialsData = [],
-					activeIndices = [];
-
-				const addDialsData = timeData => {
+				const getTimeDisplayItem = timestamp => {
 					const runtime = {
 							meridiem: null,
-							defaultIdx: 0,
 							dials: []
 						},
-						dials = this.input.dials,
-						idx = activeIndices.length;
+						dials = this.input.dials;
 
 					for (let i = 0, l = dials.length; i < l; i++) {
 						const dial = dials[i],
-							dialData = this.mkDialData(dial, runtime),
-							value = get(timeData, dialData.dial.accessor, null);
+							dialData = this.mkDialData(dial, runtime);
 
-						this.setDialValue(dialData, value);
-						if (dialData.dial.defaultDial)
-							runtime.defaultIdx = i;
+						this.setDialValue(dialData, timestamp == null ?
+							null :
+							this.getValueFromTimestamp(dial, timestamp)
+						);
 
 						runtime.dials.push(dialData);
 					}
-
-					dialsData.push(runtime);
-					activeIndices.push(mergeIndices ?
-						(typeof this.activeIndices[idx] == "number" ?
-							this.activeIndices[idx] :
-							runtime.defaultIdx) :
-						runtime.defaultIdx
-					);
 
 					return runtime;
 				};
 
 				if (this.input.range) {
-					for (let i = 0, l = this.input.value.length; i < l; i++)
-						addDialsData(this.input.value[i]);
-				} else
-					addDialsData(this.input.value);
+					const out = [],
+						indices = [];
 
-				this.dialsData = dialsData;
-				this.activeIndices = activeIndices;
+					for (let i = 0, l = this.input.value.length; i < l; i++) {
+						out.push(getTimeDisplayItem(this.input.value[i]));
+						indices.push(mergeIndices ? this.activeIndices[i] || 0 : 0);
+					}
+
+					this.dialsData = out;
+					this.activeIndices = indices;
+				} else {
+					this.dialsData = [
+						getTimeDisplayItem(this.input.value)
+					];
+					this.activeIndices = mergeIndices ? this.activeIndices : [0];
+				}
+
 				this.emitDisplayData();
 			},
 			mkDialData(dial, runtime) {
@@ -172,7 +157,7 @@
 			},
 			resetIndices() {
 				for (let i = 0, l = this.activeIndices.length; i < l; i++)
-					this.activeIndices[i] = this.dialsData[i].defaultIdx;
+					this.activeIndices[i] = 0;
 
 				this.updates++;
 			},
@@ -184,18 +169,16 @@
 			}
 		},
 		props: {
-			input: Time
+			input: DateInput
 		},
-		components: {
-			Dials
-		},
+		components: {},
 		watch: {
 			"input.value"() {
-				this.updateDialsData(true);
+				// this.updateDialsData(true);
 			}
 		},
 		beforeMount() {
-			this.updateDialsData();
+			// this.updateDialsData();
 		}
 	};
 </script>

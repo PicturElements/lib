@@ -2,7 +2,7 @@
 	.input-wrapper.formatted.inp-formatted
 		.formatted-content-editable(
 			v-once
-			contentEditable="true"
+			:contentEditable="!disabled"
 			@click="updateSelection"
 			@focus="updateSelection"
 			@paste="paste"
@@ -21,7 +21,8 @@
 		name: "Formatted",
 		methods: {
 			trigger(count) {
-				this.input.trigger(null);
+				if (!this.disabled)
+					this.input.trigger(null);
 			},
 			check(evt) {
 				this.input.check(evt, evt.target.value);
@@ -45,6 +46,7 @@
 		},
 		props: {
 			input: Formatted,
+			disabled: Boolean,
 			mobileQuery: String,
 			meta: {
 				type: Object,

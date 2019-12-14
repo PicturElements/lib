@@ -1,34 +1,84 @@
 <template lang="pug">
-	.input-wrapper.count.inp-count
-		button.count-btn.down(
-			tabindex="-1"
-			@click="down")
-			slot(name="down-symbol") {{ res(symbols.down) || "-" }}
-		input(
-			type="tel" 
-			:value="input.value"
-			@keydown="keydown"
-			@change="change")
-		button.count-btn.up(
-			tabindex="-1"
-			@click="up")
-			slot(name="up-symbol") {{ res(symbols.up) || "+" }}
+	.input-wrapper.count.inp-count(:class="{ compact: input.compact }")
+		template(v-if="input.compact")
+			input(
+				type="tel"
+				:key="key"
+				:value="input.value"
+				:disabled="disabled"
+				@keydown="keydown"
+				@change="change")
+			.vertical-count-buttons
+				button.count-btn.up(
+					tabindex="-1"
+					:disabled="disabled"
+					@click="up")
+					slot(name="up-symbol")
+						template(v-if="symbols.up") {{ res(symbols.up) }}
+						.default-count-symbol.up(v-else)
+				.count-btn-sep
+				button.count-btn.down(
+					tabindex="-1"
+					:disabled="disabled"
+					@click="down")
+					slot(name="down-symbol")
+						template(v-if="symbols.down") {{ res(symbols.down) }}
+						.default-count-symbol.down(v-else)
+		template(v-else)
+			button.count-btn.down(
+				tabindex="-1"
+				:disabled="disabled"
+				@click="down")
+				slot(name="down-symbol") {{ res(symbols.down) || "-" }}
+			input(
+				type="tel"
+				:key="key"
+				:value="input.value"
+				:disabled="disabled"
+				@keydown="keydown"
+				@change="change")
+			button.count-btn.up(
+				tabindex="-1"
+				:disabled="disabled"
+				@click="up")
+				slot(name="up-symbol") {{ res(symbols.up) || "+" }}
 </template>
 
 <script>
+	import { findClosest } from "@qtxr/utils";
 	import Form, { Count } from "@qtxr/form";
 	import EVT from "@qtxr/evt";
 
 	export default {
 		name: "Count",
+		data: _ => ({
+			key: 0
+		}),
 		methods: {
 			up() {
-				const step = this.input.step || 1;
-				this.fitCount(this.input.value + step);
+				const ticks = this.input.ticks;
+
+				if (Array.isArray(ticks)) {
+					const result = findClosest(ticks, this.input.value, "upper"),
+						idx = result.exact ? result.index + 1 : result.index;
+
+					if (idx == -1 || idx == ticks.length)
+						this.fitCount(ticks[ticks.length - 1]);
+					else
+						this.fitCount(ticks[idx]);
+				} else
+					this.fitCount(this.input.value + (this.input.step || 1));
 			},
 			down() {
-				const step = this.input.step || 1;
-				this.fitCount(this.input.value - step);
+				const ticks = this.input.ticks;
+
+				if (Array.isArray(ticks)) {
+					const result = findClosest(ticks, this.input.value, "lower"),
+						idx = Math.max(result.exact ? result.index - 1 : result.index, 0);
+
+					this.fitCount(ticks[idx]);
+				} else
+					this.fitCount(this.input.value - (this.input.step || 1));
 			},
 			change(evt) {
 				this.fitCount(Number(evt.target.value) || 0);
@@ -48,14 +98,25 @@
 				this.input.check(evt, evt.target.value);
 			},
 			fitCount(count) {
-				const min = typeof this.input.min == "number" ? (this.input.min || 0) : -Infinity,
-					max = typeof this.input.max == "number" ? (this.input.max || 0) : Infinity;
+				let min = this.input.min,
+					max = this.input.max;
+
+				if (Array.isArray(this.input.ticks)) {
+					min = this.input.ticks[0];
+					max = this.input.ticks[this.input.ticks.length - 1];
+				}
+
+				min = typeof min == "number" ? (min || 0) : -Infinity;
+				max = typeof max == "number" ? (max || 0) : Infinity;
 				let newCount = Math.min(Math.max(count, min || 0), max);
 
 				if (isNaN(newCount))
 					newCount = min;
 
-				this.input.trigger(newCount);
+				if (!this.disabled)
+					this.input.trigger(newCount);
+
+				this.key++;
 			},
 			res(val, ...args) {
 				if (typeof val == "function")
@@ -70,6 +131,7 @@
 		},
 		props: {
 			input: Count,
+			disabled: Boolean,
 			symbols: {
 				type: Object,
 				default: _ => ({})

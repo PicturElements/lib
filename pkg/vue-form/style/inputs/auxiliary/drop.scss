@@ -52,5 +52,20 @@ $drop-params: ();
 				bottom: 100%;
 			}
 		}
+
+		.drop-expando-box {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			padding: 5px 12px;
+			outline: none;
+			font: inherit;
+			cursor: pointer;
+		}
+
+		.drop-dropdown {
+			padding: 10px;
+			z-index: 10000000;
+		}
 	}
 }

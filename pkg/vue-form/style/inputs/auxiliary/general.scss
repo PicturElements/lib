@@ -1,25 +1,33 @@
 @use "~@qtxr/scss-utils" as *;
 
-$general-params: ();
+$general-params: (
+	"color",
+	"horizontal-gap",
+	"vertical-gap"
+);
 
-@mixin general {
+@mixin general(
+	$focus-border-color: #1e2021,
+	$horizontal-gap: 15px,
+	$vertical-gap: 12px
+) {
 	.input-row {
 		display: flex;
 		align-items: flex-end;
 
-		.input-box-textarea {
-			align-self: flex-start;
+		+ .input-row {
+			margin-top: $vertical-gap;
 		}
 
-		+ .input-row {
-			margin-top: 15px;
+		.input-box-textarea {
+			align-self: flex-start;
 		}
 
 		.input-box {
 			flex-grow: 1;
 
 			+ .input-box {
-				margin-left: 20px;
+				margin-left: $horizontal-gap;
 			}
 
 			p {
@@ -28,10 +36,26 @@ $general-params: ();
 				text-transform: uppercase;
 				margin-bottom: 4px;
 			}
+
+			&.inline-title {
+				display: flex;
+				align-items: center;
+				white-space: nowrap;
+
+				> .title {
+					margin: 0 10px 0 0;
+
+					&:after {
+						content: ":";
+						margin-left: 0.1em;
+					}
+				}
+			}
 		}
 
 		.input-wrapper {
 			position: relative;
+			font-size: 95%;
 
 			.mobi-focus,
 			.focus-probe {
@@ -51,6 +75,30 @@ $general-params: ();
 		
 			.mobi-focus {
 				display: none;
+			}
+
+			.validation-msg {
+				display: none;
+				position: absolute;
+				bottom: 100%;
+				left: 0;
+				width: 100%;
+				padding: 6px 8px 5px;
+				font-size: 95%;
+				z-index: 1;
+
+				&:before {
+					content: "";
+					top: 100%;
+					left: 0;
+					width: 100%;
+					height: 50px;
+					position: absolute;
+					border-radius: inherit;
+					box-shadow: 0px -20px $focus-border-color;
+					pointer-events: none;
+					z-index: -1;
+				}
 			}
 
 			&.mobi {
@@ -77,6 +125,15 @@ $general-params: ();
 					* {
 						-webkit-tap-highlight-color: transparent;
 					}
+				}
+			}
+
+			&.disabled {
+				opacity: 0.5;
+				cursor: default;
+
+				* {
+					cursor: default;
 				}
 			}
 		}

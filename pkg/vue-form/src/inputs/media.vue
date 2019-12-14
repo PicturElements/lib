@@ -9,7 +9,7 @@
 			@touchend="leave"
 			@mouseleave="leave"
 			@touchleave="leave"
-			@dragenter="focused = true"
+			@dragenter="focused = disabled && true"
 			@dragleave="focused = false"
 			ref="box")
 			template(v-if="editPhase == 'prompt'")
@@ -56,6 +56,7 @@
 					type="file"
 					:accept="input.mediaOptions.accept"
 					:multiple="input.multiple"
+					:disabled="disabled"
 					@focus="focused = true"
 					@blur="focused = false"
 					@change="initEdit")
@@ -610,6 +611,9 @@
 				this.dispatchChange();
 			},
 			dispatchChange() {
+				if (this.disabled)
+					return;
+				
 				if (this.input.multiple) {
 					const val = [];
 
@@ -645,6 +649,7 @@
 		components: {},
 		props: {
 			input: Media,
+			disabled: Boolean,
 			mobileQuery: String,
 			meta: {
 				type: Object,

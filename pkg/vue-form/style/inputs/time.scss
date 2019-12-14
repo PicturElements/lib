@@ -34,20 +34,11 @@ $time-params: (
 	$transition-duration: 300ms
 ) {
 	.inp-time {
-		font-size: 95%;
-		
 		.drop-expando-box {
-			display: flex;
-			justify-content: center;
-			align-items: center;
 			height: $height;
 			background: $background;
 			border: $border;
 			border-radius: $border-radius;
-			padding: 5px 12px;
-			outline: none;
-			font: inherit;
-			cursor: pointer;
 
 			.range-sep {
 				margin: 0 0.5em;
@@ -93,8 +84,6 @@ $time-params: (
 			background: $background;
 			border: $border;
 			border-radius: $border-radius;
-			padding: 10px;
-			z-index: 10000000;
 
 			.dials-wrapper-wrapper {
 				display: flex;
@@ -304,7 +293,7 @@ $time-params: (
 		}
 
 		&.error {
-			&:not(.open) .time-display {
+			&:not(.open) .drop-expando-box {
 				background: $error-background;
 				border: $error-border;
 				color: $error-color;

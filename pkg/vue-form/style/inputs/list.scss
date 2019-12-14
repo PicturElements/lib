@@ -1,0 +1,269 @@
+@use "@qtxr/scss-utils" as *;
+
+$list-params: (
+	"border-radius",
+	"color",
+	"background",
+	"error-background",
+	"error-border-color",
+	"highlight",
+	"highlight-complement"
+);
+
+@mixin list-style(
+	$border-radius: 1px,
+	$color: #1e2021,
+	$background: white,
+	$backdrop-background: #f7f7f7,
+	$error-background: #ffe7ec,
+	$border: 1px solid #dadada,
+	$error-border-color: #e8879b,
+	$highlight: #1b66bf,
+	$highlight-complement: white,
+	$action-button-size: 20px,
+	$add-icon-size: 25px,
+	$add-icon-gap: 5px,
+	$row-padding: 10px,
+	$row-margin: 8px,
+	$focus-padding: 5px,
+	$focus-transition: 300ms,
+	$add-icon-transition: 300ms
+) {
+	.inp-list {
+		background: $backdrop-background;
+		border: $border;
+		border-radius: $border-radius;
+		font-size: 100%;
+		margin-bottom: $focus-padding;
+
+		.list-inp-row-wrapper {
+			position: relative;
+			margin: 0 $row-margin;
+
+			&.focused {
+				> .list-inp-focus {
+					opacity: 0.35;
+				}
+
+				> .list-inp-row {
+					border-color: $highlight;
+				}
+			}
+		}
+
+		.list-inp-focus {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			border-radius: $border-radius;
+			box-shadow: 0 0 0 $focus-padding $highlight;
+			opacity: 0;
+			transition: opacity $focus-transition;
+			will-change: opacity;
+			pointer-events: none;
+			z-index: 10;
+		}
+
+		.list-inp-row {
+			display: flex;
+			position: relative;
+			background: $background;
+			border: $border;
+			border-radius: $border-radius;
+			padding: $row-padding;
+			transition: border $focus-transition;
+
+			+ .list-inp-row {
+				border-top: $border;
+			}
+
+			.row-content {
+				flex-grow: 1;
+			}
+
+			.row-actions-runner {
+				flex-shrink: 0;
+				padding-left: $row-padding;
+				margin-left: $row-padding;
+				margin-bottom: $focus-padding;
+				border-left: $border;
+
+				.row-actions {
+					position: sticky;
+					top: $row-padding;
+				}
+			}
+
+			.row-action {
+				display: block;
+				width: $action-button-size;
+				height: $action-button-size;
+				background: $background;
+				border: $border;
+				border-radius: $border-radius;
+				box-sizing: border-box;
+				outline: none;
+				padding: 0;
+				cursor: pointer;
+
+				+ .row-action {
+					margin-top: 5px;
+				}
+
+				.default-row-action-symbol {
+					background-size: 100% 100%;
+					width: 100%;
+					height: 100%;
+
+					&.delete {
+						@include inline-svg(
+							$path: "M30 30 l40 40 M70 30 l-40 40",
+							$stroke: $color,
+							$stroke-width: 6
+						);
+					}
+
+					&.up {
+						@include inline-svg(
+							$path: "M30 60 l20 -20 l20 20",
+							$stroke: $color,
+							$stroke-width: 6
+						);
+					}
+
+					&.down {
+						@include inline-svg(
+							$path: "M30 40 l20 20 l20 -20",
+							$stroke: $color,
+							$stroke-width: 6
+						);
+					}
+				}
+
+				&:focus {
+					background: $highlight;
+					border: none;
+
+					.default-row-action-symbol {
+						&.delete {
+							@include inline-svg(
+								$path: "M30 30 l40 40 M70 30 l-40 40",
+								$stroke: $highlight-complement,
+								$stroke-width: 6
+							);
+						}
+
+						&.up {
+							@include inline-svg(
+								$path: "M30 60 l20 -20 l20 20",
+								$stroke: $highlight-complement,
+								$stroke-width: 6
+							);
+						}
+
+						&.down {
+							@include inline-svg(
+								$path: "M30 40 l20 20 l20 -20",
+								$stroke: $highlight-complement,
+								$stroke-width: 6
+							);
+						}
+					}
+				}
+			}
+		}
+
+		.list-row-add {
+			position: relative;
+			width: 100%;
+			height: $row-margin;
+			transition: opacity 0ms;
+			transition-delay: $focus-transition;
+			z-index: 2;
+			cursor: pointer;
+
+			&:before {
+				content: "";
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				width: $add-icon-size + $add-icon-gap * 2;
+				height: $add-icon-size + $add-icon-gap * 2;
+				background: $backdrop-background;
+				border-radius: 50%;
+				border: $border;
+				transform: translate(-50%, -50%) scaleY(0);
+				transition: transform $add-icon-transition;
+				transition-delay: $add-icon-transition / 2;
+				z-index: 9;
+			}
+
+			&:after {
+				content: "";
+				position: absolute;
+				top: 0;
+				width: 100%;
+				height: 100%;
+				background: $backdrop-background;
+				z-index: 10;
+			}
+
+			.list-add-click-target {
+				position: absolute;
+				top: -70%;
+				bottom: -70%;
+				left: 0;
+				right: 0;
+				z-index: 11;
+			}
+
+			.list-row-add-icon {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				width: $add-icon-size;
+				height: $add-icon-size;
+				border: inherit;
+				background-color: $background;
+				@include inline-svg(
+					$path: "M30 50 h40 M50 30 v40",
+					$stroke: $color,
+					$stroke-width: 3
+				);
+				border: $border;
+				border-radius: 50%;
+				transform: translate(-50%, -50%) scale(0);
+				transition: transform $add-icon-transition;
+				transition-delay: 0ms;
+				z-index: 11;
+				cursor: pointer;
+			}
+
+			&:hover {
+				z-index: 10;
+	
+				&:before {
+					transform: translate(-50%, -50%) scaleY(1);
+					transition-delay: 0ms;
+				}
+	
+				.list-row-add-icon {
+					transform: translate(-50%, -50%) scale(1);
+					transition-delay: $add-icon-transition / 2;
+				}
+			}
+		}
+
+		&.has-focus .list-row-add {
+			visibility: hidden;
+			transition-delay: 0;
+			opacity: 0;
+		}
+
+		.input-wrapper {
+			font-size: 100%;
+		}
+	}
+}

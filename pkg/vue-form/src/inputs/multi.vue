@@ -1,6 +1,7 @@
 <template lang="pug">
 	.input-wrapper.multi.inp-multi(:class="[ expanded ? 'open' : null, isMobile() ? 'mobi' : null, validationState, dropdownDirection ]")
 		textarea.focus-probe(
+			:disabled="disabled"
 			@focus="expand"
 			@blur="enqueueCollapse"
 			ref="focusProbe")
@@ -29,10 +30,11 @@
 			.search-input-box
 				input.search-input(
 					v-model="query"
+					tabindex="-1"
+					:disabled="disabled"
 					@input="triggerSearch"
 					@focus="expand"
 					@blur="enqueueCollapse"
-					tabindex="-1"
 					ref="searchInput")
 			.search-results-box(ref="searchResultsBox")
 				template(v-if="!options.length")
@@ -88,10 +90,6 @@
 			validationState: "ok"
 		}),
 		methods: {
-			triggerSearch() {
-				this.lastOptionPtr = -1;
-				this.search();
-			},
 			async search() {
 				this.optionPtr = -1;
 				this.loading = true;
@@ -156,6 +154,10 @@
 				this.loading = false;
 				this.options = outOptions;
 			},
+			triggerSearch() {
+				this.lastOptionPtr = -1;
+				this.search();
+			},
 			deleteSelectionItem(idx) {
 				const val = this.input.value,
 					valOut = [];
@@ -186,7 +188,8 @@
 				this.search();
 			},
 			trigger(val) {
-				this.input.trigger(val);
+				if (!this.disabled)
+					this.input.trigger(val);
 			},
 			getLabel(option) {
 				const label = (option && option.hasOwnProperty("label")) ? option.label : option;
@@ -294,6 +297,9 @@
 				});
 			},
 			expand() {
+				if (this.disabled)
+					return;
+
 				this.expanded = true;
 				this.search();
 				this.initUpdateLoop();
@@ -319,6 +325,7 @@
 		},
 		props: {
 			input: Multi,
+			disabled: Boolean,
 			mobileQuery: String,
 			meta: {
 				type: Object,

@@ -1,8 +1,11 @@
 <template lang="pug">
 	.input-wrapper.dropdown.inp-dropdown(:class="[ expanded ? 'open' : null, isMobile() ? 'mobi' : null, validationState, dropdownDirection ]"
 		ref="dropdownBox")
-		button.mobi-focus(@click="expand")
+		button.mobi-focus(
+			:disabled="disabled"
+			@click="expand")
 		textarea.focus-probe(
+			:disabled="disabled"
 			@focus="expand"
 			@click="triggerExpand"
 			@blur="collapse"
@@ -57,7 +60,8 @@
 		}),
 		methods: {
 			trigger(val) {
-				this.input.trigger(val);
+				if (!this.disabled)
+					this.input.trigger(val);
 				this.triggerCollapse();
 			},
 			getLabel(option) {
@@ -171,6 +175,7 @@
 		},
 		props: {
 			input: Dropdown,
+			disabled: Boolean,
 			placeholder: String,
 			mobileQuery: String,
 			meta: {

@@ -19,11 +19,18 @@
 						:cell="cell"
 						:meta="inputMeta"
 						:verifiedVisibility="true"
+						:disabled="cell.input.disabled"
 						:key="cell.input.id")
 						template(
 							v-for="(_, name) in $scopedSlots"
 							v-slot:[name]="d")
-							slot(:name="name" v-bind="d")
+							slot(v-if="name != 'form'"
+								:name="name"
+								v-bind="d")
+						template(#form="d")
+							VForm(
+								:form="d.form"
+								:rows="d.rows")
 					slot(:name="`${cell.input.name}-post-content`" v-bind="cell.input")
 						slot(name="post-content" v-bind="cell.input")
 </template>
