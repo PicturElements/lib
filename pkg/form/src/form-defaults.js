@@ -18,7 +18,51 @@ const defaults = {
 		value: "",
 		validate: mkRangeValidator(1, 48, "Please specify a business name", "Business name too long. Maximum: $max characters")
 	},
-	card: {
+	"cc-cvv": {
+		type: "tel",
+		value: "",
+		checkKey: "natural",
+		checkWord(str) {
+			return str.length <= 4;
+		},
+		validate(val) {
+			if (!/^\d{3,4}$/.test(val))
+				return "CVV numbers are between 3 and 4 digits in length";
+		}
+	},
+	"cc-date": {
+		type: "tel",
+		value: "",
+		checkKey: /[\d/\s]/,
+		validate(val) {
+			const ex = dateRegex.exec(val);
+
+			if (!ex)
+				return "Dates follow this syntax: MM/YY";
+
+			const month = Number(ex[1]),
+				year = Number(ex[2]),
+				monthNo = year * 12 + month,
+				date = new Date(),
+				currMonthNo = (date.getFullYear() - 2e3) * 12 + date.getMonth() + 1,
+				lastExpiryMonthNo = currMonthNo + 20 * 12;
+
+			if (month > 12)
+				return `Incorrect month ${month}`;
+
+			if (monthNo < currMonthNo)
+				return "This card is expired";
+
+			if (monthNo > lastExpiryMonthNo)
+				return "Expiry date too far ahead";
+		},
+		extract(val, inp, payload) {
+			const ex = dateRegex.exec(val);
+			payload.month = Number(ex[1]);
+			payload.year = Number(ex[2]);
+		}
+	},
+	"cc-number": {
 		type: "tel",
 		value: "",
 		checkKey: /[\d\s]/,
@@ -57,48 +101,17 @@ const defaults = {
 		checkKey: "name",
 		validate: mkRangeValidator(1, Infinity, "This field cannot be empty")
 	},
-	cvv: {
-		type: "tel",
-		value: "",
-		checkKey: "natural",
-		checkWord(str) {
-			return str.length <= 4;
-		},
-		validate(val) {
-			if (!/^\d{3,4}$/.test(val))
-				return "CVV numbers are between 3 and 4 digits in length";
-		}
-	},
 	date: {
-		type: "tel",
-		value: "",
-		checkKey: /[\d/\s]/,
-		validate(val) {
-			const ex = dateRegex.exec(val);
+		type: "date",
+		value: null,
+		validate(val, inp, inps) {
+			if (!inp.range)
+				return val == null ? "Please specify a date" : null;
 
-			if (!ex)
-				return "Dates follow this syntax: MM/YY";
-
-			const month = Number(ex[1]),
-				year = Number(ex[2]),
-				monthNo = year * 12 + month,
-				date = new Date(),
-				currMonthNo = (date.getFullYear() - 2e3) * 12 + date.getMonth() + 1,
-				lastExpiryMonthNo = currMonthNo + 20 * 12;
-
-			if (month > 12)
-				return `Incorrect month ${month}`;
-
-			if (monthNo < currMonthNo)
-				return "This card is expired";
-
-			if (monthNo > lastExpiryMonthNo)
-				return "Expiry date too far ahead";
-		},
-		extract(val, inp, payload) {
-			const ex = dateRegex.exec(val);
-			payload.month = Number(ex[1]);
-			payload.year = Number(ex[2]);
+			for (let i = 0, l = val.length; i < l; i++) {
+				if (val[i] == null)
+					return "Please specify a date";
+			}
 		}
 	},
 	dropdown: {
@@ -135,6 +148,10 @@ const defaults = {
 		checkKey: nameRegex,
 		validate: mkRangeValidator(1, 20, "Please specify a last name", "Name too long. Maximum: $max characters"),
 	},
+	list: {
+		type: "list",
+		value: null
+	},
 	media: {
 		type: "media",
 		value: null,
@@ -145,16 +162,6 @@ const defaults = {
 		validate(val, inp) {
 			if ((inp.multiple && !val.length) || val === null)
 				return "No media uploaded";
-		},
-		extract(val, inp, payload) {
-			if (inp.multiple) {
-				if (Array.isArray(val))
-					return val;
-
-				return val ? [] : [val];
-			}
-
-			return val;
 		}
 	},
 	multi: {
@@ -213,6 +220,10 @@ const defaults = {
 			return str.length <= 2;
 		},
 		validate: mkRangeValidator(2, 2, "Please specify a state in XX form", "Please specify a state in XX form"),
+	},
+	text: {
+		type: "text",
+		value: ""
 	},
 	textarea: {
 		type: "textarea",

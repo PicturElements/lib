@@ -37,11 +37,9 @@ export default class Media extends BaseInput {
 	}
 
 	[INJECT](value) {
-		if (!value)
-			return value;
-
-		if (typeof this.handlers.inject == "function")
-			return super[INJECT](value);
+		value = typeof this.handlers.inject == "function" ?
+			super[INJECT](value) :
+			value;
 
 		if (this.multiple) {
 			const outValue = [];
@@ -50,27 +48,21 @@ export default class Media extends BaseInput {
 				[];
 
 			for (let i = 0, l = value.length; i < l; i++)
-				outValue.push(resolveMedia(value[i]));
+				outValue.push(this.vt(value[i]));
 
 			return outValue;
 		} else
-			return resolveMedia(value);
+			return this.vt(value);
 	}
 }
 
-function resolveMedia(data) {
-	if (!data)
-		return null;
-
-	if (typeof data == "string") {
-		return {
-			data,
-			mediaType: getMediaType(data)
-		};
-	}
-
-	return data;
-}
+Media.formalize
+	.if("string")
+		.to(d => ({
+			data: d,
+			mediaType: getMediaType(d)
+		}))
+		.from(d => d && d.data);
 
 const dataUrlRegex = /^data:(.+)\/.+?;/i,
 	imageExtensionRegex = /\.(?:jpe?g|png|gif|tiff?|webp|bmp)\b/i,
@@ -102,4 +94,3 @@ function getDataUrlHeader(url) {
 
 	return header;
 }
-

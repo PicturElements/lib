@@ -1,11 +1,16 @@
 import {
 	sym,
 	get,
+	isObj,
 	inject,
 	injectSchema
 } from "@qtxr/utils";
+import {
+	isValidKey,
+	isValidWord
+} from "@qtxr/evt";
 import { Hookable } from "@qtxr/bc";
-import { isValidKey, isValidWord } from "@qtxr/evt";
+import { Formalizer, FormalizerCell } from "@qtxr/uc";
 
 // TODO: in next major version, change hook argument order from
 // oldValue, newValue to newValue, oldValue
@@ -14,10 +19,11 @@ const CHECK = sym("check"),
 	TRIGGER = sym("trigger"),
 	SELF_TRIGGER = sym("selfTrigger"),
 	UPDATE = sym("update"),
-	EXTRACT = sym("extract"),
-	SELF_EXTRACT = sym("selfExtract"),
 	INJECT = sym("inject"),
-	SET_VALUE = sym("setValue");
+	MERGE_INJECT = sym("mergeInject"),
+	OVERRIDE_INJECT = sym("overrideInject"),
+	EXTRACT = sym("extract"),
+	SELF_EXTRACT = sym("selfExtract");
 
 const initOptionsSchema = {
 	name: "string",
@@ -26,7 +32,6 @@ const initOptionsSchema = {
 	type: "string",
 
 	initialized: "boolean",
-	value: "any",
 	valid: "boolean",
 	validationMsg: "string",
 	validationState: "string",
@@ -47,6 +52,8 @@ const initOptionsSchema = {
 	propagate: "any"
 };
 
+let dynValId = 0;
+
 export default class BaseInput extends Hookable {
 	constructor(name, options, form, schema = {}) {
 		options = options || {};
@@ -60,10 +67,26 @@ export default class BaseInput extends Hookable {
 
 		// State
 		this.initialized = false;
-		this.value = null;
 		this.valid = true;
 		this.validationMsg = null;
 		this.validationState = "ok";
+		
+		// Dynamic value state
+		this.dynamicValue = {
+			id: dynValId++,
+			value: null,
+			formalizer: this.constructor.formalizer,
+			cache: null,
+			cacheValid: false,
+			tracked: 0
+		};
+
+		if (this.dynamicValue.formalizer) {
+			this.vt = val => {
+				this.dynamicValue.tracked++;
+				return this.dynamicValue.formalizer.transform(val);
+			};
+		}
 
 		// Handlers
 		this.handlers = {};
@@ -90,8 +113,8 @@ export default class BaseInput extends Hookable {
 		});
 
 		this.hookAll(options.hooks);
-		this.setValue(this.value);
-		this.default = this.value;
+		this.default = options.value;
+		this.setValue(options.value);
 	}
 
 	[CHECK](evt) {
@@ -111,9 +134,9 @@ export default class BaseInput extends Hookable {
 			const oldVal = this.value;
 
 			if (typeof this.handlers.process == "function")
-				this.setValue(this.handlers.process(value, this, this.form.inputs));
+				this.updateValue(this.handlers.process(value, this, this.form.inputs));
 			else
-				this.setValue(value);
+				this.updateValue(value);
 
 			if (!this.compare(oldVal, this.value)) {
 				this.form.callHooks("change", this, oldVal, this.value);
@@ -185,25 +208,86 @@ export default class BaseInput extends Hookable {
 		return value;
 	}
 
+	[MERGE_INJECT](value) {
+		this.dynamicValue.cache = null;
+		this.dynamicValue.cacheValid = false;
+
+		if (this.dynamicValue.value instanceof FormalizerCell) {
+			if (value instanceof FormalizerCell)
+				this.dynamicValue.value.data = value.data;
+			else
+				this.dynamicValue.value.data = value;
+			
+			value = this.dynamicValue.value;
+		} else if (value instanceof FormalizerCell)
+			value = value.data;
+		else if (isObj(value)) {
+			inject(value, this.dynamicValue.value, {
+				inject: (v, key, targ) => {
+					if (v instanceof FormalizerCell) {
+						v.data = targ[key].data;
+						return v;
+					}
+
+					return targ[key];
+				},
+				circular: true,
+				override: true
+			});
+		}
+
+		return value;
+	}
+
+	[OVERRIDE_INJECT](value) {
+		this.dynamicValue.tracked = 0;
+		this.dynamicValue.cache = null;
+		this.dynamicValue.cacheValid = false;
+
+		return this[INJECT](value);
+	}
+
 	[EXTRACT]() {
 		return this[SELF_EXTRACT](this.value);
 	}
 
 	[SELF_EXTRACT](value) {
-		if (typeof this.handlers.extract == "function")
-			return this.handlers.extract(value, this, this.form.inputs);
-		else if (typeof this.handlers.extract == "string")
-			return get(value, this.handlers.extract);
-		else
-			return value;
-	}
+		const val = this.dynamicValue.value,
+			isFunctionalHandler = typeof this.handlers.extract == "function",
+			isGetterHandler = typeof this.handlers.extract == "string",
+			hasHandler = isFunctionalHandler || isGetterHandler;
 
-	[SET_VALUE](value) {
-		this.value = this[INJECT](value);
+		if (val instanceof FormalizerCell)
+			value = hasHandler ? val.data : val.transform();
+		else if (!this.dynamicValue.tracked || !isObj(val))
+			value = val;
+		else {
+			value = inject(null, val, {
+				inject: v => {
+					if (!(v instanceof FormalizerCell))
+						return v;
+
+					return hasHandler ? v.data : v.transform();
+				}
+			}, "circular");
+		}
+
+		if (isFunctionalHandler)
+			return this.handlers.extract(value, this, this.form.inputs);
+		if (isGetterHandler)
+			return get(value, this.handlers.extract);
+		
+		return value;
 	}
 
 	setValue(value) {
-		return this[SET_VALUE](value);
+		this.dynamicValue.value = this[OVERRIDE_INJECT](value);
+		return value;
+	}
+
+	updateValue(value) {
+		this.dynamicValue.value = this[MERGE_INJECT](value);
+		return value;
 	}
 
 	// Aliases for public handlers
@@ -288,7 +372,7 @@ export default class BaseInput extends Hookable {
 	}
 
 	get inject() {
-		return this[INJECT];
+		return this[OVERRIDE_INJECT];
 	}
 
 	set inject(handler) {
@@ -360,6 +444,40 @@ export default class BaseInput extends Hookable {
 	set disabled(handler) {
 		this.handlers.disabled = handler;
 	}
+
+	get value() {
+		const val = this.dynamicValue.value;
+		let cachedValue = this.dynamicValue.cache;
+
+		if (!this.dynamicValue.tracked)
+			return val;
+
+		if (this.dynamicValue.cacheValid)
+			return cachedValue;
+
+		if (val instanceof FormalizerCell)
+			cachedValue = val.data;
+		else if (!isObj(val))
+			cachedValue = val;
+		else {
+			cachedValue = inject(null, val, {
+				inject: v => (v instanceof FormalizerCell) ? v.data : v
+			}, "circular");
+		}
+	
+		this.dynamicValue.cache = cachedValue;
+		this.dynamicValue.cacheValid = true;
+		return cachedValue;
+	}
+
+	set value(value) {
+		this.dynamicValue.value = this[OVERRIDE_INJECT](value);
+	}
+
+	static get formalize() {
+		this.formalizer = new Formalizer();
+		return this.formalizer;
+	}
 }
 
 function mkChecker(checker, checkerKey) {
@@ -394,6 +512,5 @@ export {
 	UPDATE,
 	EXTRACT,
 	SELF_EXTRACT,
-	INJECT,
-	SET_VALUE
+	INJECT
 };

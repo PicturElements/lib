@@ -1,8 +1,11 @@
 import Input from "./input";
 import Checkbox from "./checkbox";
 import Count from "./count";
+import { default as DateInput } from "./date";
+import DateTime from "./date-time";
 import Dropdown from "./dropdown";
 import Formatted from "./formatted";
+import List from "./list";
 import Media from "./media";
 import Multi from "./multi";
 import Radio from "./radio";
@@ -14,8 +17,11 @@ const inputTypes = {
 	checkbox: "checkbox",
 	check: "checkbox",
 	count: "count",
+	date: "date",
+	"date-time": "date-time",
 	dropdown: "dropdown",
 	formatted: "formatted",
+	list: "list",
 	media: "media",
 	multi: "multi",
 	radio: "radio",
@@ -27,8 +33,11 @@ const inputConstructors = {
 	default: Input,
 	checkbox: Checkbox,
 	count: Count,
+	date: DateInput,
+	"date-time": DateTime,
 	dropdown: Dropdown,
 	formatted: Formatted,
+	list: List,
 	media: Media,
 	multi: Multi,
 	radio: Radio,

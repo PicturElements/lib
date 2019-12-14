@@ -5,7 +5,9 @@ export default class Count extends BaseInput {
 		super(name, options, form, {
 			min: "number",
 			max: "number",
-			step: "number"
+			step: "number",
+			ticks: Array,
+			compact: "boolean"
 		});
 	}
 }

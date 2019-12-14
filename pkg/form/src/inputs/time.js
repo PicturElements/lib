@@ -1,59 +1,5 @@
-import BaseInput, {
-	INJECT,
-	EXTRACT,
-	SELF_EXTRACT
-} from "./base-input";
+import BaseInput, { INJECT } from "./base-input";
 import resolveDials from "../assets/dials";
-import { Formalizer } from "@qtxr/uc";
-
-const secondsInDay = 24 * 60 * 60,
-	dateToSeconds = date => {
-		date = date instanceof Date ? date : (date == null ? new Date() : new Date(date));
-		return date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
-	},
-	getDayStart = date => {
-		date = date instanceof Date ? date : (date == null ? new Date() : new Date(date));
-		return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-	},
-	formalizer = new Formalizer()
-		.if(d => typeof d == "number" && d > secondsInDay)
-			.to(dateToSeconds)
-			.from((d, f) => {
-				return getDayStart(f.sourceData) + d * 1000;
-			})
-		.if("number")
-			.to(d => d)
-			.from(d => d)
-		.if("string")
-			.to(dateToSeconds)
-			.from(d => {
-				const timestamp = getDayStart();
-				return new Date(timestamp + d * 1000).toUTCString();
-			})
-		.if(Object)
-			.to(d => {
-				const hours = d.h || d.hours || 0,
-					minutes = d.m || d.minutes || 0,
-					seconds = d.s || d.seconds || 0;
-
-				return (hours * 3600 + minutes * 60 + seconds) % secondsInDay;
-			})
-			.from((d, f) => {
-				const sd = f.sourceData,
-					outData = {},
-					hourKey = sd.hasOwnProperty("h") ? "h" : "hours",
-					minKey = sd.hasOwnProperty("m") ? "m" : "minutes",
-					secKey = sd.hasOwnProperty("s") ? "s" : "seconds";
-
-				outData[hourKey] = Math.floor(d / 3600);
-				outData[minKey] = Math.floor(d / 60) % 60;
-				outData[secKey] = d % 60;
-
-				return outData;
-			})
-		.else
-			.to(d => null)
-			.from(d => d);
 
 export default class Time extends BaseInput {
 	constructor(name, options, form) {
@@ -78,20 +24,71 @@ export default class Time extends BaseInput {
 
 		if (this.range) {
 			if (Array.isArray(value))
-				return value.map(d => formalizer.transform(d));
+				return value.map(d => this.vt(d));
 
-			value = formalizer.transform(value);
-
-			return [value, value];
+			return [this.vt(value), this.vt(value)];
 		} else {
 			if (Array.isArray(value))
-				return formalizer.transform(value[0]);
+				return this.vt(value[0]);
 			
-			return formalizer.transform(value);
+			return this.vt(value);
 		}
 	}
+}
 
-	[EXTRACT]() {
-		return this[SELF_EXTRACT](this.value.transform());
+Time.formalize
+	.if(d => typeof d == "number" && d > (24 * 60 * 60))
+		.to(getTimeData)
+		.from((d, f) => timeDataToDate(d, f.sourceData).getTime())
+	.if("number")
+		.to(d => getTimeData(getDayStartDate().getTime() + d * 1000))
+		.from((d, f) => (d.hour || 0) * 3600 + (d.minute || 0) * 60 + (d.second || 0))
+	.if("string")
+		.to(getTimeData)
+		.from((d, f) => timeDataToDate(d, f.sourceData).toUTCString())
+	.if(Date)
+		.to(getTimeData)
+		.from((d, f) => timeDataToDate(d, f.sourceData))
+	.else
+		.to(_ => getTimeData())
+		.from((d, f) => {
+			if (d.hour == null && d.minute == null && d.second == null)
+				return null;
+
+			return timeDataToDate(d, f.sourceData);
+		});
+
+function getTimeData(date) {
+	if (date == null) {
+		return {
+			hour: null,
+			minute: null,
+			second: null
+		};
 	}
+
+	date = date instanceof Date ? date : new Date(date);
+
+	return {
+		hour: date.getHours(),
+		minute: date.getMinutes(),
+		second: date.getSeconds()
+	};
+}
+
+function timeDataToDate(d, day) {
+	const dayDate = getDayStartDate(day);
+	return new Date(
+		dayDate.getFullYear(),
+		dayDate.getMonth(),
+		dayDate.getDate(),
+		d.hour || 0,
+		d.minute || 0,
+		d.second || 0
+	);
+}
+
+function getDayStartDate(date) {
+	date = date instanceof Date ? date : (date == null ? new Date() : new Date(date));
+	return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }

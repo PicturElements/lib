@@ -5,12 +5,12 @@ import {
 } from "@qtxr/utils";
 
 const DIALS = {
-	hours: {
-		name: "hours",
+	hour: {
+		name: "hour",
+		accessor: "hour",
+		defaultDial: false,
 		extent: 24,
 		displayExtent: inp => inp.meridiem ? 12 : 24,
-		multiplier: 3600,
-		getValueFromTimestamp: null,
 		toPerc: null,
 		toVal: null,
 		delimitations: 12,
@@ -45,12 +45,12 @@ const DIALS = {
 			geometric: true
 		}
 	},
-	minutes: {
-		name: "minutes",
+	minute: {
+		name: "minute",
+		accessor: "minute",
+		defaultDial: false,
 		extent: 60,
 		displayExtent: 60,
-		multiplier: 60,
-		getValueFromTimestamp: null,
 		delimitations: 12,
 		resolution: 5,
 		tickResolution: 5,
@@ -65,12 +65,12 @@ const DIALS = {
 			geometric: true
 		}
 	},
-	seconds: {
-		name: "seconds",
+	second: {
+		name: "second",
+		accessor: "second",
+		defaultDial: false,
 		extent: 60,
 		displayExtent: 60,
-		multiplier: 1,
-		getValueFromTimestamp: null,
 		delimitations: 12,
 		resolution: 5,
 		tickResolution: 5,
@@ -87,8 +87,8 @@ const DIALS = {
 	}
 };
 
-const DIAL_ORDER = ["hours", "minutes", "seconds"],
-	DEFAULT_DIALS = ["hours", "minutes"],
+const DIAL_ORDER = ["hour", "minute", "second"],
+	DEFAULT_DIALS = ["hour", "minute"],
 	RESULT_DIAL_NAME = "result";
 
 export default function resolveDials(dials = DEFAULT_DIALS) {

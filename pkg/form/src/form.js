@@ -4,6 +4,7 @@ import {
 	hasOwn,
 	equals,
 	inject,
+	forEach,
 	isObject,
 	resolveVal,
 	splitClean,
@@ -23,10 +24,11 @@ import BaseInput, {
 	CHECK,
 	TRIGGER,
 	SELF_TRIGGER,
-	EXTRACT,
-	SET_VALUE
+	EXTRACT
 } from "./inputs/base-input";
 import FormRows from "./form-rows";
+
+let id = 0;
 
 export default class Form extends Hookable {
 	constructor(...optionsAndPresets) {
@@ -43,7 +45,7 @@ export default class Form extends Hookable {
 			if (isPreset(item)) {
 				let preset = null;
 	
-				if (typeof hooksOrPreset == "string") {
+				if (typeof item == "string") {
 					if (!Form.presets.hasOwnProperty(item))
 						throw new Error(`Invalid preset '${item}'`);
 	
@@ -60,6 +62,10 @@ export default class Form extends Hookable {
 			else
 				console.warn("Failed to resolve argument as it's neither a preset nor an options object:", item);
 		}
+
+		// Constants
+		this.sourceConfig = optionsAndPresets;
+		this.id = id++;
 
 		// Input tracking
 		this.keys = [];
@@ -88,6 +94,7 @@ export default class Form extends Hookable {
 	}
 
 	connect(name, options) {
+		name = Form.resolveInputName(name) || Form.resolveInputName(options);
 		options = Form.normalizeOptions(options);
 
 		if (!name || typeof name != "string")
@@ -128,7 +135,7 @@ export default class Form extends Hookable {
 		
 		const connect = (row, depth) => {
 			if (!Array.isArray(row)) {
-				if (!depth && isObject(row) && typeof row.name != "string") {
+				if (!depth && isObject(row) && Form.resolveInputName(row) == null) {
 					const partition = {};
 
 					for (const k in row) {
@@ -146,7 +153,7 @@ export default class Form extends Hookable {
 			const out = new FormRows();
 
 			if (depth > 1)
-				throw new RangeError("Failed to process rows: row data nested past one level");
+				throw new RangeError("Cannot connect: row data nested past one level");
 
 			for (let i = 0, l = row.length; i < l; i++) {
 				const cell = row[i];
@@ -181,7 +188,7 @@ export default class Form extends Hookable {
 					}
 
 					const options = cellProcessed.opt,
-						name = cellProcessed.name;
+						name = Form.resolveInputName(cellProcessed.name) || Form.resolveInputName(options);
 					delete cellProcessed.opt;
 					
 					// Clear old inputs when necessary
@@ -191,7 +198,7 @@ export default class Form extends Hookable {
 
 						foundNames[name] = true;
 					} else if (this.noDuplicateNames)
-						throw new Error(`Cannot connectL duplicate inputs by name "${name}"`);
+						throw new Error(`Cannot connect: duplicate inputs by name "${name}"`);
 
 					cellProcessed.input = this.connect(name, options);
 					cellProcessed.isInputCell = true;
@@ -206,7 +213,7 @@ export default class Form extends Hookable {
 		return this.inputsStruct;
 	}
 
-	// TODO: make polymorphic
+	// DEPRECATED: use connectRows instead
 	connectAll(inputs) {
 		for (const k in inputs) {
 			if (!inputs.hasOwnProperty(k))
@@ -246,11 +253,22 @@ export default class Form extends Hookable {
 		this.updateInitialized = true;
 
 		this.forEach(inp => {
-			if (!values.hasOwnProperty(inp.name))
+			let value = values[inp.name],
+				matched = false;
+
+			if (inp.path == "" || inp.path) {
+				const gotten = get(values, inp.path, null, "context");
+				if (gotten.match) {
+					matched = true;
+					value = gotten.data;
+				}
+			}
+
+			if (!matched && !values.hasOwnProperty(inp.name))
 				return;
 
-			if (values[inp.name] !== null)
-				inp[SET_VALUE](values[inp.name]);
+			if (value !== null)
+				inp.setValue(value);
 
 			if (!noTrigger)
 				inp[TRIGGER](inp.value);
@@ -313,7 +331,7 @@ export default class Form extends Hookable {
 		this.forEach(inp => {
 			inp.initialized = false;
 			inp.valid = true;
-			inp[SET_VALUE](inp.hasOwnProperty("default") ? inp.default : "");
+			inp.updateValue(inp.hasOwnProperty("default") ? inp.default : "");
 		});
 
 		this.forEach(inp => inp[TRIGGER](inp.value));
@@ -388,6 +406,20 @@ export default class Form extends Hookable {
 		));
 	}
 
+	static resolveInputName(nameOrConfig) {
+		if (isObject(nameOrConfig)) {
+			if (typeof nameOrConfig.name == "string")
+				return nameOrConfig.name ? nameOrConfig.name : null;
+			
+			if (!nameOrConfig.hasOwnProperty("name") && typeof nameOrConfig.path == "string")
+				return "@@name-from-path@@:" + nameOrConfig.path;
+
+			return null;
+		}
+		
+		return (nameOrConfig && typeof nameOrConfig == "string") ? nameOrConfig : null;
+	}
+
 	// Standard function to modify input options
 	static mod(options, ...mods) {
 		options = Form.normalizeOptions(options);
@@ -412,6 +444,26 @@ export default class Form extends Hookable {
 		}
 
 		return options;
+	}
+
+	static gen(dataOrLength, callback) {
+		const out = [];
+
+		if (typeof dataOrLength == "number") {
+			for (let i = 0; i < dataOrLength; i++) {
+				const val = callback(i, i, dataOrLength);
+				if (val)
+					out.push(val);
+			}
+		} else {
+			forEach(dataOrLength, (v, k, o) => {
+				const val = callback(v, k, o);
+				if (val)
+					out.push(val);
+			});
+		}
+
+		return out;
 	}
 
 	static getInputType(optionsOrInput) {
