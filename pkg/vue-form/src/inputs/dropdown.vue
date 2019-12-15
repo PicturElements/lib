@@ -117,29 +117,34 @@
 				requestFrame(_ => this.updateFixedList());
 			},
 			updateSelection() {
-				let options = this.res(this.input.options);
+				let options = this.res(this.input.options),
+					idx = -1;
 
 				if (!Array.isArray(options))
 					options = [];
 
-				if (options.hasOwnProperty(this.activeIndex) && this.input.compare(options[this.activeIndex], this.input.value))
+				this.options = options;
+
+				if (this.activeIndex > -1 && this.activeIndex < options.length && this.input.compare(options[this.activeIndex], this.input.value))
 					return;
 
-				let idx = options.findIndex(option => {
-					return this.input.compare(option, this.input.value);
-				});
+				for (let i = 0, l = options.length; i < l; i++) {
+					if (this.input.compare(options[i], this.input.value)) {
+						idx = i;
+						break;
+					}
+				}
 
 				// Makes a default index if no index was found:
 				// 0 with non-empty array
 				// -1 with empty array
 				if (this.input.autoSet)
 					idx = Math.max(idx, Math.min(options.length - 1, 0));
-				else if (idx == -1 && this.input.value)
-					this.trigger();
+				// else if (idx == -1 && this.input.value !== null)
+					// this.trigger();
 
 				this.activeIndex = idx;
-				this.activeOption = options[idx] || {};
-				this.options = options;
+				this.activeOption = idx > -1 ? options[idx] : {};
 				this.input.selectedIndex = idx;
 			},
 			triggerExpand() {
@@ -191,7 +196,7 @@
 		beforeMount() {
 			this.updateSelection();
 			if (this.activeIndex != -1)
-				Form.trigger(this.input, this.activeOption);
+				this.input.updateValue(this.activeOption);
 
 			this.globalKeyListener = evt => {
 				if (!this.expanded)
@@ -209,6 +214,10 @@
 				this.validationState = inp.validationState;
 				this.validationMsg = inp.validationMsg || this.validationMsg;
 			});
+		},
+		beforeUpdate() {
+			if (!this.expanded)
+				this.updateSelection();
 		},
 		beforeDestroy() {
 			document.body.removeEventListener("keydown", this.globalKeyListener);

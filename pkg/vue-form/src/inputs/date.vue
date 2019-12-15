@@ -25,8 +25,6 @@
 	import Drop from "../auxiliary/drop.vue";
 	import DateSelector from "../core-inputs/date-selector.vue";
 
-	console.log(DateInput);
-
 	export default {
 		name: "Date",
 		data: _ => ({
