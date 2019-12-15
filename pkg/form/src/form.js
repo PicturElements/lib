@@ -59,7 +59,7 @@ export default class Form extends Hookable {
 				});
 			} else if (isObject(item))
 				inject(masterPreset.options, item, "override");
-			else
+			else if (item != null)
 				console.warn("Failed to resolve argument as it's neither a preset nor an options object:", item);
 		}
 

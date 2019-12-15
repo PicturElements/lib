@@ -11,14 +11,19 @@ const DATE_CARDS = {
 	},
 	month: {
 		name: "month",
-		accessor: "month",
+		key: "month",
+		labels: inp => resolveVal(inp.monthLabels, inp) || ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+	},
+	day: {
+		name: "day",
+		accessor: "day",
 		dayOffset: 0,
-		dayLabels: inp => resolveVal(inp.dayLabels, inp) || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+		labels: inp => resolveVal(inp.dayLabels, inp) || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
 	}
 };
 
-const CARD_ORDER = ["year", "month"],
-	DEFAULT_CARDS = ["month"];
+const CARD_ORDER = ["year", "month", "day"],
+	DEFAULT_CARDS = ["year", "month", "day"];
 
 export default function resolveCards(cards = DEFAULT_CARDS) {
 	const outCards = [],
