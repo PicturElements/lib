@@ -2,7 +2,7 @@
 	.listing
 		.listing-content.error.f.c(v-if="cell.state.error")
 			slot(name="error" v-bind="this")
-				span failed to load data
+				span {{ cell.state.errorMsg || "failed to load data" }}
 		.listing-content.no-results.f.c(v-else-if="cell.state.fetches && (!cellData || !cellData.length)")
 			slot(name="no-results" v-bind="this")
 				span No items to show
