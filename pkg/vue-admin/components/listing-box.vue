@@ -37,12 +37,11 @@
 				v-bind="utilBox")
 				slot(
 					name="header-utils-pre-form"
-					v-if="form && formRows && formRows.headerUtilsPre"
-					v-bind="{ form, rows: formRows.headerUtilsPre }")
+					v-if="frm && getRows('headerUtilsPre')"
+					v-bind="{ box: utilBox, form: frm, rows: getRows('headerUtilsPre') }")
 					VForm(
-						v-if="form && formRows && formRows.headerUtilsPre"
-						:form="form"
-						:rows="formRows.headerUtilsPre")
+						:form="frm"
+						:rows="getRows('headerUtilsPre')")
 		template(#loading-box="utilBox")
 			slot(name="loading-box" v-bind="utilBox")
 		template(#loading-icon="utilBox")
@@ -50,9 +49,18 @@
 		template(#title="utilBox")
 			slot(name="title" v-bind="utilBox")
 		template(
-			v-if="$scopedSlots['sub-header']"
+			v-if="$scopedSlots['sub-header'] || $scopedSlots['sub-header-form']"
 			#sub-header="utilBox")
-			slot(name="sub-header" v-bind="utilBox")
+			slot(
+				name="sub-header"
+				v-bind="utilBox")
+				slot(
+					name="sub-header-form"
+					v-if="frm && getRows('subHeader')"
+					v-bind="{ box: utilBox, form: frm, rows: getRows('subHeader')}")
+					VForm(
+						:form="frm"
+						:rows="getRows('subHeader')")
 		template(
 			v-if="isPagination"
 			#footer="utilBox")
@@ -65,12 +73,15 @@
 						@click="cell.setPage(page.id)") {{ page.id + 1 }}
 			.util-box-footer-right.f.ac
 				slot(
-					name="footer-right-form"
-					v-if="form && formRows && formRows.footerRight"
-					v-bind="{ form, rows: formRows.footerRight }")
-					VForm(
-						:form="form"
-						:rows="formRows.footerRight")
+					name="footer-right"
+					v-bind="utilBox")
+					slot(
+						name="footer-right-form"
+						v-if="frm && getRows('footerRight')"
+						v-bind="{ box: utilBox, form: frm, rows: getRows('footerRight') }")
+						VForm(
+							:form="frm"
+							:rows="getRows('footerRight')")
 		template(
 			v-else-if="$scopedSlots['footer']"
 			#footer="utilBox")
@@ -78,7 +89,10 @@
 </template>
 
 <script>
-	import { sym } from "@qtxr/utils";
+	import {
+		sym,
+		get
+	} from "@qtxr/utils";
 	import DataCell, { DataCellPagination } from "@qtxr/data-cell";
 	import Form from "@qtxr/form";
 
@@ -92,10 +106,7 @@
 	export default {
 		name: "ListingBox",
 		data() {
-			const searchForm = this.form || new Form();
-
 			return {
-				searchForm,
 				conf: Object.assign({
 					viewMode: "list",
 					navPadding: 2,
@@ -106,7 +117,18 @@
 			};
 		},
 		methods: {
-			isArray: Array.isArray
+			isArray: Array.isArray,
+			getRows(accessor) {
+				const selfRows = get(this.rows, accessor);
+				if (selfRows)
+					return selfRows;
+
+				const cellRows = this.cell.form && get(this.cell.form.inputsStruct, accessor);
+				if (cellRows)
+					return cellRows;
+
+				return null;
+			}
 		},
 		computed: {
 			isPagination() {
@@ -166,6 +188,15 @@
 				}
 				
 				return pages;
+			},
+			frm() {
+				if (this.form instanceof Form)
+					return this.form;
+
+				if (this.cell.form instanceof Form)
+					return this.cell.form;
+
+				return null;
 			}
 		},
 		props: {
@@ -181,9 +212,6 @@
 			Listing,
 			UtilBox,
 			LoadingBox
-		},
-		beforeDestroy() {
-			this.searchForm.unhookNS(hookSym);
 		}
 	}
 </script>

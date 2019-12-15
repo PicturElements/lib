@@ -1,5 +1,9 @@
-import { partition } from "@qtxr/utils";
+import {
+	isObj,
+	partition
+} from "@qtxr/utils";
 import { mkDataCell } from "@qtxr/data-cell";
+import Form from "@qtxr/form";
 
 const adminViewClassifier = {
 	meta: "self"
@@ -34,12 +38,30 @@ export default class AdminView {
 				const persistentCell = mkDataCell(cell);
 
 				outCells[k] = (wrapper, vm) => {
+					connectDataCell({
+						vm,
+						wrapper,
+						outCells,
+						key: k,
+						config: cell,
+						cell: persistentCell,
+						persistent: true
+					});
 					persistentCell.baseRuntime.vm = vm;
 					return persistentCell;
 				};
 			} else {
 				outCells[k] = (wrapper, vm) => {
 					const nonPersistentCell = mkDataCell(cell);
+					connectDataCell({
+						vm,
+						wrapper,
+						outCells,
+						key: k,
+						config: cell,
+						cell: nonPersistentCell,
+						persistent: false
+					});
 					nonPersistentCell.baseRuntime.vm = vm;
 					return nonPersistentCell;
 				};
@@ -47,7 +69,30 @@ export default class AdminView {
 		}
 
 		wrapper.use("computedData", outCells);
-
 		wrapper.add(this.component);
+	}
+}
+
+function connectDataCell(args) {
+	connectForm(args);
+}
+
+function connectForm({ vm, cell, config }) {
+	let rows;
+
+	if (typeof config.formRows == "function") {
+		rows = config.formRows({
+			vm,
+			cell,
+			Form
+		});
+	}
+
+	if (isObj(rows)) {
+		const form = new Form();
+		cell.form = form;
+		form.connectRows(rows);
+		form.setValues(cell.state);
+		form.hook("update", f => cell.setState(f.extract()));
 	}
 }
