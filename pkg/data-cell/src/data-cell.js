@@ -202,7 +202,9 @@ export default class DataCell extends Hookable {
 			processors: {},
 			xhrPreset: {},
 			instance: this
-		}, (val, k) => k[0] == "$" ? "processors" : classifier[k], "newConfig");
+		}, (val, k) => {
+			return k[0] == "$" ? "processors" : classifier[k];
+		}, "newConfig");
 
 		// Remove "$" from root level processor keys
 		for (const k in processors) {
