@@ -25,9 +25,7 @@ const DEFAULT_STATE_PRESETS = {
 	},
 	loading: {
 		loaded: false,
-		loading: true,
-		error: false,
-		errorMsg: ""
+		loading: true
 	},
 	error: {
 		loaded: false,
