@@ -232,7 +232,8 @@ export default class BaseInput extends Hookable {
 					return targ[key];
 				},
 				circular: true,
-				override: true
+				override: true,
+				restrictiveTarget: true
 			});
 		}
 
