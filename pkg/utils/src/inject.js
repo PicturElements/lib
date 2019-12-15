@@ -28,9 +28,6 @@ import {
 
 export default function inject(target, extender, options) {
 	options = createOptionsObject(options, optionsTemplates);
-		
-	target = coerceToObj(target, extender);
-	extender = coerceToObj(extender);
 
 	const visitedSym = options.circular ? sym("inject visited") : null;
 	
@@ -54,6 +51,7 @@ export default function inject(target, extender, options) {
 	}
 
 	function inj(targ, ext, runtime) {
+		const srcTarg = targ;
 		targ = coerceToObj(targ, ext);
 		ext = coerceToObj(ext);
 
@@ -61,7 +59,11 @@ export default function inject(target, extender, options) {
 			ext[visitedSym] = true;
 
 		if (Array.isArray(ext)) {
-			for (let i = 0, l = ext.length; i < l; i++)
+			const len = options.restrictiveTarget ?
+				(Array.isArray(srcTarg) ? targ.length : ext.length) :
+				ext.length;
+
+			for (let i = 0; i < len; i++)
 				doInject(i, targ, ext, runtime, false);
 		} else {
 			for (let k in ext)
@@ -121,9 +123,6 @@ export default function inject(target, extender, options) {
 			if (isObj(ext[key]) && (options.preserveInstances || isNativeSimpleObject(ext[key])) && !options.shallow) {
 				runtime.schema = schema && schema[key];
 				runtime.ignore = ignore && ignore[key];
-
-				if (!isObj(targ[key]))
-					val = coerceToObj(null, ext[key]);
 				
 				if (options.circular) {
 					val = hasOwn(ext[key], visitedSym, true) ?
@@ -182,5 +181,6 @@ const optionsTemplates = composeOptionsTemplates({
 	shallow: true,
 	preserveInstances: true,
 	strictSchema: true,
-	circular: true
+	circular: true,
+	restrictiveTarget: true
 });
