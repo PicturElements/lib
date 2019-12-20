@@ -46,7 +46,7 @@
 
 <script>
 	import { findClosest } from "@qtxr/utils";
-	import Form, { Count } from "@qtxr/form";
+	import { Count } from "@qtxr/form";
 	import EVT from "@qtxr/evt";
 
 	export default {

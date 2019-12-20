@@ -15,7 +15,7 @@
 </template>
 
 <script>
-	import Form, { Formatted } from "@qtxr/form";
+	import { Formatted } from "@qtxr/form";
 
 	export default {
 		name: "Formatted",

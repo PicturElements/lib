@@ -1,12 +1,19 @@
 @use "~@qtxr/scss-utils" as *;
 
-@use "./auxiliary/general" as *;
-@use "./auxiliary/drop" as *;
+// Auxiliary styling
+@use "./auxiliary/general.scss" as *;
+@use "./auxiliary/drop.scss" as *;
 
+// Core input styling
+@use "./core-inputs/date-selector.scss" as *;
+@use "./core-inputs/time-selector.scss" as *;
+
+// Input styling
 @use "./input.scss" as *;
 @use "./checkbox.scss" as *;
 @use "./count.scss" as *;
 @use "./date.scss" as *;
+@use "./date-time.scss" as *;
 @use "./dropdown.scss" as *;
 @use "./formatted.scss" as *;
 @use "./list.scss" as *;
@@ -21,11 +28,17 @@
 	@include general(compose-args($theme, $general-params)...);
 	@include drop(compose-args($theme, $drop-params)...);
 
+	// Core input styling
+	$core-theme: map-get($theme, "core-inputs");
+	@include date-selector(compose-args($core-theme, $date-selector-params, "general", "date-selector")...);
+	@include time-selector(compose-args($core-theme, $time-selector-params, "general", "time-selector")...);
+	
 	// Input style
 	@include input(compose-args($theme, $input-params, "general", "input")...);
 	@include checkbox(compose-args($theme, $checkbox-params, "general", "input", "checkbox")...);
 	@include count(compose-args($theme, $count-params, "general", "input", "count")...);
 	@include date(compose-args($theme, $date-params, "general", "input", "date")...);
+	@include date-time(compose-args($theme, $date-time-params, "general", "input", "date-time")...);
 	@include dropdown(compose-args($theme, $dropdown-params, "general", "input", "dropdown")...);
 	@include formatted(compose-args($theme, $formatted-params, "general", "input", "formatted")...);
 	@include list-style(compose-args($theme, $list-params, "general", "input", "list")...);

@@ -1,5 +1,5 @@
 <template lang="pug">
-	.dials-wrapper-wrapper
+	.time-selector
 		template(v-for="(d, i) in dialsData")
 			Dials(
 				:updates="updates"
@@ -19,7 +19,6 @@
 		padStart
 	} from "@qtxr/utils";
 	import EVT from "@qtxr/evt";
-	import Form, { Time } from "@qtxr/form";
 
 	import Dials from "./dials.vue";
 
@@ -127,12 +126,6 @@
 					dial.displayExtent
 				);
 			},
-			moveActiveIdx(steps) {
-				const dLen = this.dialsData[this.activeDialsIdx].dials.length,
-					idx = Math.min(this.activeIndices[this.activeDialsIdx], dLen);
-
-				this.activeIndices[this.activeDialsIdx] = (dLen + idx + steps) % dLen;
-			},
 			select(payload, idx) {
 				const dials = this.dialsData[idx].dials,
 					activeIdx = this.activeIndices[idx];
@@ -149,15 +142,13 @@
 				this.$emit("trigger");
 			},
 			emitDisplayData() {
-				const dd = {
+				this.$emit("displaydatachange", {
 					dialsData: this.dialsData,
 					activeIndices: this.activeIndices,
 					setActiveIdx: this.setActiveIdx,
-					resetIndices: this.resetIndices
-				};
-
+					resetDisplay: this.resetDisplay
+				});
 				this.updates++;
-				this.$emit("displaydatachange", dd);
 			},
 			setActiveIdx(newIdx, relative = true, cap = true) {
 				const dLen = this.dialsData[this.activeDialsIdx].dials.length,
@@ -170,7 +161,7 @@
 
 				this.updates++;
 			},
-			resetIndices() {
+			resetDisplay() {
 				for (let i = 0, l = this.activeIndices.length; i < l; i++)
 					this.activeIndices[i] = this.dialsData[i].defaultIdx;
 
@@ -184,7 +175,7 @@
 			}
 		},
 		props: {
-			input: Time
+			input: null
 		},
 		components: {
 			Dials

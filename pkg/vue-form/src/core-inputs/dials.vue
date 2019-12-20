@@ -55,7 +55,7 @@
 		hasAncestor,
 		roundCustom
 	} from "@qtxr/utils";
-	import { Time } from "@qtxr/form";
+	import { Input } from "@qtxr/form";
 	import EVT from "@qtxr/evt";
 
 	export default {
@@ -349,7 +349,7 @@
 			}
 		},
 		props: {
-			input: Time,
+			input: null,
 			updates: Number,
 			dials: Array,
 			activeIdx: Number

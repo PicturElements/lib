@@ -79,7 +79,7 @@ $list-params: (
 				border-top: $border;
 			}
 
-			.row-content {
+			> *:first-child {
 				flex-grow: 1;
 			}
 
@@ -112,11 +112,14 @@ $list-params: (
 					margin-top: 5px;
 				}
 
-				.default-row-action-symbol {
+				.row-action-symbol {
 					background-size: 100% 100%;
 					width: 100%;
 					height: 100%;
+					color: $color;
+				}
 
+				.default-row-action-icon {
 					&.delete {
 						@include inline-svg(
 							$path: "M30 30 l40 40 M70 30 l-40 40",
@@ -146,7 +149,11 @@ $list-params: (
 					background: $highlight;
 					border: none;
 
-					.default-row-action-symbol {
+					.row-action-symbol {
+						color: $highlight-complement;
+					}
+
+					.default-row-action-icon {
 						&.delete {
 							@include inline-svg(
 								$path: "M30 30 l40 40 M70 30 l-40 40",

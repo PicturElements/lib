@@ -31,6 +31,13 @@
 		:class="{ disabled: dis }"
 		:meta="meta")
 	
+	DateTime(
+		v-else-if="is('date-time')"
+		:input="cl.input"
+		:disabled="dis"
+		:class="{ disabled: dis }"
+		:meta="meta")
+	
 	Dropdown(
 		v-else-if="is('dropdown')"
 		:input="cl.input"
@@ -55,11 +62,32 @@
 	List(
 		v-else-if="is('list')"
 		:input="cl.input"
+		:symbols="res(cl.symbols)"
 		:disabled="dis"
 		:class="{ disabled: dis }"
 		:meta="meta")
 		template(#form="d")
-			slot(name="form" v-bind="d")
+			slot(:name="`${cl.input.name}-form`" v-bind="d")
+				slot(name="list-form" v-bind="d")
+					slot(
+						v-if="!$scopedSlots['list-form'] && !$scopedSlots[`${cl.input.name}-form`]"
+						name="form"
+						v-bind="d")
+		template(#actions-pre="d")
+			slot(:name="`${cl.input.name}-actions-pre`" v-bind="d")
+				slot(name="list-actions-pre" v-bind="d")
+		template(#delete-icon="d")
+			slot(:name="`${cl.input.name}-delete-icon`" v-bind="d")
+				slot(name="list-delete-icon" v-bind="d")
+		template(#up-icon="d")
+			slot(:name="`${cl.input.name}-up-icon`" v-bind="d")
+				slot(name="list-up-icon" v-bind="d")
+		template(#down-icon="d")
+			slot(:name="`${cl.input.name}-down-icon`" v-bind="d")
+				slot(name="list-down-icon" v-bind="d")
+		template(#actions-post="d")
+			slot(:name="`${cl.input.name}-actions-post`" v-bind="d")
+				slot(name="list-actions-post" v-bind="d")
 
 	Media(
 		v-else-if="is('media')"
@@ -160,12 +188,11 @@
 </template>
 
 <script>
-	import Form from "@qtxr/form";
-	
 	import Input from "./inputs/input.vue";
 	import Checkbox from "./inputs/checkbox.vue";
 	import Count from "./inputs/count.vue";
 	import Date from "./inputs/date.vue";
+	import DateTime from "./inputs/date-time.vue";
 	import Dropdown from "./inputs/dropdown.vue";
 	import Formatted from "./inputs/formatted.vue";
 	import List from "./inputs/list.vue";
@@ -215,6 +242,7 @@
 			Checkbox,
 			Count,
 			Date,
+			DateTime,
 			Dropdown,
 			Formatted,
 			List,

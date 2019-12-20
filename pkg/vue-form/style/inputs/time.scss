@@ -3,17 +3,11 @@ $time-params: (
 	"border-radius",
 	"background",
 	"error-background",
-	"dial-background",
-	"dial-background-dark",
 	"border",
 	"error-border",
 	"error-color",
-	"blob-radius",
-	"delimitation-padding",
-	"tight-delimitation-padding",
 	"highlight",
-	"highlight-complement",
-	"transition-duration"
+	"highlight-complement"
 );
 
 @mixin time(
@@ -21,17 +15,11 @@ $time-params: (
 	$border-radius: 1px,
 	$background: white,
 	$error-background: #ffe7ec,
-	$dial-background: whitesmoke,
-	$dial-background-dark: #dadee2,
 	$border: 1px solid #dadada,
 	$error-border: 1px solid #e8879b,
 	$error-color: #ab0f2f,
-	$blob-radius: 15px,
-	$delimitation-padding: 20px,
-	$tight-delimitation-padding: 15px,
 	$highlight: #1b66bf,
-	$highlight-complement: white,
-	$transition-duration: 300ms
+	$highlight-complement: white
 ) {
 	.inp-time {
 		.drop-expando-box {
@@ -84,212 +72,6 @@ $time-params: (
 			background: $background;
 			border: $border;
 			border-radius: $border-radius;
-
-			.dials-wrapper-wrapper {
-				display: flex;
-			}
-
-			.dials-wrapper + .dials-wrapper {
-				margin-left: 10px;
-				padding-left: 10px;
-				border-left: 1px solid $dial-background;
-			}
-
-			.dials {
-				position: relative;
-				border-radius: 50%;
-
-				&.hovering {
-					z-index: 10000002;
-
-					&:before {
-						content: "";
-						position: absolute;
-						top: -30%;
-						left: -30%;
-						width: 160%;
-						height: 160%;
-						border-radius: 50%;
-					}
-
-					.dial-selector-hand {
-						&.active-hand {
-							background: $dial-background-dark;
-							color: inherit;
-						}
-
-						&.guide {
-							opacity: 1;
-						}
-					}
-				}
-			}
-
-			.dial {
-				position: relative;
-				width: 150px;
-				height: 150px;
-				border-radius: 50%;
-				font-size: 90%;
-				transition: transform $transition-duration, opacity $transition-duration;
-				transition-timing-function: cubic-bezier(0.5, -0.15, 0.5, 1.15);
-				user-select: none;
-				cursor: default;
-
-				&.background-dial {
-					background: $dial-background;
-				}
-
-				&.edit-dial,
-				&.result-dial {
-					position: absolute;
-					top: 0;
-					left: 0;
-				}
-
-				&.result-dial {
-					cursor: pointer;
-
-					.result-hand {
-						position: absolute;
-						top: 50%;
-						left: 43%;
-						width: 50%;
-						height: 2px;
-						border-radius: 2px;
-						transform-origin: 13.4% 50%;
-
-						.result-hand-fill {
-							position: absolute;
-							top: 0;
-							left: 0;
-							width: 100%;
-							height: 100%;
-							border-radius: inherit;
-							background: $highlight;
-							transform-origin: 0 50%;
-						}
-					}
-				}
-
-				&.hidden {
-					visibility: hidden;
-					transform: scale(0);
-					opacity: 0;
-				}
-
-				&.collapsed {
-					transform: scale(0);
-					opacity: 0;
-				}
-
-				.hand-blob {
-					position: absolute;
-					top: 50%;
-					left: 50%;
-					width: 4px;
-					height: 4px;
-					border-radius: 50%;
-					background: $highlight;
-					transform: translate(-50%, -50%);
-					box-shadow: 0 0 0 1px $dial-background, 0 0 0 2px $highlight;
-				}
-
-				.dial-delimitation-bounds {
-					position: absolute;
-					top: $delimitation-padding;
-					bottom: $delimitation-padding;
-					left: $delimitation-padding;
-					right: $delimitation-padding;
-					// Purely aesthetic
-					border-radius: 50%;
-
-					&.tight {
-						top: $tight-delimitation-padding;
-						bottom: $tight-delimitation-padding;
-						left: $tight-delimitation-padding;
-						right: $tight-delimitation-padding;
-					}
-				}
-
-				.dial-delimitation {
-					position: absolute;
-					display: flex;
-					justify-content: center;
-					align-items: center;
-					opacity: 0.8;
-					transform: translate(-50%, -50%);
-				}
-
-				.dial-delimitation-tick {
-					position: absolute;
-					width: 2px;
-					height: 2px;
-					border-radius: 50%;
-					background: currentColor;
-					opacity: 0.3;
-					transform: translate(-50%, -50%);
-				}
-
-				.dial-selector-hand {
-					position: absolute;
-					top: 50%;
-					left: 50%;
-					width: 50%;
-					height: 2px;
-					border-radius: 2px;
-					transform-origin: 0 50%;
-					background: $highlight;
-					color: $highlight-complement;
-					transition: background $transition-duration, color $transition-duration;
-
-					&.guide {
-						opacity: 0;
-						transition: opacity $transition-duration;
-					}
-
-					.dial-selector-blob {
-						position: absolute;
-						display: flex;
-						justify-content: center;
-						align-items: center;
-						top: 50%;
-						right: 0;
-						width: $blob-radius * 2;
-						height: $blob-radius * 2;
-						border-radius: 50%;
-						background: inherit;
-						cursor: pointer;
-					}
-				}
-			}
-
-			.short-action-row {
-				display: flex;
-				justify-content: space-between;
-			}
-
-			.short-action-button {
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				width: $blob-radius * 2.2;
-				height: $blob-radius * 2.2;
-				border: none;
-				border-radius: 50%;
-				outline: none;
-				background: $dial-background;
-				font-size: 80%;
-				cursor: pointer;
-				z-index: 10000003;
-
-				&.active {
-					background: $highlight;
-					color: $highlight-complement;
-					font-weight: bold;
-					box-shadow: inset 0 0 0 2px $highlight, inset 0 0 0 3px $highlight-complement;
-				}
-			}
 		}
 
 		&.error {

@@ -1,4 +1,10 @@
 $theme: (
+	// Core input styling
+	core-inputs: (
+		general: (),
+		date-selector: ()
+		time-selector: ()
+	),
 	// This also serves as the base style for
 	// other inputs, which can be overwritten,
 	// in each input map

@@ -12,7 +12,7 @@
 </template>
 
 <script>
-	import Form, { Input } from "@qtxr/form";
+	import { Input } from "@qtxr/form";
 
 	export default {
 		name: "Input",

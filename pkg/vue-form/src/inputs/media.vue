@@ -117,7 +117,7 @@
 </template>
 
 <script>
-	import Form, { Media } from "@qtxr/form";
+	import { Media } from "@qtxr/form";
 
 	import {
 		round,

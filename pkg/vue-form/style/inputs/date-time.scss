@@ -1,4 +1,4 @@
-$date-params: (
+$date-time-params: (
 	"height",
 	"border-radius",
 	"background",
@@ -11,12 +11,10 @@ $date-params: (
 	"blob-radius",
 	"delimitation-padding",
 	"tight-delimitation-padding",
-	"highlight",
-	"highlight-complement",
 	"transition-duration"
 );
 
-@mixin date(
+@mixin date-time(
 	$height: 30px,
 	$border-radius: 1px,
 	$background: white,
@@ -29,18 +27,17 @@ $date-params: (
 	$blob-radius: 15px,
 	$delimitation-padding: 20px,
 	$tight-delimitation-padding: 15px,
-	$highlight: #1b66bf,
-	$highlight-complement: white,
 	$transition-duration: 300ms
 ) {
-	.inp-date {
+	.inp-date-time {
 		.drop-expando-box {
 			height: $height;
 			background: $background;
 			border: $border;
 			border-radius: $border-radius;
 
-			.date-display-item {
+			.date-time-display {
+				display: flex;
 				white-space: nowrap;
 			}
 
@@ -49,29 +46,41 @@ $date-params: (
 				width: 0.25em;
 			}
 
-			.date-display-cell.active {
-				position: relative;
-				color: $highlight-complement;
-				z-index: 1000;
+			.time-display-item {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+			}
 
-				&:before {
-					content: "";
-					position: absolute;
-					top: -0.1em;
-					bottom: -0.1em;
-					left: -0.5em;
-					right: -0.5em;
-					background: $highlight;
-					border-radius: 2px;
-					z-index: -1;
-				}
+			.time-sep {
+				margin: 0 0.2em;
+				opacity: 0.6;
+			}
+
+			.meridiem {
+				font-size: 70%;
+				margin: 0 0 0.4em 0.25em;
+				opacity: 0.8;
 			}
 		}
 
 		.drop-dropdown {
+			display: flex;
 			background: $background;
 			border: $border;
 			border-radius: $border-radius;
+
+			.time-sel {
+				margin-left: 10px;
+				padding-left: 10px;
+				border-left: 1px solid $dial-background;
+			}
+
+			.dials-wrapper {
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+			}
 		}
 
 		&.error {
@@ -79,6 +88,20 @@ $date-params: (
 				background: $error-background;
 				border: $error-border;
 				color: $error-color;
+			}
+		}
+
+		&.mobi {
+			.drop-dropdown {
+				flex-direction: column;
+				align-items: center;
+
+				.time-sel {
+					margin: 10px 0 0;
+					padding: 10px 0 0;
+					border-left: none;
+					border-top: 1px solid $dial-background;
+				}
 			}
 		}
 	}

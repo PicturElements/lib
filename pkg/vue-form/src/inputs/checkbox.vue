@@ -10,7 +10,7 @@
 </template>
 
 <script>
-	import Form, { Checkbox } from "@qtxr/form";
+	import { Checkbox } from "@qtxr/form";
 
 	export default {
 		name: "Checkbox",

@@ -1,0 +1,354 @@
+@use "@qtxr/scss-utils" as *;
+
+$date-selector-params: (
+	"cell-width",
+	"cell-height",
+	"cell-padding",
+	"cell-border",
+	"cell-border-radius",
+	"highlight",
+	"highlight-complement"
+);
+
+@mixin date-selector(
+	$color: #1e2021,
+	$cell-width: 30px,
+	$cell-height: 30px,
+	$cell-padding: 2px,
+	$cell-border: 1px solid whitesmoke,
+	$cell-border-radius: 1px,
+	$selection-border-radius: 3px,
+	$highlight: #1b66bf,
+	$highlight-complement: white
+) {
+	.date-selector {
+		user-select: none;
+
+		.card-header {
+			display: flex;
+			margin-bottom: 10px;
+
+			.card-nav {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				flex-grow: 1;
+				margin: 0 10px;
+				font-weight: bold;
+				cursor: pointer;
+			}
+
+			.card-move {
+				width: 25px;
+				height: 25px;
+				flex-shrink: 0;
+				border: none;
+				outline: none;
+				background: transparent;
+				cursor: pointer;
+
+				&.back {
+					@include inline-svg(
+						$path: "M60 30 l-20 20 l20 20",
+						$stroke: $color,
+						$stroke-width: 6
+					);
+				}
+
+				&.forwards {
+					@include inline-svg(
+						$path: "M40 30 l20 20 l-20 20",
+						$stroke: $color,
+						$stroke-width: 6
+					);
+				}
+			}
+		}
+
+		.date-selector-cards {
+			position: relative;
+		}
+
+		.day-card {
+			.calendar-labels {
+				display: flex;
+				margin-bottom: 5px;
+				opacity: 0.9;
+
+				.calendar-label {
+					width: $cell-width;
+					text-align: center;
+					white-space: nowrap;
+					text-transform: uppercase;
+					font-size: 80%;
+					font-weight: bold;
+				}
+			}
+
+			.calendar-cell {
+				display: flex;
+				width: $cell-width;
+				height: $cell-height;
+				justify-content: center;
+				align-items: center;
+
+				&.out-of-bounds span {
+					opacity: 0.35;
+				}
+
+				&.today {
+					font-weight: bold;
+				}
+
+				&.today:not(.active) {
+					color: $highlight;
+
+					.cell-highlight {
+						background: $highlight;
+						opacity: 0.12;
+						border-radius: 30%;
+						padding: 0;
+						top: 10%;
+						left: 10%;
+						width: 80%;
+						height: 80%;
+					}
+
+					&.in-range {
+						.cell-highlight {
+							opacity: 0.4;
+						}
+					}
+				}
+
+				&.in-range {
+					color: $highlight-complement;
+					text-shadow: 1px 1px $highlight, 1px 0 $highlight, -1px 0 $highlight, -1px -1px $highlight, 0 1px $highlight, 0 -1px $highlight, -1px 1px $highlight, 1px -1px $highlight;
+					
+					&.today {
+						color: $highlight-complement;
+					}
+
+					&:after {
+						content: "";
+						position: absolute;
+						top: 0;
+						left: 0;
+						width: 100%;
+						height: 100%;
+						background: $highlight;
+						opacity: 0.65;
+						z-index: 1;
+					}
+
+					&.out-of-bounds {
+						&:after {
+							opacity: 0.5;
+						}
+
+						span {
+							opacity: 1;
+						}
+					}
+				}
+
+				&.start,
+				&.end {
+					.cell-highlight {
+						background: transparent;
+						overflow: hidden;
+					}
+				}
+
+				&.start.end {
+					&:after {
+						opacity: 0.4;
+					}
+				}
+
+				&.start {
+					.cell-highlight:before {
+						content: "";
+						position: absolute;
+						top: -10%;
+						right: 50%;
+						width: 120%;
+						height: 120%;
+						transform-origin: 100% 50%;
+						transform: translate(-5%, -5%) rotate(45deg);
+						background: $highlight;
+						border-radius: $selection-border-radius;
+					}
+				}
+
+				&.end {
+					.cell-highlight:after {
+						content: "";
+						position: absolute;
+						top: -10%;
+						left: 50%;
+						width: 120%;
+						height: 120%;
+						transform-origin: 0 50%;
+						transform: translate(5%, 5%) rotate(45deg);
+						background: $highlight;
+						border-radius: $selection-border-radius;
+					}
+				}
+
+				&.top-corner:after {
+					border-top-left-radius: $selection-border-radius;
+				}
+
+				&.bottom-corner:after {
+					border-bottom-right-radius: $selection-border-radius;
+				}
+			}
+
+			.active-start .in-range:last-child:after {
+				border-top-right-radius: $selection-border-radius;
+			}
+
+			.active-end .in-range:first-child:after {
+				border-bottom-left-radius: $selection-border-radius;
+			}
+
+			.calendar-row:first-child {
+				.in-range:first-child:after {
+					border-top-left-radius: $selection-border-radius;
+				}
+
+				.in-range:last-child:after {
+					border-top-right-radius: $selection-border-radius;
+				}
+			}
+
+			.calendar-row:last-child {
+				.in-range:first-child:after {
+					border-bottom-left-radius: $selection-border-radius;
+				}
+
+				.in-range:last-child:after {
+					border-bottom-right-radius: $selection-border-radius;
+				}
+			}
+		}
+
+		.month-card {
+			display: flex;
+			flex-direction: column;
+
+			.month-row {
+				flex-grow: 1;
+			}
+
+			.month-cell {
+				display: flex;
+				flex-grow: 1;
+				flex-basis: 0;
+				justify-content: center;
+				align-items: center;
+			}
+		}
+
+		.year-card {
+			.year-scroll {
+				height: 100%;
+				overflow-x: hidden;
+				overflow-y: auto;
+				padding: 0 10px;
+				margin: 0 -10px;
+			}
+
+			.year-cell {
+				flex-grow: 1;
+				flex-basis: 0;
+				text-align: center;
+				padding: 10px;
+			}
+		}
+
+		&.guide-size .date-selector-card:not(.guide) {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+		}
+
+		.bordered-row {
+			display: flex;
+			position: relative;
+
+			+ .bordered-row {
+				&:before {
+					content: "";
+					position: absolute;
+					top: 0;
+					left: 0;
+					width: 100%;
+					border-top: $cell-border;
+					transform: translateY(-50%);
+				}
+			}
+		}
+
+		.bordered-cell {
+			position: relative;
+			cursor: pointer;
+
+			+ .bordered-cell {
+				&:before {
+					content: "";
+					position: absolute;
+					top: 0;
+					left: 0;
+					height: 100%;
+					border-left: $cell-border;
+					transform: translateX(-50%);
+				}
+			}
+
+			> *,
+			&:before,
+			&after {
+				pointer-events: none;
+			}
+
+			.cell-highlight {
+				position: absolute;
+				top: -$cell-padding;
+				left: -$cell-padding;
+				width: 100%;
+				height: 100%;
+				padding: $cell-padding;
+				box-sizing: content-box;
+				border-radius: $cell-border-radius;
+				z-index: 9;
+			}
+
+			&.active {
+				color: $highlight-complement;
+
+				.cell-highlight {
+					background: $highlight;
+				}
+			}
+
+			span {
+				position: relative;
+				z-index: 10;
+			}
+		}
+	}
+
+	.drop-wrapper.place-top .date-selector {
+		display: flex;
+		flex-direction: column-reverse;
+
+		.card-header {
+			margin-top: 10px;
+			margin-bottom: 0;
+		}
+	}
+}

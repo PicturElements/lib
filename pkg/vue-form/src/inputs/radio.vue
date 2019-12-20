@@ -15,7 +15,7 @@
 </template>
 
 <script>
-	import Form, { Radio } from "@qtxr/form";
+	import { Radio } from "@qtxr/form";
 	
 	export default {
 		name: "Radio",

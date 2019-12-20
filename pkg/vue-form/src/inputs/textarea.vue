@@ -11,7 +11,7 @@
 </template>
 
 <script>
-	import Form, { TextArea } from "@qtxr/form";
+	import { TextArea } from "@qtxr/form";
 
 	export default {
 		name: "TextArea",

@@ -37,7 +37,7 @@
 
 <script>
 	import { requestFrame } from "@qtxr/utils";
-	import Form, { Dropdown } from "@qtxr/form";
+	import { Dropdown } from "@qtxr/form";
 	import EVT from "@qtxr/evt";
 	
 	const PADDING = 30,

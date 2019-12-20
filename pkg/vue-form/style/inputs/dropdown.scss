@@ -9,7 +9,8 @@ $dropdown-params: (
 	"height",
 	"padding",
 	"mobile-padding",
-	"separator-border"
+	"separator-border",
+	"hover-background"
 );
 
 @mixin dropdown(
@@ -21,7 +22,8 @@ $dropdown-params: (
 	$height: 30px,
 	$padding: 10px,
 	$mobile-padding: 30px,
-	$separator-border: 1px solid rgba(128, 128, 128, 0.25)
+	$separator-border: 1px solid rgba(128, 128, 128, 0.25),
+	$hover-background: rgba(128, 128, 128, 0.06)
 ) {
 	.inp-dropdown {
 		position: relative;
@@ -52,7 +54,15 @@ $dropdown-params: (
 			height: $height;
 			padding: 0 $padding;
 			white-space: nowrap;
+
+			&:hover {
+				background: $hover-background;
+			}
 	
+			+ .dropdown-option {
+				border-top: $separator-border;
+			}
+
 			&.dropdown-active-option {
 				padding-right: $height + $padding;
 				pointer-events: none;
@@ -89,10 +99,6 @@ $dropdown-params: (
 	
 			&.selected .dropdown-option-inner {
 				opacity: 0.5;
-			}
-	
-			+ .dropdown-option {
-				border-top: $separator-border;
 			}
 	
 			.dropdown-option-inner {

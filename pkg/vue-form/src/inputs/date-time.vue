@@ -1,9 +1,16 @@
 <template lang="pug">
-	Drop.input-wrapper.time.inp-time(
-		:class="validationState"
+	Drop.input-wrapper.date-time.inp-date-time(
+		:class="[ isMobile() ? 'mobi' : null, validationState ]"
 		@collapse="collapse")
 		template(#expando-box="rt")
-			.time-display
+			.date-time-display
+				template(v-for="(runtime, i) in dateDisplayData.cardsData")
+					.range-sep(v-if="i > 0") {{ typeof input.rangeSeparator == "string" ? input.rangeSeparator : "-" }}
+					.date-display-item
+						template(v-for="(card, j) in runtime.cards")
+							span.date-sep(v-if="j > 0")
+							span.date-display-cell(:class="card.class") {{ card.displayVal }}
+				span.date-sep
 				template(v-for="(runtime, i) in timeDisplayData.dialsData")
 					.range-sep(v-if="i > 0") {{ typeof input.rangeSeparator == "string" ? input.rangeSeparator : "-" }}
 					.time-display-item
@@ -11,7 +18,11 @@
 							span.time-sep(v-if="j > 0") {{ typeof input.timeSeparator == "string" ? input.timeSeparator : ":" }}
 							span.time-display-cell(:class="[ dial.class, (rt.expanded && timeDisplayData.activeIndices[i] == j) ? 'active' : null ]") {{ dial.displayVal }}
 						span.meridiem(v-if="input.meridiem && runtime.meridiem") {{ runtime.meridiem }}
-		TimeSelector(
+		DateSelector(
+			:input="input"
+			@displaydatachange="dd => dateDisplayData = Object.assign({}, dd)"
+			@trigger="trigger")
+		TimeSelector.time-sel(
 			:input="input"
 			@displaydatachange="dd => timeDisplayData = Object.assign({}, dd)"
 			@trigger="trigger")
@@ -20,15 +31,17 @@
 <script>
 	import { get } from "@qtxr/utils";
 	import EVT from "@qtxr/evt";
-	import { Time } from "@qtxr/form";
+	import { DateTime } from "@qtxr/form";
 
 	import Drop from "../auxiliary/drop.vue";
+	import DateSelector from "../core-inputs/date-selector.vue";
 	import TimeSelector from "../core-inputs/time-selector.vue";
 
 	export default {
-		name: "Time",
+		name: "DateTime",
 		data: _ => ({
 			timeDisplayData: {},
+			dateDisplayData: {},
 			validationMsg: null,
 			validationState: "ok"
 		}),
@@ -36,10 +49,10 @@
 			trigger() {
 				if (this.disabled)
 					return;
-					
+				
 				const reduce = dials => {
 					const timeData = {};
-
+					
 					for (let i = 0, l = dials.length; i < l; i++) {
 						const dialData = dials[i],
 							gotten = get(timeData, dialData.dial.accessor, null, "autoBuild|context");
@@ -47,7 +60,7 @@
 						gotten.context[gotten.key] = dialData.value;
 					}
 
-					return timeData;
+					return Object.assign({}, this.input.value, timeData);
 				};
 
 				const dialsData = this.timeDisplayData.dialsData;
@@ -63,7 +76,7 @@
 					this.input.trigger(reduce(dialsData[0].dials));
 			},
 			collapse(evt) {
-				this.timeDisplayData.resetDisplay();
+				this.dateDisplayData.resetDisplay();
 			},
 			key(evt, key, runtime) {
 				switch (key) {
@@ -73,12 +86,12 @@
 						break;
 
 					case "left":
-						this.timeDisplayData.setActiveIdx(-1);
+						this.dateDisplayData.setActiveIdx(-1);
 						evt.preventDefault();
 						break;
 
 					case "right":
-						this.timeDisplayData.setActiveIdx(1);
+						this.dateDisplayData.setActiveIdx(1);
 						evt.preventDefault();
 						break;
 				}
@@ -95,7 +108,7 @@
 			}
 		},
 		props: {
-			input: Time,
+			input: DateTime,
 			disabled: Boolean,
 			mobileQuery: String,
 			meta: {
@@ -105,6 +118,7 @@
 		},
 		components: {
 			Drop,
+			DateSelector,
 			TimeSelector
 		},
 		beforeMount() {

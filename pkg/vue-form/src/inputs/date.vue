@@ -1,26 +1,24 @@
 <template lang="pug">
 	Drop.input-wrapper.date.inp-date(
 		:class="validationState"
-		@key="key"
 		@collapse="collapse")
 		template(#expando-box="rt")
 			.date-display
+				template(v-for="(runtime, i) in dateDisplayData.cardsData")
+					.range-sep(v-if="i > 0") {{ typeof input.rangeSeparator == "string" ? input.rangeSeparator : "-" }}
+					.date-display-item
+						template(v-for="(card, j) in runtime.cards")
+							span.date-sep(v-if="j > 0")
+							span.date-display-cell(:class="card.class") {{ card.displayVal }}
 		DateSelector(
-			:input="input")
-		//- TimeSelector(
 			:input="input"
-			@displaydatachange="dd => timeDisplayData = Object.assign({}, dd)"
+			@displaydatachange="dd => dateDisplayData = Object.assign({}, dd)"
 			@trigger="trigger")
 </template>
 
 <script>
-	import {
-		numLen,
-		repeat,
-		padStart
-	} from "@qtxr/utils";
 	import EVT from "@qtxr/evt";
-	import Form, { Date as DateInput } from "@qtxr/form";
+	import { Date as DateInput } from "@qtxr/form";
 
 	import Drop from "../auxiliary/drop.vue";
 	import DateSelector from "../core-inputs/date-selector.vue";
@@ -38,7 +36,7 @@
 					return;
 			},
 			collapse(evt) {
-				// this.timeDisplayData.resetIndices();
+				this.dateDisplayData.resetDisplay();
 			},
 			key(evt, key, runtime) {
 				switch (key) {

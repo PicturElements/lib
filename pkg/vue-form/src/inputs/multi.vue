@@ -60,7 +60,7 @@
 </template>
 
 <script>
-	import Form, { Multi } from "@qtxr/form";
+	import { Multi } from "@qtxr/form";
 	import EVT from "@qtxr/evt";
 	import {
 		cleanRegex,
