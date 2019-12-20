@@ -8,6 +8,7 @@ export { default as Input } from "./src/inputs/input";
 export { default as Checkbox } from "./src/inputs/checkbox";
 export { default as Count } from "./src/inputs/count";
 export { default as Date } from "./src/inputs/date";
+export { default as DateTime } from "./src/inputs/date-time";
 export { default as Dropdown } from "./src/inputs/dropdown";
 export { default as Formatted } from "./src/inputs/formatted";
 export { default as List } from "./src/inputs/list";

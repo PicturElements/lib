@@ -36,7 +36,8 @@ export default class Form extends Hookable {
 
 		const masterPreset = {
 			hooks: {},
-			options: {}
+			options: {},
+			meta: {}
 		};
 
 		for (let i = 0, l = optionsAndPresets.length; i < l; i++) {
@@ -55,8 +56,9 @@ export default class Form extends Hookable {
 
 				inject(masterPreset, {
 					hooks: resolveVal(preset.hooks, this) || {},
-					options: resolveVal(preset.options, this) || {}
-				});
+					options: resolveVal(preset.options, this) || {},
+					meta: resolveVal(preset.meta, this) || {}
+				}, "override");
 			} else if (isObject(item))
 				inject(masterPreset.options, item, "override");
 			else if (item != null)
@@ -78,6 +80,7 @@ export default class Form extends Hookable {
 		// State
 		this.valid = true;
 		this.changed = false;
+		this.meta = masterPreset.meta;
 
 		// Flags / general config
 		// Only validate required inputs

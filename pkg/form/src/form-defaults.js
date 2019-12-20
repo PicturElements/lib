@@ -114,6 +114,11 @@ const defaults = {
 			}
 		}
 	},
+	"date-time": {
+		type: "date-time",
+		value: null,
+		meridiem: true
+	},
 	dropdown: {
 		type: "dropdown",
 		value: null,

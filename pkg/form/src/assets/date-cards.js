@@ -4,30 +4,50 @@ import {
 	resolveVal
 } from "@qtxr/utils";
 
+const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+	WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 const DATE_CARDS = {
-	year: {
-		name: "year",
-		key: "year"
-	},
-	month: {
-		name: "month",
-		key: "month",
-		labels: inp => resolveVal(inp.monthLabels, inp) || ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-	},
 	day: {
 		name: "day",
 		accessor: "day",
-		dayOffset: 0,
-		labels: inp => resolveVal(inp.dayLabels, inp) || ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+		defaultCard: false,
+		dayOffset: 1,
+		labels: inp => resolveVal(inp.dayLabels, inp) || WEEKDAY_LABELS,
+		display: (inp, subVal, labels) => subVal,
+		back: null,
+		forwards: null,
+		guideSize: true
+	},
+	month: {
+		name: "month",
+		accessor: "month",
+		defaultCard: false,
+		labels: inp => resolveVal(inp.monthLabels, inp) || MONTH_LABELS,
+		display: (inp, subVal, labels) => labels[subVal],
+		back: false,
+		forwards: false,
+		guideSize: false
+	},
+	year: {
+		name: "year",
+		accessor: "year",
+		defaultCard: false,
+		labels: null,
+		display: (inp, subVal, labels) => subVal,
+		back: false,
+		forwards: false,
+		guideSize: false
 	}
 };
 
-const CARD_ORDER = ["year", "month", "day"],
-	DEFAULT_CARDS = ["year", "month", "day"];
+const CARD_ORDER = ["day", "month", "year"],
+	DEFAULT_CARDS = ["day", "month", "year"];
 
 export default function resolveCards(cards = DEFAULT_CARDS) {
 	const outCards = [],
 		nameMap = {};
+	let hasGuideSize = false;
 
 	const resolve = card => {
 		if (typeof card == "string") {
@@ -50,29 +70,42 @@ export default function resolveCards(cards = DEFAULT_CARDS) {
 		if (DATE_CARDS.hasOwnProperty(card.name))
 			card = inject(card, DATE_CARDS[card.name], "cloneTarget");
 
+		if (card.guideSize)
+			hasGuideSize = true;
+
 		outCards.push(card);
 	};
 
 	if (Array.isArray(cards)) {
 		for (let i = 0, l = cards.length; i < l; i++)
 			resolve(cards[i]);
-	} else if (isObject(cards)) {
-		for (let i = 0, l = CARD_ORDER.length; i < l; i++) {
-			const name = CARD_ORDER[i];
-
-			if (!cards.hasOwnProperty(name))
-				continue;
-
-			if (isObject(cards[name])) {
-				resolve(Object.assign({
-					name
-				}, cards[name]));
-			} else
-				resolve(cards[name]);
-		}
+	}
+	
+	if (!isObject(cards)) {
+		return {
+			cards: outCards,
+			hasGuideSize
+		};
 	}
 
-	return outCards;
+	for (let i = 0, l = CARD_ORDER.length; i < l; i++) {
+		const name = CARD_ORDER[i];
+
+		if (!cards.hasOwnProperty(name))
+			continue;
+
+		if (isObject(cards[name])) {
+			resolve(Object.assign({
+				name
+			}, cards[name]));
+		} else
+			resolve(cards[name]);
+	}
+
+	return {
+		cards: outCards,
+		hasGuideSize
+	};
 }
 
 export {

@@ -11,7 +11,10 @@ export default class List extends BaseInput {
 			formRows: "Array|Object",
 			formConfig: "string|Object|Array",
 			inheritFormConfig: "boolean",
-			rearrangeable: "boolean"
+			rearrangeable: "boolean",
+			beforeadd: "function",
+			beforemove: "function",
+			beforeremove: "function"
 		});
 	}
 

@@ -49,8 +49,14 @@ Time.formalize
 	.if(Date)
 		.to(getTimeData)
 		.from((d, f) => timeDataToDate(d, f.sourceData))
+	.if(Object)
+		.to(d => Object.assign({
+			hour: null,
+			minute: null,
+			second: null
+		}, d))
 	.else
-		.to(_ => getTimeData())
+		.to(_ => getTimeData(null))
 		.from((d, f) => {
 			if (d.hour == null && d.minute == null && d.second == null)
 				return null;
