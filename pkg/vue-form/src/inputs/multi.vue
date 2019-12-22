@@ -8,7 +8,7 @@
 		.collapse-target(@click="collapse")
 		.selection-box(
 			@mousedown="triggerExpand"
-			@touchstart="triggerExpand"
+			@click="triggerExpand"
 			ref="selectionBox")
 			template(v-if="$scopedSlots['selection-item']")
 				template(v-for="(item, idx) in input.value")
@@ -32,10 +32,15 @@
 					v-model="query"
 					tabindex="-1"
 					:disabled="disabled"
+					:class="{ 'pseudo-disabled': searchDisabled }"
+					@keydown="guardInput"
 					@input="triggerSearch"
 					@focus="expand"
 					@blur="enqueueCollapse"
 					ref="searchInput")
+				button.search-refresh(
+					:disabled="searchDisabled"
+					@click="search")
 			.search-results-box(ref="searchResultsBox")
 				template(v-if="!options.length")
 					slot(name="no-search-results" v-bind="this")
@@ -44,7 +49,7 @@
 					template(v-for="(option, idx) in options")
 						slot(
 							name="search-result"
-							v-bind="{ index: idx, option, data: option, optionPtr, select: _ => triggerAddToSelection(option) }")
+							v-bind="{ index: idx, option, data: option, optionPtr, select: _ => triggerAddToSelection(option, idx) }")
 				.default-search-result(
 					v-else
 					v-for="(option, idx) in options"
@@ -54,9 +59,9 @@
 					span.search-result.value
 						slot(
 							name="search-result-value"
-							v-bind="{ index: idx, option, data: option, optionPtr, select: _ => triggerAddToSelection(option) }") {{ getLabel(option) }}
+							v-bind="{ index: idx, option, data: option, optionPtr, select: _ => triggerAddToSelection(option, idx) }") {{ getLabel(option) }}
 			.loading-overlay(v-if="loading")
-				slot(name="loading-icon")
+				slot(name="loading-icon" v-bind="this")
 </template>
 
 <script>
@@ -80,7 +85,10 @@
 			searchBoxStyle: null,
 			updateLoopInitialized: false,
 			loading: false,
+			deferTimeout: null,
+			searchDisabled: false,
 			query: "",
+			searchedOptions: [],
 			options: [],
 			optionPtr: -1,
 			lastOptionPtr: -1,
@@ -91,34 +99,39 @@
 		}),
 		methods: {
 			async search() {
+				this.searchDisabled = true;
 				this.optionPtr = -1;
 				this.loading = true;
 
-				let options = await this.res(this.input.options);
+				const query = this.query,
+					searchRegexFlags = typeof this.input.searchRegexFlags == "string" ?
+						this.input.searchRegexFlags :
+						"i",
+					queryRegex = new RegExp(cleanRegex(this.query), searchRegexFlags),
+					searchArgs = {
+						options: this.input.options,
+						query,
+						queryRegex
+					};
+						
+				let options = typeof this.input.searchFetch == "function" ?
+					await this.res(this.input.searchFetch, searchArgs) :
+					await this.res(this.input.options);
 
 				if (!Array.isArray(options))
 					options = [];
 
-				const val = this.input.value,
-					outOptions = [],
-					maxSearchResults = this.input.maxSearchResults || Infinity;
 				let searchedOptions = [];
 
+				searchArgs.options = options;
+
 				if (!this.input.noSearch) {
-					const query = this.query,
-						queryRegex = new RegExp(cleanRegex(this.query), "i"),
-						searchArgs = {
-							options,
-							query,
-							queryRegex
-						};
-						
 					for (let i = 0, l = options.length; i < l; i++) {
 						if (typeof this.input.search == "function") {
-							const match = this.input.search(options[i], searchArgs);
+							const match = this.res(input.search, options[i], searchArgs);
 
 							if (match)
-								searchedOptions.push(label);
+								searchedOptions.push(this.getLabel(match));
 						} else {
 							const label = this.getLabel(options[i]);
 
@@ -132,8 +145,20 @@
 				} else
 					searchedOptions = options;
 
-				for (let i = 0, l = searchedOptions.length; i < l; i++) {
-					const option = searchedOptions[i];
+				this.searchedOptions = searchedOptions;
+				this.options = this.computeDisplayedOptions(searchedOptions);
+				this.loading = false;
+				this.searchDisabled = false;
+				this.$refs.searchResultsBox.scrollTop = 0;
+			},
+			// FIXME: quadratic time complexity
+			computeDisplayedOptions(options) {
+				const val = this.input.value,
+					maxResults = this.input.maxSearchResults || Infinity,
+					outOptions = [];
+
+				for (let i = 0, l = options.length; i < l; i++) {
+					const option = options[i];
 					let matched = false;
 
 					for (let j = 0, l2 = val.length; j < l2; j++) {
@@ -146,20 +171,32 @@
 					if (!matched) {
 						outOptions.push(option);
 
-						if (outOptions.length == maxSearchResults)
+						if (outOptions.length == maxResults)
 							break;
 					}
 				}
 
-				this.loading = false;
-				this.options = outOptions;
+				return outOptions;
 			},
 			triggerSearch() {
 				this.lastOptionPtr = -1;
-				this.search();
+				clearTimeout(this.deferTimeout);
+
+				if (this.input.defer) {
+					this.deferTimeout = setTimeout(_ => {
+						this.$refs.focusProbe.focus();
+						this.search();
+					}, this.input.defer);
+				} else
+					this.search();
 			},
-			deleteSelectionItem(idx) {
+			guardInput(evt) {
+				if (this.searchDisabled)
+					evt.preventDefault();
+			},
+			deleteSelectionItem(idx, item) {
 				const val = this.input.value,
+					option = val[idx],
 					valOut = [];
 
 				for (let i = 0, l = val.length; i < l; i++) {
@@ -168,24 +205,30 @@
 				}
 
 				this.trigger(valOut);
-				this.search();
+				this.options = this.computeDisplayedOptions(this.searchedOptions);
 			},
 			triggerAddToSelection(option, idx) {
 				this.lastOptionPtr = idx;
 				this.$refs.searchInput.focus();
-				this.addToSelection(option);
+				this.addToSelection(option, idx);
 			},
-			addToSelection(option) {
+			addToSelection(option, idx) {
 				const val = this.input.value,
+					startIdx = typeof this.input.max == "number" ?
+						Math.max(val.length - this.input.max + 1, 0) :
+						0,
 					valOut = [];
 
-				for (let i = 0, l = val.length; i < l; i++)
+				for (let i = startIdx, l = val.length; i < l; i++)
 					valOut.push(val[i]);
 
 				valOut.push(option);
 				requestFrame(_ => this.$refs.selectionBox.scrollTop = 10000);
 				this.trigger(valOut);
-				this.search();
+				this.options.splice(idx, 1);
+
+				if (startIdx > 0)
+					this.options = this.computeDisplayedOptions(this.searchedOptions);
 			},
 			trigger(val) {
 				if (!this.disabled)
@@ -261,7 +304,7 @@
 					return;
 
 				this.lastOptionPtr = this.optionPtr;
-				this.addToSelection(this.options[this.optionPtr]);
+				this.addToSelection(this.options[this.optionPtr], this.optionPtr);
 			},
 			focusOption() {
 				if (!this.$refs.defaultSearchResults)
@@ -300,8 +343,9 @@
 				if (this.disabled)
 					return;
 
+				if (!this.expanded)
+					this.search();
 				this.expanded = true;
-				this.search();
 				this.initUpdateLoop();
 				requestFrame(_ => this.$refs.searchInput.focus());
 			},

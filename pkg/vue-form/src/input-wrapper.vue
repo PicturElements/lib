@@ -144,11 +144,11 @@
 					slot(name="search-result-value" v-bind="d")
 						slot(name="multi-item-value" v-bind="d")
 		template(#no-search-results="inp")
-			slot(:name="`${cl.input.name}-no-search-results`")
-				slot(name="no-search-results")
-		template(#loading-icon)
-			slot(:name="`${cl.input.name}-loading-icon`")
-				slot(name="loading-icon")
+			slot(:name="`${cl.input.name}-no-search-results`" v-bind="inp")
+				slot(name="no-search-results" v-bind="inp")
+		template(#loading-icon="inp")
+			slot(:name="`${cl.input.name}-loading-icon`" v-bind="inp")
+				slot(name="loading-icon" v-bind="inp")
 	
 	Radio(
 		v-else-if="is('radio')"
