@@ -67,6 +67,7 @@ export default class BaseInput extends Hookable {
 
 		// State
 		this.initialized = false;
+		this.changed = false;
 		this.valid = true;
 		this.validationMsg = null;
 		this.validationState = "ok";
@@ -142,6 +143,7 @@ export default class BaseInput extends Hookable {
 				this.form.callHooks("change", this, oldVal, this.value);
 				this.form.callHooks(`change:${this.name}`, this, oldVal, this.value);
 				this.callHooks("change", oldVal, this.value);
+				this.changed = true;
 			}
 		}
 

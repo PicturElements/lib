@@ -1,6 +1,7 @@
 import {
 	get,
 	splitPath,
+	isObj,
 	hasOwn,
 	equals,
 	inject,
@@ -235,6 +236,15 @@ export default class Form extends Hookable {
 		}
 	}
 
+	link(target) {
+		if (!isObj(target))
+			throw new Error("Cannot link: link target must be an object");
+
+		this.setValues(target, true);
+		this.hook("update", (f, inp) => this.extractOne(inp, target));
+		return this;
+	}
+
 	propagate(targets) {
 		const send = name => {
 			if (this.inputs.hasOwnProperty(name) && !this.propagateMap.hasOwnProperty(name)) {
@@ -293,31 +303,11 @@ export default class Form extends Hookable {
 			return this.extractOne(inputOrName);
 
 		const out = {};
-
-		this.forEach((inp, name) => {
-			const extracted = this.extractOne(inp);
-
-			if (extracted === undefined)
-				return;
-
-			if (typeof inp.path == "string") {
-				const built = get(out, inp.path, null, "context|autoBuild");
-				built.context[built.key] = extracted;
-			} else {
-				if (out.hasOwnProperty(name)) {
-					if (!Array.isArray(out[name]))
-						out[name] = [out[name]];
-
-					out[name].push(extracted);
-				} else
-					out[name] = extracted;
-			}
-		});
-
+		this.forEach(inp => this.extractOne(inp, out));
 		return out;
 	}
 
-	extractOne(inputOrName) {
+	extractOne(inputOrName, target = null) {
 		const inp = typeof inputOrName == "string" ?
 			this.inputs[inputOrName] :
 			inputOrName;
@@ -325,7 +315,26 @@ export default class Form extends Hookable {
 		if (!(inp instanceof BaseInput))
 			return;
 
-		return inp[EXTRACT]();
+		const val = inp[EXTRACT]();
+
+		if (target && val !== undefined) {
+			if (typeof inp.path == "string") {
+				const built = get(target, inp.path, null, "context|autoBuild");
+				built.context[built.key] = val;
+			} else {
+				const name = inp.name;
+
+				if (target.hasOwnProperty(name)) {
+					if (!Array.isArray(target[name]))
+						target[name] = [target[name]];
+
+					target[name].push(val);
+				} else
+					target[name] = val;
+			}
+		}
+
+		return val;
 	}
 
 	clear() {
