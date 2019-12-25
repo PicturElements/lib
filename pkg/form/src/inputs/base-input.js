@@ -18,6 +18,7 @@ import { Formalizer, FormalizerCell } from "@qtxr/uc";
 const CHECK = sym("check"),
 	TRIGGER = sym("trigger"),
 	SELF_TRIGGER = sym("selfTrigger"),
+	VALIDATE = sym("validate"),
 	UPDATE = sym("update"),
 	INJECT = sym("inject"),
 	MERGE_INJECT = sym("mergeInject"),
@@ -144,11 +145,11 @@ export default class BaseInput extends Hookable {
 				this.form.callHooks(`change:${this.name}`, this, oldVal, this.value);
 				this.callHooks("change", oldVal, this.value);
 				this.changed = true;
+				this.form.changed = true;
 			}
 		}
 
 		this.initialized = true;
-		this.form.changed = true;
 
 		this[SELF_TRIGGER](this.value);
 		this.form.propagateMap = {};
@@ -170,7 +171,7 @@ export default class BaseInput extends Hookable {
 		this.callHooks("trigger");
 	}
 
-	[UPDATE]() {
+	[VALIDATE]() {
 		let validationResult = null;
 		
 		if (typeof this.handlers.validate == "function")
@@ -181,19 +182,27 @@ export default class BaseInput extends Hookable {
 
 		if (!validBcVRO && typeof validationResult == "string") {
 			validationResult = {
+				valid: false,
 				validationMsg: validationResult,
 				validationState: "error"
 			};
 		} else if (validBcVRO || validBcNullResult) {
 			validationResult = {
+				valid: true,
 				validationMsg: null,
 				validationState: "ok"
 			};
 		}
 
+		return validationResult;
+	}
+
+	[UPDATE]() {
+		const validationResult = this[VALIDATE]();
+
 		this.validationMsg = validationResult.validationMsg;
 		this.validationState = validationResult.validationState;
-		this.valid = this.validationState != "error";
+		this.valid = validationResult.valid;
 
 		if (typeof this.handlers.update == "function")
 			this.handlers.update(this, this.form.inputs);
@@ -310,14 +319,6 @@ export default class BaseInput extends Hookable {
 		this.handlers.checkWord = mkChecker(handler, "validate");
 	}
 
-	get validate() {
-		return this.handlers.validate;
-	}
-
-	set validate(handler) {
-		this.handlers.validate = handler;
-	}
-
 	get process() {
 		return this.handlers.process;
 	}
@@ -364,6 +365,14 @@ export default class BaseInput extends Hookable {
 
 	set check(handler) {
 		this.handlers.check = handler;
+	}
+
+	get validate() {
+		return this[VALIDATE];
+	}
+
+	set validate(handler) {
+		this.handlers.validate = handler;
 	}
 
 	get update() {
@@ -512,6 +521,7 @@ export {
 	CHECK,
 	TRIGGER,
 	SELF_TRIGGER,
+	VALIDATE,
 	UPDATE,
 	EXTRACT,
 	SELF_EXTRACT,

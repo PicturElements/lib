@@ -241,7 +241,7 @@ export default class Form extends Hookable {
 			throw new Error("Cannot link: link target must be an object");
 
 		this.setValues(target, true);
-		this.hook("update", (f, inp) => this.extractOne(inp, target));
+		this.hook("update", (f, inp) => this.extractOne(inp, target, true));
 		return this;
 	}
 
@@ -307,7 +307,7 @@ export default class Form extends Hookable {
 		return out;
 	}
 
-	extractOne(inputOrName, target = null) {
+	extractOne(inputOrName, target = null, replace = false) {
 		const inp = typeof inputOrName == "string" ?
 			this.inputs[inputOrName] :
 			inputOrName;
@@ -324,7 +324,7 @@ export default class Form extends Hookable {
 			} else {
 				const name = inp.name;
 
-				if (target.hasOwnProperty(name)) {
+				if (!replace && target.hasOwnProperty(name)) {
 					if (!Array.isArray(target[name]))
 						target[name] = [target[name]];
 
@@ -394,6 +394,16 @@ export default class Form extends Hookable {
 			} else
 				dispatch(item, key);
 		}
+	}
+
+	validate() {
+		let valid = true;
+	
+		this.forEach(inp => {
+			valid = valid && inp.validate().valid;
+		});
+	
+		return valid;
 	}
 
 	static trigger(inp, ...args) {
@@ -546,15 +556,7 @@ Form.defaults = composeOptionsTemplates(defaults);
 Form.presets = {
 	std: {
 		hooks: {
-			trigger(form) {
-				let valid = true;
-
-				form.forEach(inp => {
-					valid &= (inp.required === false || (inp.initialized && inp.valid));
-				});
-
-				form.valid = !!valid;
-			}
+			trigger: form => form.valid = form.validate()
 		},
 		options: {
 			valid: false,
