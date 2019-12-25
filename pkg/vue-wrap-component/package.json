@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/vue-wrap-component",
-  "version": "2.3.1",
+  "version": "2.4.0",
   "description": "Component wrapping library for Vue components",
   "main": "index.js",
   "scripts": {
@@ -25,7 +25,7 @@
   },
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/vue-wrap-component#readme",
   "dependencies": {
-    "@qtxr/utils": "^1.29.4"
+    "@qtxr/utils": "^1.35.1"
   },
   "devDependencies": {},
   "files": [
@@ -33,7 +33,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 22,
+    "pushes": 23,
     "expose": {
       "scripts": [
         "connect/feed.js"

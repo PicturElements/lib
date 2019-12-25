@@ -41,22 +41,28 @@ class XHRManager {
 		this.options = Object.assign({}, defaultXHROptions, options);
 		this.presets = {};
 		this.macroKeys = {};
+
+		if (this.options.inherits instanceof XHRManager) {
+			const testator = this.options.inherits;
+			this.presets = clone(testator.presets);
+
+			for (const k in testator.macroKeys) {
+				if (!testator.macroKeys.hasOwnProperty(k))
+					continue;
+
+				this[k] = testator[k];
+				this.macroKeys[k] = true;
+			}
+		}
 	}
 
-	definePreset(nameOrPreset, preset) {
-		let name = nameOrPreset;
-
-		if (typeof nameOrPreset != "string") {
-			preset = nameOrPreset;
-			name = "default";
-		}
+	definePreset(name, preset) {
+		const noDuplicates = this.options.noDuplicatePresets;
 
 		if (!name || typeof name != "string") {
 			console.warn(`Cannot define preset: name is not valid`);
 			return this;
 		}
-
-		const noDuplicates = this.options.noDuplicatePresets;
 
 		if (noDuplicates && this.presets.hasOwnProperty(name)) {
 			console.warn(`Cannot define preset: preset by name '${name}' is already in use`);
@@ -112,7 +118,7 @@ class XHRManager {
 
 	use(...presets) {
 		let outPreset = this.pendingPreset,
-			added = Boolean(this.pendingPreset);
+			added = false;
 
 		const inject = presetsArr => {
 			for (let i = 0, l = presetsArr.length; i < l; i++) {
@@ -127,9 +133,6 @@ class XHRManager {
 
 				if (!isObject(preset))
 					continue;
-
-				if (!added && this.presets.hasOwnProperty("default"))
-					outPreset = injectPreset(outPreset, this.presets.default);
 
 				added = true;
 				outPreset = injectPreset(outPreset, preset);
@@ -155,7 +158,7 @@ class XHRManager {
 		const xhr = new XMLHttpRequest(),
 			xs = getState(this),
 			xId = xs.link(this, xhr),
-			preset = resolvePreset(this);
+			preset = this.pendingPreset;
 
 		injectStateDependencies(xs, this);
 
@@ -182,7 +185,7 @@ class XHRManager {
 		const xhr = new XMLHttpRequest(),
 			xs = getState(this),
 			xId = xs.link(this, xhr),
-			preset = resolvePreset(this);
+			preset = this.pendingPreset;
 
 		injectStateDependencies(xs, this);
 
@@ -548,23 +551,18 @@ function mergeData(acc, data) {
 	return Object.assign(acc, clone(data));
 }
 
-function resolvePreset(manager) {
-	if (manager.pendingPreset)
-		return manager.pendingPreset;
-
-	if (manager.presets.hasOwnProperty("default"))
-		return injectPreset(null, manager.presets.default);
-
-	return null;
-}
-
 function mkUrl(url, preset) {
 	if (typeof url != "string")
 		url = (preset && typeof preset.url == "string") ? preset.url : "";
 
+	url = new URL(url);
+
 	const urlParams = mkUrlParams(preset && preset.urlParams);
 
-	if (preset && preset.baseUrl)
+	if (!url.relative)
+		return url.join(urlParams);
+
+	if (preset && (preset.baseUrl || preset.baseUrl == ""))
 		return URL.join(preset.baseUrl, url, urlParams);
 
 	return URL.join(window.location.href, url, urlParams);

@@ -1,7 +1,7 @@
 import { get } from "@qtxr/utils";
 
 export default {
-	init({ XHRManager, XHRState, decodeData }) {
+	init({ XHRManager, XHRState, decodeData }, defaultManager) {
 		return (wrapper, used, path) => {
 			const xhrPartitions = wrapper.internal.xhrPartitions || {},
 				data = wrapper.getInjectorPartition("data");
@@ -36,7 +36,8 @@ export default {
 			const manager = new XHRManager({
 				flush: ["once"],
 				withRuntime: true,
-				state: xhrState
+				state: xhrState,
+				inherits: defaultManager
 			});
 		
 			xhrPartitions[path] = {

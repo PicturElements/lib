@@ -75,7 +75,7 @@ export default class URL {
 			search: "",
 			searchParams: {},
 			stepUp: 0,
-			pathnameIsRelative: false
+			pathnameIsRelative: true
 		});
 
 		if (url)
