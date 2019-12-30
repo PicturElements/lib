@@ -67,6 +67,7 @@ export { default as query } from "./src/query";
 export { default as queryFilterMut } from "./src/query-filter-mut";
 export { default as resolveArgs } from "./src/resolve-args";
 export { default as serialize } from "./src/serialize";
+export { default as set } from "./src/set";
 export { default as splitArgStr } from "./src/split-arg-str";
 export { default as splitPath } from "./src/split-path";
 
