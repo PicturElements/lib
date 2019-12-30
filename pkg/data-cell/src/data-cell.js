@@ -39,10 +39,10 @@ const DEFAULT_METHOD = "custom";
 
 const COMMON_PROCESSOR_OPTIONS = {
 	processors: {
-		validate: (cell, runtime, wrappedResponse) => {
+		validate: (cell, runtime, wrappedResponse, errorMsg) => {
 			return wrappedResponse.success && wrappedResponse.payload ?
 				null :
-				getErrorMsg(cell, wrappedResponse);
+				getErrorMsg(cell, wrappedResponse, errorMsg);
 		},
 		success: (cell, runtime, wrappedResponse) => wrappedResponse,
 		fail: (cell, runtime, wrappedResponse) => wrappedResponse,
@@ -333,11 +333,11 @@ export default class DataCell extends Hookable {
 			});
 		}
 
-		this.setState("loading");
-		this.callHooks("loading", runtime);
-
 		const fetcher = this.fetcher,
 			doFetch = async _ => {
+				this.setState("loading");
+				this.callHooks("loading", runtime);
+
 				this.baseRuntime.state = this.state;
 
 				if (this.defaultRuntime)
@@ -392,8 +392,8 @@ export default class DataCell extends Hookable {
 					er[i](response);
 			}, fetcher.throttle);
 
-			if (erLength >= this.config.maxThrottles)
-				console.warn(`Maximum throttles reached: ${this.config.maxThrottles}`);
+			if (erLength >= this.fetcher.maxThrottles)
+				console.warn(`Maximum concurrent throttled fetches reached: ${this.fetcher.maxThrottles}`);
 			else
 				fetcher.deferredFetch = doFetch;
 
@@ -404,8 +404,8 @@ export default class DataCell extends Hookable {
 					fetcher.enqueuedResolvers.push(resolve);
 				});
 
-			if (erLength >= this.config.maxDefers)
-				console.warn(`Maximum defers reached: ${this.config.maxDefers}`);
+			if (erLength >= this.fetcher.maxDefers)
+				console.warn(`Maximum concurrent deferred fetches reached: ${this.fetcher.maxDefers}`);
 			else
 				fetcher.deferredFetch = doFetch;
 
@@ -432,9 +432,9 @@ export default class DataCell extends Hookable {
 		return this.data;
 	}
 
-	get(accessor, def) {
+	get(accessor, def = null, fetchAnew = false) {
 		return async (...args) => {
-			if (!this.state.loaded)
+			if (!this.state.loaded || fetchAnew)
 				await this.fetch(...args);
 
 			return get(this.data, accessor, def);
@@ -555,7 +555,7 @@ export default class DataCell extends Hookable {
 			case "custom": {
 				const fetchHandler = config.fetch || config.handler;
 	
-				fetcher.fetch = async (runtime, ...args) => {
+				fetcher.fetch = (runtime, ...args) => {
 					return fetchCustom(this, runtime, fetchHandler, ...args);
 				};
 				break;
@@ -885,24 +885,35 @@ function fetchRequest(cell, runtime, method = "get", url = null, preset = null) 
 }
 
 async function fetchCustom(cell, runtime, handler, ...args) {
-	const response = await handler(cell, runtime, ...args);
-	let wrappedResponse = response && response.isDataCellResponse ? 
-		response : (
-			response == null ?
-				cell.mkErrorResponse(response) :
-				cell.mkSuccessResponse(response)
-		);
+	try {
+		const response = await handler(cell, runtime, ...args);
+		let wrappedResponse = response && response.isDataCellResponse ? 
+			response : (
+				response === null && !cell.config.errorOnReject ?
+					cell.mkErrorResponse(response) :
+					cell.mkSuccessResponse(response)
+			);
 
-	const validation = validate(cell, runtime, wrappedResponse);
+		const validation = validate(cell, runtime, wrappedResponse);
 
-	if (validation == null)
-		return wrappedResponse;
-	
-	return cell.mkErrorResponse(validation);
+		if (validation == null)
+			return wrappedResponse;
+		
+		return cell.mkErrorResponse(validation);
+	} catch (e) {
+		let failResponse = cell.mkErrorResponse("Unknown Error", {
+			payload: null
+		});
+
+		failResponse = cell.process("fail")(runtime, failResponse);
+		const validation = validate(cell, runtime, failResponse, e.message);
+		failResponse.errorMsg = validation;
+		return failResponse;
+	}
 }
 
-function validate(cell, runtime, data) {
-	const validation = cell.process("validate")(runtime, data);
+function validate(cell, runtime, data, errorMsg) {
+	const validation = cell.process("validate")(runtime, data, errorMsg);
 	return typeof validation == "string" ? validation : null;
 }
 
