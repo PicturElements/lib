@@ -499,7 +499,7 @@ function paramsToSearch(dict) {
 	return search ? `?${search}` : "";
 }
 
-const searchSplitRegex = /(\w+)(?:&|$|=((?:[^\\&=]+|\\.)+))/g;
+const searchSplitRegex = /(\w+)(?:&|$|=((?:[^\\&=]+|\\.)*))/g;
 
 function searchToParams(search) {
 	const searchDict = {};
