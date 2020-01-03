@@ -9,8 +9,24 @@ import URL from "@qtxr/url";
 import { Hookable } from "@qtxr/bc";
 
 const finalizeable = {
+	ready: true,
+	info: true,
 	success: true,
-	fail: true
+	redirect: true,
+	fail: true,
+	aborted: true
+};
+
+const methods = {
+	GET: "GET",
+	HEAD: "HEAD",
+	POST: "POST",
+	PUT: "PUT",
+	DELETE: "DELETE",
+	CONNECT: "CONNECT",
+	OPTIONS: "OPTIONS",
+	TRACE: "TRACE",
+	PATCH: "PATCH"
 };
 
 const sourceTargetRegex = /^(?:([\w-:]*)\s*->\s*)?([\w-:]+)$/,
@@ -38,12 +54,12 @@ class XHRManager {
 		this.pendingPreset = null;
 		this.runtime = {};
 		this.currentGuard = null;
-		this.options = Object.assign({}, defaultXHROptions, options);
+		this.opts = Object.assign({}, defaultXHROptions, options);
 		this.presets = {};
 		this.macroKeys = {};
 
-		if (this.options.inherits instanceof XHRManager) {
-			const testator = this.options.inherits;
+		if (this.opts.inherits instanceof XHRManager) {
+			const testator = this.opts.inherits;
 			this.presets = clone(testator.presets);
 
 			for (const k in testator.macroKeys) {
@@ -57,7 +73,7 @@ class XHRManager {
 	}
 
 	definePreset(name, preset) {
-		const noDuplicates = this.options.noDuplicatePresets;
+		const noDuplicates = this.opts.noDuplicatePresets;
 
 		if (!name || typeof name != "string") {
 			console.warn(`Cannot define preset: name is not valid`);
@@ -151,34 +167,53 @@ class XHRManager {
 		return this;
 	}
 
+	// Without data payload
 	get(url) {
-		if (!testGuard(this))
-			return XHRState.NULL;
-
-		const xhr = new XMLHttpRequest(),
-			xs = getState(this),
-			xId = xs.link(this, xhr),
-			preset = this.pendingPreset;
-
-		injectStateDependencies(xs, this);
-
-		xhr.onprogress = evt => handleProgress(evt, xId, xs);
-		xhr.onreadystatechange = ({ target }) => handleStateChange(target, xId, xs, preset);
-		xhr.onerror = ({ target }) => handleFail(xId, target, xs, preset);
-
-		xhr.open("GET", mkUrl(url, preset));
-
-		if (preset)
-			setHeaders(xhr, preset);
-
-		xhr.send();
-
-		this.pendingPreset = null;
-		xs.runInit();
-		return xs;
+		return this.request("GET", url);
 	}
 
+	head(url) {
+		return this.request("HEAD", url);
+	}
+
+	delete(url) {
+		return this.request("DELETE", url);
+	}
+
+	connect(url) {
+		return this.request("CONNECT", url);
+	}
+
+	options(url) {
+		return this.request("OPTIONS", url);
+	}
+
+	trace(url) {
+		return this.request("TRACE", url);
+	}
+
+	// With data payload
 	post(url, data) {
+		return this.request("POST", url, data);
+	}
+
+	put(url, data) {
+		return this.request("PUT", url, data);
+	}
+
+	patch(url, data) {
+		return this.request("PATCH", url, data);
+	}
+
+	request(method, url, data) {
+		if (!method || typeof method != "string")
+			throw new Error("Cannot make request: invalid method");
+
+		method = method.toUpperCase();
+
+		if (!methods.hasOwnProperty(method))
+			throw new Error(`Cannot make request: no supported method by type '${method}'`);
+
 		if (!testGuard(this))
 			return XHRState.NULL;
 
@@ -186,21 +221,41 @@ class XHRManager {
 			xs = getState(this),
 			xId = xs.link(this, xhr),
 			preset = this.pendingPreset;
+		let payload = data;
 
 		injectStateDependencies(xs, this);
 
 		xhr.onprogress = evt => handleProgress(evt, xId, xs);
 		xhr.onreadystatechange = ({ target }) => handleStateChange(target, xId, xs, preset);
 		xhr.onerror = ({ target }) => handleFail(xId, target, xs, preset);
+		xhr.onabort = ({ target }) => handleAbort(xId, target, xs, preset);
 
-		xhr.open("POST", mkUrl(url, preset));
+		xhr.open(method, mkUrl(url, preset));
 
-		if (preset) {
-			setHeaders(xhr, preset);
-			data = mergeData(preset.payload, data);
+		switch (method) {
+			case methods.GET:
+			case methods.HEAD:
+			case methods.DELETE:
+			case methods.CONNECT:
+			case methods.OPTIONS:
+			case methods.TRACE:
+				if (preset)
+					setHeaders(xhr, preset);
+
+				xhr.send();
+				break;
+				
+			case methods.POST:
+			case methods.PUT:
+			case methods.PATCH:
+				if (preset) {
+					setHeaders(xhr, preset);
+					payload = mergeData(preset.payload, data);
+				}
+				
+				xhr.send(encodeData(payload, preset));
+				break;
 		}
-		
-		xhr.send(encodeData(data, preset));
 
 		this.pendingPreset = null;
 		xs.runInit();
@@ -232,20 +287,54 @@ function handleProgress(evt, xId, xs) {
 }
 
 function handleStateChange(xhr, xId, xs, preset) {
+	xs.callHooks("statechange", xId, true, xhr);
+
 	if (xhr.readyState == 4) {
-		if (xhr.status == 200) {
-			const data = decodeData(xhr);
-			xs.callHooks("success", xId, true, data, xhr);
-		} else
-			handleFail(xId, xhr, xs, preset);
+		const data = decodeData(xhr);
+		let hookType = null;
+
+		xs.callHooks("ready", xId, true, decodeData(xhr), xhr);
+
+		switch (Math.floor(xhr.status / 100)) {
+			case 1:
+				hookType = "info";
+				break;
+
+			case 2:
+				xs.callHooks("success", xId, true, data, xhr);
+				break;
+
+			case 3:
+				hookType = "redirect";
+				break;
+
+			case 4:
+			case 5:
+				hookType = "fail";
+				break;
+		}
+
+		if (hookType) {
+			if (preset && preset.enforceReponseReturn)
+				xs.callHooks(hookType, xId, true, data, xhr);
+			else
+				xs.callHooks(hookType, xId, true, xhr.status, xhr);
+		}
 	}
 }
 
 function handleFail(xId, xhr, xs, preset) {
-	if (preset && preset.returnReponseOnFail)
+	if (preset && preset.enforceReponseReturn)
 		xs.callHooks("fail", xId, true, decodeData(xhr), xhr);
 	else
 		xs.callHooks("fail", xId, true, xhr.status, xhr);
+}
+
+function handleAbort(xId, xhr, xs, preset) {
+	if (preset && preset.enforceReponseReturn)
+		xs.callHooks("aborted", xId, true, decodeData(xhr), xhr);
+	else
+		xs.callHooks("aborted", xId, true, xhr.status, xhr);
 }
 
 let globalXId = 0;
@@ -270,7 +359,7 @@ class XHRState extends Hookable {
 		this.finished = false;
 		this.xId = globalXId++;
 		this.setProgress(0, 0);
-		flushHooks(this, owner.options.flush, "load");
+		flushHooks(this, owner.opts.flush, "load");
 
 		return this.xId;
 	}
@@ -297,6 +386,11 @@ class XHRState extends Hookable {
 		return this.progress;
 	}
 
+	abort() {
+		this.xhr.abort();
+		return this;
+	}
+
 	init(hook) {
 		return this.hook("init", hook);
 	}
@@ -305,12 +399,36 @@ class XHRState extends Hookable {
 		return this.hook("progress", hook);
 	}
 
+	statechange(hook) {
+		return this.hook("statechange", hook);
+	}
+
+	ready(hook) {
+		return this.hook("ready", hook);
+	}
+
+	// HTTP 1xx
+	info(hook) {
+		return this.hook("info", hook);
+	}
+
+	// HTTP 2xx
 	success(hook) {
 		return this.hook("success", hook);
 	}
 
+	// HTTP 3xx
+	redirect(hook) {
+		return this.hook("redirect", hook);
+	}
+
+	// HTTP 4xx - 5xx
 	fail(hook) {
 		return this.hook("fail", hook);
+	}
+
+	aborted(hook) {
+		return this.hook("aborted", hook);
 	}
 
 	finally(hook) {
@@ -381,7 +499,7 @@ class XHRState extends Hookable {
 		super.hook({
 			partitionName: name,
 			handler(xs, type, xId, nativeCall, ...args) {
-				if (this.owner.options.withRuntime)
+				if (this.owner.opts.withRuntime)
 					dispatcher.call(this, hookData.handler, xId, [mkRuntime(xs, xId), ...args, xs]);
 				else
 					dispatcher.call(this, hookData.handler, xId, [...args, xs]);
@@ -674,10 +792,10 @@ function normalizeContentType(contentType) {
 }
 
 function getState(manager) {
-	if (manager.options.state)
-		return manager.options.state;
+	if (manager.opts.state)
+		return manager.opts.state;
 	else
-		return new manager.options.stateConstructor(...manager.options.stateArgs);
+		return new manager.opts.stateConstructor(...manager.opts.stateArgs);
 }
 
 function injectStateDependencies(state, manager) {
