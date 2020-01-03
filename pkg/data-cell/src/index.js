@@ -1,5 +1,6 @@
 import {
 	sym,
+	inject,
 	earmark,
 	serialize,
 	matchQuery
@@ -34,8 +35,39 @@ function definePreset(nameOrPreset, preset) {
 	this.presets[name] = preset;
 }
 
+function injectPresets(config) {
+	let injected = false;
+
+	const inj = name => {
+		if (typeof name != "string" || !DataCell.presets.hasOwnProperty(name))
+			throw new Error(`Cannot inject preset: ${serialize(name)} is not a valid name`);
+
+		if (injected)
+			config = inject(config, DataCell.presets[name]);
+		else
+			config = inject(config, DataCell.presets[name], "cloneTarget");
+
+		injected = true;
+	};
+
+	if (DataCell.presets.hasOwnProperty("default"))
+		inj("default");
+
+	if (typeof config.preset == "string")
+		inj(config.preset);
+
+	if (Array.isArray(config.presets)) {
+		for (let i = 0, l = config.presets.length; i < l; i++)
+			inj(config.presets[i]);
+	}
+
+	return config;
+}
+
 function mkDataCell(config, initConfig) {
 	if (config) {
+		config = injectPresets(config);
+
 		const species = typeof config.species == "string" || (config.species && config.species[DATA_CELL_SPECIES_SYM]) ?
 			config.species :
 			config.type;
