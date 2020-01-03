@@ -77,14 +77,22 @@ function cleanAttributes(attrs) {
 }
 
 function joinClass(...classes) {
-	return join(false, classes);
+	return join(classes, null, false);
 }
 
 function joinClassAsArray(...classes) {
-	return join(true, classes);
+	return join(classes, null, true);
 }
 
-function join(returnAsArr, classes, callArgs) {
+function joinClassWithArgs(...classes) {
+	return (...args) => join(classes, args, false);
+}
+
+function joinClassAsArrayWithArgs(...classes) {
+	return (...args) => join(classes, args, true);
+}
+
+function join(classes, callArgs, returnAsArr) {
 	const map = {},
 		arr = [];
 
@@ -135,5 +143,7 @@ export {
 	overrideAttributes,
 	cleanAttributes,
 	joinClass,
-	joinClassAsArray
+	joinClassAsArray,
+	joinClassWithArgs,
+	joinClassAsArrayWithArgs
 };

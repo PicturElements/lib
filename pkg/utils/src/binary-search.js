@@ -4,7 +4,7 @@ import {
 } from "./options";
 
 // Returns an index around which the comparator proximity is minimal
-function binarySearch(arr, comparator, reverse) {
+function binarySearch(arr, comparator, reverse = false) {
 	const direction = reverse === true ? -1 : 1;
 	let start = 0,
 		end = arr.length - 1;
@@ -135,20 +135,24 @@ function findClosest(arr, comparator, options) {
 				overflow = stepPoint >= arr.length,
 				outOfBounds = underflow || overflow;
 
-			if (!(options.upper ^ options.lower) && !outOfBounds) {
-				const stepProx = comparator(arr[stepPoint]),
-					sa = Math.abs(stepProx),
-					ra = Math.abs(refProx);
-
-				// | if abs !equal         | if absolute is equal, compare directly
-				if ((sa != ra && sa < ra) || (sa == ra && stepProx > refProx))
-					return dispatch(stepPoint, stepProx);
-			// Handle disallowed underflow
-			} else if ((options.reverse ^ underflow) && options.lower)
+			if ((options.reverse ^ underflow) && options.lower)
 				return dispatch(-1, 0);
-			// Handle disallowed overflow
 			else if ((options.reverse ^ overflow) && options.upper)
 				return dispatch(-1, 0);
+
+			if (!outOfBounds) {
+				const stepProx = comparator(arr[stepPoint]),
+					ra = Math.abs(refProx),
+					sa = Math.abs(stepProx);
+
+				if (refProx * stepProx < 0) {
+					if (options.lower && (stepProx < 0 ^ options.reverse))
+						return dispatch(stepPoint, stepProx);
+					if (options.upper && (stepProx > 0 ^ options.reverse))
+						return dispatch(stepPoint, stepProx);
+				} else if (!(options.lower ^ options.upper) && sa < ra)
+					return dispatch(stepPoint, stepProx);
+			}
 
 			return dispatch(start, refProx);
 		}
