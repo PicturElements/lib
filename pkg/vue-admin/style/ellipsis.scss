@@ -29,7 +29,6 @@ $ellipsis-params: (
 			margin: -$padding;
 			box-sizing: content-box;
 			cursor: pointer;
-			z-index: 10;
 
 			.adm-icon {
 				opacity: 0.5;
@@ -41,7 +40,6 @@ $ellipsis-params: (
 		}
 
 		&.open {
-			transform: translateZ(10px);
 			z-index: 10000000;
 
 			.ellipsis-launcher .adm-icon {
@@ -51,18 +49,16 @@ $ellipsis-params: (
 
 		.ellipsis-menu {
 			visibility: hidden;
-			position: absolute;
-			top: 100%;
-			right: -($padding + $border-width);
+			position: fixed;
 			padding: $padding;
-			margin-top: $padding - $border-width;
+			margin-top: $border-width * -2;
 			background: $background;
 			border: 1px solid $border-color;
 			border-radius: 2px 0 2px 2px;
 			min-width: 100px;
+			overflow: visible;
 
-			&:before {
-				content: "";
+			.ellipsis-menu-nub {
 				position: absolute;
 				top: -($width + 2 * $padding);
 				right: -$border-width;
@@ -80,7 +76,12 @@ $ellipsis-params: (
 				white-space: nowrap;
 				cursor: pointer;
 
-				&:hover {
+				&.disabled {
+					opacity: 0.5;
+					cursor: default;
+				}
+
+				&:not(.disabled):hover {
 					background: $hover-background;
 				}
 			}
@@ -96,13 +97,12 @@ $ellipsis-params: (
 			visibility: visible;
 		}
 
-		&.flipped {
+		&.place-top {
 			.ellipsis-menu {
-				top: auto;
-				bottom: 100%;
-				margin: 0 0 ($padding - $border-width) 0;
+				margin-top: 0;
+				margin-bottom: $border-width * -2;
 
-				&:before {
+				.ellipsis-menu-nub {
 					border-top-width: 0;
 					border-bottom-width: $border-width;
 					top: auto;
