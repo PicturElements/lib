@@ -1,13 +1,12 @@
 import {
 	sym,
-	inject,
 	earmark,
 	serialize,
 	matchQuery
 } from "@qtxr/utils";
 
 // All DataCell constructors
-import DataCell from "./data-cell";
+import DataCell, { injectPresets } from "./data-cell";
 import DataCellComposite from "./data-cell-composite";
 import DataCellPagination from "./data-cell-pagination";
 
@@ -33,35 +32,6 @@ function definePreset(nameOrPreset, preset) {
 		throw new Error(`Cannot define preset: invalid preset name ${serialize(name)}`);
 
 	this.presets[name] = preset;
-}
-
-function injectPresets(config) {
-	let injected = false;
-
-	const inj = name => {
-		if (typeof name != "string" || !DataCell.presets.hasOwnProperty(name))
-			throw new Error(`Cannot inject preset: ${serialize(name)} is not a valid name`);
-
-		if (injected)
-			config = inject(config, DataCell.presets[name]);
-		else
-			config = inject(config, DataCell.presets[name], "cloneTarget");
-
-		injected = true;
-	};
-
-	if (DataCell.presets.hasOwnProperty("default"))
-		inj("default");
-
-	if (typeof config.preset == "string")
-		inj(config.preset);
-
-	if (Array.isArray(config.presets)) {
-		for (let i = 0, l = config.presets.length; i < l; i++)
-			inj(config.presets[i]);
-	}
-
-	return config;
 }
 
 function mkDataCell(config, initConfig) {

@@ -4,6 +4,7 @@ import {
 	clone,
 	inject,
 	isObject,
+	serialize,
 	isPrimitive,
 	matchType,
 	partition,
@@ -181,6 +182,9 @@ const DEFAULT_PARTITION_CLASSIFIER = {
 export default class DataCell extends Hookable {
 	constructor(config = {}, initConfig = {}) {
 		super();
+
+		if (!isInjectedConfig(config))
+			config = injectPresets(config);
 
 		const classifier = inject(
 			DEFAULT_PARTITION_CLASSIFIER,
@@ -910,3 +914,44 @@ function getErrorMsg(cell, wrappedResponse, errorMsg) {
 			return `Unknown error (method: '${cell.fetcher.method}')`;
 	}
 }
+
+const INJECTED_PRESET_SYM = sym("injected preset");
+
+function injectPresets(config) {
+	let injected = false;
+
+	const inj = name => {
+		if (typeof name != "string" || !DataCell.presets.hasOwnProperty(name))
+			throw new Error(`Cannot inject preset: ${serialize(name)} is not a valid name`);
+
+		if (injected)
+			config = inject(config, DataCell.presets[name]);
+		else
+			config = inject(config, DataCell.presets[name], "cloneTarget");
+
+		injected = true;
+	};
+
+	if (DataCell.presets.hasOwnProperty("default"))
+		inj("default");
+
+	if (typeof config.preset == "string")
+		inj(config.preset);
+
+	if (Array.isArray(config.presets)) {
+		for (let i = 0, l = config.presets.length; i < l; i++)
+			inj(config.presets[i]);
+	}
+
+	config[INJECTED_PRESET_SYM] = true;
+	return config;
+}
+
+function isInjectedConfig(config) {
+	return isObject(config) && config.hasOwnProperty(INJECTED_PRESET_SYM);
+}
+
+export {
+	injectPresets,
+	isInjectedConfig
+};
