@@ -1,15 +1,14 @@
-import { get } from "@qtxr/utils";
+import {
+	get,
+	isObject
+} from "@qtxr/utils";
 
 export default {
 	init({ XHRManager, XHRState, decodeData }, defaultManager) {
 		return (wrapper, used, path) => {
-			const xhrPartitions = wrapper.internal.xhrPartitions || {},
-				data = wrapper.getInjectorPartition("data");
-		
-			const gotten = get(data, path, null, {
-					autoBuild: true,
-					context: true
-				}),
+			const usedPaths = wrapper.internal.usedPaths || {},
+				data = wrapper.getInjectorPartition("data"),
+				gotten = get(data, path, null, "autoBuild|context"),
 				state = {
 					loaded: false,
 					loading: false,
@@ -22,50 +21,46 @@ export default {
 					gotten.data[k] = state[k];
 			}
 		
-			const xhrState = XHRState.promised()
-				.hook("static:init", runtime => {
-					setLoadingState(runtime.loadingState, "loading");
-				})
-				.hook("static:success", runtime => {
-					setLoadingState(runtime.loadingState, "success");
-				})
-				.hook("static:fail", runtime => {
-					setLoadingState(runtime.loadingState, "error");
-				});
-		
-			const manager = new XHRManager({
-				flush: ["once"],
-				withRuntime: true,
-				state: xhrState,
-				inherits: defaultManager
-			});
-		
-			xhrPartitions[path] = {
-				manager,
-				xhrState
-			};
-			wrapper.internal.xhrPartitions = xhrPartitions;
+			usedPaths[path] = true;
+			wrapper.internal.usedPaths = usedPaths;
 		
 			if (used)
 				return;
 		
 			wrapper.addMethod("xhr", function(path) {
-				const vm = this,
-					partition = xhrPartitions[path];
+				const vm = this;
 		
-				if (!partition)
+				if (!wrapper.internal.usedPaths.hasOwnProperty(path))
 					throw new Error(`Cannot access XHR partition at '${path}' because it's not registered`);
 		
 				const loadingState = get(vm.$data, path);
+
+				const xhrState = XHRState.promised()
+					.hook("static:init", runtime => {
+						setLoadingState(runtime.loadingState, "loading");
+					})
+					.hook("static:success", runtime => {
+						setLoadingState(runtime.loadingState, "success");
+					})
+					.hook("static:fail", runtime => {
+						setLoadingState(runtime.loadingState, "error");
+					});
+			
+				const manager = new XHRManager({
+					flush: ["once"],
+					withRuntime: true,
+					state: xhrState,
+					inherits: defaultManager
+				});
 		
-				partition.manager.attachRuntime({
+				manager.attachRuntime({
 					vm,
 					loadingState,
 					setMsg(msg) {
 						loadingState.msg = msg;
 					},
 					resolveErrorMsg() {
-						const xhr = partition.manager.settings.state.xhr;
+						const xhr = manager.settings.state.xhr;
 		
 						if (xhr.responseText)
 							this.setMsg(decodeData(xhr).message);
@@ -74,13 +69,16 @@ export default {
 					}
 				});
 		
-				return partition.manager;
+				return manager;
 			});
 		
-			wrapper.addMethod("setLoadingState", function(partition, state) {
-				const dp = this.$data && this.$data[partition];
+			wrapper.addMethod("setLoadingState", function(path, state) {
+				if (!wrapper.internal.usedPaths.hasOwnProperty(path))
+					return;
+
+				const dp = get(this.$data, path);
 		
-				if (!this.$data.hasOwnProperty(partition) || !dp || dp.constructor != Object)
+				if (!isObject(dp))
 					return;
 		
 				setLoadingState(dp, state);
