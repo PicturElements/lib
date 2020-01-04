@@ -1,4 +1,5 @@
 import {
+	sym,
 	clone,
 	casing,
 	isObject,
@@ -6,7 +7,7 @@ import {
 	getConstructorName
 } from "@qtxr/utils";
 import URL from "@qtxr/url";
-import { Hookable } from "@qtxr/bc";
+import { PromisedHookable } from "@qtxr/bc";
 
 const finalizeable = {
 	ready: true,
@@ -281,67 +282,12 @@ class XHRManager {
 	}
 }
 
-function handleProgress(evt, xId, xs) {
-	xs.setProgress(evt.loaded, evt.total);
-	xs.callHooks("progress", xId, true, xs.getProgress());
-}
-
-function handleStateChange(xhr, xId, xs, preset) {
-	xs.callHooks("statechange", xId, true, xhr);
-
-	if (xhr.readyState == 4) {
-		const data = decodeData(xhr);
-		let hookType = null;
-
-		xs.callHooks("ready", xId, true, decodeData(xhr), xhr);
-
-		switch (Math.floor(xhr.status / 100)) {
-			case 1:
-				hookType = "info";
-				break;
-
-			case 2:
-				xs.callHooks("success", xId, true, data, xhr);
-				break;
-
-			case 3:
-				hookType = "redirect";
-				break;
-
-			case 4:
-			case 5:
-				hookType = "fail";
-				break;
-		}
-
-		if (hookType) {
-			if (preset && preset.enforceReponseReturn)
-				xs.callHooks(hookType, xId, true, data, xhr);
-			else
-				xs.callHooks(hookType, xId, true, xhr.status, xhr);
-		}
-	}
-}
-
-function handleFail(xId, xhr, xs, preset) {
-	if (preset && preset.enforceReponseReturn)
-		xs.callHooks("fail", xId, true, decodeData(xhr), xhr);
-	else
-		xs.callHooks("fail", xId, true, xhr.status, xhr);
-}
-
-function handleAbort(xId, xhr, xs, preset) {
-	if (preset && preset.enforceReponseReturn)
-		xs.callHooks("aborted", xId, true, decodeData(xhr), xhr);
-	else
-		xs.callHooks("aborted", xId, true, xhr.status, xhr);
-}
-
+const promiseHookSym = sym("promise hook");
 let globalXId = 0;
 
-class XHRState extends Hookable {
-	constructor(xhr) {
-		super();
+class XHRState extends PromisedHookable {
+	constructor(executor, config, xhr) {
+		super(executor, config);
 		this.xhr = xhr;
 		this.owner = null;
 		this.finished = false;
@@ -367,6 +313,42 @@ class XHRState extends Hookable {
 	runInit() {
 		this.callHooks("init", this.xId, true, this, this.xhr);
 		this.callHooks("progress", this.xId, true, this.getProgress());
+
+		this.hook("ready", {
+			nickname: promiseHookSym,
+			ttl: 1,
+			handler: (data, xhr) => {
+				this.dispatchPromise("resolve", {
+					success: ~~(xhr.status / 100) == 2,
+					status: xhr.status,
+					aborted: false,
+					data,
+					xhr
+				});
+
+				this.unhook({
+					nickname: promiseHookSym
+				});
+			}
+		});
+
+		this.hook("abort", {
+			nickname: promiseHookSym,
+			ttl: 1,
+			handler: (xs, data, xhr) => {
+				this.dispatchPromise("resolve", {
+					success: false,
+					status: xhr.status,
+					aborted: true,
+					data,
+					xhr
+				});
+
+				this.unhook({
+					nickname: promiseHookSym
+				});
+			}
+		});
 	}
 
 	setProgress(loaded, total) {
@@ -554,6 +536,62 @@ class XHRState extends Hookable {
 				callback.call(this, rtCandidate, ...args);
 		};
 	}
+}
+
+function handleProgress(evt, xId, xs) {
+	xs.setProgress(evt.loaded, evt.total);
+	xs.callHooks("progress", xId, true, xs.getProgress());
+}
+
+function handleStateChange(xhr, xId, xs, preset) {
+	xs.callHooks("statechange", xId, true, xhr);
+
+	if (xhr.readyState == 4) {
+		const data = decodeData(xhr);
+		let hookType = null;
+
+		xs.callHooks("ready", xId, true, decodeData(xhr), xhr);
+
+		switch (Math.floor(xhr.status / 100)) {
+			case 1:
+				hookType = "info";
+				break;
+
+			case 2:
+				xs.callHooks("success", xId, true, data, xhr);
+				break;
+
+			case 3:
+				hookType = "redirect";
+				break;
+
+			case 4:
+			case 5:
+				hookType = "fail";
+				break;
+		}
+
+		if (hookType) {
+			if (preset && preset.enforceReponseReturn)
+				xs.callHooks(hookType, xId, true, data, xhr);
+			else
+				xs.callHooks(hookType, xId, true, xhr.status, xhr);
+		}
+	}
+}
+
+function handleFail(xId, xhr, xs, preset) {
+	if (preset && preset.enforceReponseReturn)
+		xs.callHooks("fail", xId, true, decodeData(xhr), xhr);
+	else
+		xs.callHooks("fail", xId, true, xhr.status, xhr);
+}
+
+function handleAbort(xId, xhr, xs, preset) {
+	if (preset && preset.enforceReponseReturn)
+		xs.callHooks("aborted", xId, true, decodeData(xhr), xhr);
+	else
+		xs.callHooks("aborted", xId, true, xhr.status, xhr);
 }
 
 function mkRuntime(state, xId) {
@@ -795,7 +833,7 @@ function getState(manager) {
 	if (manager.opts.state)
 		return manager.opts.state;
 	else
-		return new manager.opts.stateConstructor(...manager.opts.stateArgs);
+		return manager.opts.stateConstructor.promised(...manager.opts.stateArgs);
 }
 
 function injectStateDependencies(state, manager) {
@@ -826,7 +864,7 @@ const defaultXHROptions = {
 	flush: []
 };
 
-XHRState.NULL = new XHRState();
+XHRState.NULL = XHRState.promised();
 
 // Just for clarity - XHR is the default XHR manager that
 // handles miscellaneous requests. If wanted, new instances
