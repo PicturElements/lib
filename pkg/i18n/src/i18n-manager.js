@@ -302,6 +302,11 @@ class I18NManager extends Hookable {
 	}
 }
 
+I18NManager.prototype.format = I18NManager.prototype.compose;
+I18NManager.prototype.fmt = I18NManager.prototype.compose;
+I18NManager.prototype.dateFormat = I18NManager.prototype.dateCompose;
+I18NManager.prototype.dfmt = I18NManager.prototype.dateCompose;
+
 // Initializes a base locale partition (e.g. en, en_uk)
 // and creates a reference table. The reference table contains
 // locale data that describe which partition to seek supplementary data
