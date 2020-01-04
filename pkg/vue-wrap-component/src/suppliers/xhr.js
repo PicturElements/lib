@@ -22,7 +22,7 @@ export default {
 					gotten.data[k] = state[k];
 			}
 		
-			const xhrState = new XHRState()
+			const xhrState = XHRState.promised()
 				.hook("static:init", runtime => {
 					setLoadingState(runtime.loadingState, "loading");
 				})
