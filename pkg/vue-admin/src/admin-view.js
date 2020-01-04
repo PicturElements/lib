@@ -77,11 +77,11 @@ function connectDataCell(args) {
 	connectForm(args);
 }
 
-function connectForm({ vm, cell, config }) {
+function connectForm({ vm, cell }) {
 	let rows;
 
-	if (typeof config.formRows == "function") {
-		rows = config.formRows({
+	if (typeof cell.config.formRows == "function") {
+		rows = cell.config.formRows({
 			vm,
 			cell,
 			Form

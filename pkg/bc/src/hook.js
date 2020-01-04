@@ -1,3 +1,5 @@
+import { opt } from "./common/options";
+
 export default class Hook {
 	constructor(owner, data) {
 		this.owner = owner;
@@ -83,6 +85,9 @@ export default class Hook {
 }
 
 function bindFunc(func, hook) {
+	if (opt(hook.owner, "noOwnerArg"))
+		return func.bind(hook.owner);
+
 	switch (hook.data.argTemplate) {
 		case "context":
 			return func.bind(hook.owner);
