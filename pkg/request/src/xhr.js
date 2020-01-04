@@ -315,37 +315,14 @@ class XHRState extends PromisedHookable {
 		this.callHooks("progress", this.xId, true, this.getProgress());
 
 		this.hook("ready", {
-			nickname: promiseHookSym,
 			ttl: 1,
-			handler: (data, xhr) => {
+			handler: (response, xhr) => {
 				this.dispatchPromise("resolve", {
 					success: ~~(xhr.status / 100) == 2,
 					status: xhr.status,
-					aborted: false,
-					data,
+					aborted: xhr.status == 0,
+					response,
 					xhr
-				});
-
-				this.unhook({
-					nickname: promiseHookSym
-				});
-			}
-		});
-
-		this.hook("abort", {
-			nickname: promiseHookSym,
-			ttl: 1,
-			handler: (xs, data, xhr) => {
-				this.dispatchPromise("resolve", {
-					success: false,
-					status: xhr.status,
-					aborted: true,
-					data,
-					xhr
-				});
-
-				this.unhook({
-					nickname: promiseHookSym
 				});
 			}
 		});
