@@ -17,7 +17,8 @@ const DATE_CARDS = {
 		display: (inp, subVal, labels) => subVal,
 		back: null,
 		forwards: null,
-		guideSize: true
+		guideSize: true,
+		hideHeader: false
 	},
 	month: {
 		name: "month",
@@ -27,7 +28,8 @@ const DATE_CARDS = {
 		display: (inp, subVal, labels) => labels[subVal],
 		back: false,
 		forwards: false,
-		guideSize: false
+		guideSize: false,
+		hideHeader: false
 	},
 	year: {
 		name: "year",
@@ -37,7 +39,8 @@ const DATE_CARDS = {
 		display: (inp, subVal, labels) => subVal,
 		back: false,
 		forwards: false,
-		guideSize: false
+		guideSize: false,
+		hideHeader: true
 	}
 };
 
