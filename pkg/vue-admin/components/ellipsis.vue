@@ -91,7 +91,7 @@
 				if (typeof option.disabled == "function")
 					return Boolean(option.disabled(option, this.data));
 
-				return option.hasOwnProperty("disabled") ? Boolean(option.disabled) : true;
+				return option.hasOwnProperty("disabled") ? Boolean(option.disabled) : false;
 			},
 			dispatchAction(evt, option) {
 				if (this.disabled(option))
