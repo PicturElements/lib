@@ -10,7 +10,7 @@
 						template(v-for="(card, j) in runtime.cards")
 							span.date-sep(v-if="j > 0")
 							span.date-display-cell(:class="card.class") {{ card.displayVal }}
-				span.date-sep
+				span.date-time-sep
 				template(v-for="(runtime, i) in timeDisplayData.dialsData")
 					.range-sep(v-if="i > 0") {{ typeof input.rangeSeparator == "string" ? input.rangeSeparator : "-" }}
 					.time-display-item

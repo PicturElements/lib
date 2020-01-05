@@ -1,5 +1,8 @@
 <template lang="pug">
-	.date-selector(:class="{ 'guide-size': input.hasGuideSize }")
+	.date-selector(
+		:class="{ 'guide-size': input.hasGuideSize, 'hide-header': input.cards[activeCardsIdx].hideHeader }"
+		:style="getSelectorStyle()"
+		ref="selector")
 		.card-header
 			button.card-move.back(
 				:style="{ visibility: input.cards[activeCardsIdx].back == false ? 'hidden' : null }"
@@ -430,6 +433,14 @@
 					setActiveIdx: this.setActiveIdx,
 					resetDisplay: this.resetDisplay
 				});
+			},
+			getSelectorStyle() {
+				if (this.input.cards[this.activeCardsIdx].hideHeader) {
+					return {
+						height: `${this.$refs.selector.getBoundingClientRect().height}px`
+					};
+				} else
+					return null;
 			},
 			setActiveIdx(newIdx, relative = true, cap = true) {
 				const cLen = this.input.cards.length,

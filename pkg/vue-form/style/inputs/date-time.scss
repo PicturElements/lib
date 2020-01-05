@@ -45,16 +45,21 @@ $date-time-params: (
 				display: inline-block;
 				width: 0.25em;
 			}
-
-			.time-display-item {
-				display: flex;
-				justify-content: center;
-				align-items: center;
+			
+			.date-time-sep {
+				display: inline-block;
+				width: 0.5em;
 			}
 
 			.time-sep {
 				margin: 0 0.2em;
 				opacity: 0.6;
+			}
+
+			.time-display-item {
+				display: flex;
+				justify-content: center;
+				align-items: center;
 			}
 
 			.meridiem {

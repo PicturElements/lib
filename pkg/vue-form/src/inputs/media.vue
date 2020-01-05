@@ -9,7 +9,7 @@
 			@touchend="leave"
 			@mouseleave="leave"
 			@touchleave="leave"
-			@dragenter="focused = disabled && true"
+			@dragenter="focused = disabled !== true && true"
 			@dragleave="focused = false"
 			ref="box")
 			template(v-if="editPhase == 'prompt'")

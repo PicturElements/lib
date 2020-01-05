@@ -340,6 +340,16 @@ $date-selector-params: (
 				z-index: 10;
 			}
 		}
+
+		&.hide-header {
+			.card-header {
+				display: none;
+			}
+
+			.date-selector-cards {
+				height: 100%;
+			}
+		}
 	}
 
 	.drop-wrapper.place-top .date-selector {

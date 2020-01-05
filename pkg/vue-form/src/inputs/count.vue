@@ -45,7 +45,10 @@
 </template>
 
 <script>
-	import { findClosest } from "@qtxr/utils";
+	import {
+		round,
+		findClosest
+	} from "@qtxr/utils";
 	import { Count } from "@qtxr/form";
 	import EVT from "@qtxr/evt";
 
@@ -67,7 +70,7 @@
 					else
 						this.fitCount(ticks[idx]);
 				} else
-					this.fitCount(this.input.value + (this.input.step || 1));
+					this.fitCount(round(this.input.value + (this.input.step || 1), 8));
 			},
 			down() {
 				const ticks = this.input.ticks;
@@ -78,7 +81,7 @@
 
 					this.fitCount(ticks[idx]);
 				} else
-					this.fitCount(this.input.value - (this.input.step || 1));
+					this.fitCount(round(this.input.value - (this.input.step || 1), 8));
 			},
 			change(evt) {
 				this.fitCount(Number(evt.target.value) || 0);

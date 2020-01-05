@@ -112,9 +112,10 @@
 						options: this.input.options,
 						query,
 						queryRegex
-					};
+					},
+					useSearchFetch = typeof this.input.searchFetch == "function";
 						
-				let options = typeof this.input.searchFetch == "function" ?
+				let options = useSearchFetch ?
 					await this.res(this.input.searchFetch, searchArgs) :
 					await this.res(this.input.options);
 
@@ -125,7 +126,9 @@
 
 				searchArgs.options = options;
 
-				if (!this.input.noSearch) {
+				if (useSearchFetch)
+					searchedOptions = options;
+				else if (!this.input.noSearch) {
 					for (let i = 0, l = options.length; i < l; i++) {
 						if (typeof this.input.search == "function") {
 							const match = this.res(input.search, options[i], searchArgs);
