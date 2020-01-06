@@ -1,4 +1,6 @@
-@mixin viz() {
+$viz-params: ();
+
+@mixin viz {
 	.v-viz-wrapper {
 		position: relative;
 	}

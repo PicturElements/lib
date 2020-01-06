@@ -4,16 +4,21 @@
 @use "./listing-box.scss" as *;
 @use "./listing.scss" as *;
 @use "./loading-box.scss" as *;
+@use "./timed-button.scss" as *;
 @use "./util-box.scss" as *;
 @use "./viz.scss" as *;
 @use "~@qtxr/vue-form/style/inputs" as *;
 
 @mixin all($theme) {
-	@include ellipsis(trim-args(map-get($theme, "ellipsis"), $ellipsis-params)...);
-	@include listing-box(trim-args(map-get($theme, "listing-box"), $listing-box-params)...);
-	@include listing(trim-args(map-get($theme, "listing"), $listing-params)...);
-	@include loading-box(trim-args(map-get($theme, "loading-box"), $loading-box-params)...);
-	@include util-box(trim-args(map-get($theme, "util-box"), $util-box-params)...);
-	@include viz();
+	// Package styles
+	@include ellipsis(compose-args($theme, $ellipsis-params, "general", "ellipsis")...);
+	@include listing-box(compose-args($theme, $listing-box-params, "general", "listing-box")...);
+	@include listing(compose-args($theme, $listing-params, "general", "listing")...);
+	@include loading-box(compose-args($theme, $loading-box-params, "general", "loading-box")...);
+	@include timed-button(compose-args($theme, $timed-button-params, "general", "timed-button")...);
+	@include util-box(compose-args($theme, $util-box-params, "general", "util-box")...);
+	@include viz(compose-args($theme, $viz-params, "general", "viz")...);
+
+	// Inout style
 	@include inputs(map-get($theme, "inputs"));
 }
