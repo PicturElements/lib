@@ -118,6 +118,7 @@
 
 <script>
 	import { Media } from "@qtxr/form";
+	import mixin from "../mixin";
 
 	import {
 		round,
@@ -140,6 +141,7 @@
 
 	export default {
 		name: "Media",
+		mixins: [mixin],
 		data() {
 			return {
 				editPhase: "prompt",
@@ -174,9 +176,7 @@
 				sliderPos: "",
 				focused: false,
 				id: id++,
-				error: null,
-				validationMsg: null,
-				validationState: "ok",
+				error: null
 			};
 		},
 		methods: {
@@ -629,16 +629,6 @@
 					this.enqueuedOutput = this.input.value || [];
 				else
 					this.enqueuedOutput = this.input.value ? [this.input.value] : [];
-			},
-			res(val, ...args) {
-				if (typeof val == "function")
-					return val.call(this, this.input, ...args);
-
-				return val;
-			},
-			isMobile() {
-				const mobileQuery = this.mobileQuery || this.meta.mobileQuery || "(max-aspect-ratio: 1/1) and (max-width: 700px)";
-				return matchMedia(mobileQuery).matches;
 			}
 		},
 		computed: {
@@ -648,13 +638,7 @@
 		},
 		components: {},
 		props: {
-			input: Media,
-			disabled: Boolean,
-			mobileQuery: String,
-			meta: {
-				type: Object,
-				default: _ => ({})
-			}
+			input: Media
 		},
 		watch: {
 			"input.value"() {
@@ -663,11 +647,6 @@
 		},
 		beforeMount() {
 			this.updateOutputQueue();
-
-			this.input.hook("update", inp => {
-				this.validationState = inp.validationState;
-				this.validationMsg = inp.validationMsg || this.validationMsg;
-			});
-		},
+		}
 	};
 </script>

@@ -50,6 +50,7 @@
 <script>
 	import { requestFrame } from "@qtxr/utils";
 	import { List } from "@qtxr/form";
+	import mixin from "../mixin";
 
 	import VForm from "../v-form.vue";
 
@@ -57,11 +58,10 @@
 
 	export default {
 		name: "List",
+		mixins: [mixin],
 		data: _ => ({
 			focusIdx: -1,
-			focusTimeout: null,
-			validationMsg: null,
-			validationState: "ok"
+			focusTimeout: null
 		}),
 		methods: {
 			trigger() {
@@ -111,39 +111,17 @@
 					form,
 					rows: form.inputsStruct
 				};
-			},
-			res(val, ...args) {
-				if (typeof val == "function")
-					return val.call(this, this.input, ...args);
-
-				return val;
-			},
-			isMobile() {
-				const mobileQuery = this.mobileQuery || this.meta.mobileQuery || "(max-aspect-ratio: 1/1) and (max-width: 700px)";
-				return matchMedia(mobileQuery).matches;
 			}
 		},
 		props: {
 			input: List,
-			disabled: Boolean,
 			symbols: {
-				type: Object,
-				default: _ => ({})
-			},
-			mobileQuery: String,
-			meta: {
 				type: Object,
 				default: _ => ({})
 			}
 		},
 		components: {
 			VForm
-		},
-		beforeMount() {
-			this.input.hook("update", inp => {
-				this.validationState = inp.validationState;
-				this.validationMsg = inp.validationMsg || this.validationMsg;
-			});
 		}
 	}
 </script>

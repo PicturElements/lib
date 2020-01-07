@@ -19,16 +19,16 @@
 <script>
 	import EVT from "@qtxr/evt";
 	import { Date as DateInput } from "@qtxr/form";
+	import mixin from "../mixin";
 
 	import Drop from "../auxiliary/drop.vue";
 	import DateSelector from "../core-inputs/date-selector.vue";
 
 	export default {
 		name: "Date",
+		mixins: [mixin],
 		data: _ => ({
-			dateDisplayData: {},
-			validationMsg: null,
-			validationState: "ok"
+			dateDisplayData: {}
 		}),
 		methods: {
 			trigger() {
@@ -55,36 +55,14 @@
 						evt.preventDefault();
 						break;
 				}
-			},
-			res(val, ...args) {
-				if (typeof val == "function")
-					return val.call(this, this.input, ...args);
-
-				return val;
-			},
-			isMobile() {
-				const mobileQuery = this.mobileQuery || this.meta.mobileQuery || "(max-aspect-ratio: 1/1) and (max-width: 700px)";
-				return matchMedia(mobileQuery).matches;
 			}
 		},
 		props: {
-			input: DateInput,
-			disabled: Boolean,
-			mobileQuery: String,
-			meta: {
-				type: Object,
-				default: _ => ({})
-			}
+			input: DateInput
 		},
 		components: {
 			Drop,
 			DateSelector
-		},
-		beforeMount() {
-			this.input.hook("update", inp => {
-				this.validationState = inp.validationState;
-				this.validationMsg = inp.validationMsg || this.validationMsg;
-			});
 		}
 	};
 </script>

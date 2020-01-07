@@ -72,12 +72,14 @@
 		requestFrame,
 		isPrimitive
 	} from "@qtxr/utils";
+	import mixin from "../mixin";
 	
 	const PADDING = 30,
 		BOTTOM_BIAS = 0.5;
 
 	export default {
 		name: "Multi",
+		mixins: [mixin],
 		data: _ => ({
 			expanded: false,
 			expansionRequested: false,
@@ -93,9 +95,7 @@
 			optionPtr: -1,
 			lastOptionPtr: -1,
 			globalClickListener: null,
-			globalKeyListener: null,
-			validationMsg: null,
-			validationState: "ok"
+			globalKeyListener: null
 		}),
 		methods: {
 			async search() {
@@ -358,33 +358,12 @@
 
 				this.expanded = false;
 				this.dropdownDirection = null;
-			},
-			res(val, ...args) {
-				if (typeof val == "function")
-					return val.call(this, this.input, ...args);
-
-				return val;
-			},
-			isMobile() {
-				const mobileQuery = this.mobileQuery || this.meta.mobileQuery || "(max-aspect-ratio: 1/1) and (max-width: 700px)";
-				return matchMedia(mobileQuery).matches;
 			}
 		},
 		props: {
-			input: Multi,
-			disabled: Boolean,
-			mobileQuery: String,
-			meta: {
-				type: Object,
-				default: _ => ({})
-			}
+			input: Multi
 		},
 		beforeMount() {
-			this.input.hook("update", inp => {
-				this.validationState = inp.validationState;
-				this.validationMsg = inp.validationMsg || this.validationMsg;
-			});
-
 			this.globalKeyListener = evt => {
 				if (!this.expanded)
 					return;

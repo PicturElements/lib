@@ -12,13 +12,11 @@
 
 <script>
 	import { TextArea } from "@qtxr/form";
+	import mixin from "../mixin";
 
 	export default {
 		name: "TextArea",
-		data: _ => ({
-			validationMsg: null,
-			validationState: "ok"
-		}),
+		mixins: [mixin],
 		methods: {
 			trigger(evt) {
 				if (!this.disabled)
@@ -26,33 +24,11 @@
 			},
 			check(evt) {
 				this.input.check(evt, evt.target.value);
-			},
-			res(val, ...args) {
-				if (typeof val == "function")
-					return val.call(this, this.input, ...args);
-
-				return val;
-			},
-			isMobile() {
-				const mobileQuery = this.mobileQuery || this.meta.mobileQuery || "(max-aspect-ratio: 1/1) and (max-width: 700px)";
-				return matchMedia(mobileQuery).matches;
 			}
 		},
 		props: {
 			input: TextArea,
-			disabled: Boolean,
-			placeholder: String,
-			mobileQuery: String,
-			meta: {
-				type: Object,
-				default: _ => ({})
-			}
-		},
-		beforeMount() {
-			this.input.hook("update", inp => {
-				this.validationState = inp.validationState;
-				this.validationMsg = inp.validationMsg || this.validationMsg;
-			});
+			placeholder: String
 		}
 	}
 </script>

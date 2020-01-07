@@ -39,12 +39,14 @@
 	import { requestFrame } from "@qtxr/utils";
 	import { Dropdown } from "@qtxr/form";
 	import EVT from "@qtxr/evt";
+	import mixin from "../mixin";
 	
 	const PADDING = 30,
 		BOTTOM_BIAS = 0.4;
 
 	export default {
 		name: "Dropdown",
+		mixins: [mixin],
 		data: _ => ({
 			expanded: false,
 			dropdownDirection: null,
@@ -54,8 +56,6 @@
 			listStyle: null,
 			updateLoopInitialized: false,
 			globalKeyListener: null,
-			validationMsg: null,
-			validationState: "ok",
 			options: []
 		}),
 		methods: {
@@ -166,27 +166,11 @@
 			collapse(evt) {
 				this.expanded = false;
 				this.dropdownDirection = null;
-			},
-			res(val, ...args) {
-				if (typeof val == "function")
-					return val.call(this, this.input, ...args);
-
-				return val;
-			},
-			isMobile() {
-				const mobileQuery = this.mobileQuery || this.meta.mobileQuery || "(max-aspect-ratio: 1/1) and (max-width: 700px)";
-				return matchMedia(mobileQuery).matches;
 			}
 		},
 		props: {
 			input: Dropdown,
-			disabled: Boolean,
-			placeholder: String,
-			mobileQuery: String,
-			meta: {
-				type: Object,
-				default: _ => ({})
-			}
+			placeholder: String
 		},
 		watch: {
 			"input.value"() {
@@ -209,11 +193,6 @@
 				}
 			};
 			document.body.addEventListener("keydown", this.globalKeyListener);
-			
-			this.input.hook("update", inp => {
-				this.validationState = inp.validationState;
-				this.validationMsg = inp.validationMsg || this.validationMsg;
-			});
 		},
 		beforeUpdate() {
 			if (!this.expanded)

@@ -51,9 +51,11 @@
 	} from "@qtxr/utils";
 	import { Count } from "@qtxr/form";
 	import EVT from "@qtxr/evt";
+	import mixin from "../mixin";
 
 	export default {
 		name: "Count",
+		mixins: [mixin],
 		data: _ => ({
 			key: 0
 		}),
@@ -120,27 +122,11 @@
 					this.input.trigger(newCount);
 
 				this.key++;
-			},
-			res(val, ...args) {
-				if (typeof val == "function")
-					return val.call(this, this.input, ...args);
-
-				return val;
-			},
-			isMobile() {
-				const mobileQuery = this.mobileQuery || this.meta.mobileQuery || "(max-aspect-ratio: 1/1) and (max-width: 700px)";
-				return matchMedia(mobileQuery).matches;
 			}
 		},
 		props: {
 			input: Count,
-			disabled: Boolean,
 			symbols: {
-				type: Object,
-				default: _ => ({})
-			},
-			mobileQuery: String,
-			meta: {
 				type: Object,
 				default: _ => ({})
 			}

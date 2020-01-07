@@ -16,20 +16,21 @@
 
 <script>
 	import { Radio } from "@qtxr/form";
+	import mixin from "../mixin";
 	
 	export default {
 		name: "Radio",
+		mixins: [mixin],
 		data: _ => ({
 			activeIndex: -1,
 			activeOption: {},
-			validationMsg: null,
-			validationState: "ok",
 			options: []
 		}),
 		methods: {
 			trigger(val) {
 				if (!this.disabled)
 					this.input.trigger(val);
+
 				this.updateSelection();
 			},
 			getLabel(option) {
@@ -63,26 +64,10 @@
 				this.activeIndex = idx;
 				this.activeOption = options[idx] || {};
 				this.options = options;
-			},
-			res(val, ...args) {
-				if (typeof val == "function")
-					return val.call(this, this.input, ...args);
-
-				return val;
-			},
-			isMobile() {
-				const mobileQuery = this.mobileQuery || this.meta.mobileQuery || "(max-aspect-ratio: 1/1) and (max-width: 700px)";
-				return matchMedia(mobileQuery).matches;
 			}
 		},
 		props: {
-			input: Radio,
-			disabled: Boolean,
-			mobileQuery: String,
-			meta: {
-				type: Object,
-				default: _ => ({})
-			}
+			input: Radio
 		},
 		watch: {
 			"input.value"() {
@@ -93,11 +78,6 @@
 			this.updateSelection();
 			if (this.activeIndex != -1)
 				this.input.trigger(this.activeOption);
-			
-			this.input.hook("update", inp => {
-				this.validationState = inp.validationState;
-				this.validationMsg = inp.validationMsg || this.validationMsg;
-			});
 		},
 		beforeUpdate() {
 			this.updateSelection();

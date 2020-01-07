@@ -21,16 +21,16 @@
 	import { get } from "@qtxr/utils";
 	import EVT from "@qtxr/evt";
 	import { Time } from "@qtxr/form";
+	import mixin from "../mixin";
 
 	import Drop from "../auxiliary/drop.vue";
 	import TimeSelector from "../core-inputs/time-selector.vue";
 
 	export default {
 		name: "Time",
+		mixins: [mixin],
 		data: _ => ({
-			timeDisplayData: {},
-			validationMsg: null,
-			validationState: "ok"
+			timeDisplayData: {}
 		}),
 		methods: {
 			trigger() {
@@ -82,36 +82,14 @@
 						evt.preventDefault();
 						break;
 				}
-			},
-			res(val, ...args) {
-				if (typeof val == "function")
-					return val.call(this, this.input, ...args);
-
-				return val;
-			},
-			isMobile() {
-				const mobileQuery = this.mobileQuery || this.meta.mobileQuery || "(max-aspect-ratio: 1/1) and (max-width: 700px)";
-				return matchMedia(mobileQuery).matches;
 			}
 		},
 		props: {
-			input: Time,
-			disabled: Boolean,
-			mobileQuery: String,
-			meta: {
-				type: Object,
-				default: _ => ({})
-			}
+			input: Time
 		},
 		components: {
 			Drop,
 			TimeSelector
-		},
-		beforeMount() {
-			this.input.hook("update", inp => {
-				this.validationState = inp.validationState;
-				this.validationMsg = inp.validationMsg || this.validationMsg;
-			});
 		}
 	};
 </script>

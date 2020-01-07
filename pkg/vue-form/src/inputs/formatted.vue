@@ -16,9 +16,11 @@
 
 <script>
 	import { Formatted } from "@qtxr/form";
+	import mixin from "../mixin";
 
 	export default {
 		name: "Formatted",
+		mixins: [mixin],
 		methods: {
 			trigger(count) {
 				if (!this.disabled)
@@ -32,26 +34,10 @@
 			},
 			paste() {
 				this.input.catchPaste(this.$refs.content);
-			},
-			res(val, ...args) {
-				if (typeof val == "function")
-					return val.call(this, this.input, ...args);
-
-				return val;
-			},
-			isMobile() {
-				const mobileQuery = this.mobileQuery || this.meta.mobileQuery || "(max-aspect-ratio: 1/1) and (max-width: 700px)";
-				return matchMedia(mobileQuery).matches;
 			}
 		},
 		props: {
-			input: Formatted,
-			disabled: Boolean,
-			mobileQuery: String,
-			meta: {
-				type: Object,
-				default: _ => ({})
-			}
+			input: Formatted
 		}
 	}
 </script>
