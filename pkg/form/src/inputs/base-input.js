@@ -36,6 +36,7 @@ const initOptionsSchema = {
 	valid: "boolean",
 	validationMsg: "string",
 	validationState: "string",
+	bare: "boolean",
 
 	checkKey: "Object|string|function|RegExp",
 	checkWord: "Object|string|function|RegExp",

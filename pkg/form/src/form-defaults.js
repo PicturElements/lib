@@ -14,6 +14,9 @@ const defaults = {
 		value: "",
 		validate: mkRangeValidator(1, Infinity, "Please specify an address")
 	},
+	bare: {
+		bare: true
+	},
 	business: {
 		value: "",
 		validate: mkRangeValidator(1, 48, "Please specify a business name", "Business name too long. Maximum: $max characters")

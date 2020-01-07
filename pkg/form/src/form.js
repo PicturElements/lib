@@ -87,7 +87,14 @@ export default class Form extends Hookable {
 		// Only validate required inputs
 		// Invalid non-required inputs will be marked as valid
 		this.validateRequiredOnly = false;
+		// Don't allow inputs with duplicate names. If false,
+		// extracted inputs with the same name will be returned
+		// in an array, ergo with a minimum length of 2 
 		this.noDuplicateNames = true;
+		// Master switch for bare inputs. A bare input is an
+		// input with minimal vendor graphics (autocomplete
+		// dropdowns, etc)
+		this.bareInputs = false;
 
 		this.hookAll(masterPreset.hooks);
 
@@ -561,6 +568,11 @@ Form.presets = {
 		options: {
 			valid: false,
 			validateRequiredOnly: true
+		}
+	},
+	bare: {
+		options: {
+			bareInputs: true
 		}
 	}
 };
