@@ -6,7 +6,10 @@ import {
 } from "@qtxr/utils";
 
 // All DataCell constructors
-import DataCell, { injectPresets } from "./data-cell";
+import DataCell, {
+	injectPresets,
+	isInjectedConfig
+} from "./data-cell";
 import DataCellComposite from "./data-cell-composite";
 import DataCellPagination from "./data-cell-pagination";
 
@@ -36,7 +39,8 @@ function definePreset(nameOrPreset, preset) {
 
 function mkDataCell(config, initConfig) {
 	if (config) {
-		config = injectPresets(config);
+		if (!isInjectedConfig(config))
+			config = injectPresets(config);
 
 		const species = typeof config.species == "string" || (config.species && config.species[DATA_CELL_SPECIES_SYM]) ?
 			config.species :

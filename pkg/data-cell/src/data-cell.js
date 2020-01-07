@@ -263,6 +263,8 @@ export default class DataCell extends Hookable {
 		// Save partitioned data for external reference
 		this.processors = processors;
 		this.config = newConfig;
+		this.initConfig = initConfig;
+		this.inheritableConfig = mkInheritableConfig(newConfig, initConfig);
 
 		const defaultProcessorOptions = extendProcessorOptions(
 			DEFAULT_PROCESSOR_OPTIONS[this.fetcher.method],
@@ -282,13 +284,25 @@ export default class DataCell extends Hookable {
 			this
 		);
 
+		// Don't run this on derived classes
+		// as they will want to run this at the end of their creation,
+		// and might need to finish init manually
+		if (this.constructor == DataCell)
+			this.finishInit(initConfig);
+	}
+
+	finishInit(initConfig) {
 		if (!initConfig.preventHooking)
-			this.hookAll(newConfig.hooks);
+			this.hookAll(this.config.hooks);
 		if (!initConfig.preventDataSet)
-			this.setData(newConfig.data);
+			this.setData(this.config.data);
 		if (!initConfig.preventStateSet)
-			this.setState(newConfig.state);
-		if (!initConfig.preventAutoFetch && newConfig.autoFetch)
+			this.setState(this.config.state);
+
+		if (typeof get(initConfig, "on.created") == "function")
+			initConfig.on.created(this);
+
+		if (!initConfig.preventAutoFetch && this.config.autoFetch)
 			this.fetch();
 	}
 
@@ -667,6 +681,10 @@ export default class DataCell extends Hookable {
 	getData(item) {
 		return item;
 	}
+
+	getCells() {
+		return [this];
+	}
 }
 
 function applyStateTransforms(cell, newState) {
@@ -915,7 +933,11 @@ function getErrorMsg(cell, wrappedResponse, errorMsg) {
 	}
 }
 
-const INJECTED_PRESET_SYM = sym("injected preset");
+const INJECTED_PRESET_SYM = sym("injected preset"),
+	PASSIVE_IGNORE = {
+		method: true,
+		fetch: true
+	};
 
 function injectPresets(config) {
 	let injected = false;
@@ -924,10 +946,24 @@ function injectPresets(config) {
 		if (typeof name != "string" || !DataCell.presets.hasOwnProperty(name))
 			throw new Error(`Cannot inject preset: ${serialize(name)} is not a valid name`);
 
-		if (injected)
-			config = inject(config, DataCell.presets[name]);
-		else
-			config = inject(config, DataCell.presets[name], "cloneTarget");
+		if (injected) {
+			config = inject(
+				config,
+				DataCell.presets[name],
+				{
+					ignore: config.passive ? PASSIVE_IGNORE : null
+				}
+			);
+		} else {
+			config = inject(
+				config,
+				DataCell.presets[name],
+				{
+					cloneTarget: true,
+					ignore: config.passive ? PASSIVE_IGNORE : null
+				}
+			);
+		}
 
 		injected = true;
 	};
@@ -949,6 +985,27 @@ function injectPresets(config) {
 
 function isInjectedConfig(config) {
 	return isObject(config) && config.hasOwnProperty(INJECTED_PRESET_SYM);
+}
+
+function mkInheritableConfig(config, initConfig) {
+	return {
+		config: inject({}, config, {
+			schema: {
+				
+			},
+			typed: true,
+			deep: true,
+			strictSchema: true
+		}),
+		initConfig: inject({}, initConfig, {
+			schema: {
+				on: "object"
+			},
+			typed: true,
+			deep: true,
+			strictSchema: true
+		})
+	};
 }
 
 export {

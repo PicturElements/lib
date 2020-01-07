@@ -5,6 +5,7 @@ import {
 	inject,
 	forEach,
 	isObject,
+	concatMut,
 	mkAccessor,
 	coerceToObj
 } from "@qtxr/utils";
@@ -13,28 +14,25 @@ const HOOK_SYM = sym("composite data cell hook");
 
 export default class DataCellComposite extends DataCell {
 	constructor(config = {}, initConfig = {}) {
-		super(config, inject({
+		initConfig = inject({
 			defaultState: {
 				fullyLoaded: false,
 				pendingChildrenCount: 0
-			},
-			preventDataSet: true,
-			preventStateSet: true,
-			preventAutoFetch: true
-		}, initConfig, "override"));
+			}
+		}, initConfig, "override");
+
+		super(config, initConfig);
 
 		this.passive = false;
 		this.parent = null;
 		this.connectedToComposite = false;
 		this.children = [];
-		this.childrenStruct = null;
 
 		const children = config.scope || config.cells;
 		this.data = coerceToObj(null, children);
 		this.addChildren(children);
 
-		if (this.config.autoFetch)
-			this.fetch();
+		this.finishInit(initConfig);
 	}
 
 	hasChild(cellOrConfig) {
@@ -195,6 +193,15 @@ export default class DataCellComposite extends DataCell {
 
 		return response;
 	}
+
+	getCells() {
+		const cells = [this];
+
+		for (let i = 0, l = this.children.length; i < l; i++)
+			concatMut(cells, this.children[i].getCells());
+
+		return cells;
+	}
 }
 
 function resolveCell(cellOrConfig, parentCell, path) {
@@ -231,15 +238,24 @@ function resolveCell(cellOrConfig, parentCell, path) {
 			};
 		}
 
-		cell = DataCell.new(config, {
-			defaultState: {
-				fullyLoaded: false,
-				pendingChildrenCount: 0
-			},
-			partitionClassifier: {
-				path: "instance"
-			}
-		});
+		const inheritedConfig = inject(
+				config,
+				parentCell.inheritableConfig.config
+			),
+			inheritedInitConfig = inject(
+				{
+					defaultState: {
+						fullyLoaded: false,
+						pendingChildrenCount: 0
+					},
+					partitionClassifier: {
+						path: "instance"
+					}
+				},
+				parentCell.inheritableConfig.initConfig
+			);
+
+		cell = DataCell.new(inheritedConfig, inheritedInitConfig);
 		cell.passive = !characteristics.hasHandler;
 	}
 

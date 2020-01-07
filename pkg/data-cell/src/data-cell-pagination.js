@@ -47,7 +47,7 @@ const STATE_TRANSFORMS = {
 
 export default class DataCellPagination extends DataCell {
 	constructor(config = {}, initConfig = {}) {
-		super(config, inject({
+		initConfig = inject({
 			partitionClassifier: {
 				pageSize: "garbage",
 				page: "garbage",
@@ -61,11 +61,10 @@ export default class DataCellPagination extends DataCell {
 				fetchedLength: 0
 			},
 			stateTransforms: STATE_TRANSFORMS,
-			processorOptions: PROCESSSOR_OPTIONS,
-			preventDataSet: true,
-			preventStateSet: true,
-			preventAutoFetch: true
-		}, initConfig, "override"));
+			processorOptions: PROCESSSOR_OPTIONS
+		}, initConfig, "override");
+
+		super(config, initConfig);
 
 		this.meta = {
 			useSequencing: this.processors.hasOwnProperty("sequence"),
@@ -78,11 +77,7 @@ export default class DataCellPagination extends DataCell {
 		this.cache = {};
 		this.pageIndex = [];
 
-		this.setData(this.config.data);
-		this.setState(this.config.state);
-
-		if (this.config.autoFetch)
-			this.fetch();
+		this.finishInit(initConfig);
 	}
 
 	fetch(...args) {
