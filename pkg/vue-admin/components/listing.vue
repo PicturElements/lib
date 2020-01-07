@@ -58,7 +58,8 @@
 
 	import VForm from "@qtxr/vue-form";
 
-	const colIndexSym = sym("column index");
+	const colIndexSym = sym("column index"),
+		indexerCache = {};
 
 	export default {
 		name: "Listing",
@@ -179,13 +180,8 @@
 						};
 
 				this.cachedItems = mergesort(items, (a, b) => {
-					let data = this.cell.getData(a),
-						data2 = this.cell.getData(b);
-
-					if (typeof index == "function") {
-						data = index(data, this);
-						data2 = index(data2, this);
-					}
+					let data = this.doIndex(index, this.cell.getData(a)),
+						data2 = this.doIndex(index, this.cell.getData(b));
 
 					return sortState.order == "ascending" ?
 						comparator(data, data2) :
@@ -193,6 +189,32 @@
 				});
 
 				return this.cachedItems;
+			},
+			doIndex(indexer, data) {
+				switch (typeof indexer) {
+					case "function":
+						return indexer(data, this);
+
+					case "string":
+						let xr,
+							accessor;
+
+						if (indexerCache.hasOwnProperty(indexer))
+							[ xr, accessor ] = indexerCache[indexer];
+						else {
+							const split = indexer.trim().split(/\s*:\s*/);
+							indexerCache[indexer] = split;
+							[ xr, accessor ] = split;
+						}
+						
+						switch (xr) {
+							case "lexical":
+								return String(get(data, accessor)).toLowerCase();
+						}
+						break;
+				}
+
+				return data;
 			},
 			invalidateCache() {
 				this.cachedItems = null;

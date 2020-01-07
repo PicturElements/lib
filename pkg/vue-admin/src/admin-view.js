@@ -2,7 +2,7 @@ import {
 	isObj,
 	partition
 } from "@qtxr/utils";
-import { mkDataCell } from "@qtxr/data-cell";
+import { mkDataCell, injectPresets } from "@qtxr/data-cell";
 import Form from "@qtxr/form";
 
 const adminViewClassifier = {
@@ -25,45 +25,42 @@ export default class AdminView {
 	connect(wrapper) {
 		wrapper.addData("view", this);
 
-		const cells = this.component.dataCells || {},
+		const configs = this.component.dataCells || {},
 			outCells = {};
 
-		for (const k in cells) {
-			if (!cells.hasOwnProperty(k))
+		for (const k in configs) {
+			if (!configs.hasOwnProperty(k))
 				continue;
 
-			const cell = cells[k];
+			const config = injectPresets(configs[k]);
 
-			if (cell.persistent) {
-				const persistentCell = mkDataCell(cell);
+			if (config.persistent) {
+				const cell = mkDataCell(config);
 
 				outCells[k] = (wrapper, vm) => {
-					connectDataCell({
+					connectDataCells(cell, {
 						vm,
 						wrapper,
 						outCells,
 						key: k,
-						config: cell,
-						cell: persistentCell,
 						persistent: true
 					});
-					persistentCell.baseRuntime.vm = vm;
-					return persistentCell;
+
+					return cell;
 				};
 			} else {
 				outCells[k] = (wrapper, vm) => {
-					const nonPersistentCell = mkDataCell(cell);
-					connectDataCell({
+					const cell = mkDataCell(config);
+
+					connectDataCells(cell, {
 						vm,
 						wrapper,
 						outCells,
 						key: k,
-						config: cell,
-						cell: nonPersistentCell,
 						persistent: false
 					});
-					nonPersistentCell.baseRuntime.vm = vm;
-					return nonPersistentCell;
+
+					return cell;
 				};
 			}
 		}
@@ -73,7 +70,19 @@ export default class AdminView {
 	}
 }
 
-function connectDataCell(args) {
+function connectDataCells(cell, args) {
+	const cells = cell.getCells();
+
+	for (let i = 0, l = cells.length; i < l; i++) {
+		connectDataCell(Object.assign({
+			config: cells[i].config,
+			cell: cells[i]
+		}, args));
+	}
+}
+
+function connectDataCell(args) {		
+	args.cell.baseRuntime.vm = args.vm;
 	connectForm(args);
 }
 
