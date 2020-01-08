@@ -1,5 +1,4 @@
 import {
-	sym,
 	clone,
 	casing,
 	isObject,
@@ -7,7 +6,7 @@ import {
 	getConstructorName
 } from "@qtxr/utils";
 import URL from "@qtxr/url";
-import { PromisedHookable } from "@qtxr/bc";
+import { Hookable } from "@qtxr/bc";
 
 const finalizeable = {
 	ready: true,
@@ -219,9 +218,9 @@ class XHRManager {
 			return XHRState.NULL;
 
 		const xhr = new XMLHttpRequest(),
-			xs = getState(this),
-			xId = xs.link(this, xhr),
-			preset = this.pendingPreset;
+			preset = this.pendingPreset || {},
+			xs = getState(this, xhr, preset),
+			xId = xs.link(this, xhr);
 		let payload = data;
 
 		injectStateDependencies(xs, this);
@@ -282,15 +281,15 @@ class XHRManager {
 	}
 }
 
-const promiseHookSym = sym("promise hook");
 let globalXId = 0;
 
-class XHRState extends PromisedHookable {
-	constructor(executor, config, xhr) {
-		super(executor, config);
+class XHRState extends Hookable {
+	constructor(xhr, preset) {
+		super();
 		this.xhr = xhr;
 		this.owner = null;
 		this.finished = false;
+		this.preset = preset;
 		this.progress = {
 			loaded: 0,
 			total: 0,
@@ -317,8 +316,12 @@ class XHRState extends PromisedHookable {
 		this.hook("ready", {
 			ttl: 1,
 			handler: (response, xhr) => {
-				this.dispatchPromise("resolve", {
-					success: ~~(xhr.status / 100) == 2,
+				const success = ~~(xhr.status / 100) == 2,
+					dispatchType = success ? "resolve" :
+						(this.preset.rejectOnError ? "reject" : "resolve");
+
+				this.dispatchPromise(dispatchType, {
+					success,
 					status: xhr.status,
 					aborted: xhr.status == 0,
 					response,
@@ -549,7 +552,7 @@ function handleStateChange(xhr, xId, xs, preset) {
 		}
 
 		if (hookType) {
-			if (preset && preset.enforceReponseReturn)
+			if (preset.enforceReponseReturn)
 				xs.callHooks(hookType, xId, true, data, xhr);
 			else
 				xs.callHooks(hookType, xId, true, xhr.status, xhr);
@@ -558,14 +561,14 @@ function handleStateChange(xhr, xId, xs, preset) {
 }
 
 function handleFail(xId, xhr, xs, preset) {
-	if (preset && preset.enforceReponseReturn)
+	if (preset.enforceReponseReturn)
 		xs.callHooks("fail", xId, true, decodeData(xhr), xhr);
 	else
 		xs.callHooks("fail", xId, true, xhr.status, xhr);
 }
 
 function handleAbort(xId, xhr, xs, preset) {
-	if (preset && preset.enforceReponseReturn)
+	if (preset.enforceReponseReturn)
 		xs.callHooks("aborted", xId, true, decodeData(xhr), xhr);
 	else
 		xs.callHooks("aborted", xId, true, xhr.status, xhr);
@@ -686,16 +689,16 @@ function mergeData(acc, data) {
 
 function mkUrl(url, preset) {
 	if (typeof url != "string")
-		url = (preset && typeof preset.url == "string") ? preset.url : "";
+		url = typeof preset.url == "string" ? preset.url : "";
 
 	url = new URL(url);
 
-	const urlParams = mkUrlParams(preset && preset.urlParams);
+	const urlParams = mkUrlParams(preset.urlParams);
 
 	if (!url.relative)
 		return url.join(urlParams);
 
-	if (preset && (preset.baseUrl || preset.baseUrl == ""))
+	if ((preset.baseUrl || preset.baseUrl == ""))
 		return URL.join(preset.baseUrl, url, urlParams);
 
 	return URL.join(window.location.href, url, urlParams);
@@ -785,7 +788,7 @@ function decodeData(xhr) {
 }
 
 function getContentTypeEncode(preset) {
-	const headers = (preset && preset.headers) || {};
+	const headers = preset.headers || {};
 	return normalizeContentType(headers["Content-Type"]);
 }
 
@@ -806,11 +809,11 @@ function normalizeContentType(contentType) {
 	return null;
 }
 
-function getState(manager) {
+function getState(manager, xhr, preset) {
 	if (manager.opts.state)
 		return manager.opts.state;
 	else
-		return manager.opts.stateConstructor.promised(...manager.opts.stateArgs);
+		return new manager.opts.stateConstructor(xhr, preset, ...manager.opts.stateArgs);
 }
 
 function injectStateDependencies(state, manager) {
@@ -841,7 +844,7 @@ const defaultXHROptions = {
 	flush: []
 };
 
-XHRState.NULL = XHRState.promised();
+XHRState.NULL = new XHRState();
 
 // Just for clarity - XHR is the default XHR manager that
 // handles miscellaneous requests. If wanted, new instances
