@@ -35,7 +35,7 @@ export default {
 		
 				const loadingState = get(vm.$data, path);
 
-				const xhrState = XHRState.promised()
+				const xhrState = new XHRState()
 					.hook("static:init", runtime => {
 						setLoadingState(runtime.loadingState, "loading");
 					})
