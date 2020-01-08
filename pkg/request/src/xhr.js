@@ -219,8 +219,8 @@ class XHRManager {
 
 		const xhr = new XMLHttpRequest(),
 			preset = this.pendingPreset || {},
-			xs = getState(this, xhr, preset),
-			xId = xs.link(this, xhr);
+			xs = resolveState(this, xhr, preset),
+			xId = xs.link(this, xhr, preset);
 		let payload = data;
 
 		injectStateDependencies(xs, this);
@@ -289,7 +289,7 @@ class XHRState extends Hookable {
 		this.xhr = xhr;
 		this.owner = null;
 		this.finished = false;
-		this.preset = preset;
+		this.preset = preset || {};
 		this.progress = {
 			loaded: 0,
 			total: 0,
@@ -298,9 +298,10 @@ class XHRState extends Hookable {
 		this.xId = null;
 	}
 
-	link(owner, xhr) {
+	link(owner, xhr, preset) {
 		this.owner = owner;
 		this.xhr = xhr;
+		this.preset = preset || {};
 		this.finished = false;
 		this.xId = globalXId++;
 		this.setProgress(0, 0);
@@ -809,7 +810,7 @@ function normalizeContentType(contentType) {
 	return null;
 }
 
-function getState(manager, xhr, preset) {
+function resolveState(manager, xhr, preset) {
 	if (manager.opts.state)
 		return manager.opts.state;
 	else
