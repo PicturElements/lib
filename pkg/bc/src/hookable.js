@@ -1,5 +1,4 @@
 import {
-	hasOwn,
 	isObject,
 	filterMut,
 	resolveArgs,
@@ -8,10 +7,8 @@ import {
 } from "@qtxr/utils";
 import { Keys } from "@qtxr/ds";
 import Hook from "./hook";
-import {
-	addOptionsPartition,
-	opt
-} from "./common/options";
+import DeferredPromise from "./deferred-promise";
+import { addOptionsPartition } from "./common/options";
 
 // TODO: in next major version, rename nickname to identifier
 
@@ -62,24 +59,36 @@ const unhookNSParams = [
 	{ name: "argTemplate", type: "string", default: null }
 ];
 
-const PromiseImpl = typeof Promise == "undefined" ?
-	class {} :
-	Promise;
-
 const optionsTemplates = composeOptionsTemplates({
 	noOwnerArg: true
 });
 
-const HOOKABLE_METHODS = {
+export default class Hookable extends DeferredPromise {
+	constructor(options) {
+		super();
+
+		addOptionsPartition(this, options, "hookable", optionsTemplates);
+
+		Object.defineProperty(this, "hooks", {
+			value: {
+				last: null,
+				keys: new Keys()
+			},
+			configurable: false,
+			enumerable: true,
+			writable: false
+		});
+	}
+
 	hook(...args) {
 		addHook(this, hookParams, args);
 		return this;
-	},
+	}
 
 	hookNS(ns, ...args) {
 		addHook(this, hookNSParams, [ns, ...args]);
 		return this;
-	},
+	}
 
 	hookAll(hooks, forcedName) {
 		const dispatch = (partitionName, d) => {
@@ -103,17 +112,17 @@ const HOOKABLE_METHODS = {
 		}
 
 		return this;
-	},
+	}
 
 	unhook(...args) {
 		removeHook(this, unhookParams, args);
 		return this;
-	},
+	}
 
 	unhookNS(...args) {
 		removeHook(this, unhookNSParams, args);
 		return this;
-	},
+	}
 
 	callHooks(partitionName, ...args) {
 		this.hooks.keys.forEach(partitionName, (key, keyType) => {
@@ -141,7 +150,7 @@ const HOOKABLE_METHODS = {
 		});
 
 		return this;
-	},
+	}
 
 	clearHooks() {
 		for (const k in this.hooks) {
@@ -152,7 +161,7 @@ const HOOKABLE_METHODS = {
 		}
 
 		return this;
-	},
+	}
 
 	clearHooksNS(ns) {
 		this.forEachHookPartition((partition, key) => {
@@ -165,7 +174,7 @@ const HOOKABLE_METHODS = {
 		});
 		
 		return this;
-	},
+	}
 
 	forEachHookPartition(callback) {
 		if (!callback)
@@ -177,7 +186,7 @@ const HOOKABLE_METHODS = {
 
 			callback(this.hooks[k], k, this.hooks);
 		}
-	},
+	}
 
 	getHookPartition(partitionName) {
 		if (!this.hooks.hasOwnProperty(partitionName) || reservedFields.hasOwnProperty(partitionName))
@@ -185,105 +194,18 @@ const HOOKABLE_METHODS = {
 
 		return this.hooks[partitionName];
 	}
-};
 
-export default class Hookable {
-	constructor(options) {
-		addOptionsPartition(this, options, "hookable", optionsTemplates);
-
-		Object.defineProperty(this, "hooks", {
-			value: {
-				last: null,
-				keys: new Keys()
-			},
-			configurable: false,
-			enumerable: true,
-			writable: false
-		});
+	// Legacy
+	static create(...args) {
+		return new this(...args);
 	}
 
-	static promised(options, ...args) {
-		return PromisedHookable.create(options, ...args);
+	static promised(...args) {
+		return this.create(...args);
 	}
 }
 
-Object.assign(Hookable.prototype, HOOKABLE_METHODS);
-
-class PromisedHookable extends PromiseImpl {
-	constructor(executor, options) {
-		super(executor);
-
-		addOptionsPartition(this, options, "hookable", optionsTemplates);
-
-		Object.defineProperty(this, "hooks", {
-			value: {
-				last: null,
-				keys: new Keys()
-			},
-			configurable: false,
-			enumerable: true,
-			writable: false
-		});
-	}
-
-	static promised(options, ...args) {
-		return this.create(options, ...args);
-	}
-
-	static create(options, ...args) {
-		let dispatchPromise = _ => console.warn("Promise based functionality is not supported");
-
-		const inst = new this((resolve, reject) => {
-			let status = "pending";
-
-			dispatchPromise = (actionOrConf, confOrPayload) => {
-				let conf = actionOrConf;
-
-				if (typeof actionOrConf == "string") {
-					conf = {
-						action: actionOrConf,
-						payload: confOrPayload
-					};
-				}
-
-				if (!isObject(conf)) {
-					console.warn("Cannot dispatch promise: configuration is not an object");
-					return this;
-				} else if (status != "pending") {
-					console.warn(`Cannot dispatch promise: promise is already ${status}`);
-					return this;
-				}
-
-				if (conf.action == "reject" || conf.type == "reject") {
-					status = "rejected";
-
-					if (hasOwn(conf, "reason"))
-						reject(conf.reason);
-					else if (hasOwn(conf, "error"))
-						reject(conf.error);
-					else
-						reject(conf.payload);
-				} else {
-					status = "fulfilled";
-
-					if (hasOwn(conf, "value"))
-						resolve(conf.value);
-					else if (hasOwn(conf, "data"))
-						resolve(conf.data);
-					else
-						resolve(conf.payload);
-				}
-
-				return this;
-			};
-		}, options, ...args);
-
-		inst.dispatchPromise = dispatchPromise;
-		return inst;
-	}
-}
-
-Object.assign(PromisedHookable.prototype, HOOKABLE_METHODS);
+const PromisedHookable = Hookable;
 
 function addHook(inst, paramMap, args) {
 	const data = resolveArgs(args, paramMap, "allowSingleSource"),
