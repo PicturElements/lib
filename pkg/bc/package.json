@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/bc",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "Base classes that provide basic and standard functionality to any class that extends them",
   "main": "index.js",
   "scripts": {
@@ -33,7 +33,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 15,
+    "pushes": 16,
     "expose": {
       "scripts": [
         "connect/feed.js"
