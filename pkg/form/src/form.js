@@ -353,7 +353,6 @@ export default class Form extends Hookable {
 			inp.updateValue(inp.hasOwnProperty("default") ? inp.default : "");
 		});
 
-		this.forEach(inp => inp[TRIGGER](inp.value));
 		this.changed = false;
 
 		this.callHooks("updated", this.inputs);
