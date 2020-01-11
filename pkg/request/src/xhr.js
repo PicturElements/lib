@@ -316,8 +316,12 @@ class XHRState extends Hookable {
 
 		this.hook("ready", {
 			ttl: 1,
-			handler: (response, xhr) => {
-				const success = ~~(xhr.status / 100) == 2,
+			handler: (...args) => {
+				if (this.owner.opts.withRuntime)
+					args.shift();
+
+				const [response, xhr] = args,
+					success = ~~(xhr.status / 100) == 2,
 					dispatchType = success ? "resolve" :
 						(this.preset.rejectOnError ? "reject" : "resolve");
 
