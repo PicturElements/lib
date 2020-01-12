@@ -15,7 +15,7 @@ $general-params: (
 		display: flex;
 		align-items: flex-end;
 
-		+ .input-row {
+		+ .input-row:not(:empty) {
 			margin-top: $vertical-gap;
 		}
 
