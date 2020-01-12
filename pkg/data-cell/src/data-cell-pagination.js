@@ -242,7 +242,7 @@ export default class DataCellPagination extends DataCell {
 		if (!item)
 			return null;
 
-		return item.idx + this.state.offset;
+		return `@idx: ${item.idx} / @offset: ${this.state.offset} / @fetches: ${this.state.fetches}`;
 	}
 
 	getData(item) {

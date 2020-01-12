@@ -9,6 +9,7 @@ import {
 	matchType,
 	partition,
 	resolveVal,
+	resolveArgs,
 	mkProcessor,
 	requestFrame,
 	extendProcessorOptions
@@ -178,6 +179,12 @@ const DEFAULT_PARTITION_CLASSIFIER = {
 	species: "garbage",
 	persistent: "garbage"
 };
+
+const GET_ARGS = [
+	{ name: "accessor", type: "string|Array", default: "" },
+	{ name: "default", type: "any", default: null },
+	{ name: "fetchAnew", type: "boolean", default: false }
+];
 
 export default class DataCell extends Hookable {
 	constructor(config = {}, initConfig = {}) {
@@ -447,13 +454,19 @@ export default class DataCell extends Hookable {
 		return this.data;
 	}
 
-	get(accessor, def = null, fetchAnew = false) {
+	get(...args) {
+		const a = resolveArgs(args, GET_ARGS, "allowSingleSource");
+
 		return async (...args) => {
-			if (!this.state.loaded || fetchAnew)
+			if (!this.state.loaded || a.fetchAnew)
 				await this.fetch(...args);
 
-			return get(this.data, accessor, def);
+			return get(this.data, a.accessor, a.default);
 		};
+	}
+
+	query(accessor) {
+		return get(this.data, accessor, null);
 	}
 
 	setState(...states) {
