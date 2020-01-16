@@ -14,7 +14,10 @@
 </template>
 
 <script>
-	import { requestFrame } from "@qtxr/utils";
+	import {
+		equals,
+		requestFrame
+	} from "@qtxr/utils";
 	import EVT from "@qtxr/evt";
 
 	const PADDING = 30,
@@ -93,7 +96,7 @@
 					left = ebcr.left - leftShift,
 					rightShift = dbcr.width - ebcr.width - leftShift;
 
-				this.dropdownStyle = {
+				const stl = {
 					position: "fixed",
 					top: placeBottom ? `${ebcr.top + ebcr.height - bBottom}px` : null,
 					bottom: placeBottom ? null : `${window.innerHeight - ebcr.top - bTop}px`,
@@ -101,14 +104,17 @@
 					maxHeight: `${maxHeight}px`
 				};
 
-				this.dropdownDirection = placeBottom ? "place-bottom" : "place-top";
-				
-				if (placeBottom) {
-					this.dropdownStyle.borderTopLeftRadius = `${Math.min(brBottomLeft, leftShift)}px`;
-					this.dropdownStyle.borderTopRightRadius = `${Math.min(brBottomRight, Math.max(rightShift, 0))}px`;
-				} else {
-					this.dropdownStyle.borderBottomLeftRadius = `${Math.min(brTopLeft, leftShift)}px`;
-					this.dropdownStyle.borderBottomRightRadius = `${Math.min(brTopRight, Math.max(rightShift, 0))}px`;
+				if (!equals(stl, this.dropdownStyle)) {
+					this.dropdownStyle = stl;
+					this.dropdownDirection = placeBottom ? "place-bottom" : "place-top";
+					
+					if (placeBottom) {
+						this.dropdownStyle.borderTopLeftRadius = `${Math.min(brBottomLeft, leftShift)}px`;
+						this.dropdownStyle.borderTopRightRadius = `${Math.min(brBottomRight, Math.max(rightShift, 0))}px`;
+					} else {
+						this.dropdownStyle.borderBottomLeftRadius = `${Math.min(brTopLeft, leftShift)}px`;
+						this.dropdownStyle.borderBottomRightRadius = `${Math.min(brTopRight, Math.max(rightShift, 0))}px`;
+					}
 				}
 
 				requestFrame(_ => this.updateDropdown());
