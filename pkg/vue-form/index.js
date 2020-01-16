@@ -1,6 +1,7 @@
 export { default } from "./src/v-form.vue";
 export { default as Input } from "./src/inputs/input.vue";
 export { default as Checkbox } from "./src/inputs/checkbox.vue";
+export { default as Coordinates } from "./src/inputs/coordinates.vue";
 export { default as Count } from "./src/inputs/count.vue";
 export { default as Date } from "./src/inputs/date.vue";
 export { default as DateTime } from "./src/inputs/date-time.vue";

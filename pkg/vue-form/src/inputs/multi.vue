@@ -1,5 +1,5 @@
 <template lang="pug">
-	.input-wrapper.multi.inp-multi(:class="[ expanded ? 'open' : null, isMobile() ? 'mobi' : null, validationState, dropdownDirection ]")
+	.input-wrapper.multi.inp-multi(:class="[ expanded ? 'open' : null, input.noSearch ? 'no-search' : null, isMobile() ? 'mobi' : null, validationState, dropdownDirection ]")
 		textarea.focus-probe(
 			:disabled="disabled"
 			@focus="expand"
@@ -23,11 +23,12 @@
 						name="selection-item-value"
 						v-bind="{ index: idx, item, data: item, delete: _ => deleteSelectionItem(idx) }") {{ getLabel(item) }}
 				.delete-section-item(@click="deleteSelectionItem(idx)") &times;
-		.search-box(:style="searchBoxStyle"
+		.search-box(
+			:style="searchBoxStyle"
 			@mousedown="triggerExpand"
 			@touchstart="triggerExpand"
 			ref="searchBox")
-			.search-input-box
+			.search-input-box(v-if="!input.noSearch")
 				input.search-input(
 					v-model="query"
 					tabindex="-1"
@@ -39,38 +40,47 @@
 					@blur="enqueueCollapse"
 					ref="searchInput")
 				button.search-refresh(
+					v-if="!noRefresh"
+					tabindex="-1"
 					:disabled="searchDisabled"
-					@click="search")
-			.search-results-box(ref="searchResultsBox")
-				template(v-if="!options.length")
-					slot(name="no-search-results" v-bind="this")
-						.no-search-results No results found
-				template(v-else-if="$scopedSlots['search-result']")
-					template(v-for="(option, idx) in options")
+					@click="search(true)")
+			.search-results-wrapper
+				.search-results-box(ref="searchResultsBox")
+					template(v-if="!options.length")
+						slot(name="no-search-results" v-bind="this")
+							.no-search-results No results found
+					.search-result(
+						v-else-if="$scopedSlots['search-result']"
+						v-for="(option, idx) in options"
+						:class="optionPtr == idx ? 'selected' : null"
+						@mousemove="setOptionPtr(idx)")
 						slot(
 							name="search-result"
 							v-bind="{ index: idx, option, data: option, optionPtr, select: _ => triggerAddToSelection(option, idx) }")
-				.default-search-result(
-					v-else
-					v-for="(option, idx) in options"
-					:class="optionPtr == idx ? 'selected' : null"
-					@click="triggerAddToSelection(option, idx)"
-					ref="defaultSearchResults")
-					span.search-result.value
-						slot(
-							name="search-result-value"
-							v-bind="{ index: idx, option, data: option, optionPtr, select: _ => triggerAddToSelection(option, idx) }") {{ getLabel(option) }}
-			.loading-overlay(v-if="loading")
-				slot(name="loading-icon" v-bind="this")
+					.search-result.default-search-result(
+						v-else
+						v-for="(option, idx) in options"
+						:class="optionPtr == idx ? 'selected' : null"
+						@click="triggerAddToSelection(option, idx)"
+						@mousemove="setOptionPtr(idx)"
+						ref="searchResult")
+						span.search-result-value
+							slot(
+								name="search-result-value"
+								v-bind="{ index: idx, option, data: option, optionPtr, select: _ => triggerAddToSelection(option, idx) }") {{ getLabel(option) }}
+				.loading-overlay(v-if="loading")
+					slot(name="loading-icon" v-bind="this")
 </template>
 
 <script>
 	import { Multi } from "@qtxr/form";
 	import EVT from "@qtxr/evt";
 	import {
+		get,
+		equals,
 		cleanRegex,
-		requestFrame,
-		isPrimitive
+		isPrimitive,
+		requestFrame
 	} from "@qtxr/utils";
 	import mixin from "../mixin";
 	
@@ -90,18 +100,22 @@
 			deferTimeout: null,
 			searchDisabled: false,
 			query: "",
+			lastQuery: null,
+			allOptions: null,
 			searchedOptions: [],
 			options: [],
 			optionPtr: -1,
 			lastOptionPtr: -1,
-			globalClickListener: null,
 			globalKeyListener: null
 		}),
 		methods: {
-			async search() {
+			async search(refresh = false) {
+				if (!refresh && this.query == this.lastQuery)
+					return;
+
 				this.searchDisabled = true;
-				this.optionPtr = -1;
 				this.loading = true;
+				this.setOptionPtr(-1);
 
 				const query = this.query,
 					searchRegexFlags = typeof this.input.searchRegexFlags == "string" ?
@@ -111,13 +125,20 @@
 					searchArgs = {
 						options: this.input.options,
 						query,
-						queryRegex
+						queryRegex,
+						fetched: false
 					},
-					useSearchFetch = typeof this.input.searchFetch == "function";
+					useSearchFetch = typeof this.input.searchFetch == "function",
+					useFunctionalSearch = typeof this.input.search == "function",
+					searchAccessor = typeof this.input.handlers.inject == "string" ?
+						this.input.handlers.inject :
+						this.input.handlers.extract
 						
 				let options = useSearchFetch ?
-					await this.res(this.input.searchFetch, searchArgs) :
-					await this.res(this.input.options);
+					await this.res(this.input.searchFetch, searchArgs, refresh) :
+					(this.allOptions && this.input.cacheOptions && !refresh ?
+						this.allOptions :
+						await this.res(this.input.options, refresh));
 
 				if (!Array.isArray(options))
 					options = [];
@@ -125,33 +146,35 @@
 				let searchedOptions = [];
 
 				searchArgs.options = options;
+				searchArgs.fetched = true;
 
-				if (useSearchFetch)
+				if (useSearchFetch || this.input.noSearch)
 					searchedOptions = options;
-				else if (!this.input.noSearch) {
+				else {
 					for (let i = 0, l = options.length; i < l; i++) {
-						if (typeof this.input.search == "function") {
-							const match = this.res(input.search, options[i], searchArgs);
+						if (useFunctionalSearch) {
+							const match = this.res(this.input.search, options[i], searchArgs);
 
 							if (match)
-								searchedOptions.push(this.getLabel(match));
+								searchedOptions.push(options[i]);
 						} else {
-							const label = this.getLabel(options[i]);
+							const testVal = get(options[i], searchAccessor);
 
-							if (!isPrimitive(label))
-								throw new Error(`Search value is not primitive`);
+							if (!isPrimitive(testVal))
+								console.warn("Search value is not primitive", testVal);
 
-							if (queryRegex.test(String(label)))
+							if (queryRegex.test(String(testVal)))
 								searchedOptions.push(options[i]);
 						}
 					}
-				} else
-					searchedOptions = options;
+				}
 
+				this.allOptions = options;
 				this.searchedOptions = searchedOptions;
 				this.options = this.computeDisplayedOptions(searchedOptions);
 				this.loading = false;
 				this.searchDisabled = false;
+				this.lastQuery = this.query;
 				this.$refs.searchResultsBox.scrollTop = 0;
 			},
 			// FIXME: quadratic time complexity
@@ -194,8 +217,17 @@
 					this.search();
 			},
 			guardInput(evt) {
-				if (this.searchDisabled)
-					evt.preventDefault();
+				if (!this.searchDisabled)
+					return;
+
+				switch (EVT.getKey(evt)) {
+					case "escape":
+					case "tab":
+						break;
+
+					default:
+						evt.preventDefault();
+				}
 			},
 			deleteSelectionItem(idx, item) {
 				const val = this.input.value,
@@ -212,7 +244,8 @@
 			},
 			triggerAddToSelection(option, idx) {
 				this.lastOptionPtr = idx;
-				this.$refs.searchInput.focus();
+				if (!this.isMobile())
+					(this.$refs.searchInput || this.$refs.focusProbe).focus();
 				this.addToSelection(option, idx);
 			},
 			addToSelection(option, idx) {
@@ -267,7 +300,7 @@
 					placeBottom = bottomAvailable > (topAvailable * BOTTOM_BIAS) || sHeight < bottomAvailable - 100,
 					maxHeight = placeBottom ? bottomAvailable : topAvailable;
 
-				this.searchBoxStyle = {
+				const stl = {
 					position: "fixed",
 					top: placeBottom ? `${bcr.top + bcr.height - bBottom}px` : null,
 					bottom: placeBottom ? null : `${window.innerHeight - bcr.top - bTop}px`,
@@ -277,8 +310,11 @@
 					width: `${bcr.width - bLeft - bRight}px`,
 					maxHeight: `${maxHeight}px`
 				};
-			
-				this.dropdownDirection = placeBottom ? "place-bottom" : "place-top",
+
+				if (!equals(stl, this.searchBoxStyle)) {
+					this.searchBoxStyle = stl;
+					this.dropdownDirection = placeBottom ? "place-bottom" : "place-top";
+				}
 
 				requestFrame(_ => this.updateFixedBox());
 			},
@@ -303,18 +339,22 @@
 				this.focusOption();
 			},
 			selectOptionWithPtr() {
-				if (!this.options.length || this.optionPtr == -1)
+				if (!this.options.length || this.optionPtr == -1 || this.optionPtr >= this.options.length)
 					return;
 
 				this.lastOptionPtr = this.optionPtr;
 				this.addToSelection(this.options[this.optionPtr], this.optionPtr);
 			},
+			setOptionPtr(ptr) {
+				this.optionPtr = ptr;
+				this.lastOptionPtr = ptr;
+			},
 			focusOption() {
-				if (!this.$refs.defaultSearchResults)
+				if (!this.$refs.searchResult)
 					return;
 
 				const searchResultsBox = this.$refs.searchResultsBox,
-					obcr = this.$refs.defaultSearchResults[this.optionPtr].getBoundingClientRect(),
+					obcr = this.$refs.searchResult[this.optionPtr].getBoundingClientRect(),
 					sbcr = searchResultsBox.getBoundingClientRect(),
 					scroll = searchResultsBox.scrollTop + (obcr.top - sbcr.top) - (sbcr.height - obcr.height) / 2;
 
@@ -348,9 +388,12 @@
 
 				if (!this.expanded)
 					this.search();
+
 				this.expanded = true;
 				this.initUpdateLoop();
-				requestFrame(_ => this.$refs.searchInput.focus());
+
+				if (!this.isMobile())
+					requestFrame(_ => (this.$refs.searchInput || this.$refs.focusProbe).focus());
 			},
 			collapse(evt) {
 				if (this.expansionRequested)
@@ -358,6 +401,17 @@
 
 				this.expanded = false;
 				this.dropdownDirection = null;
+				this.setOptionPtr(-1);
+				if (!this.isMobile())
+					this.$refs.focusProbe.blur();
+			}
+		},
+		computed: {
+			noRefresh() {
+				if (typeof this.input.noRefresh == "boolean")
+					return this.input.noRefresh;
+
+				return typeof this.input.searchFetch != "function" && typeof this.input.options != "function";
 			}
 		},
 		props: {

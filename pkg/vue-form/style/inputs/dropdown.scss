@@ -38,15 +38,24 @@ $dropdown-params: (
 		background: $background;
 		user-select: none;
 		cursor: pointer;
+		-webkit-tap-highlight-color: transparent;
 
 		&.place-bottom,
 		&.place-top .dropdown-list {
 			border-radius: $border-radius $border-radius 0 0;
 		}
 
+		&.place-top .search-input-box {
+			border-top: $separator-border;
+		}
+
 		&.place-top,
 		&.place-bottom .dropdown-list {
 			border-radius: 0 0 $border-radius $border-radius;
+		}
+
+		&.place-bottom .search-input-box {
+			border-bottom: $separator-border;
 		}
 	
 		.dropdown-option {
@@ -55,7 +64,7 @@ $dropdown-params: (
 			padding: 0 $padding;
 			white-space: nowrap;
 
-			&:hover {
+			&.selected-option {
 				background: $hover-background;
 			}
 	
@@ -112,12 +121,54 @@ $dropdown-params: (
 		}
 	
 		.dropdown-list {
-			display: none;
-			position: absolute;
+			position: relative;
+			display: flex;
+			flex-direction: column;
 			box-sizing: content-box;
 			border: inherit;
 			background: inherit;
-			overflow: auto;
+
+			.options-wrapper {
+				position: relative;
+				display: flex;
+				flex-direction: column;
+				flex-grow: 1;
+				overflow: hidden;
+			}
+
+			.options {
+				position: relative;
+				overflow: auto;
+			}
+
+			.no-search-results {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				height: 60px;
+				font-size: 95%;
+			}
+
+			.loading-overlay {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background: rgba($background, 0.8);
+				z-index: 10000;
+			}
+		}
+
+		&.place-top .dropdown-list {
+			flex-direction: column-reverse;
+		}
+
+		&:not(.open) .dropdown-list {
+			visibility: hidden;
+			position: fixed;
+			top: 0;
+			left: 0;
 		}
 	
 		&:not(.open):not(.error) {
@@ -125,9 +176,8 @@ $dropdown-params: (
 		}
 	
 		&.open {
-			.focus-probe {
-				height: 0;
-				pointer-events: none;
+			&:not(.no-search) .focus-probe {
+				display: none;
 			}
 
 			.dropdown-active-option .default-icon:before {
@@ -135,7 +185,7 @@ $dropdown-params: (
 			}
 	
 			.dropdown-list {
-				display: block;
+				visibility: visible;
 				z-index: 10000000;
 			}
 		}

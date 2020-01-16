@@ -3,6 +3,7 @@
 // Auxiliary styling
 @use "./auxiliary/general.scss" as *;
 @use "./auxiliary/drop.scss" as *;
+@use "./auxiliary/search-input-box.scss" as *;
 
 // Core input styling
 @use "./core-inputs/date-selector.scss" as *;
@@ -11,6 +12,7 @@
 // Input styling
 @use "./input.scss" as *;
 @use "./checkbox.scss" as *;
+@use "./coordinates.scss" as *;
 @use "./count.scss" as *;
 @use "./date.scss" as *;
 @use "./date-time.scss" as *;
@@ -25,8 +27,9 @@
 
 @mixin inputs($theme: ()) {
 	// Auxiliary styling
-	@include general(compose-args($theme, $general-params)...);
-	@include drop(compose-args($theme, $drop-params)...);
+	@include general(compose-args($theme, $general-params, "general")...);
+	@include drop(compose-args($theme, $drop-params, "general", "drop")...);
+	@include search-input-box(compose-args($theme, $search-input-box-params, "general", "search-input-box")...);
 
 	// Core input styling
 	$core-theme: map-get($theme, "core-inputs");
@@ -35,6 +38,7 @@
 	
 	// Input style
 	@include input(compose-args($theme, $input-params, "general", "input")...);
+	@include coordinates(compose-args($theme, $coordinates-params, "general", "input", "coordinates")...);
 	@include checkbox(compose-args($theme, $checkbox-params, "general", "input", "checkbox")...);
 	@include count(compose-args($theme, $count-params, "general", "input", "count")...);
 	@include date(compose-args($theme, $date-params, "general", "input", "date")...);

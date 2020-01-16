@@ -13,15 +13,13 @@ $multi-params: (
 	"selection-item-height",
 	"selection-item-spacing",
 	"selection-item-border-radius",
-	"search-box-background",
 	"separator-border",
 	"max-height",
-	"search-box-padding",
-	"search-input-height",
 	"highlight",
 	"highlight-complement",
 	"highlight-disabled",
-	"highlight-disabled-complement"
+	"highlight-disabled-complement",
+	"hover-background"
 );
 
 @mixin multi(
@@ -36,27 +34,34 @@ $multi-params: (
 	$selection-item-height: 24px,
 	$selection-item-spacing: 5px,
 	$selection-item-border-radius: 2px,
-	$search-box-background: whitesmoke,
 	$separator-border: 1px solid rgba(128, 128, 128, 0.15),
 	$max-height: 150px,
-	$search-box-padding: 10px,
-	$search-input-height: 30px,
 	$add-icon-background: #e6eaef,
 	$add-icon-color: #8291a5,
 	$highlight: #1b66bf,
 	$highlight-complement: white,
+	$hover-background: rgba(128, 128, 128, 0.06)
 ) {
 	.inp-multi {
 		background: $background;
+		-webkit-tap-highlight-color: transparent;
 
 		&.place-bottom .selection-box,
 		&.place-top .search-box {
 			border-radius: $border-radius $border-radius 0 0;
 		}
 
+		&.place-top .search-input-box {
+			border-top: $separator-border;
+		}
+
 		&.place-top .selection-box,
 		&.place-bottom .search-box {
 			border-radius: 0 0 $border-radius $border-radius;
+		}
+
+		&.place-bottom .search-input-box {
+			border-bottom: $separator-border;
 		}
 
 		.selection-box {
@@ -125,57 +130,12 @@ $multi-params: (
 			background: $background;
 			z-index: 10000000;
 
-			.search-input-box {
+			.search-results-wrapper {
+				position: relative;
 				display: flex;
-				background: $search-box-background;
-				padding: $search-box-padding;
-
-				input {
-					-webkit-appearance: none;
-					flex-grow: 1;
-					width: 100%;
-					height: $search-input-height;
-					border: $border;
-					border-radius: $border-radius;
-					text-indent: 0.5em;
-					outline: none;
-					font-size: 100%;
-
-					&:not(.pseudo-disabled):focus {
-						border: $focus-border;
-					}
-				}
-
-				.search-refresh {
-					flex-shrink: 0;
-					flex-grow: 0;
-					outline: none;
-					border: none;
-					border-radius: $border-radius;
-					box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
-					background: $highlight;
-					@include inline-svg(
-						$path: "M80 55 a30 30 0 1 1 -30 -30 m-25 -15 l25 15 l-9 25",
-						$stroke: $highlight-complement,
-						$stroke-width: 12
-					);
-					background-size: 50% 50%;
-					background-repeat: no-repeat;
-					background-position: center;
-					width: $search-input-height;
-					margin-left: 10px;
-					cursor: pointer;
-
-					&:disabled {
-						background-color: transparent;
-
-						@include inline-svg(
-							$path: "M80 55 a30 30 0 1 1 -30 -30 m-25 -15 l25 15 l-9 25",
-							$stroke: rgba(0, 0, 0, 0.2),
-							$stroke-width: 12
-						);
-					}
-				}
+				flex-direction: column;
+				flex-grow: 1;
+				overflow: hidden;
 			}
 
 			.search-results-box {
@@ -183,17 +143,17 @@ $multi-params: (
 				overflow: auto;
 			}
 
-			.default-search-result {
+			.search-result {
 				padding: 8px 10px;
 				user-select: none;
 				cursor: pointer;
 
-				+ .default-search-result {
+				+ .search-result {
 					border-top: $separator-border;
 				}
 
 				&.selected {
-					background: $search-box-background;
+					background: $hover-background;
 				}
 			}
 
@@ -207,13 +167,17 @@ $multi-params: (
 
 			.loading-overlay {
 				position: absolute;
-				top: 50px;
-				bottom: 0;
+				top: 0;
 				left: 0;
 				width: 100%;
+				height: 100%;
 				background: rgba($background, 0.8);
 				z-index: 10000;
 			}
+		}
+
+		&.place-top .search-box {
+			flex-direction: column-reverse;
 		}
 
 		&:not(.open) .search-box {
@@ -238,7 +202,7 @@ $multi-params: (
 		}
 
 		&.open {
-			.focus-probe {
+			&:not(.no-search) .focus-probe {
 				display: none;
 			}
 		}

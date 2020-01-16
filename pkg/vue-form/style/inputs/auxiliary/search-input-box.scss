@@ -1,0 +1,76 @@
+@use "~@qtxr/scss-utils" as *;
+
+$search-input-box-params: (
+	"border-radius",
+	"border",
+	"focus-border",
+	"search-box-background",
+	"search-box-padding",
+	"search-input-height",
+	"highlight",
+	"highlight-complement"
+);
+
+@mixin search-input-box(
+	$border-radius: 1px,
+	$border: 1px solid #dadada,
+	$focus-border: 1px solid #1e2021,
+	$search-box-background: whitesmoke,
+	$search-box-padding: 10px,
+	$search-input-height: 30px,
+	$highlight: #1b66bf,
+	$highlight-complement: white
+) {
+	.search-input-box {
+		display: flex;
+		background: $search-box-background;
+		padding: $search-box-padding;
+
+		input {
+			-webkit-appearance: none;
+			flex-grow: 1;
+			width: 100%;
+			height: $search-input-height;
+			border: $border;
+			border-radius: $border-radius;
+			text-indent: 0.5em;
+			outline: none;
+			font-size: 100%;
+
+			&:not(.pseudo-disabled):focus {
+				border: $focus-border;
+			}
+		}
+
+		.search-refresh {
+			flex-shrink: 0;
+			flex-grow: 0;
+			outline: none;
+			border: none;
+			border-radius: $border-radius;
+			box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+			background: $highlight;
+			@include inline-svg(
+				$path: "M80 55 a30 30 0 1 1 -30 -30 m-25 -15 l25 15 l-9 25",
+				$stroke: $highlight-complement,
+				$stroke-width: 12
+			);
+			background-size: 50% 50%;
+			background-repeat: no-repeat;
+			background-position: center;
+			width: $search-input-height;
+			margin-left: 10px;
+			cursor: pointer;
+
+			&:disabled {
+				background-color: transparent;
+
+				@include inline-svg(
+					$path: "M80 55 a30 30 0 1 1 -30 -30 m-25 -15 l25 15 l-9 25",
+					$stroke: rgba(0, 0, 0, 0.2),
+					$stroke-width: 12
+				);
+			}
+		}
+	}
+}

@@ -9,6 +9,13 @@
 		template(#icon="inp")
 			slot(:name="`${cl.input.name}-icon`" v-bind="inp")
 				slot(name="checkbox-icon" v-bind="inp")
+
+	Coordinates(
+		v-else-if="is('coordinates')"
+		:input="cl.input"
+		:disabled="dis"
+		:class="{ disabled: dis }"
+		:meta="meta")
 	
 	Count(
 		v-else-if="is('count')"
@@ -51,6 +58,12 @@
 		template(#icon="data")
 			slot(:name="`${cl.input.name}-icon`" v-bind="data")
 				slot(name="dropdown-icon" v-bind="data")
+		template(#no-search-results="inp")
+			slot(:name="`${cl.input.name}-no-search-results`" v-bind="inp")
+				slot(name="no-search-results" v-bind="inp")
+		template(#loading-icon="inp")
+			slot(:name="`${cl.input.name}-loading-icon`" v-bind="inp")
+				slot(name="loading-icon" v-bind="inp")
 
 	Formatted(
 		v-else-if="is('formatted')"
@@ -190,6 +203,7 @@
 <script>
 	import Input from "./inputs/input.vue";
 	import Checkbox from "./inputs/checkbox.vue";
+	import Coordinates from "./inputs/coordinates.vue";
 	import Count from "./inputs/count.vue";
 	import Date from "./inputs/date.vue";
 	import DateTime from "./inputs/date-time.vue";
@@ -240,6 +254,7 @@
 		components: {
 			Input,
 			Checkbox,
+			Coordinates,
 			Count,
 			Date,
 			DateTime,
