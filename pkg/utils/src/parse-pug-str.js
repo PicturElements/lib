@@ -1,5 +1,6 @@
 import filterMut from "./filter-mut";
 import parseStr from "./parse-str";
+import casing from "./casing";
 import { isObj } from "./is";
 import { cleanAttributes } from "./dom";
 
@@ -27,6 +28,7 @@ export default function parsePugStr(inp) {
 // /([\t ]*)(?:\|\s?(.+)|([^#.\s]+)?([\w.#-]+)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\6|[^"'`])*?)\))?[\t ]*(.*?)$)/gm
 const nodeRegex = /([\t ]*)(?:\/\/-.+|\|\s?(.+)|([^#.\s*(]+)?([\w.#-]*)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\6|[^"'`])*?)\))?[\t ]?(.*?)$)/gm,
 	classIDRegex = /([.#])([^.#]+)/g;
+
 // Capturing groups:
 // 1: key
 // 2: value
@@ -172,18 +174,11 @@ function parseAttributes(node) {
 			
 			default:
 				if (key.indexOf("data-") == 0)
-					attr.data[dataToCamel(key)] = value;
+					attr.data[casing(key).from.data.to.camel] = value;
 				else
 					attr[key] = value;
 		}
 	}
-}
-
-// data-* to camel case
-function dataToCamel(key) {
-	return key.substr(5).toLowerCase().replace(/-([a-z])/g, (match, capture) => {
-		return capture.toUpperCase();
-	});
 }
 
 function createTrees(nodes) {

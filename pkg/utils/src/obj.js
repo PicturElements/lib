@@ -329,6 +329,24 @@ function earmark(markKey, items, aliases) {
 	return marked;
 }
 
+function reassign(target, source, struct, keyMap) {
+	for (const k in keyMap) {
+		if (!hasOwn(keyMap, k) || !hasOwn(source, k))
+			continue;
+
+		const keys = keyMap[k];
+
+		for (let i = 0, l = keys.length; i < l; i++) {
+			if (hasOwn(struct, keys[i])) {
+				target[keys[i]] = source[k];
+				break;
+			}
+		}
+	}
+
+	return target;
+}
+
 export {
 	objToArr,
 	keys,
@@ -345,5 +363,6 @@ export {
 	unenum,
 	writeProtect,
 	revokeWriteProtect,
-	earmark
+	earmark,
+	reassign
 };
