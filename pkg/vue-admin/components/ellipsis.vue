@@ -17,7 +17,10 @@
 </template>
 
 <script>
-	import { requestFrame } from "@qtxr/utils";
+	import {
+		equals,
+		requestFrame
+	} from "@qtxr/utils";
 	import wc from "@qtxr/vue-wrap-component";
 
 	const PADDING = 30,
@@ -69,7 +72,7 @@
 					placeBottom = bottomAvailable > mbcr.height,
 					maxHeight = placeBottom ? bottomAvailable : topAvailable;
 
-				this.menuStyle = {
+				const stl = {
 					position: "fixed",
 					top: placeBottom ? `${lbcr.top + lbcr.height}px` : null,
 					bottom: placeBottom ? null : `${window.innerHeight - lbcr.top}px`,
@@ -77,7 +80,10 @@
 					maxHeight: `${maxHeight}px`
 				};
 
-				this.menuDirection = placeBottom ? "place-bottom" : "place-top";
+				if (!equals(stl, this.menuStyle)) {
+					this.menuStyle = stl;
+					this.menuDirection = placeBottom ? "place-bottom" : "place-top";
+				}
 
 				requestFrame(_ => this.updateMenu());
 			},
