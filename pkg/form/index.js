@@ -6,6 +6,7 @@ export { default as FormRows } from "./src/form-rows";
 
 export { default as Input } from "./src/inputs/input";
 export { default as Checkbox } from "./src/inputs/checkbox";
+export { default as Coordinates } from "./src/inputs/coordinates";
 export { default as Count } from "./src/inputs/count";
 export { default as Date } from "./src/inputs/date";
 export { default as DateTime } from "./src/inputs/date-time";

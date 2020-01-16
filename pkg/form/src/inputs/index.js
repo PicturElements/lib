@@ -1,5 +1,6 @@
 import Input from "./input";
 import Checkbox from "./checkbox";
+import Coordinates from "./coordinates";
 import Count from "./count";
 import { default as DateInput } from "./date";
 import DateTime from "./date-time";
@@ -16,6 +17,7 @@ const inputTypes = {
 	default: "text",
 	checkbox: "checkbox",
 	check: "checkbox",
+	coordinates: "coordinates",
 	count: "count",
 	date: "date",
 	"date-time": "date-time",
@@ -32,6 +34,7 @@ const inputTypes = {
 const inputConstructors = {
 	default: Input,
 	checkbox: Checkbox,
+	coordinates: Coordinates,
 	count: Count,
 	date: DateInput,
 	"date-time": DateTime,

@@ -61,6 +61,9 @@ export default class BaseInput extends Hookable {
 		options = options || {};
 		super();
 
+		this._options = options;
+		this._schema = schema;
+
 		// Constants (during runtime)
 		this.form = form;
 		this.name = name;
@@ -89,7 +92,8 @@ export default class BaseInput extends Hookable {
 				this.dynamicValue.tracked++;
 				return this.dynamicValue.formalizer.transform(val);
 			};
-		}
+		} else
+			this.vt = _ => console.warn("This input does not provide a formalizer");
 
 		// Handlers
 		this.handlers = {};
@@ -109,15 +113,23 @@ export default class BaseInput extends Hookable {
 		// Propagation data
 		this.propagate = null;
 
-		inject(this, options, {
-			schema: injectSchema(initOptionsSchema, schema, "override|cloneTarget"),
+		// Don't run this on derived classes with their own finishInit
+		// method as they will want to run this at the end of their creation,
+		// and might need to finish init manually
+		if (this.finishInit == BaseInput.prototype.finishInit)
+			this.finishInit();
+	}
+
+	finishInit() {
+		inject(this, this._options, {
+			schema: injectSchema(initOptionsSchema, this._schema, "override|cloneTarget"),
 			strictSchema: true,
 			override: true
 		});
 
-		this.hookAll(options.hooks);
-		this.default = options.value;
-		this.setValue(options.value);
+		this.hookAll(this._options.hooks);
+		this.default = this._options.value;
+		this.setValue(this._options.value);
 	}
 
 	[CHECK](evt) {
@@ -294,12 +306,22 @@ export default class BaseInput extends Hookable {
 	}
 
 	setValue(value) {
-		this.dynamicValue.value = this[OVERRIDE_INJECT](value);
+		const newValue = this[OVERRIDE_INJECT](value);
+		
+		if (newValue && typeof newValue.then == "function")
+			return newValue.then(val => this.dynamicValue.value = val);
+
+		this.dynamicValue.value = newValue;
 		return value;
 	}
 
 	updateValue(value) {
-		this.dynamicValue.value = this[MERGE_INJECT](value);
+		const newValue = this[MERGE_INJECT](value);
+
+		if (newValue && typeof newValue.then == "function")
+			return newValue.then(val => this.dynamicValue.value = val);
+
+		this.dynamicValue.value = newValue;
 		return value;
 	}
 
@@ -484,7 +506,7 @@ export default class BaseInput extends Hookable {
 	}
 
 	set value(value) {
-		this.dynamicValue.value = this[OVERRIDE_INJECT](value);
+		this.setValue(value);
 	}
 
 	static get formalize() {

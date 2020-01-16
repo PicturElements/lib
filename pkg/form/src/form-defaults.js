@@ -92,6 +92,14 @@ const defaults = {
 		value: "",
 		validate: mkRangeValidator(1, Infinity, "Please specify a city")
 	},
+	coordinates: {
+		type: "coordinates",
+		value: null,
+		validate(val, inp, inps) {
+			if (val == null)
+				return "Please provide a coordinate";
+		}
+	},
 	count: {
 		type: "count",
 		value: 0,
