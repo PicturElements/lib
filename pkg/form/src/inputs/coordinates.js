@@ -8,7 +8,9 @@ export default class Coordinates extends BaseInput {
 	constructor(name, options, form) {
 		super(name, options, form, {
 			mapOptions: Object,
-			markerOptions: Object
+			markerOptions: Object,
+			noSearch: "boolean",
+			noGeolocation: "boolean"
 		});
 	}
 	
