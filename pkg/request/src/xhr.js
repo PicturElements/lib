@@ -2,6 +2,7 @@ import {
 	clone,
 	casing,
 	isObject,
+	matchType,
 	isPrimitive,
 	getConstructorName
 } from "@qtxr/utils";
@@ -27,6 +28,13 @@ const methods = {
 	OPTIONS: "OPTIONS",
 	TRACE: "TRACE",
 	PATCH: "PATCH"
+};
+
+const presetSchema = {
+	headers: Object,
+	payload: v => typeof v != "function",
+	baseUrl: ["string", URL],
+	hooks: Object
 };
 
 const sourceTargetRegex = /^(?:([\w-:]*)\s*->\s*)?([\w-:]+)$/,
@@ -55,6 +63,7 @@ class XHRManager {
 		this.runtime = {};
 		this.currentGuard = null;
 		this.opts = Object.assign({}, defaultXHROptions, options);
+		this.presetSchema = Object.assign({}, presetSchema, this.opts.presetSchema);
 		this.presets = {};
 		this.macroKeys = {};
 
@@ -151,7 +160,7 @@ class XHRManager {
 					continue;
 
 				added = true;
-				outPreset = injectPreset(outPreset, preset);
+				outPreset = injectPreset(this, outPreset, preset);
 			}
 		};
 
@@ -635,7 +644,7 @@ const presetStruct = {
 	hooks: {}
 };
 
-function injectPreset(acc, data) {
+function injectPreset(manager, acc, data) {
 	if (!acc)
 		acc = clone(presetStruct);
 
@@ -646,13 +655,18 @@ function injectPreset(acc, data) {
 		if (!data.hasOwnProperty(k))
 			continue;
 
+		const d = resolvePresetProp(manager, k, data[k], [
+			manager,
+			acc
+		]);
+
 		switch (k) {
 			case "headers": {
-				if (!isObject(data[k]))
+				if (!isObject(d))
 					continue;
 
 				const headers = {},
-					inHeaders = data[k];
+					inHeaders = d;
 
 				for (const k2 in inHeaders) {
 					if (!inHeaders.hasOwnProperty(k2))
@@ -666,7 +680,7 @@ function injectPreset(acc, data) {
 			}
 				
 			default:
-				acc[k] = mergeData(acc[k], data[k]);
+				acc[k] = mergeData(acc[k], d);
 		}
 	}
 
@@ -690,6 +704,16 @@ function mergeData(acc, data) {
 		return acc.concat(data);
 
 	return Object.assign(acc, clone(data));
+}
+
+function resolvePresetProp(manager, key, value, args) {
+	if (!manager.presetSchema || !manager.presetSchema.hasOwnProperty(key) || value == null)
+		return value;
+
+	if (typeof value == "function" && !matchType(value, manager.presetSchema[key]))
+		return value(...args);
+
+	return value;
 }
 
 function mkUrl(url, preset) {
