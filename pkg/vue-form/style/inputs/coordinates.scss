@@ -1,23 +1,50 @@
 @use "~@qtxr/scss-utils" as *;
 
 $coordinates-params: (
+	"search-height",
 	"border-radius",
+	"button-padding",
 	"aspect-ratio",
 	"max-height",
 	"background",
+	"focus-background",
+	"border",
 	"focus-border-color"
 );
 
 @mixin coordinates(
+	$search-height: 40px,
 	$border-radius: 1px,
+	$button-padding: 4px,
 	$aspect-ratio: 0.75,
 	$max-height: 400px,
 	$background: white,
+	$focus-background: #f3f3f3,
+	$border: 1px solid #dadada,
 	$focus-border-color: #1e2021
 ) {
 	.inp-coordinates {
 		.map-wrapper {
 			position: relative;
+			-webkit-tap-highlight-color: transparent;
+			border: $border;
+			border-radius: $border-radius;
+			overflow: hidden;
+
+			.loading-overlay {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background: rgba($background, 0.8);
+				z-index: 10000;
+			}
+		}
+
+		&.search-enabled .map-wrapper {
+			border-bottom-left-radius: 0;
+			border-bottom-right-radius: 0;
 		}
 
 		.pad-box-wrapper {
@@ -35,7 +62,74 @@ $coordinates-params: (
 			left: 0;
 			width: 100%;
 			height: 100%;
-			border-radius: $border-radius;
+			border-radius: inherit;
+		}
+
+		.search-box {
+			display: flex;
+			position: relative;
+			height: $search-height;
+			border: $border;
+			border-top: none;
+			border-radius: 0 0 $border-radius $border-radius;
+			box-sizing: content-box;
+
+			input {
+				flex-grow: 1;
+				border: none;
+				outline: none;
+				font-family: inherit;
+				color: inherit;
+				font-size: 100%;
+				margin: 0 $button-padding;
+			}
+
+			.run-btn-wrapper {
+				flex-shrink: 0;
+				margin: $button-padding;
+
+				&.run-geolocation {
+					padding-right: $button-padding;
+					border-right: $border;
+				}
+
+				&.run-search {
+					padding-left: $button-padding;
+					border-left: $border;
+				}
+			}
+
+			.run-btn {
+				width: $search-height - 2 * $button-padding;
+				height: $search-height - 2 * $button-padding;
+				border: none;
+				outline: none;
+				padding: $button-padding * 2;
+				border-radius: $border-radius;
+				background: transparent;
+				cursor: pointer;
+
+				&:focus,
+				&.active {
+					background: $focus-background;
+				}
+
+				.run-icon {
+					width: 100%;
+					height: 100%;
+					fill: none;
+					stroke: currentColor;
+				}
+
+				&:disabled {
+					cursor: default;
+					color: inherit;
+
+					.run-icon {
+						opacity: 0.6;
+					}
+				}
+			}
 		}
 	
 		.validation-msg {

@@ -16,6 +16,15 @@
 		:disabled="dis"
 		:class="{ disabled: dis }"
 		:meta="meta")
+		template(#geolocation-icon="inp")
+			slot(:name="`${cl.input.name}-geolocation-icon`" v-bind="inp")
+				slot(name="geolocation-icon" v-bind="inp")
+		template(#search-icon="inp")
+			slot(:name="`${cl.input.name}-search-icon`" v-bind="inp")
+				slot(name="search-icon" v-bind="inp")
+		template(#loading-icon="inp")
+			slot(:name="`${cl.input.name}-loading-icon`" v-bind="inp")
+				slot(name="loading-icon" v-bind="inp")
 	
 	Count(
 		v-else-if="is('count')"
