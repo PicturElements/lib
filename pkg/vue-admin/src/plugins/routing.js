@@ -42,10 +42,10 @@ export default {
 			dispatchChange(this.$route, this.$route);
 		});
 
-		wrapper.addComputed("ownRoute", function () {
+		wrapper.addComputed("ownRoute", function() {
 			return getOwnRoute(this);
 		});
-		wrapper.addComputed("subroutes", function () {
+		wrapper.addComputed("subroutes", function() {
 			return getSubroutes(this);
 		});
 	}

@@ -1,7 +1,9 @@
 <template lang="pug">
 	UtilBox.listing-box(
 		:config="conf"
-		:cell="cell")
+		:cell="cell"
+		:form="form"
+		:formRows="formRows")
 		
 		Listing(
 			:config="conf"
@@ -9,15 +11,23 @@
 			:columns="columns"
 			:sortOrders="sortOrders")
 			template(#error="listing")
-				slot(name="error" v-bind="listing")
+				slot(
+					name="error"
+					v-bind="listing")
 			template(#no-results="listing")
-				slot(name="no-results" v-bind="listing")
+				slot(
+					name="no-results"
+					v-bind="listing")
 			template(#item="d")
-				slot(name="item" v-bind="d")
+				slot(
+					name="item"
+					v-bind="d")
 			template(
-				v-if="$scopedSlots['compact-item']"
+				v-if="hasSlot('compact-item')"
 				#compact-item="item")
-				slot(name="compact-item" v-bind="item")
+				slot(
+					name="compact-item"
+					v-bind="item")
 
 		//- Slots / templates
 		template(
@@ -31,68 +41,80 @@
 					|  of 
 					span.listing-count-num.listing-total {{ cell.state.total }}
 			span.listing-count(v-else-if="isArray(cell.data)") {{ cell.data.length }}
-		template(#header-utils-pre="utilBox")
+		template(#header-utils-pre="d")
 			slot(
 				name="header-utils-pre"
-				v-bind="utilBox")
+				v-bind="d")
 				slot(
 					name="header-utils-pre-form"
-					v-if="frm && getRows('headerUtilsPre')"
-					v-bind="{ box: utilBox, form: frm, rows: getRows('headerUtilsPre') }")
+					v-bind="d")
 					VForm(
-						:form="frm"
-						:rows="getRows('headerUtilsPre')")
-		template(#loading-box="utilBox")
-			slot(name="loading-box" v-bind="utilBox")
-		template(#loading-icon="utilBox")
-			slot(name="loading-icon" v-bind="utilBox")
-		template(#title="utilBox")
-			slot(name="title" v-bind="utilBox")
+						:form="d.form"
+						:rows="d.rows")
+		template(#loading-box="d")
+			slot(
+				name="loading-box"
+				v-bind="d")
+		template(#loading-icon="d")
+			slot(
+				name="loading-icon"
+				v-bind="d")
+		template(#title="d")
+			slot(
+				name="title"
+				v-bind="d")
 		template(
-			v-if="$scopedSlots['sub-header'] || $scopedSlots['sub-header-form']"
-			#sub-header="utilBox")
+			v-if="isFormular('subHeader') || hasSlot('sub-header', 'sub-header-form')"
+			#sub-header="d")
 			slot(
 				name="sub-header"
-				v-bind="utilBox")
+				v-bind="d")
 				slot(
 					name="sub-header-form"
-					v-if="frm && getRows('subHeader')"
-					v-bind="{ box: utilBox, form: frm, rows: getRows('subHeader')}")
+					v-bind="d")
 					VForm(
-						:form="frm"
-						:rows="getRows('subHeader')")
+						:form="d.form"
+						:rows="d.rows")
+		template(v-if="hasSlot('footer') && !hasSlot('footer-left', 'footer-left-form', 'footer-right', 'footer-right-form')"
+			#footer="d")
+			slot(
+				name="footer"
+				v-bind="d")
 		template(
-			v-if="isPagination"
-			#footer="utilBox")
-			.util-box-footer-left.f.ac
-				.page-selector.f
+			#footer-left="d"
+			v-if="isPagination || isFormular('footerLeft') || hasSlot('footer-left', 'footer-left-form')")
+			slot(
+				name="footer-left"
+				v-bind="d")
+				slot(
+					v-if="isFormular('footerLeft') || hasSlot('footer-left', 'footer-left-form')"
+					name="footer-left-form"
+					v-bind="d")
+					VForm(
+						:form="d.form"
+						:rows="d.rows")
+				.page-selector.f(v-else-if="isPagination")
 					button.page-selector-btn.f.c(
 						v-for="page in pages"
 						:class="page.class"
 						:disabled="page.disabled"
 						@click="cell.setPage(page.id)") {{ page.id + 1 }}
-			.util-box-footer-right.f.ac
-				slot(
-					name="footer-right"
-					v-bind="utilBox")
-					slot(
-						name="footer-right-form"
-						v-if="frm && getRows('footerRight')"
-						v-bind="{ box: utilBox, form: frm, rows: getRows('footerRight') }")
-						VForm(
-							:form="frm"
-							:rows="getRows('footerRight')")
 		template(
-			v-else-if="$scopedSlots['footer']"
-			#footer="utilBox")
-			slot(name="footer" v-bind="utilBox")
+			v-if="isFormular('footerRight') || hasSlot('footer-right', 'footer-right-form')"
+			#footer-right="d")
+			slot(
+				name="footer-right"
+				v-bind="d")
+				slot(
+					name="footer-right-form"
+					v-bind="d")
+					VForm(
+						:form="d.form"
+						:rows="d.rows")
 </template>
 
 <script>
-	import {
-		sym,
-		get
-	} from "@qtxr/utils";
+	import { get } from "@qtxr/utils";
 	import DataCell, { DataCellPagination } from "@qtxr/data-cell";
 	import Form from "@qtxr/form";
 
@@ -100,8 +122,6 @@
 	import Listing from "./listing.vue";
 	import UtilBox from "./util-box.vue";
 	import LoadingBox from "./loading-box.vue";
-
-	const hookSym = sym("Listing hook");
 
 	export default {
 		name: "ListingBox",
@@ -118,16 +138,30 @@
 		},
 		methods: {
 			isArray: Array.isArray,
-			getRows(accessor) {
+			isFormular(accessor) {
+				if (!this.frm)
+					return false;
+
 				const selfRows = get(this.rows, accessor);
 				if (selfRows)
-					return selfRows;
+					return true;
+
+				if (!this.cell)
+					return null;
 
 				const cellRows = this.cell.form && get(this.cell.form.inputsStruct, accessor);
 				if (cellRows)
-					return cellRows;
+					return true;
 
-				return null;
+				return false;
+			},
+			hasSlot(...names) {
+				for (let i = 0, l = names.length; i < l; i++) {
+					if (this.$scopedSlots[names[i]])
+						return true;
+				}
+
+				return false;
 			}
 		},
 		computed: {
@@ -193,7 +227,7 @@
 				if (this.form instanceof Form)
 					return this.form;
 
-				if (this.cell.form instanceof Form)
+				if (this.cell && this.cell.form  instanceof Form)
 					return this.cell.form;
 
 				return null;
