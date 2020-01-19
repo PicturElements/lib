@@ -25,6 +25,7 @@ $search-input-box-params: (
 		display: flex;
 		background: $search-box-background;
 		padding: $search-box-padding;
+		flex-shrink: 0;
 
 		input {
 			-webkit-appearance: none;
@@ -59,6 +60,7 @@ $search-input-box-params: (
 			background-repeat: no-repeat;
 			background-position: center;
 			width: $search-input-height;
+			height: $search-input-height;
 			margin-left: 10px;
 			cursor: pointer;
 

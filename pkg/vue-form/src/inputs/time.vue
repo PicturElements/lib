@@ -1,7 +1,8 @@
 <template lang="pug">
 	Drop.input-wrapper.time.inp-time(
 		:class="validationState"
-		@collapse="collapse")
+		@collapse="collapse"
+		@key="key")
 		template(#expando-box="rt")
 			.time-display
 				template(v-for="(runtime, i) in timeDisplayData.dialsData")

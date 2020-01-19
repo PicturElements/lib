@@ -110,7 +110,7 @@
 		}),
 		methods: {
 			async search(refresh = false) {
-				if (!refresh && this.query == this.lastQuery)
+				if (this.loading || (!this.input.searchOnExpand && !refresh && this.query == this.lastQuery))
 					return;
 
 				this.searchDisabled = true;

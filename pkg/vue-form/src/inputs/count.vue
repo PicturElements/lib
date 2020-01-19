@@ -3,7 +3,6 @@
 		template(v-if="input.compact")
 			input(
 				type="tel"
-				:key="key"
 				:value="input.value"
 				:disabled="disabled"
 				@keydown="keydown"
@@ -32,7 +31,6 @@
 				slot(name="down-symbol") {{ res(symbols.down) || "-" }}
 			input(
 				type="tel"
-				:key="key"
 				:value="input.value"
 				:disabled="disabled"
 				@keydown="keydown"
@@ -56,9 +54,6 @@
 	export default {
 		name: "Count",
 		mixins: [mixin],
-		data: _ => ({
-			key: 0
-		}),
 		methods: {
 			up() {
 				const ticks = this.input.ticks;
@@ -120,8 +115,6 @@
 
 				if (!this.disabled)
 					this.input.trigger(newCount);
-
-				this.key++;
 			}
 		},
 		props: {

@@ -150,20 +150,20 @@
 
 			const map = new google.maps.Map(
 				this.$refs.map,
-				Object.assign(this.input.mapOptions || {}, {
+				Object.assign({
 					zoom: 2,
 					center: coords,
 					draggableCursor: "pointer"
-				})
+				}, this.input.mapOptions)
 			);
 
 			const marker = new google.maps.Marker(
-				Object.assign(this.input.markerConfig || {}, {
+				Object.assign({
 					position: coords,
 					map: map,
 					animation: google.maps.Animation.DROP,
 					draggable: true
-				})
+				}, this.input.markerConfig)
 			);
 
 			google.maps.event.addListener(map, "click", evt => {

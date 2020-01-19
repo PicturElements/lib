@@ -102,7 +102,7 @@
 		}),
 		methods: {
 			async search(refresh = false) {
-				if (this.loading || !refresh && this.query == this.lastQuery) {
+				if (this.loading || (!this.input.searchOnExpand && !refresh && this.query == this.lastQuery)) {
 					this.updateSelection();
 					return;
 				}
