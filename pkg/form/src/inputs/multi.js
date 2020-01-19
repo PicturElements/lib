@@ -8,6 +8,7 @@ export default class Multi extends BaseInput {
 			searchFetch: "function",
 			search: "function",
 			searchRegexFlags: "string",
+			searchOnExpand: "boolean",
 			maxSearchResults: "number",
 			noSearch: "boolean",
 			noRefresh: "boolean",

@@ -322,7 +322,10 @@ export default class Form extends Hookable {
 		if (!(inp instanceof BaseInput))
 			return;
 
-		const val = inp[EXTRACT]();
+		let val = inp[EXTRACT]();
+
+		if (inp.nullable && val == null)
+			val = null;
 
 		if (target && val !== undefined) {
 			if (typeof inp.path == "string") {

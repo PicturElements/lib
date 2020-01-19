@@ -69,6 +69,7 @@ export default class BaseInput extends Hookable {
 		this.name = name;
 		this.required = true;
 		this.type = "text";
+		this.nullable = false;
 
 		// State
 		this.initialized = false;

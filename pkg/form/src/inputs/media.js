@@ -29,6 +29,8 @@ export default class Media extends BaseInput {
 			}
 		});
 
+		this.nullable = true;
+
 		if (this.multiple)
 			this.value = this.value || [];
 

@@ -12,6 +12,7 @@ export default class Dropdown extends BaseInput {
 			searchFetch: "function",
 			search: "function",
 			searchRegexFlags: "string",
+			searchOnExpand: "boolean",
 			noSearch: "boolean",
 			noRefresh: "boolean",
 			defer: "number",

@@ -2,7 +2,7 @@ import {
 	round,
 	reassign
 } from "@qtxr/utils";
-import BaseInput, { INJECT } from "@qtxr/form/src/inputs/base-input";
+import BaseInput, { INJECT } from "./base-input";
 
 export default class Coordinates extends BaseInput {
 	constructor(name, options, form) {
