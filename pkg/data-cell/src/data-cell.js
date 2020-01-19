@@ -454,6 +454,14 @@ export default class DataCell extends Hookable {
 		return this.data;
 	}
 
+	async retr(fetchAnew, ...args) {
+		if (this.state.loaded && !fetchAnew)
+			return this.data;
+
+		await this.fetch(...args);
+		return this.data;
+	}
+
 	get(...args) {
 		const a = resolveArgs(args, GET_ARGS, "allowSingleSource");
 
