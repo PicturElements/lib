@@ -362,6 +362,11 @@ export default class Form extends Hookable {
 		this.updateInitialized = false;
 	}
 
+	validate() {
+		this.trigger();
+		return this.valid;
+	}
+
 	trigger() {
 		this.updateInitialized = true;
 
