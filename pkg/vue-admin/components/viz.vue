@@ -2,13 +2,14 @@
 	.v-viz-wrapper
 		.v-viz(v-once ref="root")
 		slot(name="loading-box")
-			LoadingBox.semi-transparent(
+			LoadingBox.semi-transparent.v-viz-loading-box(
 				v-if="$scopedSlots['loading-icon']"
-				:cell="cell").v-viz-loading-box
+				:cell="cell")
 				slot(name="loading-icon")
 </template>
 
 <script>
+	import { get } from "@qtxr/utils";
 	import Viz from "@qtxr/viz";
 	import DataCell from "@qtxr/data-cell";
 
@@ -28,7 +29,8 @@
 				required: true
 			},
 			data: null,
-			cell: DataCell
+			cell: DataCell,
+			accessor: [String, Array]
 		},
 		components: {
 			LoadingBox
@@ -39,16 +41,24 @@
 
 			window.addEventListener("resize", this.resizeHandler);
 
+			const setData = d => {
+				if (this.accessor)
+					this.viz.setData(get(d, this.accessor));
+				else
+					this.viz.setData(d);
+			};
+
 			if (this.cell instanceof DataCell) {
-				this.cell.hook("setData", (cell, data) => {
-					this.viz.setData(data);
-				});
+				this.cell.hook("setData", (cell, data) => setData(data));
+
+				if (this.cell.state.loaded && this.cell.data)
+					setData(this.cell.data);
 
 				this.cell.hook("stateUpdate:loading", (cell, loading) => {
 					this.viz.loading = loading;
 				})
 		 	} else if (this.data)
-				this.viz.setData(this.data);
+				setData(this.data);
 		},
 		beforeDestroy() {
 			window.removeEventListener("resize", this.resizeHandler);

@@ -136,13 +136,15 @@
 			},
 			getSlotData(rowAccessor) {
 				const form = this.frm,
-					rows = rowAccessor && this.getRows(rowAccessor)
+					rows = rowAccessor ?
+						this.getRows(rowAccessor) :
+						form && form.inputsStruct;
 
 				return {
 					box: this,
 					form,
 					rows,
-					formular: Boolean(form && rows)
+					formular: Boolean(rowAccessor && form && rows)
 				};
 			}
 		},
@@ -157,7 +159,7 @@
 				return null;
 			},
 			generalData() {
-				return this.getSlotData("null");
+				return this.getSlotData(null);
 			},
 			headerUtilsData() {
 				return this.getSlotData("headerUtilsPre");
