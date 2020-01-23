@@ -362,11 +362,6 @@ export default class Form extends Hookable {
 		this.updateInitialized = false;
 	}
 
-	validate() {
-		this.trigger();
-		return this.valid;
-	}
-
 	trigger() {
 		this.updateInitialized = true;
 
@@ -418,6 +413,11 @@ export default class Form extends Hookable {
 		});
 	
 		return valid;
+	}
+
+	triggerValidate() {
+		this.trigger();
+		return this.valid;
 	}
 
 	static trigger(inp, ...args) {
