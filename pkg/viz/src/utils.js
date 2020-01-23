@@ -1,6 +1,7 @@
 import {
 	clone,
 	forEach,
+	isObject,
 	findClosest,
 	isNativeSimpleObject
 } from "@qtxr/utils";
@@ -258,7 +259,9 @@ function mapClone(target, source, map) {
 		return target;
 
 	if (!map) {
-		Object.assign(target, source);
+		if (isObject(target))
+			Object.assign(target, source);
+
 		return target;
 	}
 

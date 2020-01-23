@@ -1328,7 +1328,9 @@ export default class Viz {
 					snappedY,
 					point,
 					pointAbs,
-					data
+					data,
+					dataset,
+					viz: this
 				});
 			} else {
 				apply(events, events.move, evt, {
@@ -1338,7 +1340,9 @@ export default class Viz {
 					h,
 					point,
 					pointAbs,
-					data
+					data,
+					dataset,
+					viz: this
 				});
 			}
 		};
