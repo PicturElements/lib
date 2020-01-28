@@ -131,13 +131,15 @@ function findClosest(arr, comparator, options) {
 			// If a step can be made in the array to acquire a closer/more
 			// appropriate candidate, do another comparison one step left/right
 			// of the found element.
-			const underflow = stepPoint < 0,
-				overflow = stepPoint >= arr.length,
+			const underflow = options.reverse ?
+					stepPoint >= arr.length :
+					stepPoint < 0,
+				overflow = options.reverse ?
+					stepPoint < 0 :
+					stepPoint >= arr.length,
 				outOfBounds = underflow || overflow;
 
-			if ((options.reverse ^ underflow) && options.lower)
-				return dispatch(-1, 0);
-			else if ((options.reverse ^ overflow) && options.upper)
+			if ((options.upper && overflow) || (options.lower && underflow))
 				return dispatch(-1, 0);
 
 			if (!outOfBounds) {
@@ -146,11 +148,14 @@ function findClosest(arr, comparator, options) {
 					sa = Math.abs(stepProx);
 
 				if (refProx * stepProx < 0) {
-					if (options.lower && (stepProx < 0 ^ options.reverse))
+					if (!(options.lower ^ options.upper)) {
+						if (sa == ra && stepProx > 0 || sa < ra)
+							return dispatch(stepPoint, stepProx);
+					} else if (options.lower && stepProx < 0)
 						return dispatch(stepPoint, stepProx);
-					if (options.upper && (stepProx > 0 ^ options.reverse))
+					else if (options.upper && stepProx > 0)
 						return dispatch(stepPoint, stepProx);
-				} else if (!(options.lower ^ options.upper) && sa < ra)
+				} else if (!(options.lower ^ options.upper) && sa <= ra)
 					return dispatch(stepPoint, stepProx);
 			}
 
