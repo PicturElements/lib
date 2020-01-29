@@ -121,7 +121,6 @@
 	import VForm from "@qtxr/vue-form";
 	import Listing from "./listing.vue";
 	import UtilBox from "./util-box.vue";
-	import LoadingBox from "./loading-box.vue";
 
 	export default {
 		name: "ListingBox",
@@ -244,8 +243,7 @@
 		components: {
 			VForm,
 			Listing,
-			UtilBox,
-			LoadingBox
+			UtilBox
 		}
 	}
 </script>

@@ -1,0 +1,149 @@
+$drop-params: (
+	"weak-color",
+	"error-color",
+	"padding",
+	"border-width",
+	"border-color",
+	"background",
+	"hover-background"
+);
+
+@mixin drop(
+	$weak-color: #555,
+	$error-color: #bb2424,
+	$padding: 8px,
+	$border-width: 1px,
+	$border-color: whitesmoke,
+	$background: white,
+	$hover-background: whitesmoke
+) {
+	.adm-drop {
+		position: relative;
+		z-index: 10000;
+
+		.drop-launcher {
+			position: relative;
+			padding: $padding;
+			margin: -$padding;
+			box-sizing: content-box;
+			cursor: pointer;
+		}
+
+		.launcher-content {
+			white-space: nowrap;
+		}
+
+		&.open {
+			z-index: 10000000;
+		}
+
+		.drop-menu {
+			display: flex;
+			visibility: hidden;
+			position: fixed;
+			margin: ($border-width * -2) (-$border-width);
+			background: $background;
+			border: 1px solid $border-color;
+			border-radius: 2px 0 2px 2px;
+			min-width: 100px;
+			overflow: visible;
+
+			.drop-menu-nub {
+				position: absolute;
+				bottom: 100%;
+				right: 0;
+				margin: (-$border-width);
+				box-sizing: content-box;
+				padding: $padding;
+				background: $background;
+				border: 1px solid $border-color;
+				border-bottom-width: 0;
+			}
+
+			.drop-menu-content {
+				padding: $padding;
+				overflow: auto;
+				width: 100%;
+
+				.error-content {
+					font-size: 90%;
+					text-align: center;
+					color: $error-color;
+				}
+
+				.no-content {
+					font-size: 90%;
+					text-align: center;
+					color: $weak-color;
+				}
+			}
+
+			.drop-menu-item {
+				position: relative;
+				white-space: nowrap;
+				cursor: pointer;
+
+				&.disabled {
+					opacity: 0.5;
+					cursor: default;
+				}
+			}
+		}
+
+		&:not(.no-highlight) .drop-menu-item:not(.disabled):hover {
+			background: $hover-background;
+		}
+
+		&:not(.open) .drop-menu {
+			position: fixed;
+			top: 0;
+			left: 0;
+		}
+
+		&.open .drop-menu {
+			visibility: visible;
+		}
+
+		&.place-top {
+			.drop-menu {
+				margin-top: 0;
+				margin-bottom: $border-width * -2;
+
+				.drop-menu-nub {
+					border-top-width: 0;
+					border-bottom-width: $border-width;
+					bottom: auto;
+					top: 100%;
+				}
+			}
+		}
+
+		&.justify-left {
+			.drop-menu-nub {
+				left: 0;
+				right: auto;
+			}
+		}
+
+		&.loading {
+			.drop-menu-content {
+				min-height: 50px;
+			}
+		}
+
+		&.spaced {
+			.drop-menu-item + .drop-menu-item {
+				margin-top: 10px;
+
+				&:before {
+					content: "";
+					position: absolute;
+					top: -5px;
+					left: 0;
+					right: 0;
+					border-bottom: 1px solid $border-color;
+				}
+			}
+		}
+	}
+}

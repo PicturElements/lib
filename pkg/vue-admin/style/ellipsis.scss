@@ -1,4 +1,6 @@
 $ellipsis-params: (
+	"weak-color",
+	"error-color",
 	"width",
 	"padding",
 	"border-width",
@@ -8,6 +10,8 @@ $ellipsis-params: (
 );
 
 @mixin ellipsis(
+	$weak-color: #555,
+	$error-color: #bb2424,
 	$width: 16px,
 	$padding: 8px,
 	$border-width: 1px,
@@ -16,19 +20,14 @@ $ellipsis-params: (
 	$hover-background: whitesmoke
 ) {
 	.ellipsis {
-		position: relative;
 		width: $width;
 		height: $width;
-		z-index: 10000;
 
-		.ellipsis-launcher {
-			position: relative;
+		.drop-launcher {
 			width: $width;
 			height: $width;
 			padding: $padding;
 			margin: -$padding;
-			box-sizing: content-box;
-			cursor: pointer;
 
 			.adm-icon {
 				opacity: 0.5;
@@ -40,73 +39,54 @@ $ellipsis-params: (
 		}
 
 		&.open {
-			z-index: 10000000;
-
-			.ellipsis-launcher .adm-icon {
+			.drop-launcher .adm-icon {
 				opacity: 1;
 			}
 		}
 
-		.ellipsis-menu {
-			visibility: hidden;
-			position: fixed;
-			padding: $padding;
+		.drop-menu {
 			margin-top: $border-width * -2;
 			background: $background;
 			border: 1px solid $border-color;
-			border-radius: 2px 0 2px 2px;
-			min-width: 100px;
-			overflow: visible;
 
-			.ellipsis-menu-nub {
-				position: absolute;
-				top: -($width + 2 * $padding);
+			.drop-menu-nub {
 				right: -$border-width;
 				width: $width;
 				height: $width;
-				box-sizing: content-box;
 				padding: $padding;
+				margin: (-$border-width) 0;
 				background: $background;
-				border: 1px solid $border-color;
-				border-bottom-width: 0;
+				border-color: $border-color;
+			}
+
+			.drop-menu-content {
+				padding: $padding;
+
+				.error-content {
+					color: $error-color;
+				}
+
+				.no-content {
+					color: $weak-color;
+				}
 			}
 
 			.ellipsis-menu-item {
 				padding: 6px 10px;
-				white-space: nowrap;
-				cursor: pointer;
-
-				&.disabled {
-					opacity: 0.5;
-					cursor: default;
-				}
-
-				&:not(.disabled):hover {
-					background: $hover-background;
-				}
 			}
 		}
 
-		&:not(.open) .ellipsis-menu {
-			position: fixed;
-			top: 0;
-			left: 0;
-		}
-
-		&.open .ellipsis-menu {
-			visibility: visible;
+		&:not(.no-highlight) .drop-menu-item:not(.disabled):hover {
+			background: $hover-background;
 		}
 
 		&.place-top {
-			.ellipsis-menu {
-				margin-top: 0;
+			.drop-menu {
 				margin-bottom: $border-width * -2;
 
-				.ellipsis-menu-nub {
-					border-top-width: 0;
+				.drop-menu-nub {
 					border-bottom-width: $border-width;
-					top: auto;
-					bottom: -($width + 2 * $padding);
+					margin-top: -$border-width;
 				}
 			}
 		}

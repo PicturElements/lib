@@ -1,5 +1,6 @@
 @use "~@qtxr/scss-utils" as *;
 
+@use "./drop.scss" as *;
 @use "./ellipsis.scss" as *;
 @use "./listing-box.scss" as *;
 @use "./listing.scss" as *;
@@ -11,6 +12,7 @@
 
 @mixin all($theme) {
 	// Package styles
+	@include drop(compose-args($theme, $drop-params, "general", "drop")...);
 	@include ellipsis(compose-args($theme, $ellipsis-params, "general", "ellipsis")...);
 	@include listing-box(compose-args($theme, $listing-box-params, "general", "listing-box")...);
 	@include listing(compose-args($theme, $listing-params, "general", "listing")...);

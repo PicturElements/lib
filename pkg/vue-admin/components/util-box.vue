@@ -59,7 +59,9 @@
 				slot(
 					v-else
 					v-bind="generalData")
-			slot(name="loading-box" v-bind="generalData")
+			slot(
+				name="loading-box"
+				v-bind="generalData")
 				LoadingBox.semi-transparent(
 					v-if="hasSlot('loading-icon')"
 					:cell="cell")

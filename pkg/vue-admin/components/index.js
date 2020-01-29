@@ -1,5 +1,6 @@
 export { default as VForm } from "@qtxr/vue-form";
 
+export { default as Drop } from "./drop.vue";
 export { default as Ellipsis } from "./ellipsis.vue";
 export { default as ListingBox } from "./listing-box.vue";
 export { default as Listing } from "./listing.vue";
