@@ -359,6 +359,7 @@ export default class Form extends Hookable {
 		this.changed = false;
 
 		this.callHooks("updated", this.inputs);
+		this.valid = this.validate();
 		this.updateInitialized = false;
 	}
 

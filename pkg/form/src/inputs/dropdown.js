@@ -16,7 +16,8 @@ export default class Dropdown extends BaseInput {
 			noSearch: "boolean",
 			noRefresh: "boolean",
 			defer: "number",
-			autoSet: "boolean"
+			autoSet: "boolean",
+			autoUpdate: "boolean"
 		});
 		this.initFetchedOptions = null;
 		this.selectedIndex = -1;
