@@ -12,7 +12,10 @@ import {
 	resolveArgs,
 	mkProcessor,
 	requestFrame,
-	extendProcessorOptions
+	extendProcessorOptions,
+	composePresets,
+	addPreset,
+	mergePresets
 } from "@qtxr/utils";
 import { XHRManager } from "@qtxr/request";
 import { Hookable } from "@qtxr/bc";
@@ -37,6 +40,10 @@ const DEFAULT_STATE_PRESETS = {
 };
 
 const DEFAULT_METHOD = "custom";
+const PASSIVE_IGNORE = {
+	method: true,
+	fetch: true
+};
 
 const COMMON_PROCESSOR_OPTIONS = {
 	processors: {
@@ -143,6 +150,12 @@ const COMMON_PROCESSOR_OPTIONS = {
 
 				return key;
 			};
+		},
+		preset(proc) {
+			if (typeof proc != "function")
+				return _ => proc;
+
+			return proc;
 		}
 	}
 };
@@ -190,8 +203,11 @@ export default class DataCell extends Hookable {
 	constructor(config = {}, initConfig = {}) {
 		super();
 
-		if (!isInjectedConfig(config))
-			config = injectPresets(config);
+		config = mergePresets(config, DataCell.presets, {
+			defaultKey: "default",
+			keys: ["preset", "presets"],
+			injectConfig: config.passive ? PASSIVE_IGNORE : null
+		});
 
 		const classifier = inject(
 			DEFAULT_PARTITION_CLASSIFIER,
@@ -703,10 +719,41 @@ export default class DataCell extends Hookable {
 		return item;
 	}
 
+	extractData() {
+		return this.data;
+	}
+
 	getCells() {
 		return [this];
 	}
+
+	static definePreset(nameOrPreset, preset) {
+		let name = nameOrPreset;
+	
+		if (typeof nameOrPreset != "string") {
+			preset = nameOrPreset;
+			name = "default";
+		}
+	
+		if (!name || typeof name != "string")
+			throw new Error(`Cannot define preset: invalid preset name ${serialize(name)}`);
+	
+		addPreset(
+			this.presets,
+			name,
+			preset
+		);
+	}
+
+	static resolveConfig(config) {
+		return mergePresets(config, DataCell.presets, {
+			keys: ["preset", "presets"],
+			injectConfig: config.passive ? PASSIVE_IGNORE : null
+		});
+	}
 }
+
+DataCell.presets = composePresets({});
 
 function applyStateTransforms(cell, newState) {
 	const state = cell.state,
@@ -954,66 +1001,10 @@ function getErrorMsg(cell, wrappedResponse, errorMsg) {
 	}
 }
 
-const INJECTED_PRESET_SYM = sym("injected preset"),
-	PASSIVE_IGNORE = {
-		method: true,
-		fetch: true
-	};
-
-function injectPresets(config) {
-	let injected = false;
-
-	const inj = name => {
-		if (typeof name != "string" || !DataCell.presets.hasOwnProperty(name))
-			throw new Error(`Cannot inject preset: ${serialize(name)} is not a valid name`);
-
-		if (injected) {
-			config = inject(
-				config,
-				DataCell.presets[name],
-				{
-					ignore: config.passive ? PASSIVE_IGNORE : null
-				}
-			);
-		} else {
-			config = inject(
-				config,
-				DataCell.presets[name],
-				{
-					cloneTarget: true,
-					ignore: config.passive ? PASSIVE_IGNORE : null
-				}
-			);
-		}
-
-		injected = true;
-	};
-
-	if (DataCell.presets.hasOwnProperty("default"))
-		inj("default");
-
-	if (typeof config.preset == "string")
-		inj(config.preset);
-
-	if (Array.isArray(config.presets)) {
-		for (let i = 0, l = config.presets.length; i < l; i++)
-			inj(config.presets[i]);
-	}
-
-	config[INJECTED_PRESET_SYM] = true;
-	return config;
-}
-
-function isInjectedConfig(config) {
-	return isObject(config) && config.hasOwnProperty(INJECTED_PRESET_SYM);
-}
-
 function mkInheritableConfig(config, initConfig) {
 	return {
 		config: inject({}, config, {
-			schema: {
-				
-			},
+			schema: {},
 			typed: true,
 			deep: true,
 			strictSchema: true
@@ -1028,8 +1019,3 @@ function mkInheritableConfig(config, initConfig) {
 		})
 	};
 }
-
-export {
-	injectPresets,
-	isInjectedConfig
-};

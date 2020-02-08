@@ -248,6 +248,35 @@ export default class DataCellPagination extends DataCell {
 	getData(item) {
 		return item.data;
 	}
+
+	extractData() {
+		const extract = partition => {
+			const out = [];
+
+			if (!Array.isArray(partition))
+				return out;
+
+			for (let i = 0, l = partition.length; i < l; i++)
+				out.push(partition[i].data);
+
+			return out;
+		};
+
+		if (this.isPartitioned) {
+			const partitions = this.config.partitions,
+				outData = {};
+
+			for (let i = 0, l = partitions.length; i < l; i++) {
+				const path = partitions[i],
+					ctx = get(outData, path, null, "context|autoBuild");
+
+				ctx.context[ctx.key] = extract(get(this.data, path));
+			}
+
+			return outData;
+		} else
+			return extract(this.data);
+	}
 }
 
 function getPaginationDataStruct(pagination) {

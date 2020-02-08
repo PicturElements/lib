@@ -1,4 +1,3 @@
-export * from "./src/data-cell";
 export * from "./src";
 
 export { default } from "./src";

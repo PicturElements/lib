@@ -1,15 +1,11 @@
 import {
 	sym,
 	earmark,
-	serialize,
 	matchQuery
 } from "@qtxr/utils";
 
 // All DataCell constructors
-import DataCell, {
-	injectPresets,
-	isInjectedConfig
-} from "./data-cell";
+import DataCell from "./data-cell";
 import DataCellComposite from "./data-cell-composite";
 import DataCellPagination from "./data-cell-pagination";
 
@@ -23,24 +19,9 @@ const DATA_CELL_SPECIES_MAP = {
 	},
 	DATA_CELL_SPECIES_SYM = sym("DataCell species");
 
-function definePreset(nameOrPreset, preset) {
-	let name = nameOrPreset;
-
-	if (typeof nameOrPreset != "string") {
-		preset = nameOrPreset;
-		name = "default";
-	}
-
-	if (!name || typeof name != "string")
-		throw new Error(`Cannot define preset: invalid preset name ${serialize(name)}`);
-
-	this.presets[name] = preset;
-}
-
 function mkDataCell(config, initConfig) {
 	if (config) {
-		if (!isInjectedConfig(config))
-			config = injectPresets(config);
+		config = DataCell.resolveConfig(config);
 
 		const species = typeof config.species == "string" || (config.species && config.species[DATA_CELL_SPECIES_SYM]) ?
 			config.species :
@@ -95,11 +76,7 @@ DataCell.constructors = earmark(
 	DATA_CELL_SPECIES_ALIASES
 );
 
-DataCell.presets = {};
-DataCell.definePreset = definePreset;
-
 DataCell.new = mkDataCell;
-
 DataCell.isCellConfig = isCellConfig;
 
 export default DataCell;

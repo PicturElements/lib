@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/data-cell",
-  "version": "1.8.4",
+  "version": "1.8.5",
   "description": "Interface for abstracting data fetching, manipulation, and state",
   "main": "index.js",
   "scripts": {
@@ -26,7 +26,7 @@
   "dependencies": {
     "@qtxr/bc": "^1.4.3",
     "@qtxr/request": "^3.8.1",
-    "@qtxr/utils": "^1.37.0"
+    "@qtxr/utils": "^1.38.0"
   },
   "devDependencies": {},
   "files": [
@@ -34,7 +34,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 38,
+    "pushes": 39,
     "expose": {
       "scripts": [
         "connect/feed.js"
