@@ -11,6 +11,7 @@ export * from "./src/is";
 export * from "./src/num";
 export * from "./src/obj";
 export * from "./src/options";
+export * from "./src/presets";
 export * from "./src/process";
 export * from "./src/range";
 export * from "./src/regex-reduce";

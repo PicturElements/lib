@@ -137,6 +137,13 @@ function isNativeFunction(candidate) {
 	return funcStr.length < 1000 && nativeFuncRegex.test(funcStr);
 }
 
+function isThenable(candidate) {
+	if (!candidate)
+		return false;
+
+	return typeof candidate.then == "function";
+}
+
 export {
 	isDirectInstanceof,
 	isNativeSimpleObject,
@@ -151,5 +158,6 @@ export {
 	isArrayLike,
 	isArrResolvable,
 	isEnv,
-	isNativeFunction
+	isNativeFunction,
+	isThenable
 };

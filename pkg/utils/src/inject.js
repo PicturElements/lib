@@ -9,9 +9,9 @@ import hasOwn from "./has-own";
 import matchQuery from "./match-query";
 import { sym } from "./sym";
 import {
-	composeOptionsTemplates,
-	createOptionsObject
-} from "./options";
+	composeMergerTemplates,
+	mergeObject
+} from "./internal/merge-obj";
 
 /*
 	OPTIONS = {
@@ -27,7 +27,7 @@ import {
 */
 
 export default function inject(target, extender, options) {
-	options = createOptionsObject(options, optionsTemplates);
+	options = mergeObject(options, optionsTemplates, null, "option");
 
 	const visitedSym = options.circular ? sym("inject visited") : null;
 	
@@ -43,7 +43,7 @@ export default function inject(target, extender, options) {
 		for (let k in extender) {
 			let key = extenderIsArr ? extender[k] : k;
 
-			if (extender.hasOwnProperty(k))
+			if (hasOwn(extender, k))
 				newExtender[key] = options.root[extender[k]];
 		}
 
@@ -133,7 +133,7 @@ export default function inject(target, extender, options) {
 
 				runtime.schema = schema;
 				runtime.ignore = ignore;
-			} else if (!targ.hasOwnProperty(key) || options.override)
+			} else if (!hasOwn(targ, key) || options.override)
 				val = ext[key];
 			else
 				return;
@@ -167,7 +167,7 @@ export default function inject(target, extender, options) {
 	);
 }
 
-const optionsTemplates = composeOptionsTemplates({
+const optionsTemplates = composeMergerTemplates({
 	clone: true,
 	cloneTarget: true,
 	cloneExtender: true,
