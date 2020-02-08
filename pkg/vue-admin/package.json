@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/vue-admin",
-  "version": "1.12.0",
+  "version": "1.12.1",
   "description": "Administrator tools for Vue",
   "main": "index.js",
   "scripts": {
@@ -26,13 +26,13 @@
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/vue-admin#readme",
   "dependencies": {
     "@qtxr/bc": "^1.4.3",
-    "@qtxr/data-cell": "^1.8.5",
+    "@qtxr/data-cell": "^1.8.6",
     "@qtxr/form": "^1.15.2",
     "@qtxr/i18n": "^2.3.10",
     "@qtxr/scss-utils": "^1.2.2",
     "@qtxr/uc": "^1.6.1",
     "@qtxr/url": "^1.1.4",
-    "@qtxr/utils": "^1.38.0",
+    "@qtxr/utils": "^1.38.1",
     "@qtxr/viz": "^1.0.8",
     "@qtxr/vue-form": "^2.11.4",
     "@qtxr/vue-wrap-component": "^2.4.3"
@@ -44,7 +44,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 132,
+    "pushes": 133,
     "expose": {
       "scripts": [
         "connect/feed.js"
