@@ -32,7 +32,9 @@ function mergePresets(data, presets, config = {}) {
 			visitedKeys[key] = true;
 
 			if (Array.isArray(preset)) {
-				for (let i = 0, l = preset.length; i < l; i++)
+				// Run in reverse since inject calls don't overwrite written fields,
+				// thereby giving later presets precedence over earlier presets
+				for (let i = preset.length - 1; i >= 0; i--)
 					outData = mrg(outData, preset[i], key, true) || outData;
 
 				return outData;
