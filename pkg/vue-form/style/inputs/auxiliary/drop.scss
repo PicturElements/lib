@@ -69,8 +69,15 @@ $drop-params: ();
 
 		.drop-dropdown {
 			padding: 10px;
-			overflow: auto;
+			overflow-x: hidden;
+			overflow-y: auto;
 			z-index: 10000000;
+
+			.drop-dropdown-scroll {
+				display: flex;
+				flex-grow: 1;
+				height: 100%;
+			}
 		}
 	}
 }

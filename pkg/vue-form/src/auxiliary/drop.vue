@@ -10,7 +10,8 @@
 			:style="dropdownStyle"
 			ref="dropdown"
 			@click.stop)
-			slot(v-bind="{ expanded, expand, collapse }")
+			.drop-dropdown-scroll
+				slot(v-bind="{ expanded, expand, collapse }")
 </template>
 
 <script>
