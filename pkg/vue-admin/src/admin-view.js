@@ -2,7 +2,7 @@ import {
 	isObj,
 	partition
 } from "@qtxr/utils";
-import { mkDataCell, injectPresets } from "@qtxr/data-cell";
+import DataCell from "@qtxr/data-cell";
 import Form from "@qtxr/form";
 
 const adminViewClassifier = {
@@ -32,10 +32,10 @@ export default class AdminView {
 			if (!configs.hasOwnProperty(k))
 				continue;
 
-			const config = injectPresets(configs[k]);
+			const config = DataCell.resolveConfig(configs[k]);
 
 			if (config.persistent) {
-				const cell = mkDataCell(config);
+				const cell = DataCell.new(config);
 
 				outCells[k] = (wrapper, vm) => {
 					connectDataCells(cell, {
@@ -50,7 +50,7 @@ export default class AdminView {
 				};
 			} else {
 				outCells[k] = (wrapper, vm) => {
-					const cell = mkDataCell(config);
+					const cell = DataCell.new(config);
 
 					connectDataCells(cell, {
 						vm,

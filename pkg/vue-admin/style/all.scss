@@ -1,22 +1,29 @@
 @use "~@qtxr/scss-utils" as *;
 
+@use "./breadcrumbs.scss" as *;
 @use "./drop.scss" as *;
 @use "./ellipsis.scss" as *;
 @use "./listing-box.scss" as *;
 @use "./listing.scss" as *;
 @use "./loading-box.scss" as *;
+@use "./sidebar-nav.scss" as *;
+@use "./tabbed-box.scss" as *;
 @use "./timed-button.scss" as *;
 @use "./util-box.scss" as *;
 @use "./viz.scss" as *;
+
 @use "~@qtxr/vue-form/style/inputs" as *;
 
 @mixin all($theme) {
 	// Package styles
+	@include breadcrumbs(compose-args($theme, $breadcrumbs-params, "general", "breadcrumbs")...);
 	@include drop(compose-args($theme, $drop-params, "general", "drop")...);
 	@include ellipsis(compose-args($theme, $ellipsis-params, "general", "ellipsis")...);
 	@include listing-box(compose-args($theme, $listing-box-params, "general", "listing-box")...);
 	@include listing(compose-args($theme, $listing-params, "general", "listing")...);
 	@include loading-box(compose-args($theme, $loading-box-params, "general", "loading-box")...);
+	@include sidebar-nav(compose-args($theme, $sidebar-nav-params, "general", "sidebar-nav")...);
+	@include tabbed-box(compose-args($theme, $tabbed-box-params, "general", "tabbed-box")...);
 	@include timed-button(compose-args($theme, $timed-button-params, "general", "timed-button")...);
 	@include util-box(compose-args($theme, $util-box-params, "general", "util-box")...);
 	@include viz(compose-args($theme, $viz-params, "general", "viz")...);

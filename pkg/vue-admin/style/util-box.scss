@@ -31,6 +31,19 @@ $util-box-params: (
 			margin-bottom: $padding;
 			padding-bottom: $padding;
 			border-bottom: $separator;
+			white-space: nowrap;
+		}
+
+		.util-box-title-box {
+			width: 100%;
+			padding-right: 10px;
+		}
+
+		.util-box-header-left,
+		.util-box-title {
+			flex-shrink: 1;
+			overflow: hidden;
+			text-overflow: ellipsis;
 		}
 
 		.util-box-title {

@@ -1,0 +1,55 @@
+$breadcrumbs-params: (
+	"color",
+	"highlight",
+	"mobile-media"
+);
+
+@mixin breadcrumbs(
+	$color: #2e343c,
+	$highlight: #1b66bf,
+	$mobile-media: "(max-aspect-ratio: 1/1) and (max-width: 700px)"
+) {
+	.admin-breadcrumb {
+		position: relative;
+
+		+ .admin-breadcrumb {
+			margin-left: 1.6em;
+
+			&:before {
+				content: "";
+				position: absolute;
+				width: 0.6em;
+				height: 0.6em;
+				top: 50%;
+				margin: -0.25em -1.25em;
+				transform: rotate(45deg);
+				border: 1px solid $color;
+				border-style: dotted;
+				border-left: none;
+				border-bottom: none;
+				opacity: 0.7;
+			}
+		}
+
+		&:last-child {
+			color: $highlight;
+			font-weight: bold;
+		}
+	}
+
+	@media #{$mobile-media} {
+		.admin-breadcrumbs a {
+			&:not(:last-child) {
+				display: none;
+			}
+
+			&:last-child {
+				margin-left: 0;
+				
+				&:before {
+					display: none;
+				}
+			}
+		}
+	}
+}

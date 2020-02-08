@@ -13,7 +13,7 @@
 	import Viz from "@qtxr/viz";
 	import DataCell from "@qtxr/data-cell";
 
-	import LoadingBox from "./loading-box";
+	import LoadingBox from "./loading-box.vue";
 
 	export default {
 		name: "Viz",
