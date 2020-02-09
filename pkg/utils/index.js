@@ -58,6 +58,7 @@ export { default as memoize } from "./src/memoize";
 export { default as mkAccessor } from "./src/mk-accessor";
 export { default as mkStdLib } from "./src/mk-std-lib";
 export { default as parseArgStr } from "./src/parse-arg-str";
+export { default as parseEntityStr } from "./src/parse-entity-str";
 export { default as parseFloatStr } from "./src/parse-float-str";
 export { default as parsePropStr } from "./src/parse-prop-str";
 export { default as parsePugStr } from "./src/parse-pug-str";

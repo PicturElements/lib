@@ -4,6 +4,7 @@ import { splitClean } from "./str";
 import repeat from "./repeat";
 import casing from "./casing";
 import hasOwn from "./has-own";
+import parseEntityStr from "./parse-entity-str";
 import {
 	VOID_TAGS,
 	DOM_NAMESPACES
@@ -451,9 +452,9 @@ function genDom(nodes, options = {}) {
 					if (minified && i > 0 && nds[i - 1].type == "text")
 						str += "\\n";
 
-					str += repeat(indentStr, indent) + node.content;
+					str += repeat(indentStr, indent) + parseEntityStr(node.content);
 				} else
-					parent.appendChild(document.createTextNode(node.content));
+					parent.appendChild(document.createTextNode(parseEntityStr(node.content)));
 
 				continue;
 			}
