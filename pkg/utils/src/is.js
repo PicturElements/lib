@@ -1,7 +1,7 @@
 import {
-	symbolIteratorKey,
-	polyfillPrefixes
-} from "./_constants";
+	SYM_ITER_KEY,
+	POLYFILL_PREFIXES
+} from "./internal/constants";
 
 const docAll = typeof document == "undefined" ? [] : document.all;
 
@@ -62,7 +62,7 @@ function isValidObjectKey(key) {
 }
 
 const isSymbol = typeof Symbol == "undefined" ? candidate => {
-	return typeof candidate == "string" && candidate.indexOf(polyfillPrefixes.symbol) == 0;
+	return typeof candidate == "string" && candidate.indexOf(POLYFILL_PREFIXES.symbol) == 0;
 } : candidate => {
 	return typeof candidate == "symbol";
 };
@@ -74,7 +74,7 @@ const isIterable = typeof Symbol == "undefined" ? candidate => {
 	if (candidate == null || typeof candidate != "object")
 		return false;
 
-	return symbolIteratorKey in candidate;
+	return SYM_ITER_KEY in candidate;
 } : candidate => {
 	if (candidate === docAll || typeof candidate == "string")
 		return true;
@@ -144,6 +144,15 @@ function isThenable(candidate) {
 	return typeof candidate.then == "function";
 }
 
+function isTaggedTemplateArgs(args) {
+	if (!Array.isArray(args))
+		return false;
+
+	const firstArg = args[0];
+
+	return Boolean(firstArg && firstArg.raw) && Array.isArray(firstArg) && Array.isArray(firstArg.raw);
+}
+
 export {
 	isDirectInstanceof,
 	isNativeSimpleObject,
@@ -159,5 +168,6 @@ export {
 	isArrResolvable,
 	isEnv,
 	isNativeFunction,
-	isThenable
+	isThenable,
+	isTaggedTemplateArgs
 };

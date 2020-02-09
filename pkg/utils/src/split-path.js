@@ -1,4 +1,4 @@
-import { unescape } from "./str";
+import { unescape } from "./str-replace";
 
 const regexSources = {
 	// /[$a-z0-9_-]+|\[(?:(["'`])((?:[^\\]|\\.)*?)\1|((?:[^\\\]]*|\\.)+?))\]"/gi

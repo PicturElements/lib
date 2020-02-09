@@ -1,4 +1,4 @@
-import { cleanPath } from "./str";
+import { cleanPath } from "./str-replace";
 import splitPath from "./split-path";
 
 const abnormalRegex = splitPath.regexes.hasAbnormalPropertyChar;

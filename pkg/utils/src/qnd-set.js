@@ -1,4 +1,4 @@
-import { symbolIteratorKey } from "./_constants";
+import { SYM_ITER_KEY } from "./internal/constants";
 import { isArrayLike } from "./is";
 import forEach from "./for-each";
 
@@ -34,7 +34,7 @@ const QNDSet = typeof Set == "undefined" ? class {
 		return idx > -1;
 	}
 
-	[symbolIteratorKey]() {
+	[SYM_ITER_KEY]() {
 		const set = this._set;
 
 		return {

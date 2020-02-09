@@ -1,11 +1,11 @@
 import hasOwn from "../src/has-own";
-import { polyfillPrefixes } from "../src/_constants";
+import { POLYFILL_PREFIXES } from "../src/internal/constants";
 
 const OBJ = {
 	a: 1,
 	b: 2,
 	[Symbol.for("c")]: 3,
-	[`${polyfillPrefixes.symbol}sym`]: 12
+	[`${POLYFILL_PREFIXES.symbol}sym`]: 12
 };
 
 it("matches own properties only", () => {
@@ -17,10 +17,10 @@ it("matches string property keys but not symbol keys", () => {
 	expect(hasOwn(OBJ, "a")).toBe(true);
 	expect(hasOwn.polyfill(OBJ, "a")).toBe(true);
 	expect(hasOwn(OBJ, Symbol.for("c"))).toBe(false);
-	expect(hasOwn.polyfill(OBJ, `${polyfillPrefixes.symbol}sym`)).toBe(false);
+	expect(hasOwn.polyfill(OBJ, `${POLYFILL_PREFIXES.symbol}sym`)).toBe(false);
 });
 
 it("matches string symbol keys with allowSymbol flag", () => {
 	expect(hasOwn(OBJ, Symbol.for("c"), true)).toBe(true);
-	expect(hasOwn.polyfill(OBJ, `${polyfillPrefixes.symbol}sym`, true)).toBe(true);
+	expect(hasOwn.polyfill(OBJ, `${POLYFILL_PREFIXES.symbol}sym`, true)).toBe(true);
 });

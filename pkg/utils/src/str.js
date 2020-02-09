@@ -1,44 +1,7 @@
 import { getWrappedRange } from "./range";
-
-function cleanPath(str) {
-	return escape(str).replace(/(\])/g, "\\$&");
-}
-
-function escape(str) {
-	return str.replace(/['"`\\]/g, match => `\\${match}`);
-}
-
-function unescape(str) {
-	return String(str).replace(/\\(.)/g, "$1");
-}
-
-function repeat(str, count = 0) {
-	str = String(str);
-	count = Number(count) || 0;
-
-	if (count < 0)
-		throw new RangeError("Invalid count value");
-
-	if (!count)
-		return "";
-	
-	let out = "";
-
-	// Pretty much completely ripped off the left-pad implementation
-	// https://github.com/left-pad/left-pad/blob/master/index.js
-	// because it's pretty elegant
-	while (true) {
-		if (count & 1)
-			out += str;
-
-		count >>= 1;
-
-		if (count)
-			str += str;
-		else
-			return out;
-	}
-}
+import { isTaggedTemplateArgs } from "./is";
+import serialize from "./serialize";
+import repeat from "./repeat";
 
 function padStart(str, length = 2, padChar = " ") {
 	str = String(str);
@@ -94,14 +57,62 @@ function splitClean(str, splitter, subTrim = true) {
 	return splitOut;
 }
 
+function getSerializeOptions() {
+	return {
+		quote: "",
+		bareString: true
+	};
+}
+
+const CACHED_SERIALIZE_OPTIONS = getSerializeOptions();
+
+function compileTaggedTemplateCore(args, options) {
+	if (isTaggedTemplateArgs(args)) {
+		const raw = args[0].raw ;
+		let out = "";
+
+		for (let i = 0, l = raw.length; i < l; i++) {
+			out += raw[i];
+
+			if (i < l - 1)
+				out += serialize(args[i + 1], options);
+		}
+
+		return out;
+	}
+	
+	if (typeof args[0] == "string")
+		return args[0];
+
+	return "";
+}
+
+function compileTaggedTemplate(...args) {
+	const options = compileTaggedTemplate.options;
+	compileTaggedTemplate.options = null;
+
+	if (options)
+		return compileTaggedTemplateCore(args, options);
+	
+	return compileTaggedTemplateCore(args, CACHED_SERIALIZE_OPTIONS);
+}
+
+compileTaggedTemplate.options = null;
+compileTaggedTemplate.with = options => {
+	if (compileTaggedTemplate.options)
+		compileTaggedTemplate.options = Object.assign(compileTaggedTemplate.options, options);
+	else
+		compileTaggedTemplate.options = Object.assign(getSerializeOptions(), options);
+
+	return compileTaggedTemplate;
+};
+
 export {
-	cleanPath,
-	escape,
-	unescape,
 	repeat,
 	padStart,
 	padEnd,
 	spliceStr,
 	trimStr,
-	splitClean
+	splitClean,
+	compileTaggedTemplate
 };

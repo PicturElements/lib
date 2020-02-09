@@ -1,4 +1,4 @@
-import { polyfillPrefixes } from "./_constants";
+import { POLYFILL_PREFIXES } from "./internal/constants";
 import hasOwn from "./has-own";
 import { isSymbol } from "util";
 
@@ -9,7 +9,7 @@ function sym(prefix) {
 	const postfix = keySeed.toString(36),
 		key = prefix ? `${prefix}:${postfix}` : postfix;
 	
-	return typeof Symbol == "undefined" ? `${polyfillPrefixes.symbol}${key}` : Symbol(key);
+	return typeof Symbol == "undefined" ? `${POLYFILL_PREFIXES.symbol}${key}` : Symbol(key);
 }
 
 const setSymbol = typeof Symbol == "undefined" ? (obj, symbol, value = null) => {

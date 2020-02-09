@@ -1,4 +1,4 @@
-import { symbolIteratorKey } from "./_constants";
+import { SYM_ITER_KEY } from "./internal/constants";
 import {
 	isArrayLike,
 	isDirectInstanceof,
@@ -100,8 +100,8 @@ export default function forEach(obj, callback, options){
 	options = createOptionsObject(options || forEach._options, optionsTemplates);
 	forEach._options = null;
 
-	if (obj[symbolIteratorKey] && (options.iterable || !isArrayLike(obj))) {
-		const iterator = obj[symbolIteratorKey](),
+	if (obj[SYM_ITER_KEY] && (options.iterable || !isArrayLike(obj))) {
+		const iterator = obj[SYM_ITER_KEY](),
 			setLike = options.isSetLike || isSetLike(obj),
 			mapLike = options.isMapLike || isMapLike(obj),
 			stack = [];

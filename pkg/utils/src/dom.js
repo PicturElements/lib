@@ -1,8 +1,20 @@
 import { nub } from "./arr";
 import { isObject } from "./is";
 import { splitClean } from "./str";
+import repeat from "./repeat";
 import casing from "./casing";
 import hasOwn from "./has-own";
+import {
+	VOID_TAGS,
+	DOM_NAMESPACES
+} from "./internal/constants";
+import {
+	composeOptionsTemplates,
+	createOptionsObject
+} from "./options";
+
+const NS_LEN = DOM_NAMESPACES.length,
+	DEF_NS = "http://www.w3.org/1999/xhtml";
 
 function hasAncestor(elem, clsOrElem, maxDepth = Infinity) {
 	const searchByClass = typeof clsOrElem == "string";
@@ -188,11 +200,11 @@ function parseStyleArr(arr) {
 function parseStyleObj(obj) {
 	const parsed = mkParsedStyleObject();
 
-	if (!Array.isArray(obj))
+	if (!isObject(obj))
 		return parsed;
 
 	for (const k in obj) {
-		if (!hasOwn(obj))
+		if (!hasOwn(obj, k))
 			continue;
 
 		let value = obj[k];
@@ -347,11 +359,202 @@ function mergeAttributes(targetAttrs, sourceAttrs, config) {
 
 	for (let key in sourceAttrs) {
 		let value = sourceAttrs[key];
-
-		
 	}
 
 	return targetAttrs;
+}
+
+function printClass(classes) {
+	if (typeof classes == "string")
+		return classes;
+
+	let out = "";
+
+	if (Array.isArray(classes)) {
+		for (let i = 0, l = classes.length; i < l; i++) {
+			if (i > 0)
+				out += " ";
+
+			out += classes[i];
+		}
+	} else if (isObject(classes)) {
+		let count = 0;
+
+		for (const k in classes) {
+			if (classes[k] && hasOwn(classes, k)) {
+				if (count > 0)
+					out += " ";
+
+				out += k;
+				count++;
+			}
+		}
+	}
+
+	return out;
+}
+
+function printStyle(style) {
+	style = parseStyle(style, true);
+
+	let out = "";
+
+	for (let i = 0, l = style.list.length; i < l; i++) {
+		const { key, value } = style.list[i];
+
+		if (i > 0)
+			out += "; ";
+
+		out += `${key}: ${value}`;
+	}
+
+	return out;
+}
+
+const optionsTemplates = composeOptionsTemplates({
+	minified: true,
+	raw: true
+});
+
+function genDom(nodes, options = {}) {
+	options = createOptionsObject(options, optionsTemplates);
+	
+	if (isObject(nodes))
+		nodes = [nodes];
+
+	const frag = document.createDocumentFragment(),
+		raw = options.raw,
+		minified = typeof options.minified == "boolean" ? options.minified : false,
+		indentStr = minified ?
+			"" :
+			(typeof options.indent == "string" ? options.indent : "\t");
+
+	let str = "";
+
+	if (!Array.isArray(nodes) || !nodes.length)
+		return frag;
+
+	const gen = (nds, parent, indent) => {
+		if (!Array.isArray(nds))
+			return;
+		
+		for (let i = 0, l = nds.length; i < l; i++) {
+			const node = nds[i];
+
+			if (raw) {
+				if (!minified && str)
+					str += "\n";
+			}
+
+			if (node.type == "text") {
+				if (raw) {
+					if (minified && i > 0 && nds[i - 1].type == "text")
+						str += "\\n";
+
+					str += repeat(indentStr, indent) + node.content;
+				} else
+					parent.appendChild(document.createTextNode(node.content));
+
+				continue;
+			}
+			
+			let el;
+
+			if (raw)
+				str += `${repeat(indentStr, indent)}<${node.tag}`;
+			else
+				el = document.createElementNS(node.namespace || DEF_NS, node.tag);
+
+			for (const k in node.attributes) {
+				if (!hasOwn(node.attributes, k))
+					continue;
+
+				const attr = node.attributes[k];
+
+				switch (k) {
+					case "style":
+						setAttr(k, printStyle(attr) || null, el);
+						break;
+
+					case "class":
+						setAttr(k, printClass(attr) || null, el);
+						break;
+
+					case "data":
+						for (const k2 in attr) {
+							if (hasOwn(attr, k2))
+								setAttr(casing(k2).to.data, attr[k2], el);
+						}
+						break;
+
+					default:
+						setAttr(k, attr, el);
+				}
+			}
+
+			if (raw)
+				str += ">";
+
+			if (!node.void) {
+				const children = Array.isArray(node.children) && node.children.length ?
+					node.children :
+					null;
+
+				if (children) {
+					gen(children, el, indent + 1);
+
+					if (!minified && raw)
+						str += `\n${repeat(indentStr, indent)}`;
+				}
+
+				if (raw)
+					str += `<${node.tag}>`;
+			}
+
+			if (!raw)
+				parent.appendChild(el);
+		}
+	};
+
+	const setAttr = (key, value, el) => {
+		if (value == null)
+			return;
+
+		if (raw)
+			str += ` ${key}="${value}"`;
+		else
+			el.setAttribute(key, value);
+	};
+	
+	gen(nodes, frag, 0);
+
+	if (raw)
+		return str;
+
+	if (nodes.length == 1)
+		return frag.firstChild;
+
+	return frag;
+}
+
+function getTagProperties(tag) {
+	let props = {
+		tag,
+		void: VOID_TAGS.has(tag),
+		namespace: DEF_NS
+	};
+
+	for (let i = 0; i < NS_LEN; i++) {
+		let nsi = DOM_NAMESPACES[i];
+
+		if (nsi.tags.has(tag)) {
+			props.tag = nsi.tagGetter(tag);
+			props.namespace = nsi.uri;
+			break;
+		}
+	}
+
+	return props;
 }
 
 export {
@@ -372,5 +575,11 @@ export {
 	joinStyle,
 	joinStyleWithArgs,
 	// Attribute processing
-	mergeAttributes
+	mergeAttributes,
+	// Printing / rendering
+	printClass,
+	printStyle,
+	genDom,
+	// Meta
+	getTagProperties
 };

@@ -1,6 +1,6 @@
 import { sym } from "./sym";
 import { isObject } from "./is";
-import { repeat } from "./str";
+import repeat from "./repeat";
 import hasOwn from "./has-own";
 import {
 	uncirculate,
@@ -24,6 +24,7 @@ export default function serialize(data, optionsOrIndentStr = {}) {
 	const indentStr = typeof options.indentStr == "string" ? options.indentStr : "\t",
 		startIndent = typeof options.indent == "number" ? options.indent || 0 : 0,
 		quoteChar = typeof options.quote == "string" && !options.jsonCompatible ? options.quote : "\"",
+		bareString = options.bareString && !options.jsonCompatible,
 		optionalReplacer = typeof options.replace == "function" ? options.replace : null,
 		replacer = (key, item, wrap) => {
 			if (key == circularIdKey)
@@ -43,7 +44,7 @@ export default function serialize(data, optionsOrIndentStr = {}) {
 			return item;
 		};
 
-	const srz = (key, item, indent = 0, preventReplace = false) => {
+	const srz = (key, item, indent = 0, preventReplace = false, preventBareString = false) => {
 		if (replacer && !preventReplace)
 			item = replacer(key, item, wrapItem, indent);
 
@@ -57,7 +58,7 @@ export default function serialize(data, optionsOrIndentStr = {}) {
 		} else switch (typeof item) {
 			// TODO: escape " characters in strings
 			case "string":
-				return `"${item}"`;
+				return bareString && !preventBareString ? item : `"${item}"`;
 
 			case "number":
 				return isNaN(item) || !isFinite(item) ? "null": String(item);
@@ -93,7 +94,7 @@ export default function serialize(data, optionsOrIndentStr = {}) {
 					const out = [];
 
 					for (const k in item) {
-						const serialized = srz(k, item[k], indent + 1);
+						const serialized = srz(k, item[k], indent + 1, preventReplace, true);
 
 						if (serialized !== undefined)
 							out.push(`${repeat(indentStr, indent + 1)}${quoteChar}${k}${quoteChar}: ${serialized}`);
@@ -110,6 +111,19 @@ export default function serialize(data, optionsOrIndentStr = {}) {
 			case "function":
 				if (options.jsonCompatible)
 					return "{}";
+
+				if (options.resolveFunctions) {
+					return srz(
+						null,
+						item(Object.assign({
+							data,
+							key,
+							item,
+							indent
+						}, options.args)),
+						indent
+					);
+				}
 				
 				return item.toString().split(/\n|\r/).join(`\n${repeat(indentStr, indent)}`);
 

@@ -1,4 +1,4 @@
-import { polyfillPrefixes } from "./_constants";
+import { POLYFILL_PREFIXES } from "./internal/constants";
 
 const oHOP = Object.prototype.hasOwnProperty;
 
@@ -17,7 +17,7 @@ const polyfillHasOwn = (obj, k, allowSymbols) => {
 	if (allowSymbols || k[0] != "@")
 		return true;
 
-	return k.indexOf(polyfillPrefixes.symbol) != 0;
+	return k.indexOf(POLYFILL_PREFIXES.symbol) != 0;
 };
 
 const defaultHasOwn = (obj, k, allowSymbols) => {

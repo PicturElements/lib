@@ -1,4 +1,4 @@
-import { unescape } from "./str";
+import { unescape } from "./str-replace";
 
 const stringLiteralRegex = /^(?:(["'`])((?:[^\\]|\\.)*?)\1)$/;
 

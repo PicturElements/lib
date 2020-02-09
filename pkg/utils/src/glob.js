@@ -2,7 +2,7 @@ import {
 	createOptionsObject,
 	composeOptionsTemplates
 } from "./options";
-import { escape } from "./str";
+import { escape } from "./str-replace";
 import { cleanRegex } from "./regex";
 
 const globRegex = /\\([^\\\/])|(\?|\*\*|\*)|\[(!)?([^\\\/]*?)\]|([$^()\[\]\/\\{}.*+?|])/g,

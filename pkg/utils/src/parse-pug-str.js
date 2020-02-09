@@ -1,20 +1,31 @@
 import filterMut from "./filter-mut";
 import parseStr from "./parse-str";
 import casing from "./casing";
-import { isObj } from "./is";
-import { cleanAttributes } from "./dom";
+import {
+	isObj,
+	isTaggedTemplateArgs
+} from "./is";
+import { compileTaggedTemplate } from "./str";
+import {
+	cleanAttributes,
+	getTagProperties
+} from "./dom";
 
 // Parses a subset of pug (no control flow)
 
-export default function parsePugStr(inp) {
-	if (isObj(inp))
-		return inp;
+export default function parsePugStr(...args) {
+	if (isObj(args[0]) && !isTaggedTemplateArgs(args))
+		return args[0];
 
-	if (typeof inp == "string")
-		return parsePugCore(inp);
-
-	return [];
+	return parsePugCore(
+		compileTaggedTemplate(...args)
+	);
 }
+
+parsePugStr.with = options => {
+	compileTaggedTemplate.with(options);
+	return parsePugStr;
+};
 
 // Capturing groups:
 // 1: indent
@@ -121,10 +132,20 @@ function createNode(type, data) {
 		type,
 		raw: "",
 		indent: "",
-		tag: null
+		tag: null,
+		namespace: null,
+		void: false
 	}, data);
 
 	node.tag = node.tag || defaultTags[type];
+
+	if (type == "element") {
+		const props = getTagProperties(node.tag);
+		node.tag = props.tag;
+		node.namespace = props.namespace;
+		node.void = props.void;
+	}
+
 	return node;
 }
 
