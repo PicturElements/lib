@@ -21,7 +21,7 @@ const QNDSet = typeof Set == "undefined" ? class {
 		return getIndex ? idx : idx > -1;
 	}
 
-	set(item) {
+	add(item) {
 		if (!this.has(item))
 			this._set.push(item);
 		return this;
