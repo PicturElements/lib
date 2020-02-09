@@ -2,17 +2,17 @@ const weakmapSupported = typeof WeakMap != "undefined",
 	URL_MAP = weakmapSupported ? new WeakMap() : {
 		map: {},
 		set(value, inst) {
-			this.map[inst._uuid] = value;
+			this.map[inst._uid] = value;
 			return this;
 		},
 		get(inst) {
-			return this.map[inst._uuid];
+			return this.map[inst._uid];
 		},
 		has(inst) {
-			return this.map.hasOwnProperty(inst._uuid);
+			return this.map.hasOwnProperty(inst._uid);
 		},
 		delete(inst) {
-			return this.has(inst) ? delete this.map[inst._uuid] : false;
+			return this.has(inst) ? delete this.map[inst._uid] : false;
 		}
 	};
 
@@ -53,13 +53,13 @@ const INVALID_PARAM_TYPES = {
 	undefined: true
 };
 
-let uuid = 0;
+let uid = 0;
 
 export default class URL {
 	constructor(url) {
 		if (!weakmapSupported) {
-			Object.defineProperty(this, "_uuid", {
-				value: uuid++
+			Object.defineProperty(this, "_uid", {
+				value: uid++
 			});
 		}
 
