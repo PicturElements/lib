@@ -14,7 +14,9 @@ const browserHints = [
 		["Trident", "IE"],
 		"Safari",
 		"Firefox",
-		"Thunderbird"
+		"Thunderbird",
+		"Instagram",
+		"Messenger"
 	],
 	sysHints = [
 		"Windows Phone",
@@ -119,7 +121,7 @@ export default class Agent {
 		agent = agent || navigator.userAgent;
 
 		// Browser parsing
-		browser.name = searchHints(browserHints);
+		browser.name = searchHints(browserHints) || "Unknown";
 	
 		let browserVersion = null;
 
