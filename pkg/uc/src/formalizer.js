@@ -1,6 +1,7 @@
 import { matchType } from "@qtxr/utils";
 
 const FIELD_SPECIES = {
+	as: "id",
 	if: "directive",
 	else: "directive",
 	to: "transform",
@@ -14,19 +15,34 @@ export default class Formalizer {
 	constructor() {
 		this.directives = [];
 		this.activeDirective = null;
+		this.idMap = {};
 		this.tracking = {
 			ifs: 0,
 			directiveType: null,
 			lastField: null,
+			addedId: false,
 			addedTo: false,
-			addedElse: false,
 			addedFrom: false,
+			addedElse: false,
 			addedToValidator: false,
 			addedFromValidator: false,
 			addedAllToValidator: false,
 			addedAllFromValidator: false,
 			addedAllValidator: false
 		};
+	}
+
+	as(id) {
+		logOrder("as", this.tracking);
+
+		if (typeof id != "string")
+			throw new TypeError("Cannot add ID: supplied value is not a string");
+		if (this.idMap.hasOwnProperty(id))
+			throw new Error("Cannot add ID: supplied ID is already defined on this Formalizer");
+		
+		this.idMap[id] = this.activeDirective;
+		this.activeDirective.id = id;
+		return this;
 	}
 
 	if(condition) {
@@ -52,6 +68,7 @@ export default class Formalizer {
 
 	to(transform) {
 		logOrder("to", this.tracking);
+
 		if (typeof transform != "function")
 			throw new TypeError("Cannot define transform: transformer is not a function");
 
@@ -61,6 +78,7 @@ export default class Formalizer {
 
 	from(transform) {
 		logOrder("from", this.tracking);
+
 		if (typeof transform != "function")
 			throw new TypeError("Cannot define transform: transformer is not a function");
 
@@ -121,8 +139,13 @@ class FormalizerCell {
 		this.validate("toValidator", this.data);
 	}
 
-	transform() {
-		const data = this.sourceDirective.fromTransform(this.data, this);
+	transform(id) {
+		let directive = this.sourceDirective;
+
+		if (typeof id == "string" && this.owner.idMap.hasOwnProperty(id))
+			directive = this.owner.idMap[id];
+
+		const data = directive.fromTransform(this.data, this);
 		this.validate("fromValidator", data);
 		this.validate("globalFromValidator", data);
 		return data;
@@ -178,6 +201,15 @@ function logOrder(type, tracking) {
 		err("cannot add multiple else directives");
 
 	switch (type) {
+		case "as":
+			if (!tracking.ifs)
+				err("if or else must come before IDs");
+			if (tracking.addedId)
+				err("id already added");
+
+			tracking.addedId = true;
+			break;
+
 		case "if":
 			if (tracking.addedElse)
 				err("if may not come after else directive");
@@ -186,6 +218,7 @@ function logOrder(type, tracking) {
 			tracking.ifs++;
 			tracking.addedTo = false;
 			tracking.addedFrom = false;
+			tracking.addedId = false;
 			break;
 
 		case "else":
@@ -196,6 +229,7 @@ function logOrder(type, tracking) {
 			tracking.addedElse = true;
 			tracking.addedTo = false;
 			tracking.addedFrom = false;
+			tracking.addedId = false;
 			break;
 
 		case "to":
@@ -257,6 +291,7 @@ function logOrder(type, tracking) {
 function mkDirective(data) {
 	return Object.assign({
 		type: null,
+		id: null,
 		condition: null,
 		toTransform: d => d,
 		toValidator: null,
