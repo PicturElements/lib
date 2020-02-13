@@ -414,6 +414,7 @@ function printStyle(style) {
 
 const optionsTemplates = composeOptionsTemplates({
 	minified: true,
+	comments: true,
 	raw: true
 });
 
@@ -426,6 +427,7 @@ function genDom(nodes, options = {}) {
 	const frag = document.createDocumentFragment(),
 		raw = options.raw,
 		minified = typeof options.minified == "boolean" ? options.minified : false,
+		comments = options.comments,
 		indentStr = minified ?
 			"" :
 			(typeof options.indent == "string" ? options.indent : "\t");
@@ -440,12 +442,23 @@ function genDom(nodes, options = {}) {
 			return;
 		
 		for (let i = 0, l = nds.length; i < l; i++) {
-			const node = nds[i];
+			const node = nds[i],
+				breakStr = (!minified && str) ? "\n" : "";
 
-			if (raw) {
-				if (!minified && str)
-					str += "\n";
+			if (node.type == "comment") {
+				if (!comments || (raw && minified))
+					continue;
+
+				if (raw)
+					str += `${breakStr}${repeat(indentStr, indent)}<!-- ${node.content.trim()} -->`;
+				else
+					parent.appendChild(document.createComment(node.content.trim()));
+
+				continue;
 			}
+
+			if (raw)
+				str += breakStr;
 
 			if (node.type == "text") {
 				if (raw) {

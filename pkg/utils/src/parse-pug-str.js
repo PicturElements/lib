@@ -29,6 +29,7 @@ parsePugStr.with = options => {
 
 // Capturing groups:
 // 1: indent
+// 2: comment
 // 2: text node
 // 3: tag name
 // 4: tag data (class, id)
@@ -37,7 +38,8 @@ parsePugStr.with = options => {
 // 7: element content
 // /([\t ]*)(?:\|\s?(.+)|([^#.\s]+)?([\w.#-]+)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\6|[^"'`])+?)\))?)/g
 // /([\t ]*)(?:\|\s?(.+)|([^#.\s]+)?([\w.#-]+)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\6|[^"'`])*?)\))?[\t ]*(.*?)$)/gm
-const nodeRegex = /([\t ]*)(?:\/\/-.+|\|\s?(.+)|([^#.\s*(]+)?([\w.#-]*)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\6|[^"'`])*?)\))?[\t ]?(.*?)$)/gm,
+// /([\t ]*)(?:\/\/-.+|\|\s?(.+)|([^#.\s*(]+)?([\w.#-]*)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\6|[^"'`])*?)\))?[\t ]?(.*?)$)/gm
+const nodeRegex = /([\t ]*)(?:\/\/-(.*(?:\n\1[\t ]+.+)*)|\|\s?(.+)|([^#.\s*(]+)?([\w.#-]*)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\7|[^"'`])*?)\))?[\t ]?(.*?)$)/gm,
 	classIDRegex = /([.#])([^.#]+)/g;
 
 // Capturing groups:
@@ -82,40 +84,57 @@ function parseNodes(str) {
 		if (!ex[0].trim())
 			continue;
 
-		const type = ex[2] ? "text" : "element";
+		let type;
+
+		if (ex[2] != null)
+			type = "comment";
+		else if (ex[3])
+			type = "text";
+		else
+			type = "element";
 
 		const node = createNode(type, {
 			raw: ex[0],
 			indent: ex[1],
-			tag: ex[3]
+			tag: ex[4]
 		});
 
-		// Text node
-		if (ex[2]) {
-			Object.assign(node, {
-				content: ex[2] || null
-			});
-		} else {
-			Object.assign(node, {
-				children: [],
-				attributes: {
-					class: [],
-					data: {}
-				},
-				tagData: ex[4] || null,
-				attrData: ex[5] || null
-			});
+		switch (type) {
+			case "comment":
+				Object.assign(node, {
+					content: ex[2]
+				});
+				break;
 
-			const elemContent = ex[7];
+			case "text":
+				Object.assign(node, {
+					content: ex[3] || null
+				});
+				break;
 
-			if (elemContent) {
+			case "element":
+				Object.assign(node, {
+					children: [],
+					attributes: {
+						class: [],
+						data: {}
+					},
+					tagData: ex[5] || null,
+					attrData: ex[6] || null
+				});
+	
+				const elemContent = ex[8];
+
+				if (!elemContent)
+					break;
+
 				node.children.push(
 					createNode("text", {
 						content: elemContent,
 						raw: elemContent
 					})
 				);
-			}
+				break;
 		}
 
 		nodes.push(node);
@@ -123,6 +142,7 @@ function parseNodes(str) {
 }
 
 const defaultTags = {
+	comment: "#comment",
 	text: "#text",
 	element: "div"
 };
@@ -132,9 +152,7 @@ function createNode(type, data) {
 		type,
 		raw: "",
 		indent: "",
-		tag: null,
-		namespace: null,
-		void: false
+		tag: null
 	}, data);
 
 	node.tag = node.tag || defaultTags[type];
