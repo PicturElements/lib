@@ -19,19 +19,31 @@
 				if (disabled)
 					evt.stopPropagation();
 				else if (typeof option.action == "function")
-					option.action(option, this.data);
+					option.action(option, ...this.processedArgs);
 			},
 			res(val, option) {
 				if (typeof val == "function")
-					return val.call(this, option, this.data);
+					return val.call(this, option, ...this.processedArgs);
 
 				return val;
 			}
 		},
-		computed: {},
+		computed: {
+			processedArgs() {
+				if (this.args) {
+					if (!Array.isArray(this.args))
+						return [this.args];
+
+					return this.args;
+				}
+
+				return [this.data];
+			}
+		},
 		props: {
 			options: Array,
 			data: null,
+			args: Array,
 			justify: {
 				type: String,
 				default: "right"

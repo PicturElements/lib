@@ -228,7 +228,10 @@
 		},
 		computed: {
 			cellData() {
-				return get(this.cell.data, this.conf.accessor || "");
+				if (this.conf.accessor)
+					return get(this.cell.data, this.conf.accessor);
+				
+				return this.cell.data;
 			}
 		},
 		props: {

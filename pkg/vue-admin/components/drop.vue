@@ -121,7 +121,7 @@
 					return false;
 
 				if (typeof item.display == "function")
-					return Boolean(item.display(item, this.data));
+					return Boolean(item.display(item, ...this.processedArgs));
 
 				return item.hasOwnProperty("display") ?
 					Boolean(item.display) :
@@ -132,7 +132,7 @@
 					return true;
 
 				if (typeof item.disabled == "function")
-					return Boolean(item.disabled(item, this.data));
+					return Boolean(item.disabled(item, ...this.processedArgs));
 
 				return item.hasOwnProperty("disabled") ?
 					Boolean(item.disabled) :
@@ -161,6 +161,16 @@
 				
 				return this.data;
 			},
+			processedArgs() {
+				if (this.args) {
+					if (!Array.isArray(this.args))
+						return [this.args];
+
+					return this.args;
+				}
+
+				return [this.data];
+			},
 			generalData() {
 				return {
 					self: this,
@@ -173,6 +183,7 @@
 		props: {
 			items: Array,
 			data: null,
+			args: Array,
 			justify: String,
 			cell: DataCell
 		},
