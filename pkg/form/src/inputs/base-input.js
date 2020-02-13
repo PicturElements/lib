@@ -3,6 +3,7 @@ import {
 	get,
 	isObj,
 	inject,
+	isThenable,
 	injectSchema
 } from "@qtxr/utils";
 import {
@@ -10,7 +11,10 @@ import {
 	isValidWord
 } from "@qtxr/evt";
 import { Hookable } from "@qtxr/bc";
-import { Formalizer, FormalizerCell } from "@qtxr/uc";
+import {
+	Formalizer,
+	FormalizerCell
+} from "@qtxr/uc";
 
 // TODO: in next major version, change hook argument order from
 // oldValue, newValue to newValue, oldValue
@@ -31,6 +35,7 @@ const initOptionsSchema = {
 	path: "string",
 	required: "boolean",
 	type: "string",
+	format: "string",
 
 	initialized: "boolean",
 	valid: "boolean",
@@ -141,39 +146,49 @@ export default class BaseInput extends Hookable {
 	}
 
 	[TRIGGER](value) {
-		// If value is null, don't update internal value
-		if (value !== null) {
-			// If the value is undefined, set it to null to denote an empty value
-			if (value === undefined)
-				value = null;
+		let oldVal = this.value,
+			newVal = value;
 
-			const oldVal = this.value;
-
-			if (typeof this.handlers.process == "function")
-				this.updateValue(this.handlers.process(value, this, this.form.inputs));
-			else
-				this.updateValue(value);
-
-			if (!this.compare(oldVal, this.value)) {
-				this.form.callHooks("change", this, oldVal, this.value);
-				this.form.callHooks(`change:${this.name}`, this, oldVal, this.value);
-				this.callHooks("change", oldVal, this.value);
+		const dispatch = (o, n) => {
+			if (!this.compare(o, n)) {
+				this.form.callHooks("change", this, o, n);
+				this.form.callHooks(`change:${this.name}`, this, o, n);
+				this.callHooks("change", o, n);
 				this.changed = true;
 				this.form.changed = true;
 			}
+
+			this.initialized = true;
+	
+			this[SELF_TRIGGER](n);
+			this.form.propagateMap = {};
+			
+			this.form.callHooks("trigger", this, n);
+			this.form.callHooks(`trigger:${this.name}`, this, n);
+			this.callHooks("sourceTrigger");
+	
+			if (!this.form.updateInitialized)
+				this.form.callHooks("updated", this.form.inputs);
+		};
+
+		// If the value is undefined, set it to null to denote an empty value
+		if (value === undefined)
+			value = null;
+
+		if (typeof this.handlers.process == "function")
+			newVal = this.updateValue(this.handlers.process(value, this, this.form.inputs));
+		else
+			newVal = this.updateValue(value);
+
+		if (isThenable(newVal)) {
+			return newVal.then(val => {
+				dispatch(oldVal, val);
+				return val;
+			});
 		}
 
-		this.initialized = true;
-
-		this[SELF_TRIGGER](this.value);
-		this.form.propagateMap = {};
-		
-		this.form.callHooks("trigger", this, this.value);
-		this.form.callHooks(`trigger:${this.name}`, this, this.value);
-		this.callHooks("sourceTrigger");
-
-		if (!this.form.updateInitialized)
-			this.form.callHooks("updated", this.form.inputs);
+		dispatch(oldVal, newVal);
+		return newVal;
 	}
 
 	[SELF_TRIGGER](value) {
@@ -273,18 +288,21 @@ export default class BaseInput extends Hookable {
 		return this[INJECT](value);
 	}
 
-	[EXTRACT]() {
-		return this[SELF_EXTRACT](this.value);
+	[EXTRACT](format = null) {
+		return this[SELF_EXTRACT](this.value, format);
 	}
 
-	[SELF_EXTRACT](value) {
+	[SELF_EXTRACT](value, format = null) {
 		const val = this.dynamicValue.value,
 			isFunctionalHandler = typeof this.handlers.extract == "function",
 			isGetterHandler = typeof this.handlers.extract == "string",
 			hasHandler = isFunctionalHandler || isGetterHandler;
 
+		if (!format && typeof this.format == "string")
+			format = this.format;
+
 		if (val instanceof FormalizerCell)
-			value = hasHandler ? val.data : val.transform();
+			value = hasHandler ? val.data : val.transform(format);
 		else if (!this.dynamicValue.tracked || !isObj(val))
 			value = val;
 		else {
@@ -293,7 +311,7 @@ export default class BaseInput extends Hookable {
 					if (!(v instanceof FormalizerCell))
 						return v;
 
-					return hasHandler ? v.data : v.transform();
+					return hasHandler ? v.data : v.transform(format);
 				}
 			}, "circular");
 		}
@@ -309,8 +327,12 @@ export default class BaseInput extends Hookable {
 	setValue(value) {
 		const newValue = this[OVERRIDE_INJECT](value);
 		
-		if (newValue && typeof newValue.then == "function")
-			return newValue.then(val => this.dynamicValue.value = val);
+		if (isThenable(newValue)) {
+			return newValue.then(val => {
+				this.dynamicValue.value = val;
+				return val;
+			});
+		}
 
 		this.dynamicValue.value = newValue;
 		return value;
@@ -319,8 +341,12 @@ export default class BaseInput extends Hookable {
 	updateValue(value) {
 		const newValue = this[MERGE_INJECT](value);
 
-		if (newValue && typeof newValue.then == "function")
-			return newValue.then(val => this.dynamicValue.value = val);
+		if (isThenable(newValue)) {
+			return newValue.then(val => {
+				this.dynamicValue.value = val;
+				return val;
+			});
+		}
 
 		this.dynamicValue.value = newValue;
 		return value;
@@ -531,14 +557,26 @@ function mkChecker(checker, checkerKey) {
 }
 
 function mkComparator(precursor) {
-	switch (typeof precursor) {
-		case "string":
-			return (a, b) => Boolean(a && b) && a[precursor] == b[precursor];
-		case "function":
-			return (a, b) => precursor(a, b);
-		default:
-			return (a, b) => a == b;
-	}
+	return (a, b) => {
+		const aNullish = a == null,
+			bNullish = b == null;
+
+		if (a === b && aNullish && bNullish)
+			return true;
+
+		// Eliminate bugs arising from null value access
+		if (aNullish != bNullish)
+			return false;
+
+		switch (typeof precursor) {
+			case "string":
+				return get(a, precursor) == get(b, precursor);
+			case "function":
+				return precursor(a, b);
+			default:
+				return a == b;
+		}
+	};
 }
 
 export {

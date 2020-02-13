@@ -38,18 +38,23 @@ export default class Time extends BaseInput {
 
 Time.formalize
 	.if(d => typeof d == "number" && d > (24 * 60 * 60))
+		.as("timestamp")
 		.to(getTimeData)
 		.from((d, f) => timeDataToDate(d, f.sourceData).getTime())
 	.if("number")
+		.as("seconds")
 		.to(d => getTimeData(getDayStartDate().getTime() + d * 1000))
 		.from((d, f) => (d.hour || 0) * 3600 + (d.minute || 0) * 60 + (d.second || 0))
 	.if("string")
+		.as("string")
 		.to(getTimeData)
 		.from((d, f) => timeDataToDate(d, f.sourceData).toUTCString())
 	.if(Date)
+		.as("date")
 		.to(getTimeData)
 		.from((d, f) => timeDataToDate(d, f.sourceData))
 	.if(Object)
+		.as("object")
 		.to(d => Object.assign({
 			hour: null,
 			minute: null,

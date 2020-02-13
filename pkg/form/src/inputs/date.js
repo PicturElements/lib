@@ -41,15 +41,19 @@ export default class Date extends BaseInput {
 
 Date.formalize
 	.if("number")
+		.as("number")
 		.to(getDateData)
 		.from(d => dateDataToDate(d).getTime())
 	.if("string")
+		.as("string")
 		.to(getDateData)
 		.from(d => dateDataToDate(d).toUTCString())
 	.if(Date)
+		.as("date")
 		.to(getDateData)
 		.from(dateDataToDate)
 	.if(Object)
+		.as("object")
 		.to(d => normalizeDateData(Object.assign({
 			year: null,
 			month: null,

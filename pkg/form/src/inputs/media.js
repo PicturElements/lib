@@ -60,6 +60,7 @@ export default class Media extends BaseInput {
 
 Media.formalize
 	.if("string")
+		.as("string")
 		.to(d => ({
 			data: d,
 			mediaType: getMediaType(d)

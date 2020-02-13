@@ -7,8 +7,10 @@ import {
 	inject,
 	forEach,
 	isObject,
+	partition,
 	resolveVal,
 	splitClean,
+	requestFrame,
 	composeOptionsTemplates,
 	createOptionsObject
 } from "@qtxr/utils";
@@ -30,6 +32,10 @@ import BaseInput, {
 import FormRows from "./form-rows";
 
 let id = 0;
+const partitionClassifier = {
+	valid: "inst",
+	changed: "inst"
+};
 
 export default class Form extends Hookable {
 	constructor(...optionsAndPresets) {
@@ -83,25 +89,26 @@ export default class Form extends Hookable {
 		this.changed = false;
 		this.meta = masterPreset.meta;
 
-		// Flags / general config
-		// Only validate required inputs
-		// Invalid non-required inputs will be marked as valid
-		this.validateRequiredOnly = false;
-		// Don't allow inputs with duplicate names. If false,
-		// extracted inputs with the same name will be returned
-		// in an array, ergo with a minimum length of 2 
-		this.noDuplicateNames = true;
-		// Master switch for bare inputs. A bare input is an
-		// input with minimal vendor graphics (autocomplete
-		// dropdowns, etc)
-		this.bareInputs = false;
+		this.options = {
+			// Only validate required inputs
+			// Invalid non-required inputs will be marked as valid
+			validateRequiredOnly: false,
+			// Don't allow inputs with duplicate names. If false,
+			// extracted inputs with the same name will be returned
+			// in an array, ergo with a minimum length of 2 
+			noDuplicateNames: true,
+			// Master switch for bare inputs. A bare input is an
+			// input with minimal vendor graphics (autocomplete
+			// dropdowns, etc)
+			bareInputs: false
+		};
 
 		this.hookAll(masterPreset.hooks);
 
-		for (const k in masterPreset.options) {
-			if (hasOwn(this, k) && hasOwn(masterPreset.options, k))
-				this[k] = masterPreset.options[k];
-		}
+		partition(masterPreset.options, {
+			inst: this,
+			options: this.options
+		}, partitionClassifier, "options");
 	}
 
 	connect(name, options) {
@@ -118,7 +125,7 @@ export default class Form extends Hookable {
 
 		if (!hasField)
 			this.keys.push(name);
-		else if (this.noDuplicateNames)
+		else if (this.options.noDuplicateNames)
 			return this.inputs[name];
 
 		const constr = Form.getInputConstructor(options),
@@ -204,12 +211,12 @@ export default class Form extends Hookable {
 					
 					// Clear old inputs when necessary
 					if (!foundNames.hasOwnProperty(name)) {
-						if (!this.noDuplicateNames)
+						if (!this.options.noDuplicateNames)
 							delete this.inputs[name];
 
 						foundNames[name] = true;
-					} else if (this.noDuplicateNames)
-						throw new Error(`Cannot connect: duplicate inputs by name "${name}"`);
+					} else if (this.options.noDuplicateNames)
+						throw new Error(`Cannot connect: duplicate inputs by name "${name}". To support multiple inputs with the same name, use the 'noDuplicateNames' option`);
 
 					cellProcessed.input = this.connect(name, options);
 					cellProcessed.isInputCell = true;
@@ -221,7 +228,26 @@ export default class Form extends Hookable {
 		};
 
 		this.inputsStruct = connect(rows, 0);
+		this.callHooks("connected", this.inputsStruct);
 		return this.inputsStruct;
+	}
+
+	// Combines connectRows and link,
+	// with support for async connection
+	linkRows(rows, target, async = false) {
+		const dispatch = _ => {
+			const struct = this.connectRows(rows);
+			this.link(target);
+			return struct;
+		};
+
+		if (async) {
+			return new Promise(res => {
+				requestFrame(_ => res(dispatch()));
+			});
+		}
+
+		return dispatch();
 	}
 
 	// DEPRECATED: use connectRows instead
@@ -243,12 +269,20 @@ export default class Form extends Hookable {
 		}
 	}
 
-	link(target) {
-		if (!isObj(target))
-			throw new Error("Cannot link: link target must be an object");
+	link(target, async = false) {
+		const dispatch = _ => {
+			if (!isObj(target))
+				throw new Error("Cannot link: link target must be an object");
 
-		this.setValues(target, true);
-		this.hook("update", (f, inp) => this.extractOne(inp, target, true));
+			this.setValues(target, true);
+			this.hook("update", (f, inp) => this.extractOne(inp, target, true));
+		};
+
+		if (async)
+			requestFrame(dispatch);
+		else
+			dispatch();
+		
 		return this;
 	}
 

@@ -43,15 +43,19 @@ export default class DateTime extends BaseInput {
 
 DateTime.formalize
 	.if("number")
+		.as("number")
 		.to(getDateTimeData)
 		.from(d => dateTimeDataToDate(d).getTime())
 	.if("string")
+		.as("string")
 		.to(getDateTimeData)
 		.from(d => dateTimeDataToDate(d).toUTCString())
 	.if(Date)
+		.as("date")
 		.to(getDateTimeData)
 		.from(dateTimeDataToDate)
 	.if(Object)
+		.as("object")
 		.to(d => normalizeDateData(Object.assign({
 			year: null,
 			month: null,
