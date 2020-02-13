@@ -16,6 +16,7 @@ $coordinates-params: (
 	$search-height: 40px,
 	$border-radius: 1px,
 	$button-padding: 4px,
+	$coords-padding: 8px,
 	$aspect-ratio: 0.75,
 	$max-height: 400px,
 	$background: white,
@@ -24,6 +25,10 @@ $coordinates-params: (
 	$focus-border-color: #1e2021
 ) {
 	.inp-coordinates {
+		&.input-wrapper.disabled {
+			opacity: 1;
+		}
+
 		.map-wrapper {
 			position: relative;
 			-webkit-tap-highlight-color: transparent;
@@ -42,7 +47,8 @@ $coordinates-params: (
 			}
 		}
 
-		&.search-enabled .map-wrapper {
+		&.search-enabled .map-wrapper,
+		&.coords-enabled .map-wrapper {
 			border-bottom-left-radius: 0;
 			border-bottom-right-radius: 0;
 		}
@@ -63,6 +69,29 @@ $coordinates-params: (
 			width: 100%;
 			height: 100%;
 			border-radius: inherit;
+		}
+
+		.coords-box {
+			display: flex;
+			position: relative;
+			border: $border;
+			border-top: none;
+			box-sizing: content-box;
+
+			&:last-child {
+				border-radius: 0 0 $border-radius $border-radius;
+			}
+
+			input {
+				flex-grow: 1;
+				border: none;
+				outline: none;
+				font-family: inherit;
+				color: inherit;
+				font-size: 100%;
+				padding: $coords-padding;
+				box-sizing: content-box;
+			}
 		}
 
 		.search-box {
@@ -108,6 +137,10 @@ $coordinates-params: (
 				border-radius: $border-radius;
 				background: transparent;
 				cursor: pointer;
+
+				* {
+					cursor: inherit;
+				}
 
 				&:focus,
 				&.active {

@@ -9,7 +9,7 @@ export default {
 	}),
 	methods: {
 		ac() {
-			if (this.input.bare === false || (!this.input.form.bareInputs && !this.input.bare))
+			if (this.input.bare === false || (!this.input.form.options.bareInputs && !this.input.bare))
 				return null;
 		
 			return "off";

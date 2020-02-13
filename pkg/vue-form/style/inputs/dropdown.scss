@@ -73,7 +73,7 @@ $dropdown-params: (
 			}
 
 			&.dropdown-active-option {
-				padding-right: $height + $padding;
+				padding-right: $height;
 				pointer-events: none;
 	
 				> .dropdown-icon {

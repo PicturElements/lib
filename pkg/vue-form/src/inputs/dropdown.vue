@@ -429,7 +429,8 @@
 				if (!this.activeOption || !this.input.compare(this.input.value, this.activeOption.value)) {
 					this.updateSelection();
 					this.search();
-				}
+				} else
+					this.updateSelection();
 			}
 		},
 		beforeMount() {

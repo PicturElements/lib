@@ -48,14 +48,20 @@
 				settings = this.settings || rows || {},
 				form = this.form || new Form(settings.preset || settings.hooks, settings.opt);
 
-			if (rows && rows.isFormRows) {
+			if (rows) {
 				return {
-					processedRows: rows
+					processedRows: rows.isFormRows ?
+						rows :
+						form.connectRows(rows)
 				};
 			}
 
+			form.hook("connected", (f, struct) => {
+				this.processedRows = struct;
+			}, 1);
+
 			return {
-				processedRows: rows ? form.connectRows(rows) : (form.rows || [])
+				processedRows: []
 			};
 		},
 		methods: {

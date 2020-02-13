@@ -13,6 +13,7 @@
 	Coordinates(
 		v-else-if="is('coordinates')"
 		:input="cl.input"
+		:placeholder="res(cl.placeholder)"
 		:disabled="dis"
 		:class="{ disabled: dis }"
 		:meta="meta")

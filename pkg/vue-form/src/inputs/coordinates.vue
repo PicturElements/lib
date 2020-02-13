@@ -1,5 +1,5 @@
 <template lang="pug">
-	.input-wrapper.coordinates.inp-coordinates(:class="[ searchEnabled ? 'search-enabled' : null, validationState ]")
+	.input-wrapper.coordinates.inp-coordinates(:class="[ searchEnabled ? 'search-enabled' : null, coordsEnabled ? 'coords-enabled' : null, validationState ]")
 		.map-wrapper
 			.pad-box-wrapper
 				.pad-box
@@ -8,6 +8,12 @@
 				ref="map")
 			.loading-overlay(v-if="loading")
 				slot(name="loading-icon" v-bind="this")
+		.coords-box(v-if="coordsEnabled")
+			input(
+				v-model="coordsStr"
+				:disabled="disabled"
+				@change="setValueFromCoords"
+				@keydown="guardInput($event, true)")
 		.search-box(v-if="searchEnabled")
 			.run-btn-wrapper.run-geolocation
 				button.run-btn(
@@ -21,10 +27,12 @@
 								path(d="M5 0 v4 M5 10 v-4 M0 5 h4 M10 5 h-4")
 			input(
 				v-model="query"
+				:placeholder="res(input.placeholder || placeholder)"
+				:disabled="disabled"
 				@keydown="guardInput")
 			.run-btn-wrapper.run-search
 				button.run-btn(
-					:disabled="!query || runningSearch"
+					:disabled="!query || runningSearch || disabled"
 					:class="{ active: runningSearch }"
 					@click="runSearch")
 					svg.run-icon.search-icon
@@ -48,9 +56,11 @@
 			marker: null,
 			placesService: null,
 			query: "",
+			coordsStr: "",
 			runningSearch: false,
 			runningGeolocation: false,
-			geolocationDenied: false
+			geolocationDenied: false,
+			initialized: false
 		}),
 		methods: {
 			trigger(coords) {
@@ -66,19 +76,16 @@
 				};
 
 				this.placesService.findPlaceFromQuery(request, (results, status) => {
-					if (status == google.maps.places.PlacesServiceStatus.OK) {
-						const result = results[0];
-
-						if (result) {
-							const cData = {
+					if (status == google.maps.places.PlacesServiceStatus.OK && results && results[0]) {
+						const result = results[0],
+							cData = {
 								lat: result.geometry.location.lat(),
 								lng: result.geometry.location.lng()
 							};
 
-							this.marker.setPosition(cData);
-							this.map.fitBounds(result.geometry.viewport);
-							this.trigger(cData);
-						}
+						this.marker.setPosition(cData);
+						this.map.fitBounds(result.geometry.viewport);
+						this.trigger(cData);
 					}
 
 					this.runningSearch = false;
@@ -93,17 +100,22 @@
 						lng: data.coords.longitude
 					};
 
-					this.marker.setPosition(cData);
+					this.map.panTo(cData);
 					this.map.setZoom(15);
-					this.trigger(cData);
 					this.runningGeolocation = false;
+
+					if (!this.disabled) {
+						this.marker.setPosition(cData);
+						this.trigger(cData);
+					}
 				}, error => {
 					if (error.code == 1)
 						this.geolocationDenied = true;
+
 					this.runningGeolocation = false;
 				})
 			},
-			guardInput(evt) {
+			guardInput(evt, noSearch) {
 				if (this.loading) {
 					switch (EVT.getKey(evt)) {
 						case "escape":
@@ -115,15 +127,21 @@
 					}
 				} else switch (EVT.getKey(evt)) {
 					case "enter":
-						if (this.query)
+						if (this.query && !noSearch)
 							this.runSearch();
 						break;
 				}
+			},
+			setValueFromCoords() {
+				this.input.value = this.coordsStr;
 			}
 		},
 		computed: {
+			coordsEnabled() {
+				return !this.input.noCoords;
+			},
 			searchEnabled() {
-				return Boolean(typeof google != "undefined" && google.maps && google.maps.places) && !this.input.noSearch;
+				return this.initialized && !this.input.noSearch;
 			},
 			geolocationEnabled() {
 				return ("geolocation" in navigator) && !this.input.noGeolocation;
@@ -137,9 +155,25 @@
 			placeholder: String
 		},
 		watch: {
-			"input.value"() {
-				this.marker.setPosition(this.input.value);
-				this.map.panTo(this.input.value);
+			"input.value"(val) {
+				if (!this.initialized)
+					return;
+
+				if (val) {
+					this.marker.setMap(this.map);
+					this.marker.setPosition(this.input.value);
+					this.map.panTo(this.input.value);
+				} else
+					this.marker.setMap(null);
+
+				if (this.coordsEnabled)
+					this.coordsStr = this.input.extract("string");
+			},
+			disabled(disabled) {
+				if (!this.initialized)
+					return;
+
+				this.marker.setDraggable(!disabled);
 			}
 		},
 		mounted() {
@@ -160,13 +194,19 @@
 			const marker = new google.maps.Marker(
 				Object.assign({
 					position: coords,
-					map: map,
-					animation: google.maps.Animation.DROP,
-					draggable: true
+					animation: google.maps.Animation.DROP
 				}, this.input.markerConfig)
 			);
 
+			marker.setDraggable(!this.disabled);
+
+			if (this.input.value)
+				marker.setMap(map);
+
 			google.maps.event.addListener(map, "click", evt => {
+				if (this.disabled)
+					return;
+
 				marker.setPosition(evt.latLng);
 				this.trigger({
 					lat: evt.latLng.lat(),
@@ -175,6 +215,9 @@
 			});
 
 			google.maps.event.addListener(marker, "dragend", evt => {
+				if (this.disabled)
+					return;
+
 				this.trigger({
 					lat: evt.latLng.lat(),
 					lng: evt.latLng.lng()
@@ -183,6 +226,9 @@
 
 			this.map = map;
 			this.marker = marker;
+			this.initialized = true;
+			if (this.coordsEnabled)
+				this.coordsStr = this.input.extract("string");
 
 			// Optionally enable searching through the Places API
 			if (google.maps.places)
