@@ -94,11 +94,12 @@ $listing-params: (
 				border-collapse: collapse;
 				white-space: nowrap;
 				width: 100%;
+				border-right: 1px solid transparent;
 
 				tr:first-child {
 					th {
 						position: sticky;
-						top: -1px;
+						top: 0;
 						background: $odd-row-background;
 						z-index: 100000;
 					}
