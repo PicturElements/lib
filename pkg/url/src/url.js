@@ -1,3 +1,10 @@
+import {
+	hasOwn,
+	parseStr,
+	isObject,
+	findClosest
+} from "@qtxr/utils";
+
 const weakmapSupported = typeof WeakMap != "undefined",
 	URL_MAP = weakmapSupported ? new WeakMap() : {
 		map: {},
@@ -46,12 +53,167 @@ const URL_PARSERS = [
 	}
 ];
 
+const searchSplitRegex = /(\w+)(?:&|$|=((?:[^\\&=]+|\\.)*))/g;
 const INVALID_PARAM_TYPES = {
 	symbol: true,
 	function: true,
-	object: true,
-	undefined: true
+	object: true
 };
+
+class SearchParams {
+	constructor(input) {
+		this.params = [];
+		this.map = {};
+		this.plain = {};
+		this.string = "";
+		this.size = 0;
+		this._order = 0;
+
+		if (input)
+			this.parse(input);
+	}
+
+	_getIdxByOrder(order) {
+		const result = findClosest(this.params, v => v.order - order);
+		if (!result.exact)
+			return -1;
+
+		return result.index;
+	}
+
+	_recalcStr(tail = false) {
+		const len = this.params.length;
+		let str = tail ? this.string : "";
+
+		for (let i = tail ? len - 1 : 0; i < len; i++) {
+			const item = this.params[i];
+			str += ((str ? "&" : "?") + encodeURIComponent(item.key));
+
+			if (item.value !== undefined)
+				str += `=${encodeURIComponent(item.value)}`;
+		}
+
+		this.string = str;
+	}
+
+	_isInvalidType(value) {
+		return value !== null && INVALID_PARAM_TYPES.hasOwnProperty(typeof value);
+	}
+
+	add(key, value) {
+		if (typeof key != "string" || this._isInvalidType(value))
+			return this;
+
+		if (typeof value == "string")
+			value = decodeURIComponent(value);
+
+		if (this.has(key)) {
+			this.map[key].value = value;
+			this.plain[key] = value;
+			this._recalcStr();
+		} else {
+			const item = {
+				key,
+				value,
+				order: this._order++
+			};
+
+			this.params.push(item);
+			this.map[key] = item;
+			this.plain[key] = value;
+			this.size++;
+			this._recalcStr(true);
+		}
+
+		return this;
+	}
+
+	delete(key) {
+		if (!this.has(key))
+			return false;
+
+		const idx = this._getIdxByOrder(this.map[key].order);
+		this.params.splice(idx, 1);
+		this.size--;
+		this._recalcStr();
+		delete this.map[key];
+		delete this.plain[key];
+
+		return true;
+	}
+
+	has(key) {
+		return typeof key == "string" && this.map.hasOwnProperty(key);
+	}
+
+	get(key) {
+		if (this.has(key))
+			return this.map[key].value;
+	}
+
+	clear() {
+		this.params = [];
+		this.map = {};
+		this.plain = {};
+		this.string = "";
+		this.size = 0;
+	}
+
+	parse(input) {
+		this.clear();
+
+		if (!input)
+			return this;
+
+		if (typeof input == "string") {
+			input = decodeURIComponent(input);
+
+			while (true) {
+				const kvPair = searchSplitRegex.exec(input);
+				if (!kvPair)
+					break;
+
+				let value = parseStr(kvPair[2]);
+				if (this._isInvalidType(value))
+					value = kvPair[2];
+
+				this.add(kvPair[1], value);
+			}
+		} else if (isObject(input)) {
+			for (const k in input) {
+				if (hasOwn(input, k))
+					this.add(k, input[k]);
+			}
+		}
+
+		return this;
+	}
+
+	clone() {
+		const cloned = new SearchParams();
+		cloned.string = this.string;
+		cloned.size = this.size;
+
+		for (let i = 0; i < this.size; i++) {
+			const item = Object.assign({}, this.params[i]);
+			cloned.params.push(item);
+			cloned.map[item.key] = item;
+			cloned.plain[item.key] = item;
+		}
+
+		return cloned;
+	}
+
+	forEach(callback) {
+		if (typeof callback != "function")
+			return false;
+
+		for (let i = 0; i < this.size; i++)
+			callback(this.params[i].value, this.params[i].key, this);
+
+		return true;
+	}
+}
 
 let uid = 0;
 
@@ -72,8 +234,7 @@ export default class URL {
 			pathname: "",
 			port: "",
 			protocol: "",
-			search: "",
-			searchParams: {},
+			searchParams: new SearchParams(),
 			stepUp: 0,
 			pathnameIsRelative: true
 		});
@@ -132,8 +293,8 @@ export default class URL {
 
 		href += this.pathname;
 		
-		if (data.search)
-			href += data.search;
+		if (data.searchParams.string)
+			href += data.searchParams.string;
 
 		if (data.hash)
 			href += data.hash;
@@ -215,17 +376,11 @@ export default class URL {
 	}
 
 	get search() {
-		return URL_MAP.get(this).search;
+		return URL_MAP.get(this).searchParams.string;
 	}
 
 	set search(search) {
-		const data = URL_MAP.get(this);
-		search = coerceStr(search);
-		if (search && search[0] != "?")
-			search = `?${search}`;
-		
-		data.search = search;
-		data.searchParams = searchToParams(search);
+		URL_MAP.get(this).searchParams.parse(coerceStr(search));
 	}
 
 	get searchParams() {
@@ -233,23 +388,15 @@ export default class URL {
 	}
 
 	set searchParams(params) {
-		const data = URL_MAP.get(this),
-			newParams = {};
+		URL_MAP.get(this).searchParams.parse(params);
+	}
 
-		if (params && params.constructor == Object) {
-			for (const k in params) {
-				if (!params.hasOwnProperty(k) || INVALID_PARAM_TYPES.hasOwnProperty(typeof params[k]))
-					continue;
+	get query() {
+		return URL_MAP.get(this).searchParams.plain;
+	}
 
-				newParams[k] = params[k];
-			}
-
-			data.search = paramsToSearch(newParams);
-			data.searchParams = newParams;
-		} else if (params === null) {
-			data.search = paramsToSearch({});
-			data.searchParams = {};
-		}
+	set query(params) {
+		URL_MAP.get(this).searchParams.parse(params);
 	}
 
 	get relative() {
@@ -264,7 +411,7 @@ export default class URL {
 
 		Object.assign(cData, tData);
 		cData.path = tData.path.slice().map(v => Object.assign({}, v));
-		cData.searchParams = Object.assign({}, tData.searchParams);
+		cData.searchParams = tData.searchParams.clone();
 
 		return cloned;
 	}
@@ -353,8 +500,8 @@ export default class URL {
 
 		outData.path = collapsed.path;
 		outData.stepUp = collapsed.stepUp;
-		outData.search = paramsToSearch(searchParams);
-		outData.searchParams = searchParams;
+		// outData.search = paramsToSearch(searchParams);
+		// outData.searchParams = searchParams;
 		outData.hash = hash;
 
 		return outInstance;
@@ -479,38 +626,6 @@ function sendError(msg) {
 	console.error(msg);
 }
 
-// Generating functions
-function paramsToSearch(dict) {
-	let search = "";
-
-	for (const k in dict) {
-		if (!dict.hasOwnProperty(k))
-			continue;
-
-		if (search)
-			search += "&";
-
-		search += k;
-
-		if (dict[k] !== undefined)
-			search += `=${dict[k]}`;
-	}
-
-	return search ? `?${search}` : "";
-}
-
-const searchSplitRegex = /(\w+)(?:&|$|=((?:[^\\&=]+|\\.)*))/g;
-
-function searchToParams(search) {
-	const searchDict = {};
-
-	while (true) {
-		const kvPair = searchSplitRegex.exec(search);
-		if (!kvPair)
-			break;
-
-		searchDict[kvPair[1]] = kvPair[2];
-	}
-
-	return searchDict;
-}
+export {
+	SearchParams
+};
