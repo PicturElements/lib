@@ -189,6 +189,10 @@ class SearchParams {
 		return this;
 	}
 
+	assign(input) {
+		return this.parse(input);
+	}
+
 	clone() {
 		const cloned = new SearchParams();
 		cloned.string = this.string;
@@ -478,7 +482,7 @@ export default class URL {
 			if (url.hash)
 				hash = url.hash;
 			
-			Object.assign(searchParams, url.searchParams);
+			Object.assign(searchParams, url.query);
 		}
 
 		if (!outInstance)
@@ -500,9 +504,8 @@ export default class URL {
 
 		outData.path = collapsed.path;
 		outData.stepUp = collapsed.stepUp;
-		// outData.search = paramsToSearch(searchParams);
-		// outData.searchParams = searchParams;
 		outData.hash = hash;
+		outData.searchParams.assign(searchParams);
 
 		return outInstance;
 	}
