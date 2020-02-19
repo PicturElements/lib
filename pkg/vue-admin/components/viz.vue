@@ -21,7 +21,11 @@
 			viz: null,
 			resizeHandler: null
 		}),
-		methods: {},
+		methods: {
+			setStyleMode() {
+				this.viz.setStyleMode(this.mode || "normal");
+			}
+		},
 		computed: {},
 		props: {
 			config: {
@@ -30,10 +34,20 @@
 			},
 			data: null,
 			cell: DataCell,
-			accessor: [String, Array]
+			accessor: [String, Array],
+			mode: String
 		},
 		components: {
 			LoadingBox
+		},
+		watch: {
+			data(newData) {
+				if (newData)
+					this.viz.setData(newData);
+			},
+			mode() {
+				this.setStyleMode();
+			}
 		},
 		mounted() {
 			this.viz = new Viz(this.$refs.root, this.config);
@@ -59,15 +73,11 @@
 				})
 		 	} else if (this.data)
 				setData(this.data);
+
+			this.setStyleMode();
 		},
 		beforeDestroy() {
 			window.removeEventListener("resize", this.resizeHandler);
-		},
-		watch: {
-			data(newData) {
-				if (newData)
-					this.viz.setData(newData);
-			}
 		}
 	};
 </script>

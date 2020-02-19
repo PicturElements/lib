@@ -58,6 +58,7 @@ $listing-box-params: (
 		border: $page-selector-border;
 		background: transparent;
 		outline: none;
+		color: inherit;
 		cursor: pointer;
 
 		&.selected {

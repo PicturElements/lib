@@ -11,6 +11,7 @@ $breadcrumbs-params: (
 ) {
 	.admin-breadcrumb {
 		position: relative;
+		color: $color;
 
 		+ .admin-breadcrumb {
 			margin-left: 1.6em;

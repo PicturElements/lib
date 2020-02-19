@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/vue-admin",
-  "version": "1.12.3",
+  "version": "1.12.4",
   "description": "Administrator tools for Vue",
   "main": "index.js",
   "scripts": {
@@ -31,10 +31,10 @@
     "@qtxr/i18n": "^2.3.10",
     "@qtxr/scss-utils": "^1.2.2",
     "@qtxr/uc": "^1.7.0",
-    "@qtxr/url": "^1.1.5",
+    "@qtxr/url": "^1.2.2",
     "@qtxr/utils": "^1.40.1",
     "@qtxr/viz": "^1.0.8",
-    "@qtxr/vue-form": "^2.11.5",
+    "@qtxr/vue-form": "^2.11.6",
     "@qtxr/vue-wrap-component": "^2.4.3"
   },
   "files": [
@@ -44,7 +44,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 135,
+    "pushes": 136,
     "expose": {
       "scripts": [
         "connect/feed.js"
