@@ -114,6 +114,7 @@ export default class Trie {
 				return {
 					key: match,
 					value: node.value,
+					node
 				};
 			}
 		}
@@ -145,7 +146,8 @@ export default class Trie {
 
 		return lastMatch ? {
 			key: lastMatch,
-			value: this.ref[lastMatch].value
+			value: this.ref[lastMatch].value,
+			node: this.ref[lastMatch]
 		} : null;
 	}
 
@@ -180,6 +182,7 @@ export default class Trie {
 	}
 
 	getMatches(key, type) {
+		key = conformKey(key);
 		const trieNode = this.getNode(key),
 			matches = [];
 
