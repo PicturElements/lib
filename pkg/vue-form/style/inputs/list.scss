@@ -4,11 +4,21 @@ $list-params: (
 	"border-radius",
 	"color",
 	"background",
+	"backdrop-background",
 	"error-background",
+	"border",
 	"error-border-color",
 	"highlight",
-	"highlight-complement"
-);
+	"highlight-complement",
+	"action-button-size",
+	"add-icon-size",
+	"add-icon-gap",
+	"row-padding",
+	"row-margin",
+	"focus-padding",
+	"focus-transition",
+	"add-icon-transition"
+);	
 
 @mixin list-style(
 	$border-radius: 1px,

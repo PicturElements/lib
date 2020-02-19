@@ -1,11 +1,13 @@
 @use "@qtxr/scss-utils" as *;
 
 $date-selector-params: (
+	"color",
 	"cell-width",
 	"cell-height",
 	"cell-padding",
 	"cell-border",
 	"cell-border-radius",
+	"selection-border-radius",
 	"highlight",
 	"highlight-complement"
 );

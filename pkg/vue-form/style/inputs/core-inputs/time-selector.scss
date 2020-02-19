@@ -64,14 +64,11 @@ $time-selector-params: (
 			height: 150px;
 			border-radius: 50%;
 			font-size: 90%;
+			background: $dial-background;
 			transition: transform $transition-duration, opacity $transition-duration;
 			transition-timing-function: cubic-bezier(0.5, -0.15, 0.5, 1.15);
 			user-select: none;
 			cursor: default;
-
-			&.background-dial {
-				background: $dial-background;
-			}
 
 			&.edit-dial,
 			&.result-dial {
@@ -212,6 +209,7 @@ $time-selector-params: (
 			border-radius: 50%;
 			outline: none;
 			background: $dial-background;
+			color: inherit;
 			font-size: 80%;
 			cursor: pointer;
 			z-index: 10000003;

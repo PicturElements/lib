@@ -3,15 +3,10 @@ $date-time-params: (
 	"border-radius",
 	"background",
 	"error-background",
-	"dial-background",
-	"dial-background-dark",
 	"border",
+	"separator-border",
 	"error-border",
-	"error-color",
-	"blob-radius",
-	"delimitation-padding",
-	"tight-delimitation-padding",
-	"transition-duration"
+	"error-color"
 );
 
 @mixin date-time(
@@ -19,15 +14,10 @@ $date-time-params: (
 	$border-radius: 1px,
 	$background: white,
 	$error-background: #ffe7ec,
-	$dial-background: whitesmoke,
-	$dial-background-dark: #dadee2,
 	$border: 1px solid #dadada,
+	$separator-border: 1px solid whitesmoke,
 	$error-border: 1px solid #e8879b,
-	$error-color: #ab0f2f,
-	$blob-radius: 15px,
-	$delimitation-padding: 20px,
-	$tight-delimitation-padding: 15px,
-	$transition-duration: 300ms
+	$error-color: #ab0f2f
 ) {
 	.inp-date-time {
 		.drop-expando-box {
@@ -78,7 +68,7 @@ $date-time-params: (
 			.time-sel {
 				margin-left: 10px;
 				padding-left: 10px;
-				border-left: 1px solid $dial-background;
+				border-left: $separator-border;
 			}
 
 			.dials-wrapper {
@@ -110,7 +100,7 @@ $date-time-params: (
 					margin: 10px 0 0;
 					padding: 10px 0 0;
 					border-left: none;
-					border-top: 1px solid $dial-background;
+					border-top: 1px solid $separator-border;
 				}
 			}
 		}
