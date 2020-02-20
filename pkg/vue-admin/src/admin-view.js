@@ -43,6 +43,7 @@ export default class AdminView {
 						wrapper,
 						outCells,
 						key: k,
+						admin: this.owner,
 						persistent: true
 					});
 
@@ -57,6 +58,7 @@ export default class AdminView {
 						wrapper,
 						outCells,
 						key: k,
+						admin: this.owner,
 						persistent: false
 					});
 
@@ -81,8 +83,9 @@ function connectDataCells(cell, args) {
 	}
 }
 
-function connectDataCell(args) {		
+function connectDataCell(args) {
 	args.cell.baseRuntime.vm = args.vm;
+	args.cell.baseRuntime.admin = args.admin;
 	connectForm(args);
 }
 
