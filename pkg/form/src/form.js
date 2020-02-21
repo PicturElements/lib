@@ -34,7 +34,8 @@ import FormRows from "./form-rows";
 let id = 0;
 const partitionClassifier = {
 	valid: "inst",
-	changed: "inst"
+	changed: "inst",
+	validateRequiredOnly: "inst"
 };
 
 export default class Form extends Hookable {
