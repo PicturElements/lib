@@ -1,158 +1,261 @@
-const colorClassifier = /^(?:#|rgba?|hsla?|cmyk)/,
+const colorClassifierRegex = /^(?:#|rgba?|hsla?|cmyk)/,
 	hexRegex = /^#([\da-f]{3,8})$/i,
 	rgbRegex = /^rgba?\(\s*([\de.+-]+(%?)\s*(,?)\s*(?:[\de.+-]+\2\s*\3\s*){1,2}?(?:\s*(\/)?\s*[\de.+-]+(%?))?)\s*\)$/,
 	hslRegex = /^hsla?\(\s*([\de.+-]+(?:deg|g?rad|turn)?\s*(,?)\s*(?:[\de.+-]+%\s*\2\s*){1,2}?(?:\s*(\/)?\s*[\de.+-]+(%?))?)\s*\)$/,
-	cmykRegex = /^cmyk\(\s*([\de.+-]+%\s*(,?)\s*(?:[\de.+-]+%\s*\2\s*){2}(?:[\de.+-]+%\s*))\)$/;
+	cmykRegex = /^cmyk\(\s*([\de.+-]+%\s*(,?)\s*(?:[\de.+-]+%\s*\2\s*){2}(?:[\de.+-]+%\s*))\)$/,
+	transformRegex = /^(\w+)\s*([+\-*\/]?=?|\w+)\s*([\de.-]+)$/;
 
-const COL_NAMES = { black: "#000", silver: "#c0c0c0", gray: "#808080", white: "#fff", maroon: "#800000", red: "#f00", purple: "#800080", fuchsia: "#f0f", green: "#008000", lime: "#0f0", olive: "#808000", yellow: "#ff0", navy: "#000080", blue: "#00f", teal: "#008080", aqua: "#0ff", orange: "#ffa500", aliceblue: "#f0f8ff", antiquewhite: "#faebd7", aquamarine: "#7fffd4", azure: "#f0ffff", beige: "#f5f5dc", bisque: "#ffe4c4", blanchedalmond: "#ffebcd", blueviolet: "#8a2be2", brown: "#a52a2a", burlywood: "#deb887", cadetblue: "#5f9ea0", chartreuse: "#7fff00", chocolate: "#d2691e", coral: "#ff7f50", cornflowerblue: "#6495ed", cornsilk: "#fff8dc", crimson: "#dc143c", cyan: "#0ff", darkblue: "#00008b", darkcyan: "#008b8b", darkgoldenrod: "#b8860b", darkgray: "#a9a9a9", darkgreen: "#006400", darkgrey: "#a9a9a9", darkkhaki: "#bdb76b", darkmagenta: "#8b008b", darkolivegreen: "#556b2f", darkorange: "#ff8c00", darkorchid: "#9932cc", darkred: "#8b0000", darksalmon: "#e9967a", darkseagreen: "#8fbc8f", darkslateblue: "#483d8b", darkslategray: "#2f4f4f", darkslategrey: "#2f4f4f", darkturquoise: "#00ced1", darkviolet: "#9400d3", deeppink: "#ff1493", deepskyblue: "#00bfff", dimgray: "#696969", dimgrey: "#696969", dodgerblue: "#1e90ff", firebrick: "#b22222", floralwhite: "#fffaf0", forestgreen: "#228b22", gainsboro: "#dcdcdc", ghostwhite: "#f8f8ff", gold: "#ffd700", goldenrod: "#daa520", greenyellow: "#adff2f", grey: "#808080", honeydew: "#f0fff0", hotpink: "#ff69b4", indianred: "#cd5c5c", indigo: "#4b0082", ivory: "#fffff0", khaki: "#f0e68c", lavender: "#e6e6fa", lavenderblush: "#fff0f5", lawngreen: "#7cfc00", lemonchiffon: "#fffacd", lightblue: "#add8e6", lightcoral: "#f08080", lightcyan: "#e0ffff", lightgoldenrodyellow: "#fafad2", lightgray: "#d3d3d3", lightgreen: "#90ee90", lightgrey: "#d3d3d3", lightpink: "#ffb6c1", lightsalmon: "#ffa07a", lightseagreen: "#20b2aa", lightskyblue: "#87cefa", lightslategray: "#789", lightslategrey: "#789", lightsteelblue: "#b0c4de", lightyellow: "#ffffe0", limegreen: "#32cd32", linen: "#faf0e6", magenta: "#f0f", mediumaquamarine: "#66cdaa", mediumblue: "#0000cd", mediumorchid: "#ba55d3", mediumpurple: "#9370db", mediumseagreen: "#3cb371", mediumslateblue: "#7b68ee", mediumspringgreen: "#00fa9a", mediumturquoise: "#48d1cc", mediumvioletred: "#c71585", midnightblue: "#191970", mintcream: "#f5fffa", mistyrose: "#ffe4e1", moccasin: "#ffe4b5", navajowhite: "#ffdead", oldlace: "#fdf5e6", olivedrab: "#6b8e23", orangered: "#ff4500", orchid: "#da70d6", palegoldenrod: "#eee8aa", palegreen: "#98fb98", paleturquoise: "#afeeee", palevioletred: "#db7093", papayawhip: "#ffefd5", peachpuff: "#ffdab9", peru: "#cd853f", pink: "#ffc0cb", plum: "#dda0dd", powderblue: "#b0e0e6", rosybrown: "#bc8f8f", royalblue: "#4169e1", saddlebrown: "#8b4513", salmon: "#fa8072", sandybrown: "#f4a460", seagreen: "#2e8b57", seashell: "#fff5ee", sienna: "#a0522d", skyblue: "#87ceeb", slateblue: "#6a5acd", slategray: "#708090", slategrey: "#708090", snow: "#fffafa", springgreen: "#00ff7f", steelblue: "#4682b4", tan: "#d2b48c", thistle: "#d8bfd8", tomato: "#ff6347", turquoise: "#40e0d0", violet: "#ee82ee", wheat: "#f5deb3", whitesmoke: "#f5f5f5", yellowgreen: "#9acd32", rebeccapurple: "#639", transparent: "rgba(0,0,0,0)" },
+const RAW_COLORS = "aliceblue|f0f8ff|antiquewhite|faebd7|aqua|0ff|aquamarine|7fffd4|azure|f0ffff|beige|f5f5dc|bisque|ffe4c4|black|000|blanchedalmond|ffebcd|blue|00f|blueviolet|8a2be2|brown|a52a2a|burlywood|deb887|cadetblue|5f9ea0|chartreuse|7fff00|chocolate|d2691e|coral|ff7f50|cornflowerblue|6495ed|cornsilk|fff8dc|crimson|dc143c|cyan|0ff|darkblue|00008b|darkcyan|008b8b|darkgoldenrod|b8860b|darkgray|a9a9a9|darkgreen|006400|darkgrey|a9a9a9|darkkhaki|bdb76b|darkmagenta|8b008b|darkolivegreen|556b2f|darkorange|ff8c00|darkorchid|9932cc|darkred|8b0000|darksalmon|e9967a|darkseagreen|8fbc8f|darkslateblue|483d8b|darkslategray|2f4f4f|darkslategrey|2f4f4f|darkturquoise|00ced1|darkviolet|9400d3|deeppink|ff1493|deepskyblue|00bfff|dimgray|696969|dimgrey|696969|dodgerblue|1e90ff|firebrick|b22222|floralwhite|fffaf0|forestgreen|228b22|fuchsia|f0f|gainsboro|dcdcdc|ghostwhite|f8f8ff|gold|ffd700|goldenrod|daa520|gray|808080|green|008000|greenyellow|adff2f|grey|808080|honeydew|f0fff0|hotpink|ff69b4|indianred|cd5c5c|indigo|4b0082|ivory|fffff0|khaki|f0e68c|lavender|e6e6fa|lavenderblush|fff0f5|lawngreen|7cfc00|lemonchiffon|fffacd|lightblue|add8e6|lightcoral|f08080|lightcyan|e0ffff|lightgoldenrodyellow|fafad2|lightgray|d3d3d3|lightgreen|90ee90|lightgrey|d3d3d3|lightpink|ffb6c1|lightsalmon|ffa07a|lightseagreen|20b2aa|lightskyblue|87cefa|lightslategray|789|lightslategrey|789|lightsteelblue|b0c4de|lightyellow|ffffe0|lime|0f0|limegreen|32cd32|linen|faf0e6|magenta|f0f|maroon|800000|mediumaquamarine|66cdaa|mediumblue|0000cd|mediumorchid|ba55d3|mediumpurple|9370db|mediumseagreen|3cb371|mediumslateblue|7b68ee|mediumspringgreen|00fa9a|mediumturquoise|48d1cc|mediumvioletred|c71585|midnightblue|191970|mintcream|f5fffa|mistyrose|ffe4e1|moccasin|ffe4b5|navajowhite|ffdead|navy|000080|oldlace|fdf5e6|olive|808000|olivedrab|6b8e23|orange|ffa500|orangered|ff4500|orchid|da70d6|palegoldenrod|eee8aa|palegreen|98fb98|paleturquoise|afeeee|palevioletred|db7093|papayawhip|ffefd5|peachpuff|ffdab9|peru|cd853f|pink|ffc0cb|plum|dda0dd|powderblue|b0e0e6|purple|800080|rebeccapurple|639|red|f00|rosybrown|bc8f8f|royalblue|4169e1|saddlebrown|8b4513|salmon|fa8072|sandybrown|f4a460|seagreen|2e8b57|seashell|fff5ee|sienna|a0522d|silver|c0c0c0|skyblue|87ceeb|slateblue|6a5acd|slategray|708090|slategrey|708090|snow|fffafa|springgreen|00ff7f|steelblue|4682b4|tan|d2b48c|teal|008080|thistle|d8bfd8|tomato|ff6347|transparent|0000|turquoise|40e0d0|violet|ee82ee|wheat|f5deb3|white|fff|whitesmoke|f5f5f5|yellow|ff0|yellowgreen|9acd32",
+	COL_NAMES = {},
+	COL_NAME_HASHES = {},
 	DEF_COL_DATA = {
 		rgba: [0, 0, 0, 0],
 		source: null,
 		space: null
 	},
-	DEF_COL_MASK = [0, 0, 0, 1];
+	DEF_COL_MASK = [0, 0, 0, 1],
+	COMPONENT_KEYS = {},
+	COMPONENT_DATA = [
+		["r", "red", 0],
+		["g", "green", 1],
+		["b", "blue", 2],
+		["a", "alpha", 3],
+		["h", "hue", 0, "hsl"],
+		["s", "saturation", 1, "hsl"],
+		["l", "lightness", 2, "hsl"],
+		["c", "cyan", 0, "cmyk"],
+		["m", "magenta", 1, "cmyk"],
+		["y", "yellow", 2, "cmyk"],
+		["k", "key", 3, "cmyk"]
+	],
+	SWIZZLES = [
+		["rgb", null, undefined, 3],
+		["rgba", null],
+		["hsl", "hsla", undefined, 3],
+		["hsla", "hsla"],
+		["cmyk", "cmyk", "rgb"]
+	];
 
 export default class Color {
-	constructor(src, space) {
-		this.rgba = [0, 0, 0, 0];
+	constructor(src, space, immutable) {
+		this._rgba = [0, 0, 0, 0];
 		this.source = null;
 		this.space = null;
 
+		// Enforce mutability. In other cases instances
+		// may toggle their own mutability as they wish
+		// at runtime, but if specified at init, the
+		// state may not be changed
+		if (typeof immutable == "boolean") {
+			Object.defineProperty(this, "immutable", {
+				enumerable: true,
+				configurable: false,
+				writable: false,
+				value: immutable
+			});
+		} else
+			this.immutable = false;
+
 		if (src instanceof Color)
-			this.setData(src, space);
+			this._set(src, space);
 		else if (src != null) {
 			const parsed = Color.parseRaw(src);
-			return this.setData(parsed, space);
+			this._set(parsed, space);
 		}
 	}
 
-	clone() {
-		return new Color(this);
-	}
-
-	reset() {
-		this.setData(DEF_COL_DATA);
-		return this;
-	}
-
-	setData(ref, space) {
+	_set(ref, space) {
+		const rgba = ref._rgba || ref.rgba;
 		this.source = ref.source;
 		this.space = space || ref.space;
-		this.rgba = ref.rgba && ref.rgba.slice();
+		this._rgba = rgba && rgba.slice();
 		return this;
+	}
+
+	_checkImmutable() {
+		if (this.immutable) {
+			warn("Cannot modify: instance is immutable");
+			return true;
+		}
+
+		return false;
+	}
+
+	clone(immutable = null) {
+		return new Color(this, null, immutable);
 	}
 
 	toString(space = this.space) {
-		return Color.stringify(this.rgba, space);
+		return Color.stringify(this._rgba, space);
 	}
 
-	// toString alias
 	str(space) {
 		return this.toString(space);
 	}
 
+	equals(src) {
+		return Color.equals(this, src);
+	}
+
 	// %%%%%%%%%% IMMUTABLE TRANSFORM METHODS %%%%%%%%%%
-	rotate(value, unit) {
-		const rotation = parseRotation(value, unit),
-			hsla = Color.RGBAtoHSLA(this.rgba);
+	transform(transforms, operation = "set") {
+		const c = new Color(this);
 
-		hsla[0] = (hsla[0] + rotation) % 360;
-		
-		return new Color(Color.HSLAtoRGBA(hsla), this.space);
-	}
+		const emit = (k, op, v) => {
+			if (!isNum(v))
+				return;
 
-	// %%%%%%%%%% STATIC HELPERS %%%%%%%%%%
-	static stringify(rgbaOrColor, type) {
-		const c = (rgbaOrColor instanceof Color) ? rgbaOrColor.rgba : coerceToRGBA(rgbaOrColor);
+			if (!COMPONENT_KEYS.hasOwnProperty(k))
+				return;
 
-		if (type == "auto")
-			type = c[3] == 1 ? "rgb" : "rgba";
+			switch (op) {
+				case "add":
+				case "plus":
+				case "+":
+				case "+=":
+					c[k] += v;
+					break;
 
-		switch (type) {
-			case "hex":
-				return `#${buildHex(c)}`;
-			case "hsl": {
-				const hsl = coerceToHSLA(this.RGBtoHSL(c));
-				return hsl ? `hsl(${hsl[0]}, ${hsl[1]}%, ${hsl[2]}%)` : "";
+				case "sub":
+				case "subtract":
+				case "minus":
+				case "-":
+				case "-=":
+					c[k] -= v;
+					break;
+
+				case "mul":
+				case "multiply":
+				case "times":
+				case "*":
+				case "*=":
+					c[k] *= v;
+					break;
+
+				case "div":
+				case "divide":
+				case "over":
+				case "/":
+				case "/=":
+					c[k] /= v;
+					break;
+
+				case "set":
+				case "equals":
+				case "=":
+				default:
+					c[k] = v;
 			}
-			case "hsla": {
-				const hsla = coerceToHSLA(this.RGBAtoHSLA(c));
-				return `hsla(${hsla[0]}, ${hsla[1]}%, ${hsla[2]}%, ${hsla[3]})`;
+		};
+
+		if (typeof transforms == "string")
+			transforms = [transforms];
+
+		if (Array.isArray(transforms)) {
+			for (let i = 0, l = transforms.length; i < l; i++) {
+				const transform = transforms[i];
+
+				if (typeof transform != "string")
+					continue;
+
+				const ex = transformRegex.exec(transform.trim());
+				if (!ex)
+					continue;
+
+				emit(ex[1], ex[2], Number(ex[3]));
 			}
-			case "cmyk": {
-				const cmyk = coerceToCMYK(this.RGBtoCMYK(c));
-				return `cmyk(${cmyk[0]}%, ${cmyk[1]}%, ${cmyk[2]}%, ${cmyk[3]}%)`;
+		} else if (transforms && typeof transforms == "object") {
+			for (const k in transforms) {
+				if (!transforms.hasOwnProperty(k))
+					continue;
+
+				let key = k,
+					value = transforms[k],
+					op = operation;
+
+				if (!COMPONENT_KEYS.hasOwnProperty(k)) {
+					const split = k.split("@");
+
+					if (!COMPONENT_KEYS.hasOwnProperty(split[1]))
+						continue;
+
+					op = split[0];
+					key = split[1];
+				}
+
+				if (Array.isArray(value)) {
+					op = value[0];
+					value = value[1];
+				}
+
+				emit(key, op, value);
 			}
-			case "rgb":
-				return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
-			default:
-				return `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${c[3]})`;
 		}
+
+		return c;
+	}
+	
+	t(...transforms) {
+		return this.transform(transforms);
 	}
 
-	static interpolate(pos, gradient) {
-		if (!(gradient instanceof Gradient))
-			return;
-
-		pos = Math.max(Math.min(pos, 1), 0);
-		return gradient.interpolate();
+	rotate(amount, unit, op = "add") {
+		const rotation = parseRotation(amount, unit);
+		return this.transform({ h: rotation }, op);
 	}
 
-	static interpolateCustom(pos, ...stops) {
-		const gradient = this.buildGradient(stops);
-		return this.interpolate(pos, gradient);
+	saturate(amount, op = "add") {
+		return this.transform({ s: amount }, op);
 	}
 
-	// Allowed stop formats:
-	// "<col-string>", ...
-	// ["<col-string>", <position, 0-1>], ...
-	// "<col-string> <pos, 0-100>%, ..."
-	// or any combination of the above (not recommended)
-	static gradient(...stops) {
-		return this.buildGradient(stops);
+	desaturate(amount, op = "add") {
+		return this.transform({ s: -amount }, op);
 	}
 
-	static buildGradient(stops) {
-		if (stops.length == 1 && stops[0] instanceof Gradient)
-			return stops[0];
-
-		const gradient = new Gradient();
-
-		for (let i = 0, l = stops.length; i < l; i++) {
-			const stopData = parseGradientStop(stops[i]);
-
-			if (Array.isArray(stopData))
-				gradient.splice(gradient.length, 0, ...stopData);
-			else if (stopData)
-				gradient.push(stopData);
-		}
-
-		gradient.normalizeStopPositions();
-
-		return gradient;
+	lighten(amount, op = "add") {
+		return this.transform({ l: amount }, op);
 	}
 
-	static storeGradient(name, ...stops) {
-		if (!name || typeof name != "string")
-			return warn(`Couldn't create gradient because '${name}' isn't a valid name`);
-
-		const gradient = this.buildGradient(stops);
-		this.gradients[name] = gradient;
-		return gradient;
+	darken(amount, op = "add") {
+		return this.transform({ l: -amount }, op);
 	}
 
-	static resolveGradient(gradient) {
-		if (gradient instanceof Gradient)
-			return gradient;
+	opacify(amount, op = "add") {
+		return this.transform({ a: amount }, op);
+	}
 
-		return this.gradients[gradient] || Gradient.cache[gradient] || Gradient.NULL;
+	transparentize(amount, op = "add") {
+		return this.transform({ a: -amount }, op);
+	}
+
+	interpolate(src, weight = 0.5) {
+		const c = this._rgba,
+			c2 = getRGBA(src, true);
+
+		return new Color([
+			interpolate(c[0], c2[0], weight),
+			interpolate(c[1], c2[1], weight),
+			interpolate(c[2], c2[2], weight),
+			interpolate(c[3], c2[3], weight)
+		]);
+	}
+
+	mix(src, weight = 1) {
+		return this.interpolate(src, weight / 2);
+	}
+
+	invert(weight = 1) {
+		const c = this._rgba;
+
+		return this.interpolate([
+			255 - c[0],
+			255 - c[1],
+			255 - c[2]
+		], weight);
 	}
 
 	// %%%%%%%%%% COLOR PARSING %%%%%%%%%%
 	static parse(src) {
-		if (src instanceof Color)
-			return src;
-
 		return new Color(src);
 	}
 
@@ -168,9 +271,6 @@ export default class Color {
 			}
 
 			src = coerceToRGBA(src);
-
-			if (!src)
-				return DEF_COL_DATA;
 
 			return {
 				source: src,
@@ -192,7 +292,7 @@ export default class Color {
 		if (Color.cache[src])
 			return Color.cache[src];
 
-		const cls = colorClassifier.exec(src);
+		const cls = colorClassifierRegex.exec(src);
 
 		if (!cls) {
 			warn(`Could not parse color string '${src}' because it's not of a valid type`);
@@ -207,22 +307,27 @@ export default class Color {
 				rgba = Color.parseHex(src);
 				space = "hex";
 				break;
+
 			case "rgb":
 				rgba = Color.parseRGB(src);
 				space = rgba && rgba.length == 3 ? "rgb" : "rgba";
 				break;
+
 			case "rgba":
 				rgba = Color.parseRGBA(src);
 				space = rgba && rgba.length == 3 ? "rgb" : "rgba";
 				break;
+
 			case "hsl":
 				rgba = Color.parseHSL(src);
 				space = rgba && rgba.length == 3 ? "hsl" : "hsla";
 				break;
+
 			case "hsla":
 				rgba = Color.parseHSLA(src);
 				space = rgba && rgba.length == 3 ? "hsl" : "hsla";
 				break;
+
 			case "cmyk":
 				rgba = Color.parseCMYK(src);
 				break;
@@ -241,12 +346,12 @@ export default class Color {
 	}
 
 	// ========== HEX ==========
-	static parseHex(str) {
-		const ex = hexRegex.exec(str),
+	static parseHex(src) {
+		const ex = hexRegex.exec(src),
 			matchLen = ex && ex[1].length;
 
 		if (!ex || (matchLen > 3 && matchLen % 2))	// 3 character hex is valid, 5 and 7 are not
-			return warn(`Could not parse string '${str}' because it's not a valid hex value`);
+			return warn(`Could not parse string '${src}' because it's not a valid hex value`);
 
 		const hex = ex[1],
 			rgba = [0, 0, 0, 255],
@@ -265,49 +370,41 @@ export default class Color {
 	}
 
 	// ========== RGB(A) ==========
-	static parseRGB(str) {
-		const rgb = parseRGBHelper(str);
-
-		if (!rgb)
-			return warn(`Could not parse color string '${str}' because it's not a valid RGB value`);
-
-		return rgb;
-	}
-
-	static parseRGBA(str) {
-		const rgba = parseRGBHelper(str);
+	static parseRGBA(src) {
+		const rgba = parseRGBAHelper(src);
 
 		if (!rgba)
-			return warn(`Could not parse color string '${str}' because it's not a valid RGBA value`);
+			return warn(`Could not parse color string '${src}' because it's not a valid RGBA value`);
 
 		return rgba;
 	}
 
-	// ========== HSL ==========
-	static parseHSL(str) {
-		const hsl = parseHSLHelper(str);
-
-		if (!hsl)
-			return warn(`Could not parse color string '${str}' because it's not a valid HSL value`);
-
-		return hsl.length == 3 ? this.HSLtoRGB(hsl) : this.HSLAtoRGBA(hsl);
+	static parseRGB(src) {
+		return this.parseRGBA(src);
 	}
 
-	static parseHSLA(str) {
-		const hsla = parseHSLHelper(str);
+	// ========== HSL ==========
+	static parseHSLA(src) {
+		const hsla = parseHSLAHelper(src);
 
 		if (!hsla)
-			return warn(`Could not parse color string '${str}' because it's not a valid HSLA value`);
+			return warn(`Could not parse color string '${src}' because it's not a valid HSLA value`);
 
-		return hsla.length == 3 ? this.HSLtoRGB(hsla) : this.HSLAtoRGBA(hsla);
+		return hsla.length == 3 ?
+			this.HSLtoRGB(hsla) :
+			this.HSLAtoRGBA(hsla);
+	}
+
+	static parseHSL(src) {
+		return this.parseHSLA(src);
 	}
 
 	// ========== CMYK ==========
-	static parseCMYK(str) {
-		const cmyk = parseCMYKHelper(str);
+	static parseCMYK(src) {
+		const cmyk = parseCMYKHelper(src);
 
 		if (!cmyk)
-			return warn(`Could not parse color string '${str}' because it's not a valid CMYK value`);
+			return warn(`Could not parse color string '${src}' because it's not a valid CMYK value`);
 
 		return this.CMYKtoRGB(cmyk);
 	}
@@ -326,7 +423,9 @@ export default class Color {
 		l = cap(l / 100, 0, 1);
 
 		if (s) {
-			const q = l < 0.5 ? l * (1 + s) : l + s - l * s,
+			const q = l < 0.5 ?
+					l * (1 + s) :
+					l + s - l * s,
 				p = 2 * l - q;
 
 			return [
@@ -343,25 +442,16 @@ export default class Color {
 	static HSLAtoRGBA(hsla) {
 		hsla = coerceParse(hsla);
 		const rgba = this.HSLtoRGB(hsla);
-		rgba[3] = hsla[3];
+		rgba[3] = isNum(hsla[3]) ? hsla[3] : 1;
 		return rgba;
 	}
 
-	static CMYKtoRGB(cmyk) {
-		cmyk = coerceParse(cmyk);
-		const [c, m, y, k] = cmyk.map(comp => cap(comp / 100, 0, 1)),
-			luma = 1 - k;
-
-		return [
-			255 * (1 - c) * luma,
-			255 * (1 - m) * luma,
-			255 * (1 - y) * luma
-		];
-	}
-
+	// Adapted from:
+	// https://gist.github.com/mjackson/5311256#file-color-conversion-algorithms-js-L12
 	static RGBtoHSL(rgb) {
 		rgb = coerceParse(rgb);
 		let [r, g, b] = rgb;
+
 		if (r == g && g == b)
 			return [0, 0, (r / 255) * 100];
 
@@ -378,15 +468,19 @@ export default class Color {
 			s,
 			l = mm / 2;
 
-		s = l > 0.5 ? d / (2 - mm) : d / mm;
+		s = l > 0.5 ?
+			d / (2 - mm) :
+			d / mm;
 
 		switch (max) {
 			case r:
 				h = (g - b) / d + (g < b ? 6 : 0);
 				break;
+
 			case g:
 				h = (b - r) / d + 2;
 				break;
+
 			case b:
 				h = (r - g) / d + 4;
 				break;
@@ -394,13 +488,17 @@ export default class Color {
 
 		h /= 6;
 
-		return [h * 360, s * 100, l * 100];
+		return [
+			h * 360,
+			s * 100,
+			l * 100
+		];
 	}
 
 	static RGBAtoHSLA(rgba) {
 		rgba = coerceParse(rgba);
 		const hsla = this.RGBtoHSL(rgba);
-		hsla[3] = rgba[3];
+		hsla[3] = isNum(rgba[3]) ? rgba[3] : 1;
 		return hsla;
 	}
 
@@ -420,31 +518,156 @@ export default class Color {
 			k * 100
 		];
 	}
+
+	static CMYKtoRGB(cmyk) {
+		cmyk = coerceParse(cmyk);
+		const [c, m, y, k] = cmyk.map(comp => cap(comp / 100, 0, 1)),
+			luma = 1 - k;
+
+		return [
+			255 * (1 - c) * luma,
+			255 * (1 - m) * luma,
+			255 * (1 - y) * luma
+		];
+	}
+
+	// %%%%%%%%%% UTILS AND ADVANCED %%%%%%%%%%
+	static stringify(src, space = "rgba") {
+		const c = getRGBA(src, true);
+
+		if (space == "auto") {
+			const hash = c.join("-");
+
+			if (COL_NAME_HASHES.hasOwnProperty(hash))
+				return COL_NAME_HASHES[hash];
+
+			space = c[3] == 1 ? "rgb" : "rgba";
+		}
+
+		switch (space) {
+			case "hex":
+				return `#${buildHex(c)}`;
+
+			case "hsl": {
+				const hsl = coerceToHSLA(this.RGBtoHSL(c));
+				return hsl ? `hsl(${hsl[0]}, ${hsl[1]}%, ${hsl[2]}%)` : "";
+			}
+
+			case "hsla": {
+				const hsla = coerceToHSLA(this.RGBAtoHSLA(c));
+				return `hsla(${hsla[0]}, ${hsla[1]}%, ${hsla[2]}%, ${hsla[3]})`;
+			}
+
+			case "cmyk": {
+				const cmyk = coerceToCMYK(this.RGBtoCMYK(c));
+				return `cmyk(${cmyk[0]}%, ${cmyk[1]}%, ${cmyk[2]}%, ${cmyk[3]}%)`;
+			}
+
+			case "rgb":
+				return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+
+			default:
+				return `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${c[3]})`;
+		}
+	}
+
+	static equals(src, src2) {
+		if (src == src2)
+			return true;
+
+		const c = getRGBA(src),
+			c2 = getRGBA(src2);
+
+		for (let i = 0, l = c.length; i < l; i++) {
+			if (c[i] != c2[i])
+				return false;
+		}
+
+		return true;
+	}
+
+	static gradient(...stops) {
+		return new Gradient(...stops);
+	}
+
+	static interpolate(gradient, at) {
+		if (!(gradient instanceof Gradient))
+			return;
+
+		at = Math.max(Math.min(at, 1), 0);
+		return gradient.interpolate(at);
+	}
+
+	// %%%%%%%%%% COMPUTED PROPERTIES %%%%%%%%%%
+	get luminance() {
+		const [r, g, b] = this._rgba;
+		return (toLinear(r) * 0.2126) + (toLinear(g) * 0.7152) + (toLinear(b) * 0.0722);
+	}
+
+	get isDark() {
+		return this.luminance < 0.5;
+	}
+
+	get isLight() {
+		return this.luminance >= 0.5;
+	}
+
+	get complement() {
+		return this.rotate(180);
+	}
+
+	get grayscale() {
+		return this.transform({ s: 0 }, "set");
+	}
 }
 
 Color.suppressWarnings = false;
 Color.supportedColorSpaces = ["hex", "rgb", "hsl", "cmyk"];
 Color.cache = Object.create(null);
-Color.gradients = Object.create(null);
-Color.NULL = new Color("black");
+Color.NULL = new Color([0, 0, 0, 0]);
 
 class Gradient extends Array {
-	constructor(arr) {
-		if (Array.isArray(arr))
-			super(...arr);
-		else
-			super();
+	constructor(...stops) {
+		super();
+
+		for (let i = 0, l = stops.length; i < l; i++)
+			this._addStop(stops[i]);
+
+		this.normalizeStopPositions();
+	}
+
+	// Allowed stop formats:
+	// "<col-string>", ...
+	// ["<col-string>", <at, 0-1>], ...
+	// "<col-string> <at, 0-100>%, ..."
+	// or any combination of the above (not recommended)
+	_addStop(stop) {
+		const stopData = stop && stop.isGradientStop ?
+			stop :
+			parseGradientStop(stop);
+
+		if (Array.isArray(stopData)) {
+			for (let i = 0, l = stopData.length; i < l; i++)
+				this.push(stopData[i]);
+		} else if (stopData)
+			this.push(stopData);
+	}
+
+	addStop(stop) {
+		this._addStop(stop);
+		this.normalizeStopPositions();
+		return this;
 	}
 
 	normalizeStopPositions() {
 		if (!this.length)
 			return;
 
-		if (!isNum(this[0].position))
-			this[0].position = 0;
+		if (!isNum(this[0].at))
+			this[0].at = 0;
 
-		if (!isNum(this[this.length - 1].position))
-			this[this.length - 1].position = 1;
+		if (!isNum(this[this.length - 1].at))
+			this[this.length - 1].at = 1;
 
 		const len = this.length;
 		let backlog = 0,
@@ -452,28 +675,28 @@ class Gradient extends Array {
 
 		for (let i = 0; i < len; i++) {
 			const item = this[i],
-				position = item.position;
+				at = item.at;
 
-			if (!isNum(position)) {
+			if (!isNum(at)) {
 				backlog++;
 				continue;
 			}
 
 			if (backlog) {
-				const step = (position - prevPosition) / (backlog + 1);
+				const step = (at - prevPosition) / (backlog + 1);
 				while (backlog)
-					this[i - backlog].position = position - (backlog--) * step;
+					this[i - backlog].at = at - (backlog--) * step;
 			}
 
-			prevPosition = position;
+			prevPosition = at;
 		}
 
-		this.sort((a, b) => compare(a.position, b.position));
+		this.sort((a, b) => compare(a.at, b.at));
 	}
 
-	interpolate(pos = 0, type = "rgba") {
+	interpolate(at = 0, space = "rgba") {
 		if (!this.length)
-			return Color.stringify(Color.defaults.transparents, type);
+			return Color.stringify(Color.defaults.transparents, space);
 
 		let start = 0,
 			end = this.length - 1,
@@ -485,42 +708,47 @@ class Gradient extends Array {
 			if (end - start < 2) {
 				basis = start;
 
-				if (this[start].position > pos)
+				if (this[start].at > at)
 					basis = start - 1;
-				else if (this[end].position < pos)
+				else if (this[end].at < at)
 					basis = end;
 
 				break;
 			}
 
 			pivot = Math.floor((start + end) / 2);
-			pivotPos = this[pivot].position;
+			pivotPos = this[pivot].at;
 
-			if (pivotPos > pos)
+			if (pivotPos > at)
 				end = pivot;
 			else
 				start = pivot;
 		}
 
 		const from = this[Math.max(basis, 0)],
-			to = this[Math.min(basis + 1, this.length - 1)],
-			at = (to.position - pos) / (to.position - from.position || to.position);
+			to = this[Math.min(basis + 1, this.length - 1)];
 
-		return Gradient.doInterpolation(from.color, to.color, at, type);
+		return Gradient.doInterpolation(
+			from.color,
+			to.color,
+			(to.at - at) / (to.at - from.at || to.at),
+			space
+		);
 	}
 
-	static doInterpolation(from, to, at, runtime, type = "auto") {
-		const toRGBA = to.rgba,
-			rgba = from.rgba.map((c, i) => (c * at) + (toRGBA[i] * (1 - at)));
+	// from, to, at, runtime signature is specified by @qtxr/interpolate/interpolator
+	static doInterpolation(from, to, at, runtime, space = "rgba") {
+		const toRGBA = to._rgba,
+			rgba = from._rgba.map((c, i) => (c * at) + (toRGBA[i] * (1 - at)));
 
-		return Color.stringify(rgba, type);
+		return Color.stringify(rgba, space);
 	}
 }
 
 Gradient.cache = Object.create(null);
 Gradient.NULL = new Gradient();
 
-const gradientStopRegex = /(#\w{3,8}|(?:rgba?|hsla?)\(.*?\))|([\de.+-]+)%|,/g;
+const gradientStopRegex = /(#\w{3,8}|(?:rgba?|hsla?)\(.*?\)|[a-z]+)|([\de.+-]+)%|,/gi;
 
 function parseGradientStop(stopFmt) {
 	gradientStopRegex.lastIndex = 0;
@@ -534,16 +762,15 @@ function parseGradientStop(stopFmt) {
 
 	if (Array.isArray(stopFmt)) {
 		return {
-			color: Color.parse(stopFmt[0]),
-			position: stopFmt[1]
+			color: new Color(stopFmt[0]),
+			at: stopFmt[1],
+			isGradientStop: true
 		};
 	}
 
 	if (typeof stopFmt != "string")
 		return null;
 
-	if (Color.gradients[stopFmt])
-		return Color.gradients[stopFmt];
 	if (Gradient.cache[stopFmt])
 		return Gradient.cache[stopFmt];
 
@@ -560,8 +787,9 @@ function parseGradientStop(stopFmt) {
 				stopArr = [lastStop];
 
 			currentStop = {
-				color: Color.parse(ex[1]),
-				position: null
+				color: new Color(ex[1]),
+				at: null,
+				isGradientStop: true
 			};
 
 			lastStop = currentStop;
@@ -570,16 +798,16 @@ function parseGradientStop(stopFmt) {
 		} else if (ex[2]) {
 			if (!currentStop)
 				return warn(`Malformed gradient '${stopFmt}' (position before color)`);
-			if (currentStop.position != null)
+			if (currentStop.at != null)
 				return warn(`Malformed gradient '${stopFmt}' (position already specified)`);
 
-			currentStop.position = Number(ex[2]) / 100;
+			currentStop.at = Number(ex[2]) / 100;
 		} else if (ex[0] == ",")
 			currentStop = null;
 	}
 
 	if (stopArr)
-		Gradient.cache[stopFmt] = new Gradient(stopArr);
+		Gradient.cache[stopFmt] = new Gradient(...stopArr);
 	else if (currentStop)
 		Gradient.cache[stopFmt] = currentStop;
 
@@ -614,7 +842,7 @@ function charToDec(char) {
 const rgbaSeparatorProfiles = mkLookup(",,", ",,,", "ss", "ss/"),
 	rgbaPercMap = [255, 255, 255, 1];
 
-function parseRGBHelper(str) {
+function parseRGBAHelper(str) {
 	const ex = rgbRegex.exec(str);
 
 	if (!ex)
@@ -641,13 +869,13 @@ const hslaSeparatorProfiles = mkLookup(",,", ",,,", "ss", "ss/"),
 // 1: full match inside parentheses (trimmed)
 // 2: param separator (comma (normal), none (whitespace))
 // 3: whitespace alpha separator (/)
-function parseHSLHelper(str) {
+function parseHSLAHelper(str) {
 	const ex = hslRegex.exec(str);
 
 	if (!ex)
 		return null;
 
-	if (ex[2] && ex[3])		// comma format and whitespace alpha separator are incompatible
+	if (ex[2] && ex[3]) // comma format and whitespace alpha separator are incompatible
 		return null;
 
 	const paramsData = parseNumericParams(ex[1], hslaPercMap);
@@ -719,6 +947,7 @@ function parseNumericParams(str, percMap) {
 						num *= percMap[paramCount];
 					num /= 100;
 					break;
+
 				default:
 					num = parseRotation(num, ex[2]);
 			}
@@ -733,17 +962,6 @@ function parseNumericParams(str, percMap) {
 		params,
 		separatorProfile
 	};
-}
-
-function coerceParse(arrOrStr) {
-	if (Array.isArray(arrOrStr))
-		return arrOrStr;
-
-	const parsed = Color.parseRaw(arrOrStr);
-	if (!parsed || !parsed.rgba)
-		return DEF_COL_DATA;
-
-	return parsed.rgba;
 }
 
 // %%%%%%%%%% COLOR CNVERSION HELPERS %%%%%%%%%%
@@ -807,12 +1025,15 @@ function isShorthandHexComponent(dec) {
 
 // %%%%%%%%%% GENERAL HELPERS %%%%%%%%%%
 // RGBA format [255, 255, 255, 1]
-function coerceToRGBA(rgba) {
+function coerceToRGBA(rgba, clone) {
 	if (!Array.isArray(rgba))
-		return warn(`${rgba} is not an RGB(A) array`);
+		return warn(`${rgba} is not an RGB(A) array`) || getNullArr();
+
+	if (clone)
+		rgba = rgba.slice();
 
 	if (rgba.length < 3 || rgba.length > 4)
-		return warn(`Invalid RGB(A) length for format [${rgba}]: format must contain 3-4 components`);
+		return warn(`Invalid RGB(A) length for format [${rgba}]: format must contain 3-4 components`) || getNullArr();
 
 	if (rgba.length == 3)
 		rgba.push(1);
@@ -822,46 +1043,52 @@ function coerceToRGBA(rgba) {
 	rgba[3] = roundCap(rgba[3], 0, 1, 2);
 
 	if (rgba.some(isNaN))
-		return warn("Invalid RGB(A) format: invalid components");
+		return warn("Invalid RGB(A) format: invalid components") || getNullArr();
 
 	return rgba;
 }
 
 // HSLA format: [360, 100, 100, 1]
-function coerceToHSLA(hsla) {
+function coerceToHSLA(hsla, clone) {
 	if (!Array.isArray(hsla))
-		return warn(`${hsla} is not an HSL(A) array`);
+		return warn(`${hsla} is not an HSL(A) array`) || getNullArr();
+
+	if (clone)
+		hsla = hsla.slice();
 
 	if (hsla.length < 3 || hsla.length > 4)
-		return warn(`Invalid HSL(A) length for format [${hsla}]: format must contain 3-4 components`);
+		return warn(`Invalid HSL(A) length for format [${hsla}]: format must contain 3-4 components`) || getNullArr();
 
 	if (hsla.length == 3)
 		hsla.push(1);
 
-	hsla[0] = roundCap(hsla[0], 0, 360);
+	hsla[0] = roundCap((360 + (hsla[0] % 360)) % 360, 0, 360);
 	hsla[1] = roundCap(hsla[1], 0, 100);
 	hsla[2] = roundCap(hsla[2], 0, 100);
 	hsla[3] = roundCap(hsla[3], 0, 1, 2);
 
 	if (hsla.some(isNaN))
-		return warn("Invalid HSL(A) format: invalid components");
+		return warn("Invalid HSL(A) format: invalid components") || getNullArr();
 
 	return hsla;
 }
 
 // CMYK format: [100, 100, 100, 100]
-function coerceToCMYK(cmyk) {
+function coerceToCMYK(cmyk, clone) {
 	if (!Array.isArray(cmyk))
-		return warn(`${cmyk} is not an CMYK array`);
+		return warn(`${cmyk} is not an CMYK array`) || getNullArr();
+
+	if (clone)
+		cmyk = cmyk.slice();
 
 	if (cmyk.length != 4)
-		return warn(`Invalid CMYK length for format [${cmyk}]: format must contain 4 components`);
+		return warn(`Invalid CMYK length for format [${cmyk}]: format must contain 4 components`) || getNullArr();
 
 	for (let i = 0; i < 4; i++)
 		cmyk[i] = roundCap(cmyk[i], 0, 100);
 
 	if (cmyk.some(isNaN))
-		return warn("Invalid CMYK format: invalid components");
+		return warn("Invalid CMYK format: invalid components") || getNullArr();
 
 	return cmyk;
 }
@@ -871,7 +1098,7 @@ function cap(n, min, max) {
 	return Math.max(Math.min(n, max), min);
 }
 
-function roundCap(n, min, max, accuracy) {
+function roundCap(n, min, max, accuracy = null) {
 	n = Number(n);
 
 	if (accuracy) {
@@ -890,6 +1117,7 @@ function isNum(candidate) {
 function warn(warning) {
 	if (!Color.suppressWarnings)
 		console.warn(warning);
+
 	return null;
 }
 
@@ -921,9 +1149,11 @@ function parseRotation(value, unit) {
 		case "rad":
 			value = (value / Math.PI) * 180;
 			break;
+
 		case "grad":
 			value = (value / 400) * 360;
 			break;
+
 		case "turn":
 			value *= 360;
 			break;
@@ -938,6 +1168,157 @@ function compare(a, b) {
 
 	return a > b ? 1 : -1;
 }
+
+function interpolate(a, b, weight) {
+	return a + (b - a) * weight;
+}
+
+// https://planetcalc.com/7779
+function toLinear(component) {
+	const n = component / 255;
+
+	return component > 0.03928 ?
+		Math.pow (((n + 0.055) / 1.055), 2.4) :
+		n / 12.92;
+}
+
+function coerceParse(arrOrStr) {
+	if (Array.isArray(arrOrStr))
+		return arrOrStr;
+
+	const parsed = Color.parseRaw(arrOrStr);
+	if (!parsed || !parsed.rgba)
+		return DEF_COL_DATA.rgba;
+
+	return parsed.rgba;
+}
+
+function getRGBA(arrColorOrStr, clone = false) {
+	if (arrColorOrStr instanceof Color)
+		return arrColorOrStr._rgba;
+
+	return coerceToRGBA(
+		coerceParse(arrColorOrStr),
+		clone
+	);
+}
+
+function getNullArr() {
+	return [0, 0, 0, 0];
+}
+
+(_ => {
+	const cd = RAW_COLORS.split("|");
+
+	for (let i = 0, l = cd.length; i < l; i += 2) {
+		const keyword = cd[i];
+
+		COL_NAMES[keyword] = "#" + cd[i + 1];
+
+		const col = new Color(COL_NAMES[keyword], null, true),
+			hash = col._rgba.join("-");
+
+		Color[keyword] = col;
+		Color[keyword.toUpperCase()] = col;
+		COL_NAME_HASHES[hash] = keyword;
+	}
+
+	const descriptors = {};
+
+	for (let i = 0, l = COMPONENT_DATA.length; i < l; i++) {
+		const [
+			key,
+			alias,
+			index,
+			space
+		] = COMPONENT_DATA[i];
+
+		if (space) {
+			const toKey = `RGBto${space.toUpperCase()}`,
+				fromKey = `${space.toUpperCase()}toRGB`;
+
+			descriptors[key] = {
+				get() {
+					return Color[toKey](this._rgba)[index];
+				},
+				set(value) {
+					if (this._checkImmutable())
+						return;
+
+					const converted = Color[toKey](this._rgba);
+					converted[index] = value;
+					this._rgba = Color[fromKey](converted);
+				}
+			};
+		} else {
+			descriptors[key] = {
+				get() {
+					return this._rgba[index];
+				},
+				set(value) {
+					if (this._checkImmutable())
+						return;
+
+					this._rgba[index] = value;
+					this._rgba[index] = coerceToRGBA(this._rgba)[index];
+				}
+			};
+		}
+
+		COMPONENT_KEYS[key] = true;
+		COMPONENT_KEYS[alias] = true;
+		descriptors[alias] = descriptors[key];
+	}
+
+	for (let i = 0, l = SWIZZLES.length; i < l; i++) {
+		const [
+			key,
+			space,
+			altSpace = "rgba",
+			length
+		] = SWIZZLES[i];
+
+		if (space) {
+			const toKey = `${altSpace.toUpperCase()}to${space.toUpperCase()}`,
+				fromKey = `${space.toUpperCase()}to${altSpace.toUpperCase()}`;
+
+			descriptors[key] = {
+				get() {
+					const converted = Color[toKey](this._rgba);
+					return length ? converted.slice(0, length) : converted;
+				},
+				set(value) {
+					if (this._checkImmutable() || !Array.isArray(value))
+						return;
+
+					this._rgba = coerceToRGBA(Color[fromKey](
+						length ? value.slice(0, length) : value
+					));
+					this.space = key;
+				}
+			};
+		} else {
+			descriptors[key] = {
+				get() {
+					return length ?
+						this._rgba.slice(0, length) :
+						this._rgba.slice();
+				},
+				set(value) {
+					if (this._checkImmutable() || !Array.isArray(value))
+						return;
+
+					this._rgba = coerceToRGBA(
+						length ? value.slice(0, length) : value
+					);
+					this.space = key;
+				}
+			};
+		}
+	}
+
+	Object.defineProperties(Color.prototype, descriptors);
+})();
 
 export {
 	Gradient
