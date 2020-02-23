@@ -9,11 +9,11 @@ import {
 import hasOwn from "./has-own";
 
 // Faster but slightly less feature rich clone function
-export default function clone(obj, options) {
+export default function cloneFast(obj, options) {
 	options = createOptionsObject(options, optionsTemplates);
 	const depth = options.shallow ? 0 : (options.hasOwnProperty("depth") ? options.depth : Infinity);
 
-	function cl(o, d) {
+	const cl = (o, d) => {
 		if (typeof o == "object" && o != null) {
 			// Check if the object is a direct instance of anything else than Object
 			// or Array, in which case we don't want to copy over the object naively,
@@ -51,7 +51,7 @@ export default function clone(obj, options) {
 		}
 
 		return o;
-	}
+	};
 
 	return cl(obj, 0);
 }

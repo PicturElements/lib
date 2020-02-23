@@ -102,6 +102,17 @@ function findClosest(arr, comparator, options) {
 
 	if (typeof comparator != "function")
 		comparator = mkStandardBinaryComparator(comparator);
+
+	const dispatch = (index, proximity) => {
+		return {
+			found: index != -1,
+			item: arr && arr[index],
+			index,
+			proximity,
+			exact: !proximity,
+			steps
+		};
+	};
 	
 	if (!Array.isArray(arr) || !arr.length)
 		return dispatch(-1, 0);
@@ -172,17 +183,6 @@ function findClosest(arr, comparator, options) {
 			start = pivot + 1;
 
 		pivot = Math.floor((start + end) / 2);
-	}
-
-	function dispatch(index, proximity) {
-		return {
-			found: index != -1,
-			item: arr && arr[index],
-			index,
-			proximity,
-			exact: !proximity,
-			steps
-		};
 	}
 }
 

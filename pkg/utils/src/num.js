@@ -42,8 +42,12 @@ function numLen(num) {
 	return Math.ceil(log10(num + 1));
 }
 
-const log2 = Math.log2 ? Math.log2 : num => Math.log(num) * Math.LOG2E;
-const log10 = Math.log10 ? Math.log10 : num => Math.log(num) * Math.LOG10E;
+const log2 = Math.log2 ?
+	Math.log2 :
+	num => Math.log(num) * Math.LOG2E;
+const log10 = Math.log10 ?
+	Math.log10 :
+	num => Math.log(num) * Math.LOG10E;
 
 // Warning: max 32 bit signed int
 function isPowerOf2(int) {

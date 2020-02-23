@@ -29,13 +29,13 @@ parsePugStr.with = options => {
 
 // Capturing groups:
 // 1: indent
-// 2: comment
-// 2: text node
-// 3: tag name
-// 4: tag data (class, id)
-// 5: attribute data
-// 6: string quote character
-// 7: element content
+// 2: comment node
+// 3: text node
+// 4: tag name
+// 5: tag data (class, id)
+// 6: attribute data
+// 7: string quote character
+// 8: element content
 // /([\t ]*)(?:\|\s?(.+)|([^#.\s]+)?([\w.#-]+)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\6|[^"'`])+?)\))?)/g
 // /([\t ]*)(?:\|\s?(.+)|([^#.\s]+)?([\w.#-]+)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\6|[^"'`])*?)\))?[\t ]*(.*?)$)/gm
 // /([\t ]*)(?:\/\/-.+|\|\s?(.+)|([^#.\s*(]+)?([\w.#-]*)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\6|[^"'`])*?)\))?[\t ]?(.*?)$)/gm

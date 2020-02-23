@@ -19,7 +19,7 @@ export default function matchQuery(value, query, options) {
 		guardMatch = typeof hasOwn(options, "guardMatch") ? options.guardMatch : true,
 		nullishMatch = typeof hasOwn(options, "nullishMatch") ? options.nullishMatch : true;
 
-	function match(v, q, matchRuntime) {
+	const match = (v, q, matchRuntime) => {
 		if (!isObj(v) || !isObj(q))
 			return false;
 
@@ -112,7 +112,7 @@ export default function matchQuery(value, query, options) {
 			return false;
 
 		return !queryCount || !!matchCount;
-	}
+	};
 
 	if (options.returnMatchMap) {
 		const rootMatchMap = coerceToObj(null, query),

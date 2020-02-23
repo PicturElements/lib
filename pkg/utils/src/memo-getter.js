@@ -17,7 +17,10 @@ export default class MemoGetter {
 		if (!this.target)
 			return console.error("Cannot memoize: target doesn't exist.");
 	
-		const memoized = typeof memoizer == "function" ? memoizer(this.target, this.key) : memoizer;
+		const memoized = typeof memoizer == "function" ?
+			memoizer(this.target, this.key) :
+			memoizer;
+
 		this.target[this.key] = memoized;
 		return memoized;
 	}

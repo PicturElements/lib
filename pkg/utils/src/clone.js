@@ -18,7 +18,7 @@ export default function clone(obj, options) {
 			Infinity),
 		clonedSym = options.circular ? sym("cloned") : null;
 
-	function cl(o, d) {
+	const cl = (o, d) => {
 		if (typeof o == "object" && o != null) {
 			// Check if the object is a direct instance of anything else than Object
 			// or Array, in which case we don't want to copy over the object naively,
@@ -62,7 +62,7 @@ export default function clone(obj, options) {
 		}
 
 		return o;
-	}
+	};
 
 	return cl(obj, 0);
 }

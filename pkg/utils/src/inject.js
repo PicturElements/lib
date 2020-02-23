@@ -50,7 +50,7 @@ export default function inject(target, extender, options) {
 		extender = newExtender;
 	}
 
-	function inj(targ, ext, runtime) {
+	const inj = (targ, ext, runtime) => {
 		const srcTarg = targ;
 		targ = coerceToObj(targ, ext);
 		ext = coerceToObj(ext);
@@ -87,9 +87,9 @@ export default function inject(target, extender, options) {
 		}
 
 		return targ;
-	}
+	};
 
-	function doInject(key, targ, ext, runtime, allowSymbols) {
+	const doInject = (key, targ, ext, runtime, allowSymbols) => {
 		const {
 			schema,
 			ignore
@@ -143,7 +143,7 @@ export default function inject(target, extender, options) {
 			else
 				targ[key] = val;
 		}
-	}
+	};
 
 	const rt = {
 		schema: options.schema ? matchQuery(
