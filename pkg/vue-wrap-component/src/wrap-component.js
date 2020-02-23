@@ -359,7 +359,6 @@ class ComponentWrapper {
 			const args = {
 				exporter,
 				name: k,
-				out: {},
 				wrapper: this,
 				suppliers: this.suppliers,
 				storage: this.storage,
@@ -406,7 +405,7 @@ ComponentWrapper.prototype.assert = {
 
 function proxyInjectorExporter(args) {
 	return function() {
-		let out = args.out;
+		let out = {};
 
 		for (let i = 0, l = args.injectors.length; i < l; i++) {
 			const injector = args.injectors[i];
@@ -421,9 +420,10 @@ function proxyInjectorExporter(args) {
 		}
 
 		if (typeof args.exporter.export == "function") {
-			out = args.exporter.export(Object.assign({
-				vm: this
-			}, args));
+			out = args.exporter.export(inject({
+				vm: this,
+				out
+			}, args, "shallow"));
 		}
 
 		return out;
