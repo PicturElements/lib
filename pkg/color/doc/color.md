@@ -6,7 +6,7 @@
 new Color(source: string | number[] | Color, space?: string, immutable?: boolean)
 ```
 
-If `space` is defined, it will be set as the color space for the current color. This value describes how the color should be stringified by default. The actual color data, stored in RGBA, remains unchanged during the entire lifecycle of a Color instance.
+If `space` is defined, it will be set as the color space for the current color. This value describes how the color should be stringified by default. It loosely resembles the name of the color space, with the notable exception of `hex`, which still operates in RGB space. The actual color data is always stored in RGBA during the entire lifecycle of a Color instance, and other channels are computed on the fly at runtime.
 
 If `immutable` is a boolean type, it's used as a flag and the mutability of the instance is set. This setting cannot be revoked after instantiation. Conversely, if no flag is provided, the instance is defined as mutable. The mutability setting can also be toggled at any time.
 
@@ -63,7 +63,7 @@ Simply returns a new instance and deep copies the color data. Mutability setting
 `Color` defines number of static methods mainly centered around parsing and conversion:
 
 ### Parsing
-The following methds parse color strings.
+The following methids parse color strings:
 
 #### Color.parse
 
@@ -83,7 +83,7 @@ Color.parseRaw(src: string | number[]): IColorData {
 }
 ```
 
-Parses a string representation of a CSS color, or RGBA array. Returns an object containing information about the color. This method caches parsed color strings.
+Parses a string representation of a CSS color, or RGBA array. Returns an object containing information about the color. This method caches parsed color strings for faster performance.
 
 #### Color.parseHex
 
@@ -91,7 +91,7 @@ Parses a string representation of a CSS color, or RGBA array. Returns an object 
 Color.parseHex(src: string): number[]
 ```
 
-Parses a hex string (e.g. `#abc`, `#abcd`, `#abcdef`) and returns a clamped RGBA array. If no alpha channel is found, `1` (full opacity) is used instead. If it fails to parse the string, an empty RGBA array (all zeroes) is returned, and a warning is emitted.
+Parses a hex string (e.g. `#abc`, `#abcd`, `#abcdef`) and returns a clamped RGBA array. If no alpha channel is found, `1` (full opacity) is used instead. If string parsing fails, an empty RGBA array (all zeroes) is returned, and a warning is emitted.
 
 #### Color.parseRGBA
 
@@ -99,7 +99,7 @@ Parses a hex string (e.g. `#abc`, `#abcd`, `#abcdef`) and returns a clamped RGBA
 Color.parseRGBA(src: string): number[]
 ```
 
-Parses an RGBA string (e.g. `rgba(1, 2, 3, 0.5)`, `rgba(1 2 3 / 0.5)`) and returns a clamped RGBA array. If no alpha channel is found, `1` (full opacity) is used instead. If it fails to parse the string, an empty RGBA array (all zeroes) is returned, and a warning is emitted.
+Parses an RGBA string (e.g. `rgba(1, 2, 3, 0.5)`, `rgba(1 2 3 / 0.5)`) and returns a clamped RGBA array. If no alpha channel is found, `1` (full opacity) is used instead. If string parsing fails, an empty RGBA array (all zeroes) is returned, and a warning is emitted.
 
 #### Color.parseRGB
 
@@ -115,7 +115,7 @@ Alias for `Color.parseRGBA`, as per W3C spec `rgb` and `rgba` are interchangeabl
 Color.parseHSLA(src: string): number[]
 ```
 
-Parses an HSLA string (e.g. `hsla(0, 100%, 50%, 0.5)`, `hsla(0 100% 50% / 0.5)`) and returns a clamped RGBA array. If no alpha channel is found, `1` (full opacity) is used instead. If it fails to parse the string, an empty RGBA array (all zeroes) is returned, and a warning is emitted.
+Parses an HSLA string (e.g. `hsla(0, 100%, 50%, 0.5)`, `hsla(0 100% 50% / 0.5)`) and returns a clamped RGBA array. If no alpha channel is found, `1` (full opacity) is used instead. If string parsing fails, an empty RGBA array (all zeroes) is returned, and a warning is emitted.
 
 #### Color.parseHSL
 HSLtoRGB
@@ -124,7 +124,7 @@ Alias for `Color.parseHSLA`, as per W3C spec `hsl` and `hsla` are interchangeabl
 
 #### Color.parseCMYK
 
-Parses a CMYK string (e.g. `cmyk(1%, 2%, 3%, 4%)`, `cmyk(1% 2% 3% 4%)`) and returns a clamped RGBA array. If no alpha channel is found, `1` (full opacity) is used instead. If it fails to parse the string, an empty RGBA array (all zeroes) is returned, and a warning is emitted.
+Parses a CMYK string (e.g. `cmyk(1%, 2%, 3%, 4%)`, `cmyk(1% 2% 3% 4%)`) and returns a clamped RGBA array. If no alpha channel is found, `1` (full opacity) is used instead. If string parsing fails, an empty RGBA array (all zeroes) is returned, and a warning is emitted.
 
 ### Color Space Conversion
 The following methods convert between the supported color spaces:
@@ -186,10 +186,10 @@ The following methods are used for utility or for advanced features:
 Color.stringify(src: Color | number[], space?: string = "rgba"): string
 ```
 
-Stingifies a color or RGBA array to a CSS color string. By default, and for optimal performance, the returned value is an RGBA string. However, by specifying `space`, other formats can be retrieved. As of writing, these formats are `rgb, rgba, hsl, hsla, hex, cmyk, and auto`. If `auto` is specified, it will also do a lookup to check if the color matches a CSS color keyword, e.g.
+Stingifies a color or RGBA array to a CSS color string. By default, and for optimal performance, the returned value is an RGBA string. However, by specifying `space`, other formats can be retrieved. As of writing, these formats are `rgb, rgba, hsl, hsla, hex, cmyk, and auto`. If `auto` is specified, a lookup will also be made to check if the color matches a CSS color keyword, e.g.
 
 ```ts
-Color.stringify(new Color("#f00"), "auto") == "red"
+Color.stringify(new Color("#f00"), "auto") // "red"
 ```
 
 Otherwise, `auto` will return an RGB or RGBA string depending on the color's alpha channel.
@@ -223,7 +223,7 @@ Resolves and compares the RGBA values of the two color sources. Returns true if 
 ## Constants
 `Color` defines constants for all 149 CSS color keywords as immutable `Color` instances. They can be accessed in lowercase and capitalized format.
 
-| Name | Capitalized | CSS keyword |
+| Name | Capitalized | Hex Code |
 |-|-|-|
 | `Color.aliceblue` | `Color.ALICEBLUE` | #f0f8ff |
 | `Color.antiquewhite` | `Color.ANTIQUEWHITE` | #faebd7 |
@@ -366,7 +366,7 @@ Resolves and compares the RGBA values of the two color sources. Returns true if 
 | `Color.teal` | `Color.TEAL` | #008080 |
 | `Color.thistle` | `Color.THISTLE` | #d8bfd8 |
 | `Color.tomato` | `Color.TOMATO` | #ff6347 |
-| `Color.transparent` | `Color.TRANSPARENT` | rgba(0,0,0,0) |
+| `Color.transparent` | `Color.TRANSPARENT` | #0000 |
 | `Color.turquoise` | `Color.TURQUOISE` | #40e0d0 |
 | `Color.violet` | `Color.VIOLET` | #ee82ee |
 | `Color.wheat` | `Color.WHEAT` | #f5deb3 |
@@ -450,13 +450,16 @@ It's also possible to apply transforms with operation hinting:
 ```ts
 // Add 10 to the R, subtract 20 from G, and set B to 30 via the master operation
 c.transform({
+	// Prefix operation
 	"add@r": 10,
+	// Explicit operation
 	g: ["subtract", 20],
+	// Inherit operation
 	b: 30
 }, "set")
 ```
 
-There are aliases to both channels and operations:
+There are aliases for both channels and operations:
 
 ```ts
 // Add 10 to the R, subtract 20 from G, and set B to 30. The master operation, multiply, is not used
