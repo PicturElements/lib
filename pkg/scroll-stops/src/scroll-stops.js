@@ -15,19 +15,19 @@ import {
 // EventTarget: scroll target element
 // Object: full options object:
 // {
-//		elem	(EventTarget):		scroll target element,
-//		stops	(Array, Object):	single stop object or array of stop objects; see below
-//		handler	(function):			handler that is invoked when updates are necessary
+//		elem	(EventTarget)		scroll target element,
+//		stops	(Array, Object)		single stop object or array of stop objects; see below
+//		handler	(function)			handler that is invoked when updates are necessary
 //									The supplied this context is the same as thisVal on the ScrollStops instance
 // }
 //
 // stops object:
 // {
 //		track	(string)
-//				x%:				percentage of scrollable area scrolled (payload.xPerc, payload.yPerc)
+//				x%				percentage of scrollable area scrolled (payload.xPerc, payload.yPerc)
 //				xv				viewport relative (payload.xRel, payload.yRel)
-//				top/left: 		synonymous with "0%"
-//				bottom/right:	synonymous with "100%"
+//				top/left 		synonymous with "0%"
+//				bottom/right	synonymous with "100%"
 //		track	(number)
 //				absolute position in pixels from top or left
 //		track	(array)
@@ -41,22 +41,22 @@ import {
 //
 // Payload object:
 // {
-//		width:				scroll target element width in pixels
-//		height:				scroll target element height in pixels
-//		left:				scroll left in pixels
-//		top: 				scroll top in pixels
-//		prev:				previous payload
-//		box:				scroll target element DOMRect
-//		availableWidth:		scrollable width in pixels
-//		availableHeight:	scrollable height in pixels
-//		xPerc:				percentage scrolled of available width
-//		yPerc:				percentage scrolled of available height
-//		xFrac:				percentage scrolled of available width in range
-//		yFrac:				percentage scrolled of available height in range
-//		xRel:				scrolled distance / viewport width
-//		yRel:				scrolled distance / viewport height
-//		evt:				source event
-//		instance:			ScrollStops instance
+//		width				scroll target element width in pixels
+//		height				scroll target element height in pixels
+//		left				scroll left in pixels
+//		top 				scroll top in pixels
+//		prev				previous payload
+//		box					scroll target element DOMRect
+//		availableWidth		scrollable width in pixels
+//		availableHeight		scrollable height in pixels
+//		xPerc				percentage scrolled of available width
+//		yPerc				percentage scrolled of available height
+//		xFrac				percentage scrolled of available width in range
+//		yFrac				percentage scrolled of available height in range
+//		xRel				scrolled distance / viewport width
+//		yRel				scrolled distance / viewport height
+//		evt					source event
+//		instance			ScrollStops instance
 // }
 
 export default class ScrollStops extends Hookable {
@@ -93,6 +93,7 @@ export default class ScrollStops extends Hookable {
 
 		let stops = options.stops || [];
 		stops = Array.isArray(stops) ? stops : [stops];
+
 		for (let i = 0, l = stops.length; i < l; i++)
 			this.addStop(stops[i]);
 	}
@@ -197,6 +198,7 @@ export default class ScrollStops extends Hookable {
 		};
 	}
 
+	// Vue method factories
 	static wrapInterpolator(style, accessor) {
 		const interpolator = ScrollStops.mkStyleInterpolator(style);
 
@@ -294,14 +296,18 @@ const trackerStructs = {
 		shouldHandle: trackerDefaults.shouldHandle,
 		calcFrac: trackerDefaults.calcFrac,
 		getCoordMap(dir, payload) {
-			return dir == "x" ? payload.availableWidth : payload.availableHeight;
+			return dir == "x" ?
+				payload.availableWidth :
+				payload.availableHeight;
 		}
 	},
 	viewportRelative: {
 		shouldHandle: trackerDefaults.shouldHandle,
 		calcFrac: trackerDefaults.calcFrac,
 		getCoordMap(dir, payload) {
-			return dir == "x" ? payload.box.width : payload.box.height;
+			return dir == "x" ?
+				payload.box.width :
+				payload.box.height;
 		}
 	},
 	range: {
@@ -354,9 +360,18 @@ function createTracker(trackerType, value) {
 }
 
 const trackMap = {
-	percentage: {x: "xPerc", y: "yPerc"},
-	viewportRelative: {x: "xRel", y: "yRel"},
-	absolute: {x: "left", y: "top"}
+	percentage: {
+		x: "xPerc",
+		y: "yPerc"
+	},
+	viewportRelative: {
+		x: "xRel",
+		y: "yRel"
+	},
+	absolute: {
+		x: "left",
+		y: "top"
+	}
 };
 
 function resolveCoordKey(tracker, dir) {
