@@ -3,7 +3,7 @@ import { isObject } from "@qtxr/utils";
 const taskHooks = ["beforeMount", "mounted", "beforeUpdate", "updated"];
 
 export default {
-	use(wrapper, used) {
+	use({ wrapper, used }) {
 		if (used)
 			return;
 	

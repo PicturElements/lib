@@ -1,17 +1,15 @@
 export default {
 	init(Hookable) {
-		return (wrapper, used, name = "hooks") => {
-			const int = wrapper.internal;
-
-			int.hooks = int.hooks || [];
-			const hooks = wrapper.addData(name, new Hookable());
-			int.hooks.push(hooks);
+		return ({ wrapper, used, storage }, name = "hooks") => {
+			const hook = new Hookable();
+			wrapper.addData(name, hook);
+			storage.push(name, hook);
 
 			if (used)
 				return;
 
-			wrapper.addHook("mounted", _ => {
-				int.hooks.forEach(h => h.clearHooks());
+			wrapper.addHook("beforeDestroy", _ => {
+				storage.forEach(h => h.clearHooks());
 			});
 		};
 	}

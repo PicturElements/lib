@@ -5,9 +5,8 @@ import {
 
 export default {
 	init({ XHRManager, XHRState, decodeData }, defaultManager) {
-		return (wrapper, used, path) => {
-			const usedPaths = wrapper.internal.usedPaths || {},
-				data = wrapper.getInjectorPartition("data"),
+		return ({ wrapper, used, storage: usedPaths }, path) => {
+			const data = wrapper.getInjectorPartition("data"),
 				gotten = get(data, path, null, "autoBuild|context"),
 				state = {
 					loaded: false,
@@ -20,9 +19,8 @@ export default {
 				if (state.hasOwnProperty(k) && !gotten.data.hasOwnProperty(k))
 					gotten.data[k] = state[k];
 			}
-		
-			usedPaths[path] = true;
-			wrapper.internal.usedPaths = usedPaths;
+
+			usedPaths.push(path, true);
 		
 			if (used)
 				return;
@@ -30,7 +28,7 @@ export default {
 			wrapper.addMethod("xhr", function(path) {
 				const vm = this;
 		
-				if (!wrapper.internal.usedPaths.hasOwnProperty(path))
+				if (!usedPaths.has(path))
 					throw new Error(`Cannot access XHR partition at '${path}' because it's not registered`);
 		
 				const loadingState = get(vm.$data, path);
@@ -73,7 +71,7 @@ export default {
 			});
 		
 			wrapper.addMethod("setLoadingState", function(path, state) {
-				if (!wrapper.internal.usedPaths.hasOwnProperty(path))
+				if (!usedPaths.has(path))
 					return;
 
 				const dp = get(this.$data, path);

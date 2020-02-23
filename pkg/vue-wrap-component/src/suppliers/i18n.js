@@ -2,7 +2,7 @@ import { sym } from "@qtxr/utils";
 
 export default {
 	init(manager) {
-		return (wrapper, used) => {
+		return ({ wrapper, used }) => {
 			if (used)
 				return;
 			

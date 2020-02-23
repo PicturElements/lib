@@ -1,10 +1,18 @@
-import { inject } from "@qtxr/utils";
+import { forEach } from "@qtxr/utils"; 
 
 export default {
-	use(wrapper, used, computeds) {
-		if (!used)
-			wrapper.internal.live = {};
+	use({ storage }, items) {
+		forEach(items, (v, k) => {
+			storage.push(k, v);
+		});
+	},
+	export: {
+		data({ out, storage }) {
+			const data = storage.extract();
 
-		Object.assign(wrapper.internal.live, computeds);
+			forEach(data, (v, k) => {
+				out[k] = v;
+			});
+		}
 	}
 };

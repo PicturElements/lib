@@ -1,5 +1,5 @@
 export default {
-	use(wrapper, used, partitionName = "events") {
+	use({ wrapper }, partitionName = "events") {
 		const data = wrapper.getInjectorPartition("data");
 		
 		if (!data.hasOwnProperty(partitionName))
@@ -35,7 +35,7 @@ export default {
 			partition.forEach(p => p.target.removeEventListener(p.type, p.callback, p.options));
 		});
 	},
-	isUsable(wrapper, used) {
+	isUsable({ used }) {
 		if (!used)
 			return true;
 

@@ -7,7 +7,7 @@ const scrollStopsParams = [
 
 export default {
 	init(ScrollStops) {
-		return (wrapper, used, ...args) => {
+		return ({ wrapper }, ...args) => {
 			const {
 				name,
 				options

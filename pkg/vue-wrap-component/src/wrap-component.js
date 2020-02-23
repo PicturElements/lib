@@ -4,6 +4,7 @@ import {
 	inject,
 	isObject
 } from "@qtxr/utils";
+import Storage from "./storage";
 import * as suppliers from "./suppliers";
 
 const dataMap = {
@@ -17,50 +18,164 @@ const dataMap = {
 	watch: "addWatcher"
 };
 
-const wc = {
-	wrap(component) {
-		return new ComponentWrapper(component);
+const DEFAULT_EXPORTERS = {
+	data: {
+		proxy: proxyInjectorExporter,
+		export: injectorExporterRunner
+	},
+	provide: {
+		proxy: proxyInjectorExporter,
+		export: injectorExporterRunner
+	},
+	mixins: {
+		export(args) {
+			const mixins = [];
+
+			const exp = mixin => {
+				if (typeof mixin == "function")
+					mixin = mixin(args);
+
+				if (mixin instanceof ComponentWrapper)
+					mixin = mixin.export();
+
+				if (!isObject(mixin))
+					throw new Error(`Cannot export mixin: mixin is not a vue component configuration object, component wrapper, or function that resolves to either`);
+			
+				mixins.push(mixin);
+			};
+
+			// Export named mixins
+			const namedMixins = args.injectors[0];
+			for (let i = 0, l = namedMixins.length; i < l; i++)
+				exp(namedMixins[i].mixin);
+
+			// Export anonymous mixins / mixin resolvers
+			for (let i = 1, l = args.injectors.length; i < l; i++)
+				exp(args.injectors[i]);
+
+			return mixins;
+		}
 	}
 };
 
-class ComponentWrapper {
-	constructor(component) {
-		this.component = Object.assign(mkDefaultOptions(), component);
-		this.used = {};
-		this.internal = {};
+class ComponentWrapperManager {
+	constructor(config = {}) {
+		this.suppliers = {};
+		this.exporters = inject(config.exporters, DEFAULT_EXPORTERS);
 
-		// Initialize injectors with data. The first partition will be extendable by
-		// calling the addition methods on the wrapper. Functional injectors can also
-		// be added to these partitions, whereupon these are added as sub-injectors on
-		// in their respective partitions
-		this.exporterInjectors = {
-			data: [{}],
-			provide: [{}],
-			mixins: [[]]
-		};
-
-		// Move over data to injector so tracking of keys
-		// can be done more cleanly
-		for (const k in this.exporterInjectors) {
-			if (!this.exporterInjectors.hasOwnProperty(k))
-				continue;
-
-			this.add(k, this.component[k]);
-			delete this.component[k];
+		if (isObject(config.suppliers)) {
+			for (const k in config.suppliers) {
+				if (hasOwn(config.suppliers, k))
+					this.supply(k, config.suppliers[k]);
+			}
 		}
 	}
 
-	use(endpoint, ...args) {
-		if (typeof endpoint != "string")
-			throw new Error("'use' endpoint key must be a string");
+	wrap(component) {
+		return new ComponentWrapper(component, this);
+	}
 
-		let used = !!this.used[endpoint];
-		const ep = ComponentWrapper.endpoints[endpoint];
+	supply(name, supplier) {
+		supplier = supplier || suppliers[name];
+		if (!isObject(supplier))
+			throw new Error(`Cannot supply '${name}': supplier is not an object`);
+		if (!name || typeof name != "string")
+			throw new Error(`Cannot supply: name (${name}) is not valid; name must be a truthy string`);
+		if (this.suppliers.hasOwnProperty(name))
+			throw new Error(`Cannot supply '${name}': this ComponentWrapperManager aready has a supplier with this name`);
 
-		if (ep && (typeof ep.isUsable != "function" || ep.isUsable(this, used, ...args)))
-			used = ep.use(this, used, ...args) !== false;
+		if (hasInit(supplier)) {
+			const initializer = (...args) => {
+				supplier = Object.assign({}, supplier);
 
-		this.used[endpoint] = used;
+				const initialized =  supplier.init(...args);
+
+				if (typeof initialized == "function")
+					supplier.use = initialized;
+				else if (isObject(initialized))
+					Object.assign(supplier, initialized);
+				else
+					throw new TypeError("Cannot initialize: initializer must resolve a use function or a config object");
+
+				this.suppliers[name] = supplier;
+				return this;
+			};
+
+			// Spoof supply and autoSupply functions to catch
+			// unititated suppliers
+			initializer.supply = initializer.autoSupply = _ => {
+				throw new Error(`Uninitialized supplier found: '${name}'`);
+			};
+
+			return initializer;
+		}
+		
+		this.suppliers[name] = supplier;
+		return this;
+	}
+
+	autoSupply() {
+		for (const k in suppliers) {
+			if (hasOwn(suppliers, k) && !hasInit(suppliers[k]))
+				this.supply(k);
+		}
+
+		return this;
+	}
+}
+
+class ComponentWrapper {
+	constructor(component, manager) {
+		this.component = Object.assign(mkDefaultOptions(), component);
+		this.used = {};
+		this.suppliers = [];
+		this.storage = new Storage();
+		this.manager = manager || wc;
+
+		// Exporter injectors. The first item in each partition is extendable by
+		// calling the addition methods on the wrapper. Functional injectors can also
+		// be added to these partitions, in which case they are added as injectors
+		// to their respective partitions
+		this.exporterInjectors = {};
+		this.exporterInjectorKeys = ["data", "provide", "mixins"];
+
+		// Move over data to injector so tracking of keys
+		// can be done more cleanly
+		for (let i = 0, l = this.exporterInjectorKeys.length; i < l; i++) {
+			const key = this.exporterInjectorKeys[i];
+
+			// Initialize injector partition
+			this.exporterInjectors[key] = [{}];
+			this.add(key, this.component[key]);
+			delete this.component[key];
+		}
+	}
+
+	use(supplierName, ...args) {
+		if (typeof supplierName != "string")
+			throw new TypeError("Cannot use: supplier name must be a string");
+		if (!this.manager.suppliers.hasOwnProperty(supplierName))
+			throw new Error(`Cannot use: no known supplier with name '${supplierName}'`);
+
+		let used = !!this.used[supplierName];
+		const supplier = inject({
+			name: supplierName
+		}, this.manager.suppliers[supplierName]);
+
+		const a = {
+			used,
+			wrapper: this,
+			storage: this.storage.partition(supplierName)
+		};
+
+		if (supplier && (typeof supplier.isUsable != "function" || supplier.isUsable(a, ...args)))
+			used = supplier.use(a, ...args) !== false;
+
+		if (used && (!hasOwn(this.used, supplierName) || this.used[supplierName] !== true))
+			this.suppliers.push(supplier);
+
+		this.used[supplierName] = Boolean(this.used[supplierName] || used);
+		return this;
 	}
 
 	getInjectorPartition(partititonName) {
@@ -146,7 +261,7 @@ class ComponentWrapper {
 			return null;
 
 		if (isObject(mixin))
-			mixin = wc.wrap(mixin);
+			mixin = this.manager.wrap(mixin);
 
 		if (!(mixin instanceof ComponentWrapper))
 			throw new Error(`Cannot add mixin '${keyOrInjector}': supplied mixin is not an object or instance of ComponentWrapper`);
@@ -237,17 +352,20 @@ class ComponentWrapper {
 			if (!exporterInjectors.hasOwnProperty(k))
 				continue;
 
-			const exporter = ComponentWrapper.exporters[k];
+			const exporter = this.manager.exporters[k];
 
 			const args = {
-				wrapper: this,
-				injectors: exporterInjectors[k],
 				exporter,
-				name: k
+				name: k,
+				out: {},
+				wrapper: this,
+				suppliers: this.suppliers,
+				storage: this.storage,
+				injectors: exporterInjectors[k]
 			};
 
-			if (typeof exporter.wrap == "function")
-				component[k] = exporter.wrap(args);
+			if (typeof exporter.proxy == "function")
+				component[k] = exporter.proxy(args);
 			else
 				component[k] = exporter.export(args);
 		}
@@ -255,127 +373,38 @@ class ComponentWrapper {
 		return component;
 	}
 
+	// In most cases, it's preferable to use
+	// the wc instance of ComponentWrapperManager,
+	// and for legacy reasons these static methods
+	// supply this single instance
 	static supply(name, supplier) {
-		supplier = supplier || suppliers[name];
-		if (!isObject(supplier))
-			throw new Error(`Cannot supply '${name}': supplier is not an object`);
-		if (!name || typeof name != "string")
-			throw new Error(`Cannot supply: name (${name}) is not valid`);
-		if (this.endpoints.hasOwnProperty(name))
-			throw new Error(`Cannot supply '${name}': ComponentWrapper aready has an endpoint with this name`);
-
-		if (hasInit(supplier)) {
-			const initializer = (...args) => {
-				supplier = Object.assign({}, supplier);
-				supplier.use = supplier.init(...args);
-				this.endpoints[name] = supplier;
-				return this;
-			};
-
-			initializer.supply = _ => {
-				throw new Error(`Uninitialized endpoint found: '${name}'`);
-			};
-
-			initializer.autoSupply = initializer.supply;
-
-			return initializer;
-		}
-		
-		this.endpoints[name] = supplier;
-		return this;
+		return wc.supply(name, supplier);
 	}
 
 	static autoSupply() {
-		for (const k in suppliers) {
-			if (hasOwn(suppliers, k) && !hasInit(suppliers[k]))
-				this.supply(k);
-		}
-
-		return this;
+		return wc.autoSupply();
 	}
 }
-
-ComponentWrapper.endpoints = {};
-
-ComponentWrapper.exporters = {
-	data: {
-		wrap: wrapInjectorExporter,
-		export({ out, wrapper, vm }) {
-			const {
-				live,
-				computedData
-			} = wrapper.internal;
-
-			if (live) {
-				inject(out, live, {
-					override: true,
-					injectSymbols: true,
-					shallow: true,
-					circular: true
-				});
-			}
-
-			if (computedData) {
-				for (const k in computedData) {
-					if (computedData.hasOwnProperty(k) && typeof computedData[k] == "function")
-						out[k] = computedData[k](wrapper, vm);
-				}
-			}
-		}
-	},
-	provide: {
-		wrap: wrapInjectorExporter
-	},
-	mixins: {
-		export(args) {
-			const mixins = [];
-
-			const exp = mixin => {
-				if (typeof mixin == "function")
-					mixin = mixin(args);
-
-				if (mixin instanceof ComponentWrapper)
-					mixin = mixin.export();
-
-				if (!isObject(mixin))
-					throw new Error(`Cannot export mixin: mixin is not a vue component configuration object, component wrapper, or function that resolves to either`);
-			
-				mixins.push(mixin);
-			};
-
-			// Export named mixins
-			const namedMixins = args.injectors[0];
-			for (let i = 0, l = namedMixins.length; i < l; i++)
-				exp(namedMixins[i].mixin);
-
-			// Export anonymous mixins / mixin resolvers
-			for (let i = 1, l = args.injectors.length; i < l; i++)
-				exp(args.injectors[i]);
-
-			return mixins;
-		}
-	}
-};
 
 ComponentWrapper.prototype.assert = {
 	hasUnusedProp(props, key) {
 		if (!props)
 			throw new TypeError(`Cannot add property: property is not an object`);
+
+		const err = _ => {
+			throw new Error(`Cannot add property: found duplicate prop key '${key}'`);
+		};
 	
 		if (Array.isArray(props) && props.indexOf(key) != -1)
 			err();
 		else if (isObject(props) && props.hasOwnProperty(key))
 			err();
-	
-		function err() {
-			throw new Error(`Cannot add property: found duplicate prop key '${key}'`);
-		}
 	}
 };
 
-function wrapInjectorExporter(args) {
+function proxyInjectorExporter(args) {
 	return function() {
-		let out = {};
+		let out = args.out;
 
 		for (let i = 0, l = args.injectors.length; i < l; i++) {
 			const injector = args.injectors[i];
@@ -390,14 +419,35 @@ function wrapInjectorExporter(args) {
 		}
 
 		if (typeof args.exporter.export == "function") {
-			args.exporter.export(Object.assign({
-				out,
+			out = args.exporter.export(Object.assign({
 				vm: this
 			}, args));
 		}
 
 		return out;
 	};
+}
+
+function injectorExporterRunner(args) {
+	const suppliers = args.suppliers;
+
+	for (let i = 0, l = suppliers.length; i < l; i++) {
+		const supplier = suppliers[i];
+
+		if (!supplier.export || typeof supplier.export[args.name] != "function")
+			continue;
+
+		const exporterArgs = inject({
+			storage: args.storage.partition(supplier.name)
+		}, args, "shallow");
+
+		const exported = supplier.export[args.name](exporterArgs);
+
+		if (isObject(exported))
+			Object.assign(args.out, exported);
+	}
+
+	return args.out;
 }
 
 function mkDefaultOptions() {
@@ -441,8 +491,13 @@ function resolvePropValue(key, value) {
 	return value;
 }
 
+const wc = new ComponentWrapperManager();
+
 export default wc;
 
 export {
-	ComponentWrapper
+	ComponentWrapperManager,
+	ComponentWrapper,
+	proxyInjectorExporter,
+	injectorExporterRunner
 };
