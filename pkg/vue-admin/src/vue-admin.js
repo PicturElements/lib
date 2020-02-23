@@ -5,7 +5,7 @@ import {
 	resolveArgs
 } from "@qtxr/utils";
 
-import wc from "@qtxr/vue-wrap-component";
+import { ComponentWrapperManager } from "@qtxr/vue-wrap-component";
 import { CustomJSON } from "@qtxr/uc";
 import { Hookable } from "@qtxr/bc";
 
@@ -55,7 +55,11 @@ export default class VueAdmin extends Hookable {
 		this.routes = [];
 		this.routesMap = {};
 		this.initialized = false;
-		this.registeredPlugins = Object.assign({}, plugins, config.plugins);
+		this.registeredPlugins = Object.assign(
+			{},
+			plugins,
+			config.plugins
+		);
 
 		this.ui = {};
 
@@ -71,6 +75,13 @@ export default class VueAdmin extends Hookable {
 			this.jsonManager = new CustomJSON(config.jsonManager);
 		else
 			this.jsonManager = new CustomJSON();
+
+		if (config.wrapperManager instanceof ComponentWrapperManager)
+			this.wrapperManager = config.wrapperManager;
+		else if (isObject(config.wrapperManager))
+			this.wrapperManager = new ComponentWrapperManager(config.wrapperManager);
+		else
+			this.wrapperManager = new ComponentWrapperManager();
 
 		// Add views
 		viewMap = viewMap || {};
@@ -341,7 +352,7 @@ export default class VueAdmin extends Hookable {
 
 	addMethod(methodName, method) {
 		if (typeof method != "function") {
-			devWarn();
+			devWarn(this, "Cannot add method: supplied value is not a function");
 			return this;
 		}
 
@@ -408,7 +419,7 @@ function isComponent(candidate) {
 
 function wrapComponent(admin, component) {
 	if (!component.mixins && !admin.mixins.hasOwnProperty("default"))
-		return wc.wrap(component);
+		return admin.wrapperManager.wrap(component);
 
 	component = Object.assign({}, component);
 	const mixins = component.mixins ?
@@ -417,7 +428,7 @@ function wrapComponent(admin, component) {
 
 	delete component.mixins;
 
-	component = wc.wrap(component);
+	component = admin.wrapperManager.wrap(component);
 
 	if (admin.mixins.hasOwnProperty("default"))
 		component.addMixin("default", admin.mixins.default);
@@ -452,7 +463,7 @@ function connect(admin, wrapper, meta) {
 		config.connect(admin, wrapper, meta);
 	}
 
-	// Connect interfaces
+	// Connect plugins
 	const plugins = admin.plugins;
 	for (const k in plugins) {
 		if (!plugins.hasOwnProperty(k))
