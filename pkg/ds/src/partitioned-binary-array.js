@@ -3,12 +3,12 @@ import {
 	findClosest,
 	binarySearch
 } from "@qtxr/utils";
-import { getHash } from "./utils";
+import { getHash } from "./internal/utils";
 
 // A partitioned binary array (PBA) is a specialized data structure that
 // employs binary search to insert/find/delete items in logarithmic time.
 // While it's possible to do this with a shallow array, a PBA is a nested data structure.
-// This is because array operations are linear, so frequent additions/deletions are
+// This is because array operations are often linear, so frequent additions/deletions are
 // quite expensive. A PBA amortizes time by ordering data into fixed length partitons that act
 // as sortable items in the root array, while containing sorted data themselves.
 //

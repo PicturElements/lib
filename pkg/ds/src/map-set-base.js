@@ -1,10 +1,9 @@
 import {
-	findClosest,
 	isIterable,
 	setSymbol
 } from "@qtxr/utils";
 import { SYM_ITER_KEY } from "@qtxr/utils/internal";
-import MapSetIterator from "./map-set-iterator";
+import KeyedLinkedList from "./keyed-linked-list";
 
 let idCounter = 0;
 const symbolIsSupported = typeof Symbol != "undefined";
@@ -22,7 +21,7 @@ export default class MapSetBase {
 			object: Object.create(null)
 		};
 
-		this.insertionOrder = [];
+		this.insertions = new KeyedLinkedList();
 		this.order = 0;
 		this.size = 0;
 	}
@@ -42,16 +41,20 @@ export default class MapSetBase {
 			case "symbol":
 				this.maps.strSym[key] = kv;
 				break;
+
 			case "number":
 				this.maps.number[key] = kv;
 				break;
+
 			case "bigint":
 				this.maps.bigint[key] = kv;
 				break;
+
 			case "undefined":
 			case "boolean":
 				this.maps.boolUndefNull[key] = kv;
 				break;
+
 			default:
 				if (key == null) {
 					this.maps.boolUndefNull.null = kv;
@@ -75,7 +78,7 @@ export default class MapSetBase {
 
 		if (!insertion) {
 			this.size++;
-			this.insertionOrder.push(kv);
+			this.insertions.push(kv[2], kv);
 		}
 
 		return this;
@@ -90,7 +93,7 @@ export default class MapSetBase {
 		return insertion[1];
 	}
 
-	// Complexity: O(log n) for object keys, O(1) for primitive keys
+	// Complexity: O(1)
 	delete(key) {
 		const map = getMapName(this, key);
 		if (!map)
@@ -99,16 +102,16 @@ export default class MapSetBase {
 		this.size--;
 
 		if (map == "object") {
-			deleteFromInsertion(this.insertionOrder, this.maps[map][key[this.key]]);
-			delete this.maps[map][key[this.key]];
+			this.insertions.delete(this.maps.object[key[this.key]][2]);
+			delete this.maps.object[key[this.key]];
 			return delete key[this.key];
 		}
 
-		deleteFromInsertion(this.insertionOrder, this.maps[map][key]);
+		this.insertions.delete(this.maps[map][key][2]);
 		return delete this.maps[map][key];
 	}
 
-	// Complexity: worst case O(n) to clear all object references
+	// Complexity: O(n) to clear all object references
 	clear() {
 		this.maps.strSym = {};
 		this.maps.number = {};
@@ -119,29 +122,31 @@ export default class MapSetBase {
 			delete ob[k][this.key];
 		this.maps.object = Object.create(null);
 
-		this.insertionOrder = [];
+		this.insertions.clear();
 		this.size = 0;
 	}
 
 	// Complexity: O(1)
 	has(key) {
-		return !!getMapName(this, key);
+		return Boolean(getMapName(this, key));
+	}
+
+	forEach(callback, thisArg) {
+		this.insertions.forEach(item => {
+			callback.call(thisArg, item[1], item[0], this);
+		});
 	}
 
 	keys() {
-		return new MapSetIterator(
-			this.insertionOrder,
-			getFirstInsertionId(this.insertionOrder),
-			iterator => nextIterStepSingular(iterator, 0)
-		);
+		return this.insertions.getIterator("kv-key");
+	}
+
+	values() {
+		return this.insertions.getIterator("kv-value");
 	}
 
 	entries() {
-		return new MapSetIterator(
-			this.insertionOrder,
-			getFirstInsertionId(this.insertionOrder),
-			iterator => nextIterStep(iterator, 0, 2)
-		);
+		return this.insertions.getIterator("kv-entry");
 	}
 }
 
@@ -165,79 +170,20 @@ function getMapName(map, key) {
 		case "string":
 		case "symbol":
 			return maps.strSym.hasOwnProperty(key) ? "strSym" : null;
+
 		case "number":
 			return maps.number.hasOwnProperty(key) ? "number" : null;
+
 		case "bigint":
 			return maps.bigint.hasOwnProperty(key) ? "bigint" : null;
+
 		case "undefined":
 		case "boolean":
 			return maps.boolUndefNull.hasOwnProperty(key) ? "boolUndefNull" : null;
+
 		default:
 			if (key == null)
 				return maps.boolUndefNull.hasOwnProperty(key) ? "boolUndefNull" : null;
 			return key[map.key] in maps.object ? "object" : null;
 	}
 }
-
-function deleteFromInsertion(list, item) {
-	const itemIdx = item[2],
-		match = findClosest(list, itm => itm[2] - itemIdx);
-
-	if (match.exact)
-		list.splice(match.index, 1);
-}
-
-function getFirstInsertionId(insertionOrder) {
-	const first = insertionOrder[0];
-	if (!first)
-		return 0;
-
-	return first[2];
-}
-
-function getNextInsertion(iterator) {
-	const nextIdentifier = iterator._nextIdentifier;
-
-	return findClosest(
-		iterator.source,
-		insertion => insertion[2] - nextIdentifier,
-		{
-			upper: true,
-			hintIndex: iterator.hint
-		}
-	);
-}
-
-function nextIterStep(iterator, sliceStart, sliceEnd) {
-	const next = getNextInsertion(iterator);
-
-	if (!next.found)
-		return null;
-
-	iterator.hint = next.index + 1;
-
-	return {
-		value: next.item.slice(sliceStart, sliceEnd),
-		nextIdentifier: next.item[2] + 1
-	};
-}
-
-function nextIterStepSingular(iterator, index) {
-	const next = getNextInsertion(iterator);
-
-	if (!next.found)
-		return null;
-
-	iterator.hint = next.index + 1;
-
-	return {
-		value: next.item[index],
-		nextIdentifier: next.item[2] + 1
-	};
-}
-
-export {
-	getFirstInsertionId,
-	nextIterStep,
-	nextIterStepSingular
-};

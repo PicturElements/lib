@@ -1,5 +1,6 @@
 // Export when debugged
 // export { default as Heap } from "./src/heap";
+export { default as KeyedLinkedList } from "./src/keyed-linked-list";
 export { default as Keys } from "./src/keys";
 export { default as Map } from "./src/map";
 export { default as PartitionedBinaryArray } from "./src/partitioned-binary-array";
