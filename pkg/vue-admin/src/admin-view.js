@@ -89,15 +89,14 @@ function connectDataCell(args) {
 	connectForm(args);
 }
 
-function connectForm({ vm, cell }) {
+function connectForm(args) {
+	const { cell } = args;
 	let rows;
 
 	if (typeof cell.config.formRows == "function") {
-		rows = cell.config.formRows({
-			vm,
-			cell,
+		rows = cell.config.formRows(Object.assign({
 			Form
-		});
+		}, args));
 	}
 
 	if (isObj(rows)) {
