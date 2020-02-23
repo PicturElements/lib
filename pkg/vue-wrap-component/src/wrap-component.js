@@ -136,7 +136,9 @@ class ComponentWrapper {
 		// calling the addition methods on the wrapper. Functional injectors can also
 		// be added to these partitions, in which case they are added as injectors
 		// to their respective partitions
-		this.exporterInjectors = {};
+		this.exporterInjectors = {
+			mixins: [[]]
+		};
 		this.exporterInjectorKeys = ["data", "provide", "mixins"];
 
 		// Move over data to injector so tracking of keys
@@ -145,7 +147,7 @@ class ComponentWrapper {
 			const key = this.exporterInjectorKeys[i];
 
 			// Initialize injector partition
-			this.exporterInjectors[key] = [{}];
+			this.exporterInjectors[key] = this.exporterInjectors[key] || [{}];
 			this.add(key, this.component[key]);
 			delete this.component[key];
 		}
