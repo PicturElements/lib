@@ -1,5 +1,6 @@
 <template lang="pug">
-	
+	.admin-padded-wrapper.medium-width
+		.admin-padded-content
 </template>
 
 <script>

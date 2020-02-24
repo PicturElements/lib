@@ -58,6 +58,27 @@ admin.route(`
 admin
 	.autoSupply();
 
+// ====== COMPONENT WRAPPING ======
+/*
+*	VueAdmin uses @qtxr/vue-wrap-component to enhance the Vue API. Supply assets below
+*
+*
+*	Abstract supplier usage:
+*	admin.wrapperManager
+*		.autoSupply()				// Supply all built-in features without initializers
+*		.supply("dep")				// Supply built-in feature without initializer
+*		.supply("dep")(Dep)			// Supply built-in feature with initializer and provide init arguments
+*		.supply("dep", { ... })		// Supply custom feature without initializer directly
+*		.supply("dep", {			// Supply custom feature with initializer and provide init arguments
+*			init(Dep) {
+*				// init code
+*			}
+*		})(Dep)
+*/
+
+admin.wrapperManager
+	.autoSupply();
+
 // ====== STORES ======
 /*
 *	Set up stores here. Requires a "store" interface dependency to work

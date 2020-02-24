@@ -21,7 +21,7 @@ const genViewMap = require("./updaters/view-map");
 const genComponents = require("./updaters/components");
 
 const ROOT = path.join(__dirname, ".."),
-	ADMIN_PATH = ROOT,
+	ADMIN_PATH = path.join(ROOT, "admin"),
 	MODELS_RELATIVE_PATH = "models",
 	MODELS_PATH = path.join(ROOT, MODELS_RELATIVE_PATH),
 	VIEWS_RELATIVE_PATH = "views",
@@ -221,7 +221,7 @@ function watchComponents() {
 		});
 }
 
-async function renderView(args) {
+function renderView(args) {
 	const {
 		root,
 		targetPath,

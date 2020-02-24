@@ -53,7 +53,7 @@
 		}
 
 		&.ngrow {
-			flex-grow: 1;
+			flex-grow: 0;
 		}
 
 		&.shrink {
@@ -149,9 +149,41 @@
 		flex-basis: 0;
 	}
 
+	.upper-case { text-transform: uppercase }
+	.lower-case { text-transform: lowercase }
+	.title-case { text-transform: capitalize }
+
+	.text-left { text-align: left }
+	.text-center { text-align: center }
+	.text-right { text-align: right }
+	.text-justify { text-align: justify }
+
+	.fw-bold { font-weight: bold }
+	.fw-normal { font-weight: normal }
+	
+	@include rangeClass("mxw", "max-width", "px", 50, 400, 50);
+
+	@include mobile {
+		@include rangeClass("m-mxw", "max-width", "px", 50, 400, 50);
+	}
+	
+	@include rangeClass("mnw", "min-width", "px", 50, 400, 50);
+
+	@include mobile {
+		@include rangeClass("m-mnw", "min-width", "px", 50, 400, 50);
+	}
+
+	.ell {
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
 	@include rangeClass("o", "opacity", "", 0, 1, 0.1);
+	@include rangeClass("mt", "margin-top", "px", -10, 50, 5);
 	@include rangeClass("mb", "margin-bottom", "px", -10, 50, 5);
 	@include rangeClass("ml", "margin-left", "px", -10, 50, 5);
 	@include rangeClass("mr", "margin-right", "px", -10, 50, 5);
 	@include rangeClass("fs", "font-size", "%", 50, 160, 5);
+	@include rangeClass("p", "padding", "px", 0, 50, 5);
 }

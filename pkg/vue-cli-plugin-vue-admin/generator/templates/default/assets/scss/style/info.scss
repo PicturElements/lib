@@ -1,0 +1,80 @@
+// Info listing
+@use "../theme.scss" as *;
+
+@mixin info {
+	.info-cell,
+	.info-row,
+	.info-col {
+		display: flex;
+		flex-direction: column;
+
+		h2 {
+			margin: 0;
+			font-size: 100%;
+		}
+
+		h2 + * {
+			margin: 5px 0;
+			text-overflow: ellipsis;
+
+			&:not(.overflows) {
+				overflow: hidden;
+			}
+
+			span {
+				white-space: nowrap;
+				word-break: break-all;
+			}
+		}
+
+		&.wrap {
+			h2 + * {
+				span {
+					white-space: normal;
+				}
+			}
+		}
+	}
+
+	.info-cell {
+		overflow: hidden;
+		flex-grow: 1;
+		flex-basis: 0;
+
+		+ .info-cell {
+			margin-top: 10px;
+		}
+
+		h2 ~ .info-row,
+		h2 ~ .info-col {
+			h2 {
+				font-size: 90%;
+				opacity: 0.8;
+				margin: 5px 0 -3px;
+			}
+		}
+	}
+
+	.info-row {
+		flex-direction: row;
+
+		> .info-cell {
+			+ .info-cell {
+				margin-top: 0;
+				margin-left: 10px;
+			}
+		}
+	}
+
+	.info-col {
+		flex-direction: column;
+		
+		> .info-cell {
+			overflow: visible;
+
+			+ .info-cell {
+				margin: 0;
+			}
+		}
+	}
+}

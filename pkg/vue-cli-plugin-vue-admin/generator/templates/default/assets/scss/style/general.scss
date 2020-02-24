@@ -1,0 +1,240 @@
+// Default general CSS
+@use "../theme.scss" as *;
+@use "~@qtxr/scss-utils" as *;
+
+@mixin general {
+	display: flex;
+	flex-direction: row;
+	flex-grow: 1;
+	align-items: flex-start;
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	font-size: 10px;
+	background: $main-background;
+	color: $main-color;
+	z-index: 1000;
+
+	aside {
+		position: relative;
+		flex-grow: 0;
+		flex-shrink: 0;
+		height: 100%;
+		width: $sidebar-default-width;
+		background: $sidebar-background;
+		color: $sidebar-color;
+		z-index: 100000000;
+
+		.admin-aside-overlap {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			height: $header-height;
+			background: $overlap-background;
+			padding: 0 $header-horizontal-padding;
+
+			.sidebar-collapse {
+				display: none;
+				position: absolute;
+				top: 0;
+				right: 0;
+				width: $header-height;
+				height: $header-height;
+				color: $highlight-complement;
+				cursor: pointer;
+				z-index: 100;
+			}
+		}
+
+		.main-logo {
+			height: $overlap-logo-height;
+			color: $highlight;
+
+			.adm-icon {
+				height: 100%;
+			}
+		}
+
+		.admin-aside-content {
+			overflow: auto;
+		}
+	}
+
+	.admin-inner-content {
+		display: flex;
+		flex-direction: column;
+		flex-grow: 1;
+		width: 100%;
+		height: 100%;
+		font-size: 120%;
+		overflow: hidden;
+	}
+
+	header {
+		position: relative;
+		display: flex;
+		flex-grow: 0;
+		flex-shrink: 0;
+		justify-content: space-between;
+		align-items: center;
+		height: $header-height;
+		background: $header-background;
+		color: $header-color;
+		box-shadow: 0 0 4px rgba(0, 0, 0, 0.07);
+		padding: 0 $header-horizontal-padding;
+		text-transform: uppercase;
+		z-index: 100;
+
+		.sidebar-expand {
+			display: none;
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: $header-height;
+			height: $header-height;
+			color: $highlight;
+			cursor: pointer;
+			z-index: 100;
+		}
+	}
+
+	.admin-main-wrapper {
+		display: flex;
+		flex-direction: column;
+		overflow: auto;
+		flex-grow: 1;
+	}
+
+	main {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		flex-grow: 1;
+		flex-shrink: 0;
+	}
+
+	header {
+		flex-grow: 0;
+		flex-shrink: 0;
+		min-height: 50px;
+	}
+
+	.admin-padded-wrapper {
+		width: 100%;
+		padding: 10px;
+
+		&.x-narrow {
+			margin: 0 auto;
+			max-width: 400px;
+		}
+
+		&.narrow {
+			margin: 0 auto;
+			max-width: 700px;
+		}
+
+		&.semi-narrow {
+			margin: 0 auto;
+			max-width: 1000px;
+		}
+
+		&.medium-width {
+			margin: 0 auto;
+			max-width: 1100px;
+		}
+
+		&.centered {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			flex-grow: 1;
+			flex-shrink: 0;
+			
+			.admin-padded-content:not(.no-flex) {
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+				flex-grow: 1;
+				flex-shrink: 0;
+				flex-basis: 0;
+			}
+		}
+
+		&.expand-boxes {
+			&,
+			.admin-padded-content,
+			.util-box,
+			.util-box-content,
+			.util-box-main-content,
+			.listing {
+				overflow: hidden;
+				display: flex;
+				flex-direction: column;
+				flex-grow: 1;
+			}
+
+			.listing-content {
+				display: flex;
+				flex-direction: column;
+				overflow: auto;
+				flex-grow: 1;
+				flex-basis: 0;
+				max-height: initial;
+			}
+		}
+	}
+
+	@include mobile {
+		aside {
+			position: fixed;
+			top: 0;
+			left: 0;
+			transition: transform 300ms;
+			will-change: transform;
+			transform: translateX(-100%);
+			z-index: 100000000;
+
+			&.expanded {
+				transform: none;
+			}
+		}
+
+		header {
+			padding: 0 $header-horizontal-padding 0 ($header-height + 5px);
+
+			.sidebar-expand {
+				display: block;
+			}
+
+			.user-name {
+				display: none;
+			}
+		}
+
+		aside .admin-aside-overlap {
+			padding: 0 $header-height 0 $header-horizontal-padding;
+
+			.sidebar-collapse {
+				display: block;
+			}
+		}
+
+		.admin-main .admin-padded-wrapper {
+			width: 100%;
+		}
+
+		.sidebar-collapse-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0, 0, 0, 0.2);
+			z-index: 99999999;
+		}
+	}
+}

@@ -8,8 +8,8 @@ const {
 const invalidIdentifierCharRegex = /^\d|[^\w$]/g;
 
 const prefix =
-`// This is an automatically generated file.
-// Do not edit as changes won't persist on rebuild.
+`// This is an automatically generated file
+// Do not edit as changes won't persist on rebuild
 
 `;
 

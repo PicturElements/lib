@@ -3,30 +3,5 @@
 @use "../theme.scss" as *;
 
 @mixin forms {
-	.dropdown-active-option .default-icon {
-		padding: 0 14px;
-		font-size: 0;
-		pointer-events: none;
-
-		&:before {
-			content: "";
-			position: absolute;
-			top: 50%;
-			left: 50%;
-			margin: -7px -5px;
-			border: 1px solid;
-			border-left-color: transparent;
-			border-top-color: transparent;
-			width: 10px;
-			height: 10px;
-			border-radius: 0 1px 2px 1px;
-			transform: rotate(45deg);
-			opacity: 0.6;
-			transition: transform 200ms;
-		}
-	}
-
-	.dropdown.open .dropdown-active-option .default-icon:before {
-		transform: translateY(5px) rotate(-135deg);
-	}
+	
 }

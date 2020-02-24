@@ -14,6 +14,10 @@ export default {
 		breadcrumb: {
 			name: "%viewSidebarName%",
 			display: "visible"
+		},
+		link: {
+			name: "%viewSidebarName%",
+			display: "visible"
 		}
 	}
 };

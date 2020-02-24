@@ -1,7 +1,8 @@
 const getPackage = _ => {
 	return {
 		dependencies: {
-			"@qtxr/vue-admin": "^1.6.0"
+			"@qtxr/vue-admin": "^1.12.11",
+			"@qtxr/vue-wrap-component": "^2.5.2"
 		},
 		devDependencies: {
 			"chokidar": "^3.2.1",

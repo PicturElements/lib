@@ -5,6 +5,7 @@
 @mixin ui {
 	.admin-btn {
 		position: relative;
+		height: $input-master-height;
 		padding: 8px 15px;
 		background-color: $highlight;
 		color: $highlight-complement;
@@ -54,14 +55,14 @@
 		}
 
 		&:focus:before {
-			opacity: 0.2;
+			opacity: 0.5;
 			transform: scaleX(1);
 			transition: opacity 200ms, transform 200ms;
 			background-image: none;
 		}
 
 		&.expand-disabled:disabled:before {
-			opacity: 0.4;
+			opacity: 0.35;
 			transform: scaleX(1);
 			background-image: none;
 		}
@@ -161,6 +162,64 @@
 		border: 5px solid $card-background;
 		box-shadow: $card-shadow;
 
+		&.display-box {
+			height: 240px;
+			overflow: hidden;
+		}
+
+		.collapse-hit-target {
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			z-index: 10;
+
+			&:hover {
+				~ .blur-img-wrapper .blur-img.blurred {
+					opacity: 0;
+					transition-delay: 500ms;
+				}
+
+				~ .bottle-opener-tab {
+					transform: translate(-50%, 100%);
+					transition-delay: 500ms;
+
+					.bottle-opener-extremity {
+						transform: translateY(100%);
+						transition-delay: 500ms;
+					}
+				}
+			}
+		}
+
+		.blur-img-wrapper {
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+
+			.blur-img {
+				position: relative;
+				top: -5px;
+				left: -5px;
+				height: 100%;
+				width: 100%;
+				box-sizing: content-box;
+				padding: 5px;
+				background-size: cover;
+				background-position: center;
+
+				&.normal {
+					position: absolute;
+				}
+
+				&.blurred {
+					filter: blur(6px);
+					transition: opacity 400ms;
+				}
+			}
+		}
+
 		.bottle-opener-tab {
 			position: absolute;
 			left: 50%;
@@ -171,6 +230,8 @@
 			border-radius: 2px;
 			transform: translateX(-50%);
 			background: $card-background;
+			transition: transform 400ms cubic-bezier(0.6, 0, 0.4, 1);
+			z-index: 20;
 
 			&:before,
 			&:after {
@@ -197,6 +258,40 @@
 				border-right-color: transparent;
 				border-radius: 0 0 0 50%;
 			}
+
+			h1 {
+				font-weight: bold;
+				font-size: 110%;
+				margin: 0;
+			}
+
+			.bottle-opener-extremity {
+				transition: transform 400ms cubic-bezier(0.6, 0, 0.4, 1);
+
+				&.avatar {
+					position: relative;
+					width: 100px;
+					height: 100px;
+					border-radius: 50%;
+					margin-top: -70px;
+					background: $main-background;
+					border: 5px solid $card-background;
+					box-shadow: $card-shadow;
+
+					img {
+						width: 100%;
+						height: 100%;
+						border-radius: 50%;
+					}
+
+					.status-icon {
+						position: absolute;
+						bottom: 0;
+						right: 0;
+						box-shadow: 0 0 0 3px $card-background;
+					}
+				}
+			}
 		}
 	}
 
@@ -207,7 +302,7 @@
 
 	.kv-table {
 		td:first-child {
-			padding-right: 10px;
+			padding-right: 5px;
 			font-weight: bold;
 		}
 
@@ -226,11 +321,49 @@
 		text-align: center;
 		line-height: 1.1;
 
+		+ .subscript-label {
+			margin-left: 15px;
+		}
+
 		&:after {
 			content: "\a" attr(data-label);
 			font-size: 80%;
 			text-transform: uppercase;
 			opacity: 0.7;
+		}
+	}
+
+	.pop-link {
+		cursor: default;
+	}
+
+	a.pop-link {
+		font-weight: bold;
+		cursor: pointer;
+
+		&:hover .pop-icon {
+			transform: scale(1.1);
+		}
+	}
+
+	.pop-icon {
+		width: 30px;
+		height: 30px;
+		border-radius: 50%;
+		overflow: hidden;
+		box-shadow: 0 0 0 2px $card-background;
+		background-size: cover;
+		background-position: center;
+		transition: transform 200ms;
+
+		img,
+		svg {
+			width: 100%;
+			height: 100%;
+		}
+
+		&.square {
+			border-radius: 20%;
 		}
 	}
 
@@ -241,7 +374,7 @@
 		border-radius: 50%;
 
 		+ .status-icon {
-			margin-left: -6px;
+			margin-left: -7px;
 		}
 
 		&.big {
@@ -260,7 +393,19 @@
 		}
 	}
 
+	.flat-outline {
+		box-shadow: 0 0 0 $flat-outline-width $card-background;
+	}
+
 	.flat-back {
+		&.flat-back-blue {
+			background: $flat-blue-light;
+	
+			.flat-outline {
+				box-shadow: 0 0 0 $flat-outline-width $flat-blue-light;
+			}
+		}
+
 		&.flat-back-green {
 			background: $flat-green-light;
 	
@@ -287,6 +432,10 @@
 	}
 	
 	.flat-front {
+		&.flat-front-blue {
+			background: $flat-blue-dark;
+		}
+	
 		&.flat-front-green {
 			background: $flat-green-dark;
 		}
@@ -298,5 +447,133 @@
 		&.flat-front-red {
 			background: $flat-red-dark;
 		}
+	}
+
+	.placeholder-cover {
+		background-size: 60px 60px;
+		background-position: center;
+
+		&.cover-0 {
+			@include b-stars($highlight, $highlight-dark);
+		}
+
+		&.cover-1 {
+			@include b-dots($highlight, $highlight-dark);
+		}
+
+		&.cover-2 {
+			@include b-stripes($highlight, $highlight-dark);
+		}
+
+		&.cover-3 {
+			@include b-grid($highlight, $highlight-dark);
+		}
+
+		&.cover-4 {
+			@include b-squares($highlight, $highlight-dark);
+		}
+	}
+
+	.timed-button {
+		&:not(:disabled).positive {
+			color: $flat-green-dark;
+		}
+
+		&:not(:disabled).negative {
+			color: $flat-red-dark;
+		}
+
+		&.no-padding .timed-button-content {
+			padding: 0;
+		}
+
+		&.with-icon {
+			.timed-button-content {
+				padding: 4px;
+			}
+
+			.adm-icon {
+				width: 16px;
+			}
+		}
+	}
+
+	.stat-wrapper {
+		display: flex;
+	
+		.stat-legend {
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			flex-grow: 1;
+		}
+
+		.stat-legend + .stat-graphic {
+			padding-left: 15px;
+			margin-left: 15px;
+			border-left: 1px solid $subdued;
+		}
+
+		.pie .v-viz {
+			width: 150px;
+			height: 150px;
+		}
+
+		.viz-graph-module {
+			margin: 0;
+		}
+	}
+
+	.pill {
+		flex-shrink: 0;
+		padding: 3px 7px;
+		margin: 0 5px 5px 0;
+		background: rgba(109, 124, 138, 0.42);
+		border-radius: 2px;
+		font-weight: bold;
+
+		&:last-child {
+			margin-right: 0;
+		}
+	}
+
+	.pill-wrapper {
+		display: flex;
+
+		&:not(.horizontal) {
+			flex-wrap: wrap;
+		}
+
+		&.horizontal {
+			.pill {
+				margin-bottom: 0;
+			}
+		}
+
+		.pill-scroll {
+			display: flex;
+			overflow: auto;
+		}
+	}
+
+	.viz-tooltip {
+		background: $main-background;
+	}
+
+	.pie {
+		svg {
+			stroke: $card-background;
+			stroke-width: 4;
+		}
+	}
+
+	.viz-graph-wrapper + .viz-graph-wrapper:before,
+	.viz-graph-info-control {
+		background: $subdued;
+		color: $main-color;
+	}
+
+	.input-wrapper .validation-msg {
+		color: $main-background;
 	}
 }

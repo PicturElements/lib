@@ -2,7 +2,7 @@
 @use "./theme.scss" as *;
 
 // Apply to styles from @qtxr/vue-admin/styles,
-// which are delivered as partials
+// which are delivered as modules
 @use "~@qtxr/vue-admin/style/all.scss" as *;
 
 .admin {

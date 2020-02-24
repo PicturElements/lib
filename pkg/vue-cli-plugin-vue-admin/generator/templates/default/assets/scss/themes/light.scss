@@ -4,10 +4,10 @@ $main-color: #3b3e41;
 
 $sidebar-background: #2e343c;
 $sidebar-alt-background: #38404a;
-$sidebar-color: white;
+$sidebar-color: #ded8dd;
 $sidebar-default-width: 200px;
 
-$overlap-background: #1a2129;
+$overlap-background: #17142d;
 $overlap-logo-width: 20px;
 $overlap-logo-height: 20px;
 $overlap-overlay-color: #3e4348;
@@ -24,11 +24,13 @@ $card-background: white;
 $card-shadow: 0 2px 3px rgba(0, 0, 0, 0.07);
 
 $accent-background: whitesmoke;
+$accent-light-background: #fcfcfc;
 $accent-haze-background: rgba(62, 63, 66, 0.04);
 
 $highlight: #1b66bf;
 $highlight-complement: white;
 $highlight-light: #6cafff;
+$highlight-dark: #1156a7;
 
 $subdued: #e6eaef;
 $subdued-complement: #a9b2bb;
@@ -41,13 +43,20 @@ $stamp-color: #87919e;
 $semi-light-stamp-color: #a6afbb;
 $light-stamp-color: #c6ceda;
 
-$input-master-height: 28px;
+$input-master-height: 30px;
+
+$error-background: #ffe5e5;
+$error-color: #b10e0e;
 
 $error-label-background: #fcf0fd;
 $error-label-border: 1px solid #efdcf5;
 $error-label-color: #8c0f65;
 $error-label-text-shadow: 0 1px rgba(0, 0, 0, 0.05);
 
+$shade-color: rgba(74, 55, 64, 0.6);
+
+$flat-blue-light: #def4ff;
+$flat-blue-dark: #0095e0;
 $flat-green-light: #e5f9e7;
 $flat-green-dark: #63bd1f;
 $flat-orange-light: #fff5e0;
@@ -58,7 +67,10 @@ $flat-outline-width: 2px;
 $flat-dark-front: white;
 $flat-light-front: black;
 
+$mobile-media: "(max-aspect-ratio: 1/1) and (max-width: 700px)";
+
 $theme: (
+	// Package: VueAdmin
 	general: (
 		main-background: $main-background,
 		main-color: $main-color,
@@ -87,6 +99,7 @@ $theme: (
 		highlight: $highlight,
 		highlight-complement: $highlight-complement,
 		highlight-light: $highlight-light,
+		highlight-dark: $highlight-dark,
 		
 		subdued: $subdued,
 		subdued-complement: $subdued-complement,
@@ -101,6 +114,9 @@ $theme: (
 
 		input-master-height: $input-master-height,
 
+		error-background: $error-background,
+		error-color: $error-color,
+
 		error-label-background: $error-label-background,
 		error-label-border: $error-label-border,
 		error-label-color: $error-label-color,
@@ -109,25 +125,32 @@ $theme: (
 		accent-background: $accent-background,
 		accent-haze-background: $accent-haze-background,
 
-		flat-saved-light: $flat-green-light,
-		flat-saved-dark: $flat-green-dark,
-		flat-removed-light: $flat-orange-light,
-		flat-removed-dark: $flat-orange-dark,
-		flat-deleted-light: $flat-red-light,
-		flat-deleted-dark: $flat-red-dark,
+		shade-color: $shade-color,
+
+		flat-blue-light: $flat-blue-light,
+		flat-blue-dark: $flat-blue-dark,
+		flat-green-light: $flat-green-light,
+		flat-green-dark: $flat-green-dark,
+		flat-orange-light: $flat-orange-light,
+		flat-orange-dark: $flat-orange-dark,
+		flat-red-light: $flat-red-light,
+		flat-red-dark: $flat-red-dark,
 		flat-outline-width: $flat-outline-width,
 		flat-dark-front: $flat-dark-front,
-		flat-light-front: $flat-light-front
+		flat-light-front: $flat-light-front,
+
+		mobile-media: $mobile-media
 	),
-	util-box: (
-		card-background: $card-background,
-		card-shadow: 0 2px 4px rgba(0, 0, 0, 0.07),
-
-		border-radius: 2px,
-		outer-margin: 10px,
-		padding: 10px,
-
-		separator: 1px solid whitesmoke
+	drop: (
+		border-color: #eee
+	),
+	ellipsis: (
+		width: 16px,
+		padding: 8px,
+		border-width: 1px,
+		border-color: #eee,
+		background: $card-background,
+		hover-background: $main-background
 	),
 	listing-box: (
 		background: $card-background,
@@ -157,19 +180,62 @@ $theme: (
 		odd-row-background: $card-background,
 		even-row-background: $accent-background,
 	),
+	loading-box: (
+		background: $card-background,
+		transition: 300ms
+	),
+	sidebar-nav: (
+		background: $sidebar-background,
+		background-highlight: $sidebar-overlay-background,
+		highlight: $highlight
+	),
+	timed-button: (
+		background: $highlight,
+		color: $card-background,
+
+		disabled-background: $subdued,
+		disabled-color: $subdued-dark-complement
+	),
+	util-box: (
+		card-background: $card-background,
+		card-shadow: 0 2px 4px rgba(0, 0, 0, 0.07),
+
+		border-radius: 2px,
+		outer-margin: 10px,
+		padding: 10px,
+
+		separator: 1px solid $accent-background
+	),
+	// Package: VueForm
 	inputs: (
+		// Core input styling
+		core-inputs: (
+			general: (
+				highlight: $highlight,
+				highlight-complement: $highlight-complement
+			),
+			date-selector: (),
+			time-selector: ()
+		),
+		search-input-box: (
+			highlight: $highlight,
+			highlight-complement: $highlight-complement
+		),
 		// This also serves as the base style for
 		// other inputs, which can be overwritten,
 		// in each input map
 		input: (
+			height: $input-master-height,
+			border-radius: 3px,
+
 			color: #1e2021,
 			focus-color: #1e2021,
-			error-color: #9a3131,
+			error-color: #ab0f2f,
 			autofill-color: #276a9e,
 
 			background: $card-background,
-			focus-background: #eee,
-			error-background: #ffe1e1,
+			focus-background: #f3f3f3,
+			error-background: #ffe7ec,
 			autofill-background: #edf7ff,
 
 			border-width: 1px,
@@ -184,18 +250,20 @@ $theme: (
 
 			error-border-width: 1px,
 			error-border-style: solid,
-			error-border-color: #e02929,
-			error-border: 1px solid #e02929,
+			error-border-color: #e8879b,
+			error-border: 1px solid #e8879b,
 
 			autofill-border-width: 1px,
 			autofill-border-style: solid,
 			autofill-border-color: #74b4e6,
-			autofill-border: 1px solid #74b4e6
+			autofill-border: 1px solid #74b4e6,
+
+			highlight: $highlight,
+			highlight-complement: $highlight-complement
 		),
 		checkbox: (),
 		count: (),
 		dropdown: (
-			height: $input-master-height,
 			padding: 10px,
 			mobile-padding: 30px,
 			separator-border: 1px solid rgba(128, 128, 128, 0.25)
@@ -206,12 +274,12 @@ $theme: (
 			icon-shadow: 0 2px 3px rgba(0, 0, 0, 0.2),
 			shade-color: black,
 			feature-color: $card-background,
-			error-border-color: #e02929,
+			error-border-color: #e8879b,
 			output-preview-spacing: 10px,
 			highlight: $highlight,
 			raster-light: #222,
 			raster-dark: #333,
-			output-preview-height: 100px,
+			output-preview-height: 80px,
 			output-preview-border-radius: 2px,
 			obscure-duration: 300ms,
 			obscure-delay: 0ms,
@@ -220,10 +288,10 @@ $theme: (
 		),
 		multi: (
 			background: $card-background,
-			error-background: #ffe1e1,
+			error-background: #ffe7ec,
 			border: 1px solid #dadada,
 			focus-border: 1px solid #1e2021,
-			error-border: 1px solid #e02929,
+			error-border: 1px solid #e8879b,
 			focus-border-color: #1e2021,
 			error-color: #9a3131,
 			highlight: $highlight,
@@ -238,25 +306,28 @@ $theme: (
 		radio: (),
 		textarea: (
 			background: $card-background,
-			error-background: #ffe1e1,
+			error-background: #ffe7ec,
 			border: 1px solid #dadada,
 			focus-border: 1px solid #1e2021,
-			error-border: 1px solid #e02929,
+			error-border: 1px solid #e8879b,
 			focus-border-color: #1e2021,
+			error-color: #ab0f2f
+		),
+		time: (
+			height: $input-master-height,
+			background: $card-background,
+			error-background: #ffe7ec,
+			dial-background: whitesmoke,
+			dial-background-dark: #dadee2,
+			border: 1px solid #dadada,
+			error-border: 1px solid #e8879b,
 			error-color: #9a3131,
-			autofill-color: #276a9e
+			blob-radius: 15px,
+			delimination-padding: 20px,
+			tight-delimination-padding: 15px,
+			highlight: $highlight,
+			highlight-complement: $highlight-complement,
+			transition-duration: 300ms
 		)
-	),
-	loading-box: (
-		background: $card-background,
-		transition: 300ms
-	),
-	ellipsis: (
-		width: 16px,
-		padding: 8px,
-		border-width: 1px,
-		border-color: #eee,
-		background: $card-background,
-		hover-background: $main-background
 	)
 );
