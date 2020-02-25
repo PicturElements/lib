@@ -18,7 +18,10 @@ export default {
 		
 			wrapper.addHook((options.on || "beforeMount"), function() {
 				const elem = options.element;
-				options.elem = typeof elem == "function" ? elem.call(this, elem) : elem;
+				options.elem = typeof elem == "function" ?
+					elem.call(this, elem) :
+					elem;
+
 				this.$data[name] = new ScrollStops(options);
 				this.$data[name].thisVal = this;
 			});
