@@ -204,7 +204,7 @@ export default class ScrollStops extends Hookable {
 
 		return function(start = 0, extent = null) {
 			extent = extent == null ? 1 - start : extent;
-			const stop = get(this.$data, accessor);
+			const stop = get(this, accessor);
 			return interpolator(stop, start, extent);
 		};
 	}
@@ -214,7 +214,7 @@ export default class ScrollStops extends Hookable {
 		
 		return function(start = 0, extent = null) {
 			extent = extent == null ? 1 - start : extent;
-			const stop = get(this.$data, accessor);
+			const stop = get(this, accessor);
 			return interpolator(stop, start, extent);
 		};
 	}
