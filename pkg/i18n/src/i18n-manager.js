@@ -1,19 +1,25 @@
 import {
-	isObj,
-	clone,
-	splitPath,
 	get,
-	isObject,
-	coerceToObj,
+	splitPath,
 	sym,
 	setSymbol,
-	inject,
+	clone,
 	isEnv,
-	mkStdLib
+	isObj,
+	isObject,
+	coerceToObj,
+	inject,
+	hasOwn,
+	forEach,
+	getTime,
+	mkStdLib,
+	isPrimitive
 } from "@qtxr/utils";
 import { Hookable } from "@qtxr/bc";
 import { AssetLoader } from "@qtxr/request";
-import IETF, { coerceIETF } from "./ietf";
+import { KeyedLinkedList } from "@qtxr/ds";
+import URL from "@qtxr/url";
+import IETF from "./ietf";
 import {
 	parseFormat,
 	resolveFormat,
@@ -22,38 +28,50 @@ import {
 import langStdLib from "./lang-std-lib";
 
 const RESERVED_KEYS = {
-	default: 1,
-	requires: 1
+	default: true,
+	requires: true,
+	extends: true,
+	locale: true
 };
 
 const NULL_GET = Object.freeze({
 	_empty: true
 });
 
-const LOCALE_SYM = sym("locale"),
-	REF_TABLE_SYM = sym("reference table"),
-	REF_LOOKUP_SYM = sym("reference lookup"),
-	OWNER_SYM = sym("owner");
+const OWNER_MAP_SYM = sym("owner map"),
+	META_SYM = sym("meta"),
+	EXTENSION_REGEX = /\.([mc]js|js(?:on))/;
 
 class I18NManager extends Hookable {
-	constructor(locale, settings) {
+	constructor(locale, config) {
 		if (isObject(locale)) {
-			settings = locale;
+			config = locale;
 			locale = null;
 		}
 
 		super();
-		this.locale = locale ? coerceIETF(locale) : new IETF("en");
+		this.locale = locale ?
+			IETF.coerce(locale) :
+			new IETF("en");
 		this.requestedLocale = this.locale;
 		this.locales = [];
-		this.settings = Object.assign({}, I18NManager.DEF_SETTINGS, settings);
+		this.localePartitions = [];
+		this.config = inject(
+			I18NManager.DEF_CONFIG,
+			config,
+			"cloneTarget|override"
+		);
 		this.store = {};
 		this.addedAssets = {};
 		this.sitemap = null;
-		this.stdLib = mkStdLib("I18NStdLib", langStdLib, this.settings.stdLib);
+		this.stdLib = mkStdLib(
+			"I18NStdLib",
+			langStdLib,
+			this.config.stdLib
+		);
 
 		this.loader = new AssetLoader({
-			path: (loader, path) => coerceToJSONFileName(path),
+			path: (loader, path) => normalizeFilename(path, this),
 			fetchResponse: (loader, path, response) => {
 				if (!response)
 					console.error(`Failed to load locale data at ${path}`);
@@ -62,23 +80,73 @@ class I18NManager extends Hookable {
 			},
 			xhrSettings: (loader, path, settings) => {
 				return Object.assign({
-					baseUrl: this.settings.baseUrl
+					baseUrl: resolveBaseUrl(this.config.baseUrl)
 				}, settings);
 			},
-			dependencies: (loader, path, dependent) => dependent.payload.requires,
-			assetNode: (loader, path, node, dependent) => {
-				const name = stripJSONExtension(path),
-					ex = /^(?:(.+?)\.)?(.+?)?$/.exec(name);
+			dependencies: (loader, path, dependent) => {
+				const dependencies = [];
+
+				switch (get(this.config, "files.structure")) {
+					case "file":
+						if (dependent.payload.extends)
+							dependencies.push(URL.join(path, "..", dependent.payload.extends));
+						break;
+
+					case "dir":
+						if (dependent.payload.extends)
+							dependencies.push(`${dependent.payload.extends}/index`);
+						break;
+				}
+
+				const requires = dependent.payload.requires,
+					newDependencies = requires ?
+						(Array.isArray(requires) ?
+							requires :
+							[requires]) :
+						[];
+
+				for (let i = 0, l = newDependencies.length; i < l; i++)
+					dependencies.push(URL.join(path, "..", newDependencies[i]));
 				
-				if (ex) {
-					node.name = ex[1] || "";
-					node.locale = ex[2] || null;
+				return dependencies;
+			},
+			assetNode: (loader, path, node, dependent) => {
+				if (node.item && node.item.locale)
+					node.locale = node.item.locale;
+				else {
+					let locale = null;
+
+					switch (get(this.config, "files.structure")) {
+						case "file": {
+							const stripped = stripExtension(path),
+								ex = /\.?([^.]+?)$/.exec(stripped);
+							
+							if (ex)
+								locale = new IETF(ex[1]);
+							break;
+						}
+	
+						case "dir": {
+							const baseUrl = resolveBaseUrl(this.config.baseUrl),
+								fullPath = URL.join(baseUrl, path),
+								relativePath = fullPath.indexOf(baseUrl) == 0 ?
+									fullPath.substr(baseUrl.length) :
+									fullPath,
+								ex = /[\\\/.]+([a-z0-9-]+)/i.exec(relativePath);
+
+							if (ex)
+								locale = new IETF(ex[1]);
+							break;
+						}
+					}
+
+					node.locale = locale && locale.valid ? locale : null;
 				}
 			}
 		});
 
-		if (this.settings.sitemapPath) {
-			this.loader.prefetch(this.settings.sitemapPath, this.settings, {
+		if (this.config.sitemapPath) {
+			this.loader.prefetch(this.config.sitemapPath, this.config, {
 				prefetchResponse: (loader, path, response) => {
 					if (!response.success)
 						return;
@@ -86,7 +154,7 @@ class I18NManager extends Hookable {
 					this.sitemap = response.payload;
 
 					for (const k in this.sitemap) {
-						if (!this.sitemap.hasOwnProperty(k))
+						if (!hasOwn(this.sitemap, k))
 							continue;
 
 						this.sitemap[k] = this.sitemap[k].map(s => new IETF(s));
@@ -96,20 +164,8 @@ class I18NManager extends Hookable {
 		}
 	}
 
-	interpolate(key, ...args) {
-		let str = this.get(key);
-		
-		if (typeof str != "string")
-			return str;
-
-		for (let i = args.length - 1; i >= 0; i--)
-			str = str.replace(new RegExp(`%${i - 1}(?![0-9])`, "g"), args[i]);
-		
-		return str;
-	}
-
-	get(accessor, ietf, copy) {
-		const partition = this.getPartition(ietf),
+	get(accessor, locale, copy) {
+		const partition = this.getPartition(locale),
 			gotten = get(
 				partition,
 				accessor,
@@ -119,15 +175,15 @@ class I18NManager extends Hookable {
 		return copy ? clone(gotten) : gotten;
 	}
 
-	compose(format, vars, ietf, baseStore = {}) {
-		ietf = coerceIETF(ietf);
-		ietf = ietf.valid ? ietf : this.locale;
+	compose(format, vars, locale, baseStore = {}) {
+		locale = IETF.coerce(locale);
+		locale = locale.valid ? locale : this.locale;
 		vars = vars == null ?
 			null :
-			isObject(vars) ? vars : { x: vars };
+			(isObject(vars) ? vars : { x: vars });
 
 		const p = splitPath(format),
-			partition = this.getPartition(ietf);
+			partition = this.getPartition(locale);
 		let formatTrace = null,
 			outFormat = format;
 		
@@ -147,115 +203,110 @@ class I18NManager extends Hookable {
 			parsedFormat,
 			store: new this.stdLib(baseStore, vars),
 			manager: this,
-			ietf
+			locale
 		});
 	}
 
-	dateCompose(format, vars, date, ietf) {
+	dateCompose(format, vars, date, locale) {
 		if (typeof date == "string" || (typeof date == "number" && !isNaN(date)))
 			date = new Date(date);
 		if (!(date instanceof Date) || isNaN(date.valueOf()))
 			date = new Date();
 
-		return this.compose(format, vars, ietf, {
+		return this.compose(format, vars, locale, {
 			date
 		});
 	}
 
-	getPartition(ietf) {
-		ietf = coerceIETF(ietf);
-		ietf = ietf.valid ? ietf : this.locale;
+	interpolate(key, ...args) {
+		let str = this.get(key);
+		
+		if (typeof str != "string")
+			return str;
 
-		return this.store[ietf.value] || this.store[ietf.primary] || {};
+		for (let i = args.length - 1; i >= 0; i--)
+			str = str.replace(new RegExp(`%${i - 1}(?![0-9])`, "g"), args[i]);
+		
+		return str;
 	}
 
-	setLocale(ietf, settings, lazy) {
-		ietf = coerceIETF(ietf);
+	getPartition(locale) {
+		locale = IETF.coerce(locale);
+		locale = locale.valid ? locale : this.locale;
+		return this.store[locale.value] || this.store[locale.primary] || {};
+	}
 
-		this.requestedLocale = ietf;
+	setLocale(locale, config = null, lazy = true) {
+		locale = IETF.coerce(locale);
+		this.requestedLocale = locale;
 
-		return new Promise(resolve => {
-			this.loadLocale(ietf, settings, lazy)
-				.then(partition => {
-					const oldLocale = this.locale;
+		this.fetch(null, locale, config, lazy)
+			.then(partition => {
+				const oldLocale = this.locale;
 
-					if (partition)
-						this.locale = ietf;
-					
-					this.dispatchLocaleLoad(ietf, oldLocale);
-					resolve(!!partition, this.locale);
-				});
+				if (partition)
+					this.locale = locale;
+
+				this.callHooks("localeset");
+
+				if (!locale.equals(oldLocale))
+					this.callHooks("localechange");
+
+				return Boolean(partition);
+			});
+	}
+
+	loadFragment(path, config = null, lazy = true) {
+		path = normalizeFilename(path, this);
+
+		return this.loader.requestIdle(_ => {
+			return new Promise(resolve => {
+				const strippedPath = stripExtension(path);
+				let locale = this.requestedLocale;
+
+				if (this.sitemap && hasOwn(this.sitemap, strippedPath))
+					locale = IETF.findOptimalLocale(this.requestedLocale, this.sitemap[strippedPath]);
+
+				this.fetch(strippedPath, locale, config, lazy)
+					.then(d => {
+						this.callHooks("fragmentloaded");
+						this.callHooks(`fragmentloaded:${strippedPath}`);
+						resolve(d);
+					});
+			});
 		});
 	}
 
-	registerLocale(config, force = false) {
-		force = typeof force == "boolean" ? force : false;
+	async fetch(path, locale, config = null, lazy = true) {
+		path = path && normalizeFilename(path, this);
+		locale = IETF.coerce(locale);
 
-		let ietf = coerceIETF(config.locale),
-			data,
-			dependencies = [],
-			path;
+		switch (get(this.config, "files.structure")) {
+			case "file":
+				path = path ?
+					`${path}.${locale.toString()}` :
+					locale.toString();
+				break;
 
-		if (!isObj(config))
-			return console.warn(`Failed to register locale '${ietf.value}' because the supplied config data is not an object`);
-		
-		if (config.isAssetNode) {
-			data = config.item;
-			dependencies = config.dependencies;
-			path = config.path;
-		} else {
-			if (!config.name || typeof config.name != "string")
-				return console.warn(`Failed to register locale '${ietf.value}' because the config doesn't have a valid identifying name`);
-
-			data = config.data;
-			dependencies = [];
-			path = config.name;
+			case "dir":
+				path = URL.join(locale.toString(), path || "index");
+				break;
 		}
 
-		if (!isObj(data))
-			return console.warn(`Failed to register locale '${ietf.value}' because the supplied data is not an object`);
-		if (!ietf.valid)
-			return console.warn(`Failed to register locale '${ietf.value}' because the IETF code is invalid`);
-		if (this.addedAssets.hasOwnProperty(path) && !force)
-			return console.warn(`Refused to add locale '${ietf.value}' because it's already defined. Use the force flag`);
-
-		const newLocale = !this.store.hasOwnProperty(ietf.value);
-
-		if (newLocale) {
-			this.locales.push(ietf.value);
-			this.store[ietf.value] = initLocalePartition(data, dependencies, ietf.value);
-		}
-
-		const inData = formatLocaleData(data);
-
-		supplementPartitionData(this.store, data, ietf.value, !newLocale);
-		setOwnership(inData, ietf.value);
-		shareOwnership(this.store, inData, ietf.value);
-
-		console.log("Registered", path);
-		this.addedAssets[path] = data;
-	}
-
-	async loadLocale(path, settings = true, lazy = true) {
-		path = coerceToJSONFileName(path);
-
-		if (lazy && this.addedAssets.hasOwnProperty(path))
+		if (lazy && hasOwn(this.addedAssets, path))
 			return this.addedAssets[path];
 
 		if (this.loader.isEnqueued(path))
 			return null;
 
-		const tree = await this.loader.fetchModule(path, settings, lazy);
+		const tree = await this.loader.fetchModule(path, config, lazy);
 
 		if (tree.success && !tree.cached) {
-			// This has to be tail recursive as dependents have
-			// to be registered before their dependencies
 			AssetLoader.traverse(tree.payload, dependent => {
-				this.registerLocale(dependent, true);
-			}, true);
+				this.feed(dependent, true);
+			});
 
 			this.callHooks("localeloaded");
-			
 			return tree.payload.item;
 		}
 
@@ -265,40 +316,83 @@ class I18NManager extends Hookable {
 		return null;
 	}
 
-	loadFragment(path, settings = null, lazy = true) {
-		path = coerceToJSONFileName(path);
+	feed(payload, force = false) {
+		force = typeof force == "boolean" ? force : false;
 
-		return this.loader.requestIdle(_ => {
-			return new Promise(resolve => {
-				const name = stripJSONExtension(path);
+		let locale = IETF.coerce(payload.locale),
+			dependencies,
+			inData,
+			path;
 
-				if (name.indexOf(".") > -1)
-					return resolve(null);
+		if (!isObj(payload))
+			return console.error(`Failed to register locale '${locale.value}' because the supplied data is not an object`);
 
-				let locale = this.requestedLocale;
+		if (payload.locale)
+			locale = IETF.coerce(payload.locale);
+		
+		if (payload.isAssetNode) {
+			dependencies = payload.dependencies;
+			inData = payload.item;
+			path = payload.path;
+		} else {
+			const pth = payload.path || payload.name;
 
-				if (this.sitemap && this.sitemap.hasOwnProperty(name))
-					locale = IETF.findOptimalLocale(this.requestedLocale, this.sitemap[name]);
+			if (!pth || typeof pth != "string")
+				return console.error(`Failed to register locale '${locale.value}' because the supplied data doesn't have a valid identifying name or path`);
 
-				this.loadLocale(`${name}.${locale.value}`, settings, lazy)
-					.then(d => {
-						this.callHooks("fragmentloaded");
-						this.callHooks(`fragmentloaded:${name}`);
-						resolve(d);
-					});
-			});
-		});
+			dependencies = [];
+			inData = payload.data;
+			path = pth;
+		}
+
+		if (!isObj(inData))
+			return console.error(`Failed to register locale '${locale.value}' because the supplied data is not an object`);
+		if (!locale.valid)
+			return console.error(`Failed to register locale '${locale.value}' because the IETF language tag is invalid`);
+		if (hasOwn(this.addedAssets, path) && !force)
+			return console.error(`Refused to add locale '${locale.value}' because it's already defined. Use the force flag`);
+
+		const newLocale = !hasOwn(this.store, locale.value),
+			startTime = getTime();
+		let partition = this.store[locale.value];
+
+		if (newLocale) {
+			partition = coerceToObj(null, inData);
+			partition[META_SYM] = {
+				path,
+				dependencies,
+				suppliedBy: {},
+				supplyTime: 0
+			};
+			this.locales.push(locale);
+			this.store[locale.value] = partition;
+
+			for (let i = 0, l = this.localePartitions.length; i < l; i++) {
+				supplyLocaleData(partition, this.localePartitions[i], this.locales[i], locale);
+				partition[META_SYM].suppliedBy[this.localePartitions[i][META_SYM].path] = true;
+			}
+
+			this.localePartitions.push(partition);
+		}
+
+		supplyLocaleData(partition, inData, locale, locale);
+
+		for (let i = 0, l = this.localePartitions.length; i < l; i++) {
+			const part = this.localePartitions[i],
+				meta = part[META_SYM];
+
+			if (part != partition && (!hasOwn(meta.suppliedBy, path) || force)) {
+				supplyLocaleData(part, partition, locale, this.locales[i]);
+				meta.suppliedBy[path] = true;
+			}
+		}
+
+		partition[META_SYM].supplyTime += (getTime() - startTime);
+		this.addedAssets[path] = inData;
 	}
 
-	dispatchLocaleLoad(locale, oldLocale) {
-		this.callHooks("localeset");
-
-		if (!locale.equals(oldLocale))
-			this.callHooks("localechange");
-	}
-
-	static setDefaultSettings(settings) {
-		Object.assign(I18NManager.DEF_SETTINGS, settings);
+	static setDefaultConfig(config) {
+		inject(I18NManager.DEF_CONFIG, config, "override");
 	}
 }
 
@@ -307,173 +401,90 @@ I18NManager.prototype.fmt = I18NManager.prototype.compose;
 I18NManager.prototype.dateFormat = I18NManager.prototype.dateCompose;
 I18NManager.prototype.dfmt = I18NManager.prototype.dateCompose;
 
-// Initializes a base locale partition (e.g. en, en_uk)
-// and creates a reference table. The reference table contains
-// locale data that describe which partition to seek supplementary data
-// from if the partition doesn't have all it needs. This reference
-// table is loaded sequentially, as to resemble a priority queue
-// If a locale has dependencies from many different locales, the
-// missing data resolver will go through the first requested through
-// last requested locale. If the input data has a "default" field,
-// that will be used as the primary source locale
-function initLocalePartition(data, dependencies, locale) {
-	const partition = {};
-	setSymbol(partition, REF_TABLE_SYM, []);
-	setSymbol(partition, REF_LOOKUP_SYM, {});
-	setSymbol(partition, LOCALE_SYM, locale);
+function supplyLocaleData(partition, data, locale, targetLocale) {
+	const similarity = IETF.compare(locale, targetLocale);
 
-	if (data.default)
-		extendReferenceTable(partition, data.default);
+	const supply = (part, d) => {
+		let map;
 
-	for (let i = 0, l = dependencies.length; i < l; i++)
-		extendReferenceTable(partition, dependencies[i].locale);
+		if (!hasOwn(part, OWNER_MAP_SYM, true)) {
+			map = new KeyedLinkedList();
+			setSymbol(part, OWNER_MAP_SYM, map);
+		} else
+			map = part[OWNER_MAP_SYM];
 
-	return partition;
-}
+		if (hasOwn(d, OWNER_MAP_SYM, true))
+			d[OWNER_MAP_SYM].forEach((ls, k) => inj(part, map, d[k], k));
+		else
+			forEach(d, (v, k) => inj(part, map, v, k));
+	};
 
-function extendReferenceTable(partition, locale) {
-	const ietf = coerceIETF(locale);
+	const inj = (part, map, v, k) => {
+		if (hasOwn(RESERVED_KEYS, k))
+			return;
 
-	if (!partition || !ietf.valid || partition[LOCALE_SYM] == locale)
-		return false;
+		if (map.has(k)) {
+			if (isPrimitive(v)) {
+				const ls = map.get(k).value;
 
-	const refLookup = partition[REF_LOOKUP_SYM],
-		refLocale = ietf.value;
+				if (similarity > ls[1]) {
+					part[k] = v;
+					map.push(k, [locale, similarity]);
+				}
+			} else
+				supply(part[k], v);
+		} else {
+			if (isPrimitive(v))
+				part[k] = v;
+			else {
+				part[k] = coerceToObj(null, v);
+				supply(part[k], v);
+			}
 
-	if (!refLookup.hasOwnProperty(refLocale)) {
-		refLookup[refLocale] = true;
-		partition[REF_TABLE_SYM].push(refLocale);
-		return true;
-	}
-
-	return false;
-}
-
-function formatLocaleData(data) {
-	const outData = {};
-
-	if (!data || data.constructor != Object) {
-		console.warn("Cannot format locale data: data is not an object");
-		return outData;
-	}
-
-	for (const k in data) {
-		if (!data.hasOwnProperty(k) || RESERVED_KEYS.hasOwnProperty(k))
-			continue;
-
-		if (!isObj(data[k])) {
-			console.warn(`Cannot initialize locale data at ${k}: data is not an object`);
-			continue;
-		}
-			
-		outData[k] = data[k];
-	}
-
-	return outData;
-}
-
-function setOwnership(inData, locale) {
-	const set = target => {
-		for (const k in target) {
-			if (!target.hasOwnProperty(k) || !isObj(target[k]))
-				continue;
-
-			setSymbol(target[k], OWNER_SYM, locale);
-			set(target[k]);
+			map.push(k, [locale, similarity]);
 		}
 	};
 
-	set(inData);
+	supply(partition, data);
 }
 
-function shareOwnership(store, inData, locale) {
-	for (const k in store) {
-		if (!store.hasOwnProperty(k) || k == locale)
-			continue;
-
-		const partition = store[k];
-
-		inject(partition, inData, {
-			injectSymbols: true
-		});
-	}
-}
-
-function supplementPartitionData(store, inData, locale, onlyForNewFragments) {
-	const targetPartition = store[locale],
-		refTable = targetPartition[REF_TABLE_SYM];
-
-	const supplement = (target, refs) => {
-		for (let i = 0, l = refs.length; i < l; i++) {
-			const ref = refs[i];
-
-			for (const k in ref) {
-				if (ref[k] == null || !ref.hasOwnProperty(k) || RESERVED_KEYS.hasOwnProperty(k))
-					continue;
-
-				if (target.hasOwnProperty(k) && target != null && typeof target[k] != "object")
-					continue;
-
-				if (typeof ref[k] != "object") {
-					target[k] = ref[k];
-					continue;
-				}
-
-				const newRefs = [];
-				for (let j = 0, l2 = refs.length; j < l2; j++) {
-					if (refs[j][k])
-						newRefs.push(refs[j][k]);
-				}
-
-				if (target[k] && target[k][OWNER_SYM] != locale)
-					target[k] = coerceToObj(null, ref[k]);
-				else
-					target[k] = coerceToObj(target[k], ref[k]);
-
-				supplement(target[k], newRefs);
-			}
-		}
-	};
-
-	if (inData && onlyForNewFragments) {
-		for (const k in inData) {
-			if (!inData.hasOwnProperty(k) || RESERVED_KEYS.hasOwnProperty(k))
-				continue;
-
-			const refPartitions = inData[k] ? [inData[k]] : [];
-
-			for (let i = 0, l = refTable.length; i < l; i++) {
-				if (store[refTable[i]] && store[refTable[i]][k])
-					refPartitions.push(store[refTable[i]][k]);
-			}
-
-			targetPartition[k] = coerceToObj(targetPartition[k], inData[k]);
-			supplement(targetPartition[k], refPartitions);
-		}
-	} else {
-		const refPartitions = inData ? [inData] : [];
-
-		for (let i = 0, l = refTable.length; i < l; i++)
-			refPartitions.push(store[refTable[i]]);
-
-		supplement(targetPartition, refPartitions);
-	}
-}
-
-function coerceToJSONFileName(path) {
-	if (/\.json$/.test(path))
+function normalizeFilename(path, manager) {
+	if (EXTENSION_REGEX.test(path))
 		return path;
 
-	return `${path}.json`;
+	return `${path}.${get(manager.config, "files.defaultExtension", "json")}`;
 }
 
-function stripJSONExtension(path) {
-	return path.replace(/\.json$/, "");
+function stripExtension(path) {
+	return path.replace(/\.\w+?$/, "");
 }
 
-I18NManager.DEF_SETTINGS = {
-	baseUrl: isEnv("production") ? "/dist/text" : "/text",
-	sitemapPath: "sitemap"
+function resolveBaseUrl(baseUrl) {
+	if (isObject(baseUrl)) {
+		for (const k in baseUrl) {
+			if (!hasOwn(baseUrl, k))
+				continue;
+
+			if (isEnv(k))
+				return baseUrl[k];
+		}
+
+		if (typeof baseUrl != "string")
+			return this.config.baseUrl.default || "/";
+	}
+
+	return baseUrl;
+}
+
+I18NManager.DEF_CONFIG = {
+	baseUrl: isEnv("production") ?
+		"/dist/text" :
+		"/text",
+	sitemapPath: "sitemap",
+	files: {
+		structure: "file",
+		defaultExtension: "json"
+	}
 };
 
 export default I18NManager;

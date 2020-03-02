@@ -1,0 +1,4 @@
+{
+	"extends": "en",
+	"requires": "greetings"
+}

@@ -27,23 +27,23 @@ import {
 // const formatRegex = /.../gi;  To see the full regex, check parseFormatParser
 const FORMATTER_REGEX = /^([a-z]*)([A-Z]*)$/,
 	FORMAT_CAPTURING_GROUPS = [
-		// Regex groups are 1-indexed
-		null,				// CG1 is a string matcher group and is not used
-		"variable",			// Variable reference
-		"variableArgs",		// Opening parenthesis for variable arguments
-		"formatter",		// Formatter definition (eg. mm HH ss)
-		null,				// CG5 is a an internal matcher to ensure a formatter is formed with the same characters
-		"selector",			// Initialize new selector
-		"selectorTerm",		// Start of a new selector body
-		"selectorTermLabel",// Denotes a label to assign to the selector term (@lbl)
-		"fmtRef",			// Reference to a separate format
-		"group",			// Group of tokens
-		"terminator",		// Selector / function argument / group terminators
-		"operator"			// Operators (boolean, bitwise)
+		null,					// CG1 is a string matcher group and is not used
+		"variable",				// Variable reference
+		"variableArgs",			// Opening parenthesis for variable arguments
+		"formatter",			// Formatter definition (eg. mm HH ss)
+		null,					// CG5 is a an internal matcher to ensure a formatter is formed with the same characters
+		"selector",				// Initialize new selector
+		"selectorTerm",			// Start of a new selector body
+		"selectorTermLabel",	// Denotes a label to assign to the selector term (@lbl)
+		"fmtRef",				// Reference to a separate format
+		"group",				// Group of tokens
+		"terminator",			// Selector / function argument / group terminators
+		"operator"				// Operators (boolean, bitwise)
 	],
 	FORMAT_CACHE = {};
 
-// current: /\\.|(["'`])(?:\\.|.)*?\1|\$([a-z0-9_.-]+)(\()?|\b(([yldhms])\5+?)\b|((?:@[bnis])?\[)|(}?\s*{(?:@([a-z0-9_\.-]+):\s?)?)|%([a-z0-9_.-]+)%|(\()|([})\]])|(?:\s*(\|\|?|&&?|={2,3}|!==?|>>>?|<<|[<>]=?|[!~^])\s*)/gi
+// current: /\\.|(["'`])(?:\\.|.)*?\1|\$\(?([a-z0-9_.-]+)\)?(\()?|\b(([yldhms])\5+?)\b|((?:@[bnis])?\[)|(}?\s*{(?:@([a-z0-9_\.-]+):\s?)?)|%((?:[^%\\]|\\.)+?)%|(\()|([})\]])|(?:\s*(\|\|?|&&?|={2,3}|!==?|>>>?|<<|[<>]=?|[!~^])\s*)/gi
+// /\\.|(["'`])(?:\\.|.)*?\1|\$([a-z0-9_.-]+)(\()?|\b(([yldhms])\5+?)\b|((?:@[bnis])?\[)|(}?\s*{(?:@([a-z0-9_\.-]+):\s?)?)|%([a-z0-9_.-]+)%|(\()|([})\]])|(?:\s*(\|\|?|&&?|={2,3}|!==?|>>>?|<<|[<>]=?|[!~^])\s*)/gi
 // /\\.|(["'`])(?:\\.|.)*?\1|\$([a-z0-9_.-]+)(\()?|\b(([yldhms])\5+?)\b|\[((?:\\.|(["'`])(?:\\.|.)*?\7|[^\\\]])+)\]\s*{|(}\s*{)|%([a-z0-9_.-]+)%|(\()|([})])|(\|\||&&|!|[!<>]==)/gi
 // /\\.|\$([a-z0-9_.-]+)(\()?|\b(([ywdhms])\4+?)\b|\[((?:[^\\\]]|\\.)+)\]\s*{|(}\s*{)|%([a-z0-9_.-]+)%|([})])/gi
 // /\\.|\$([a-z0-9_.-]+)(\()?|\b(([ywdhms])\4+?)\b|\[([a-z0-9_.-]+)\]\s*{|(}\s*{)|%([a-z0-9_.-]+)%|([})])/gi
@@ -203,7 +203,7 @@ function parseFormat(format) {
  
 // Tokenize, and create AST-like object
 function parseFormatParser(format, currentStack) {
-	const formatRegex = /\\.|(["'`])(?:\\.|.)*?\1|\$\(?([a-z0-9_.-]+)\)?(\()?|\b(([yldhms])\5+?)\b|((?:@[bnis])?\[)|(}?\s*{(?:@([a-z0-9_\.-]+):\s?)?)|%([a-z0-9_.-]+)%|(\()|([})\]])|(?:\s*(\|\|?|&&?|={2,3}|!==?|>>>?|<<|[<>]=?|[!~^])\s*)/gi,
+	const formatRegex = /\\.|(["'`])(?:\\.|.)*?\1|\$\(?([a-z0-9_.-]+)\)?(\()?|\b(([yldhms])\5+?)\b|((?:@[bnis])?\[)|(}?\s*{(?:@([a-z0-9_\.-]+):\s?)?)|%((?:[^%\\]|\\.)+?)%|(\()|([})\]])|(?:\s*(\|\|?|&&?|={2,3}|!==?|>>>?|<<|[<>]=?|[!~^])\s*)/gi,
 		outStruct = [],
 		structStack = currentStack || [],
 		stackLen = structStack.length;

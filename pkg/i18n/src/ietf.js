@@ -1,12 +1,18 @@
 const ietfRegex = /^([a-z]{2,3})(?:[_-]([a-z]{3}))?(?:[_-]([a-z]{4}))?(?:[_-]([a-z]{2}|[0-9]{3}))?$/,
-	subtags = ["primary", "extlang", "script", "region"];
-
-function coerceIETF(ietf) {
-	if (ietf instanceof IETF)
-		return ietf;
-
-	return new IETF(ietf);
-}
+	subtagData = [
+		{ tag: "primary" },
+		{ tag: "extlang" },
+		{
+			tag: "script",
+			convert: str => str[0].toUpperCase() + str.substr(1)
+		},
+		{
+			tag: "region",
+			convert: str => str.toUpperCase()
+		}
+	],
+	// primary, region, script, extlang
+	subtagPriority = [0, 3, 2, 1];
 
 export default class IETF {
 	constructor(str) {
@@ -19,33 +25,41 @@ export default class IETF {
 			return this.reset();
 	
 		str = str.toLowerCase();
-		const ex = ietfRegex.exec(str);
+		const ex = ietfRegex.exec(str),
+			value = [];
+
 		if (!ex)
 			return this.reset();
-	
-		subtags.forEach((s, i) => {
-			this[s] = ex[i + 1] || null;
-		});
+		
 		this.valid = true;
+
+		for (let i = 0, l = subtagData.length; i < l; i++) {
+			const data = subtagData[i],
+				subtag = data.tag,
+				capture = ex[i + 1];
+
+			if (!capture) {
+				this[subtag] = null;
+				continue;
+			}
+
+			const subtagValue = typeof data.convert == "function" ?
+				data.convert(capture) :
+				capture;
+
+			this[subtag] = subtagValue;
+			value.push(subtagValue);
+		}
 	
-		let key = [];
-		subtags.forEach(s => {
-			if (this[s])
-				key.push(this[s]);
-		});
-		this.key = key.join("_");
-	
-		this.value = str;
+		this.value = value.join("-");
 		return this;
 	}
 	
 	reset() {
-		subtags.forEach(s => {
-			this[s] = null;
-		});
+		for (let i = 0, l = subtagData.length; i < l; i++)
+			this[subtagData[i].tag] = null;
 	
 		this.valid = false;
-		this.key = "";
 		this.value = "";
 		return this;
 	}
@@ -59,34 +73,44 @@ export default class IETF {
 	}
 
 	static findOptimalLocale(targetLocale, locales) {
-		targetLocale = coerceIETF(targetLocale);
 		let score = 0,
 			optimalIdx = 0;
 
 		for (let i = 0, l = locales.length; i < l; i++) {
-			const locale = locales[i];
-			let currentScore = 0;
+			const s = this.compare(locales[i], targetLocale);
 
-			if (targetLocale.valid && locale.valid) {
-				const sl = subtags.length;
-				currentScore = sl;
-
-				for (let j = 0; j < sl; j++) {
-					if (targetLocale[subtags[j]] != locale[subtags[j]]) {
-						currentScore = j;
-						break;
-					}
-				}
-			}
-
-			if (currentScore > score)
+			if (s > score)
 				optimalIdx = i;
 		}
 
-		return coerceIETF(locales[optimalIdx]);
+		return this.coerce(locales[optimalIdx]);
+	}
+
+	static compare(locale, locale2) {
+		locale = this.coerce(locale);
+		locale2 = this.coerce(locale2);
+
+		if (!locale.valid || !locale2.valid)
+			return -1;
+
+		let score = 0;
+
+		for (let i = 0, l = subtagPriority.length; i < l; i++) {
+			const subtag = subtagData[subtagPriority[i]].tag;
+
+			score <<= 1;
+
+			if (locale[subtag] == locale2[subtag] && locale[subtag] !== null)
+				score += 1;
+		}
+
+		return score;
+	}
+
+	static coerce(candidate) {
+		if (candidate instanceof IETF)
+			return candidate;
+
+		return new IETF(candidate);
 	}
 }
-
-export {
-	coerceIETF
-};
