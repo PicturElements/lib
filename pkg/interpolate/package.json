@@ -34,7 +34,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 5,
+    "pushes": 6,
     "expose": {
       "scripts": [
         "connect/feed.js"
