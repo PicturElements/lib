@@ -202,20 +202,20 @@ export default class ScrollStops extends Hookable {
 	static wrapInterpolator(style, accessor) {
 		const interpolator = ScrollStops.mkStyleInterpolator(style);
 
-		return function(start = 0, extent = null) {
+		return function(start = 0, extent = null, multiplier = 1) {
 			extent = extent == null ? 1 - start : extent;
 			const stop = get(this, accessor);
-			return interpolator(stop, start, extent);
+			return interpolator(stop * multiplier, start, extent);
 		};
 	}
 
 	static wrapPureInterpolator(data, accessor) {
 		const interpolator = ScrollStops.mkPureInterpolator(data);
 		
-		return function(start = 0, extent = null) {
+		return function(start = 0, extent = null, multiplier = 1) {
 			extent = extent == null ? 1 - start : extent;
 			const stop = get(this, accessor);
-			return interpolator(stop, start, extent);
+			return interpolator(stop * multiplier, start, extent);
 		};
 	}
 }
