@@ -92,7 +92,6 @@ export default class FunctionListInterpolator extends Interpolator {
 }
 
 function parseFunctionList(raw, units, functions, functionIndexer) {
-	raw = raw.toLowerCase();
 	const splitFunctionRegex = /([^()\s]+)(?:\(((?:\([^)]+?\)|[^()])+?)\))?/g,
 		functionList = [],
 		functionDict= {};
