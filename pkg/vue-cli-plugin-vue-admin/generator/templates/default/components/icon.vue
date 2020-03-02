@@ -59,7 +59,7 @@
 		viewBox="0 0 100 100"
 		xmlns="http://www.w3.org/2000/svg")
 		path(d="M30 30 l40 40 M70 30 l-40 40")
-	div.adm-icon(v-else key="placeholder")
+	.adm-icon(v-else key="placeholder")
 </template>
 
 <script>

@@ -42,10 +42,7 @@
 
 <script>
 	import admin from "../";
-	import {
-		get,
-		hasAncestor
-	} from "@qtxr/utils";
+	import { hasAncestor } from "@qtxr/utils";
 
 	// Load final static assets and finish VueAdmin initialization
 	import "../assets/scss/imports.scss";
@@ -66,7 +63,7 @@
 			expandSidebar() {
 				this.sidebarExpanded = true;
 			},
-			collapseSidebar(evt) {
+			collapseSidebar() {
 				this.sidebarExpanded = false;
 			},
 			headerCollapseSidebar(evt) {

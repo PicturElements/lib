@@ -79,6 +79,7 @@
 		flex-shrink: 0;
 		justify-content: space-between;
 		align-items: center;
+		min-height: 50px;
 		height: $header-height;
 		background: $header-background;
 		color: $header-color;
@@ -114,12 +115,6 @@
 		align-items: flex-start;
 		flex-grow: 1;
 		flex-shrink: 0;
-	}
-
-	header {
-		flex-grow: 0;
-		flex-shrink: 0;
-		min-height: 50px;
 	}
 
 	.admin-padded-wrapper {
