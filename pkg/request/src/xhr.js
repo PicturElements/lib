@@ -31,9 +31,10 @@ const methods = {
 };
 
 const presetSchema = {
-	headers: Object,
-	payload: v => typeof v != "function",
 	baseUrl: ["string", URL],
+	headers: Object,
+	urlParams: Object,
+	payload: v => typeof v != "function",
 	hooks: Object
 };
 
@@ -637,16 +638,19 @@ function testGuard(manager) {
 	return true;
 }
 
-const presetStruct = {
-	headers: {},
-	payload: null,
-	baseUrl: null,
-	hooks: {}
-};
+function getPresetStruct() {
+	return {
+		baseUrl: null,
+		headers: {},
+		urlParams: {},
+		payload: null,
+		hooks: {}
+	};
+}
 
 function injectPreset(manager, acc, data) {
 	if (!acc)
-		acc = clone(presetStruct);
+		acc = getPresetStruct();
 
 	if (!data)
 		return acc;

@@ -48,7 +48,7 @@ Below are the default processors the library uses.
   Processes asset node data. This processor should modify the provided node or return a structurally similar node. By default, this is an identity processor.
 
 ## Fetch methods
-The following methods are the core fetch methods. They accept at most four arguments. These arguments are resolved internally with `resolveArgs@qtxr/utils`, so individual arguments may be safely omitted. Alternatively, a single argument object may be passed with the keys corresponding to the respective arguments. These methods accept a `processors` object as the last argument. These may temporarily override the current processors.
+The following methods are the core fetch methods. They accept at most four arguments. These arguments are resolved internally with `@qtxr/utils/resolveArgs`, so individual arguments may be safely omitted. Alternatively, a single argument object may be passed with the keys corresponding to the respective arguments. These methods accept a `processors` object as the last argument. These may temporarily override the current processors.
 
 The following methods all return a promise that resolves to a response node:
 
@@ -124,6 +124,7 @@ The tracked fields are as follows:
 * requested
   
   Set when an asset is requested, regardless of if the request gets buffered or if the request is successful.
+
 * enqueued
   
   Set when an asset is requested, regardless of if the request gets buffered. Unset when the request finishes, successful or not.
