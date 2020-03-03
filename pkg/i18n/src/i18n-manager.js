@@ -278,7 +278,6 @@ class I18NManager extends Hookable {
 	}
 
 	async fetch(path, locale, config = null, lazy = true) {
-		path = path && normalizeFilename(path, this);
 		locale = IETF.coerce(locale);
 
 		switch (get(this.config, "files.structure")) {
@@ -292,6 +291,8 @@ class I18NManager extends Hookable {
 				path = URL.join(locale.toString(), path || "index");
 				break;
 		}
+		
+		path = normalizeFilename(path, this);
 
 		if (lazy && hasOwn(this.addedAssets, path))
 			return this.addedAssets[path];
