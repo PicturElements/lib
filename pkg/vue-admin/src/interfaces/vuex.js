@@ -93,7 +93,7 @@ export default {
 			},
 			dispatch(type, payload) {
 				type = join([...partitionPath, ...split(type)]);
-				return store.commit(type, payload);
+				return store.dispatch(type, payload);
 			}
 		};
 	},
