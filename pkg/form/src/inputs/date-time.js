@@ -13,8 +13,8 @@ export default class DateTime extends BaseInput {
 			range: "boolean",
 			cards: "Array|Object",
 			dials: "Array|Object",
-			dayLabels: Array,
-			monthLabels: Array,
+			dayLabels: "Array|function",
+			monthLabels: "Array|function",
 			rangeSeparator: "string"
 		});
 

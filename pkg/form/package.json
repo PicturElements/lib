@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/form",
-  "version": "1.16.1",
+  "version": "1.16.2",
   "description": "Flexible, pluggable, and modular form library",
   "main": "index.js",
   "scripts": {
@@ -27,7 +27,7 @@
     "@qtxr/bc": "^1.4.3",
     "@qtxr/evt": "^1.1.1",
     "@qtxr/uc": "^1.7.0",
-    "@qtxr/utils": "^1.40.1"
+    "@qtxr/utils": "^1.40.2"
   },
   "devDependencies": {},
   "files": [
@@ -35,7 +35,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 60,
+    "pushes": 61,
     "expose": {
       "scripts": [
         "connect/feed.js"

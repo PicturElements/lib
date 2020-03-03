@@ -6,11 +6,11 @@ export default class Time extends BaseInput {
 		super(name, options, form, {
 			meridiem: "boolean",
 			range: "boolean",
-			dials: "Array|Object",
-			ampmLabels: Array,
-			rangeSeparator: "string",
-			timeSeparator: "string",
-			placeholderChar: "string",
+			dials: "Array|Object|function",
+			ampmLabels: "Array|function",
+			rangeSeparator: "string|function",
+			timeSeparator: "string|function",
+			placeholderChar: "string|function",
 			geometricHands: "boolean"
 		});
 

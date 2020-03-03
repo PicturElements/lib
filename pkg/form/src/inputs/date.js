@@ -12,8 +12,8 @@ export default class Date extends BaseInput {
 		super(name, options, form, {
 			range: "boolean",
 			cards: "Array|Object",
-			dayLabels: Array,
-			monthLabels: Array,
+			dayLabels: "Array|function",
+			monthLabels: "Array|function",
 			rangeSeparator: "string"
 		});
 
