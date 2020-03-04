@@ -1,4 +1,8 @@
 import { coerceNum } from "./coerce";
+import {
+	log2,
+	log10
+} from "./math";
 
 function fitNum(num, min, max) {
 	num = coerceNum(num, coerceNum(min, max));
@@ -9,7 +13,7 @@ function isFiniteNum(num) {
 	return typeof num == "number" && !isNaN(num) && isFinite(num);
 }
 
-function round(val, accuracy = 2) {
+function round(val, accuracy = 0) {
 	val = Number(val);
 	const div = Math.pow(10, accuracy);
 	return Math.round(val * div) / div || 0;
@@ -42,13 +46,6 @@ function numLen(num) {
 	return Math.ceil(log10(num + 1));
 }
 
-const log2 = Math.log2 ?
-	Math.log2 :
-	num => Math.log(num) * Math.LOG2E;
-const log10 = Math.log10 ?
-	Math.log10 :
-	num => Math.log(num) * Math.LOG10E;
-
 // Warning: max 32 bit signed int
 function isPowerOf2(int) {
 	return (int & (int - 1)) == 0;
@@ -65,8 +62,6 @@ export {
 	roundCustom,
 	roundToLen,
 	numLen,
-	log2,
-	log10,
 	isPowerOf2,
 	isPowerOf2i64
 };

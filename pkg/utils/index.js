@@ -8,6 +8,7 @@ export * from "./src/func";
 export * from "./src/glob";
 export * from "./src/hash";
 export * from "./src/is";
+export * from "./src/math";
 export * from "./src/num";
 export * from "./src/obj";
 export * from "./src/options";
