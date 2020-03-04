@@ -51,6 +51,9 @@ export default class Form extends Hookable {
 		for (let i = 0, l = optionsAndPresets.length; i < l; i++) {
 			const item = optionsAndPresets[i];
 
+			// A preset is identified as an object containing at least
+			// a hooks, options, or meta property, or a string representing
+			// a predefined preset
 			if (isPreset(item)) {
 				let preset = null;
 	
@@ -654,5 +657,5 @@ function isPreset(candidate) {
 	if (typeof candidate == "string")
 		return true;
 
-	return Boolean(candidate) && (hasOwn(candidate, "hooks") || hasOwn(candidate, "options"));
+	return isObject(candidate) && (hasOwn(candidate, "hooks") || hasOwn(candidate, "options") || hasOwn(candidate, "meta"));
 }
