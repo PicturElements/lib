@@ -1,23 +1,15 @@
 import {
 	get,
 	splitPath,
-	isObj,
 	sym,
+	isObj,
+	hasOwn,
+	lookup,
+	repeat,
 	padStart,
+	matchType,
 	resolveVal
 } from "@qtxr/utils";
-
-// Capturing groups:
-// 1: variable
-// 2: variable start
-// 3: formatter
-// 4: internal to ensure formatter is formed with the same characters
-// 5: selector name
-// 6: new selector term
-// 7: format reference
-// 8: openers
-// 9: terminators
-// 10: boolean operators
 
 // Because regexes store their last index when the global flag is enabled, trying to use them in
 // recursive functions may cause problems. Regex literals in inner scopes will carry a slightly
@@ -38,11 +30,16 @@ const FORMATTER_REGEX = /^([a-z]*)([A-Z]*)$/,
 		"fmtRef",				// Reference to a separate format
 		"group",				// Group of tokens
 		"terminator",			// Selector / function argument / group terminators
-		"operator"				// Operators (boolean, bitwise)
+		"operator",				// Operators (boolean, bitwise, arithmetic)
+		"interpolator",			// Interpolator (evaluates and returns like the head of a selector)
+		"separator"				// Separates parameter tokens
 	],
 	FORMAT_CACHE = {};
 
-// current: /\\.|(["'`])(?:\\.|.)*?\1|\$\(?([a-z0-9_.-]+)\)?(\()?|\b(([yldhms])\5+?)\b|((?:@[bnis])?\[)|(}?\s*{(?:@([a-z0-9_\.-]+):\s?)?)|%((?:[^%\\]|\\.)+?)%|(\()|([})\]])|(?:\s*(\|\|?|&&?|={2,3}|!==?|>>>?|<<|[<>]=?|[!~^])\s*)/gi
+window.FORMAT_CACHE = FORMAT_CACHE;
+
+// current: /\\.|(["'`])(?:\\.|.)*?\1|\$((?:[a-z0-9_[\].-]|\\.)+|\((?:[a-z0-9_[\].-]|\\.)+\))(\()?|\b(([yldhms])\5+?)\b|((?:@[bnis])?\[)|(}?\s*{(?:@((?:[a-z0-9_[\].-]|\\.)+):\s?)?)|%((?:[^%\\]|\\.)+?)%|(\()|([})\]])|(?:\s*(\|\|?|&&?|={2,3}|!==?|>>>?|<<|[<>]=?|[!~^]|[+-]|\*{1,2}|\/{1,2}|\?\?|%)\s*)|(#{)|(,)/gi
+// /\\.|(["'`])(?:\\.|.)*?\1|\$\(?([a-z0-9_.-]+)\)?(\()?|\b(([yldhms])\5+?)\b|((?:@[bnis])?\[)|(}?\s*{(?:@([a-z0-9_\.-]+):\s?)?)|%((?:[^%\\]|\\.)+?)%|(\()|([})\]])|(?:\s*(\|\|?|&&?|={2,3}|!==?|>>>?|<<|[<>]=?|[!~^])\s*)/gi
 // /\\.|(["'`])(?:\\.|.)*?\1|\$([a-z0-9_.-]+)(\()?|\b(([yldhms])\5+?)\b|((?:@[bnis])?\[)|(}?\s*{(?:@([a-z0-9_\.-]+):\s?)?)|%([a-z0-9_.-]+)%|(\()|([})\]])|(?:\s*(\|\|?|&&?|={2,3}|!==?|>>>?|<<|[<>]=?|[!~^])\s*)/gi
 // /\\.|(["'`])(?:\\.|.)*?\1|\$([a-z0-9_.-]+)(\()?|\b(([yldhms])\5+?)\b|\[((?:\\.|(["'`])(?:\\.|.)*?\7|[^\\\]])+)\]\s*{|(}\s*{)|%([a-z0-9_.-]+)%|(\()|([})])|(\|\||&&|!|[!<>]==)/gi
 // /\\.|\$([a-z0-9_.-]+)(\()?|\b(([ywdhms])\4+?)\b|\[((?:[^\\\]]|\\.)+)\]\s*{|(}\s*{)|%([a-z0-9_.-]+)%|([})])/gi
@@ -93,9 +90,7 @@ const TOKEN_DATA = {
 		allowedParents: {
 			selectorTerm: true
 		},
-		permissions: {
-			// No need for permissions
-		}
+		permissions: {}
 	},
 	fmtRef: {
 		permissions: {
@@ -113,7 +108,8 @@ const TOKEN_DATA = {
 		allowedParents: {
 			variable: true,
 			selectorHead: true,
-			group: true
+			group: true,
+			interpolator: true
 		},
 		permissions: {
 			argResolvable: true,
@@ -122,7 +118,9 @@ const TOKEN_DATA = {
 	},
 	operator: {
 		allowedParents: {
-			selectorHead: true
+			selectorHead: true,
+			interpolator: true,
+			variable: true
 		},
 		ignoreParents: {
 			group: true
@@ -131,6 +129,18 @@ const TOKEN_DATA = {
 			argResolvable: true,
 			exitResolvable: true
 		}
+	},
+	interpolator: {
+		permissions: {
+			argResolvable: true,
+			exitResolvable: true
+		}
+	},
+	separator: {
+		allowedParents: {
+			variable: true
+		},
+		permissions: {}
 	}
 };
 
@@ -145,7 +155,8 @@ const TERMINATOR_MAP = {
 	selector: "}",
 	variable: ")",
 	group: ")",
-	selectorHead: "]"
+	selectorHead: "]",
+	interpolator: "}"
 };
 
 const FORMATTER_CLASS_MAP = {
@@ -157,7 +168,7 @@ const FORMATTER_CLASS_MAP = {
 	S: "second"
 };
 
-const UNARY_UPS = {
+const UNARY_OPS = {
 	"!": "NOT",
 	"~": "bitwise NOT"
 };
@@ -178,19 +189,39 @@ const BINARY_OPS = {
 	"<=": "less than or equal to",
 	"<<": "left shift",
 	">>": "sign-propagating right shift",
-	">>>": "zero-fill right shift"
+	">>>": "zero-fill right shift",
+	"+": "addition",
+	"-": "subtraction",
+	"*": "multiplication",
+	"/": "division",
+	"//": "floor division",
+	"**": "power",
+	"??": "null coalesce",
+	"%": "modulo"
 };
 
-const AND_OR = {
-	AND: true,
-	OR: true
+const UNARY_CONVERTIBLE_OPS = {
+	"+": "casting",
+	"-": "inversion"
 };
+
+const AND_OR = lookup(["&&", "||"]);
+
+const OP_PRECEDENCE = [
+	lookup("&&"),
+	lookup("**"),
+	lookup(["*", "/", "//", "%"]),
+	lookup(["+", "-"]),
+	lookup(["<", ">", "<<", ">>", ">>>", ">=", "<=", "==", "===", "!=", "!=="]),
+	lookup(["^", "&", "|"]),
+	lookup("??")
+];
 
 function parseFormat(format) {
 	if (format == null)
 		return [];
 
-	if (FORMAT_CACHE.hasOwnProperty(format))
+	if (hasOwn(FORMAT_CACHE, format))
 		return FORMAT_CACHE[format];
 
 	const parsed = parseFormatParser("" + format);
@@ -203,7 +234,7 @@ function parseFormat(format) {
  
 // Tokenize, and create AST-like object
 function parseFormatParser(format, currentStack) {
-	const formatRegex = /\\.|(["'`])(?:\\.|.)*?\1|\$\(?([a-z0-9_.-]+)\)?(\()?|\b(([yldhms])\5+?)\b|((?:@[bnis])?\[)|(}?\s*{(?:@([a-z0-9_\.-]+):\s?)?)|%((?:[^%\\]|\\.)+?)%|(\()|([})\]])|(?:\s*(\|\|?|&&?|={2,3}|!==?|>>>?|<<|[<>]=?|[!~^])\s*)/gi,
+	const formatRegex = /\\.|(["'`])(?:\\.|.)*?\1|\$((?:[a-z0-9_[\].-]|\\.)+|\((?:[a-z0-9_[\].-]|\\.)+\))(\()?|\b(([yldhms])\5+?)\b|((?:@[bnis])?\[)|(}?\s*{(?:@((?:[a-z0-9_[\].-]|\\.)+):\s?)?)|%((?:[^%\\]|\\.)+?)%|(\()|([})\]])|(?:\s*(\|\|?|&&?|={2,3}|!==?|>>>?|<<|[<>]=?|[!~^]|[+-]|\*{1,2}|\/{1,2}|\?\?|%)\s*)|(#{)|(,)/gi,
 		outStruct = [],
 		structStack = currentStack || [],
 		stackLen = structStack.length;
@@ -225,12 +256,15 @@ function parseFormatParser(format, currentStack) {
 			match = ex[0];
 
 		switch (label) {
-			case "variable":					// Variable injection - $variable
+			// Variable injection - $variable / $(variable)
+			case "variable": {
 				const variable = mkToken({
 					type: "variable",
-					value: capture,
-					parent: struct,
-					args: []
+					value: capture[0] == "(" ?
+						capture.substr(1, capture.length - 2) :
+						capture,
+					args: [],
+					invoking: false
 				}, ex);
 
 				// Args alias
@@ -243,10 +277,13 @@ function parseFormatParser(format, currentStack) {
 					variable.parent = struct;
 					structStack.push(variable);
 					struct = variable.args;
+					variable.invoking = true;
 				}
 				break;
+			}
 
-			case "formatter":					// date formatters - YY / yy / ll / HH
+			// date formatters - YY / yy / ll / HH
+			case "formatter": {
 				const formatter = FORMATTER_REGEX.exec(capture);
 
 				if (!formatter)
@@ -263,8 +300,10 @@ function parseFormatParser(format, currentStack) {
 					}
 				}, ex));
 				break;
+			}
 
-			case "selector":					// selector - [index (boolean, num, function)]{
+			// selector - [index (boolean, num, function)]{
+			case "selector": {
 				const selector = mkToken({
 						type: "selector",
 						parent: struct,
@@ -288,8 +327,10 @@ function parseFormatParser(format, currentStack) {
 
 				struct = selector.expr;
 				break;
+			}
 
-			case "selectorTerm":				// new selector term {term}
+			// new selector term {term}
+			case "selectorTerm": {
 				if (allowedChild) {
 					const currentStruct = structStack[structStack.length - 1];
 
@@ -307,18 +348,22 @@ function parseFormatParser(format, currentStack) {
 				} else
 					struct.push(match);
 				break;
+			}
 
-			case "fmtRef":
+			case "fmtRef": {
 				struct.push(mkToken({
 					type: "fmtRef",
 					value: capture
 				}, ex));
 				break;
+			}
 
 			case "terminator": {
 				const token = structStack[structStack.length - 1],
 					mapItem = token && TERMINATOR_MAP[token.type],
-					terminatorMatch = mapItem && (mapItem instanceof RegExp ? mapItem.test(capture) : mapItem == capture);
+					terminatorMatch = mapItem && (mapItem instanceof RegExp ?
+						mapItem.test(capture) :
+						mapItem == capture);
 
 				if (terminatorMatch) {
 					token.literal = format.substr(token.index, ex.index + capture.length - token.index);
@@ -331,7 +376,7 @@ function parseFormatParser(format, currentStack) {
 				break;
 			}
 
-			case "group":
+			case "group": {
 				if (allowedChild) {
 					const group = mkGroup();
 
@@ -342,8 +387,9 @@ function parseFormatParser(format, currentStack) {
 				} else
 					struct.push(match);
 				break;
+			}
 
-			case "operator":
+			case "operator": {
 				if (allowedChild) {
 					const op = mkToken({
 						type: "operator",
@@ -352,24 +398,53 @@ function parseFormatParser(format, currentStack) {
 						unary: false
 					}, ex);
 
-					if (UNARY_UPS.hasOwnProperty(capture)) {
+					if (hasOwn(UNARY_OPS, capture)) {
 						op.unary = true;
-						op.name = UNARY_UPS[capture];
+						op.name = UNARY_OPS[capture];
 					}
 
-					if (BINARY_OPS.hasOwnProperty(capture))
+					if (hasOwn(BINARY_OPS, capture))
 						op.name = BINARY_OPS[capture];
 
 					struct.push(op);
 				} else
 					struct.push(match);
-			break;
+				break;
+			}
+
+			case "interpolator": {
+				const interpolator = mkToken({
+					type: "interpolator",
+					parent: struct,
+					expr: []
+				}, ex);
+	
+				struct.push(interpolator);
+				structStack.push(interpolator);
+
+				struct = interpolator.expr;
+				break;
+			}
+
+			case "separator": {
+				if (allowedChild) {
+					const separator = mkToken({
+						type: "separator"
+					}, ex);
+
+					struct.push(separator);
+				} else
+					struct.push(match);
+
+				break;
+			}
 
 			default:
 				switch (match[0]) {	// escaped character, etc - \.
 					case "\\":
 						struct.push(match[1]);
 						break;
+
 					default:
 						struct.push(match);
 				}
@@ -386,14 +461,13 @@ function parseFormatParser(format, currentStack) {
 	if (structStack.length < stackLen)
 		throw new SyntaxError(`Invalid format '${format}': (unexpected ${structStack[structStack.length - 1].type})`);
 
-	// console.log(outStruct);
 	return outStruct;
 }
 
 function mkToken(data = {}, ex = null) {
 	data.formatToken = true;
 	
-	if (ex && ex.hasOwnProperty("index"))
+	if (ex && hasOwn(ex, "index"))
 		data.index = ex.index;
 	
 	return data;
@@ -445,7 +519,7 @@ function allowedChildToken(tokenType, structStack) {
 
 	if (partition && partition.ignoreParents) {
 		let sIdx = structStack.length;
-		while (sIdx > 0 && partition.ignoreParents.hasOwnProperty(structStack[--sIdx].type));
+		while (sIdx > 0 && hasOwn(partition.ignoreParents, structStack[--sIdx].type));
 		endStruct = structStack[sIdx];
 	}
 
@@ -455,8 +529,13 @@ function allowedChildToken(tokenType, structStack) {
 	if (!endStruct)
 		return !!partition.allowNullParent;
 
-	let allowed = partition.allowedParents ? partition.allowedParents.hasOwnProperty(endStruct.type) : true;
-	allowed = allowed && (partition.disAllowedParents ? !partition.disAllowedParents.hasOwnProperty(endStruct.type) : true);
+	let allowed = partition.allowedParents ?
+		hasOwn(partition.allowedParents, endStruct.type) :
+		true;
+
+	allowed = allowed && (partition.disAllowedParents ?
+		!hasOwn(partition.disAllowedParents, endStruct.type) :
+		true);
 
 	return allowed;
 }
@@ -467,17 +546,17 @@ function cleanAST(parsed) {
 
 		cASTJoinStr(parsed, i);
 
-		if (!isFmt(node))
+		if (!isToken(node))
 			continue;
 
-		if (node.hasOwnProperty("children"))
+		if (hasOwn(node, "children"))
 			cleanAST(node.children, node, i);
 		
 		switch (node.type) {
 			case "variable":
-				node.args = node.children = flattenGroups(node.args);
-				cASTFormatArgs(node.args);
+				node.args = node.children = cASTFormatArgs(node.args);
 				break;
+
 			case "selector":
 				for (let i = 0, l = node.terms.length; i < l; i++) {
 					const term = node.terms[i];
@@ -486,7 +565,7 @@ function cleanAST(parsed) {
 					if (term.label === null)
 						node.defaultTerm = term;
 					else {
-						if (node.termsMap.hasOwnProperty(term.label))
+						if (hasOwn(node.termsMap, term.label))
 							throw new SyntaxError(`Invalid selector label: '${term.label}' is already a defined label`);
 
 						node.termsMap[term.label] = term;
@@ -494,6 +573,12 @@ function cleanAST(parsed) {
 				}
 
 				node.terms.forEach(t => cleanAST(t.term));
+				cleanAST(node.expr);
+				cASTFormatExpr(node.expr);
+				cASTAtomizeExpr(node.expr);
+				break;
+
+			case "interpolator":
 				cleanAST(node.expr);
 				cASTFormatExpr(node.expr);
 				cASTAtomizeExpr(node.expr);
@@ -512,55 +597,40 @@ function cASTJoinStr(parsed, idx) {
 	}
 }
 
-function cASTFormatArgs(args) {
-	for (let i = args.length - 1; i >= 0; i--) {
-		let arg = args[i];
+function cASTFormatArgs(tokens) {
+	const outArgs = [];
+	let expr = [],
+		ptr = 0;
 
-		if (typeof arg != "string")
+	for (let i = 0, l = tokens.length; i <= l; i++) {
+		const token = tokens[i];
+
+		if (typeof token == "string" && !token.trim())
 			continue;
 
-		arg = arg.trim();
+		if (i == l || isToken(token, "separator", "interpolator")) {
+			if (isToken(token, "interpolator"))
+				outArgs.push(token);
 
-		if (!arg)
-			args.splice(i, 1);
-		else 
-			args.splice(i, 1, ...splitArgStr(arg, i > 0, i < args.length - 1));
-	}
-}
+			if (expr.length) {
+				cleanAST(expr);
+				cASTFormatExpr(expr);
+				cASTAtomizeExpr(expr);
 
-const splitArgRegex = /(["'`])((?:\\.|.)*?)\1|[^,\s]+|(,)/g;
+				outArgs[ptr] = mkToken({
+					type: "interpolator",
+					expr
+				});
 
-function splitArgStr(str, hasPrevArg, hasNextArg) {
-	const argsOut = [];
-	let ptr = 0,
-		lastOp = 0;		// 0: unititialized, 1: comma, 2: argument
-	
-	while (true) {
-		const ex = splitArgRegex.exec(str);
-		if (!ex)
-			break;
+				expr = [];
+			}
 
-		// Matches comma
-		if (ex[3]) {
-			if (lastOp || !hasPrevArg)
-				argsOut[++ptr] = undefined;
-
-			lastOp = 1;
-		} else {
-			argsOut[ptr] = toLiteral(ex[0], true);
-
-			lastOp = 2;
-		}
+			ptr++;
+		} else
+			expr.push(token);
 	}
 
-	if (lastOp == 1) {
-		if (hasNextArg)
-			argsOut.pop();
-		else if (str.length == 1)
-			argsOut.push(undefined);
-	}
-
-	return argsOut;
+	return outArgs;
 }
 
 function cASTFormatExpr(expr) {
@@ -568,15 +638,21 @@ function cASTFormatExpr(expr) {
 
 	for (let i = 0, l = expr.length; i < l; i++) {
 		const item = expr[i],
-			isOp = isFmt(item, "operator");
+			isOp = isToken(item, "operator");
 
 		if (isOp) {
-			if (!item.unary && i != nextOpIdx)
-				throw new SyntaxError("Invalid boolean expression: unexpected binary operator");
-			if (item.unary && i > 0 && !isFmt(expr[i - 1], "operator"))
-				throw new SyntaxError("Invalid boolean expression: unexpected unary operator");
-			if (i == l - 1)
-				throw new SyntaxError("Invalid boolean expression: found terminating operator");
+			if (!item.unary && i != nextOpIdx) {
+				if (hasOwn(UNARY_CONVERTIBLE_OPS, item.value)) {
+					item.unary = true;
+					item.name = UNARY_CONVERTIBLE_OPS[item.value];
+				} else
+					throw new SyntaxError("Invalid boolean expression: unexpected binary operator");
+			} else {
+				if (item.unary && i > 0 && !isToken(expr[i - 1], "operator"))
+					throw new SyntaxError("Invalid boolean expression: unexpected unary operator");
+				if (i == l - 1)
+					throw new SyntaxError("Invalid boolean expression: found terminating operator");
+			}
 		} else {
 			if (i == nextOpIdx)
 				throw new SyntaxError("Invalid boolean expression: expected an operator, but got a value");
@@ -585,14 +661,15 @@ function cASTFormatExpr(expr) {
 		if (isOp)
 			nextOpIdx += item.unary ? 1 : 2;
 
-		if (isFmt(item, "group"))
+		if (isToken(item, "group"))
 			cASTFormatExpr(item.children);
 		else if (typeof item == "string")
 			expr[i] = toLiteral(item, true);
 	}
 }
 
-// Bundle together AND terms to aid short circuit evaluation
+// Bundle together AND terms to aid short circuit evaluation,
+// and apply operator precedence
 // Reason:
 // 1	2	 3	  4
 // F && F || T && F evaluates 1 - 3 - 4
@@ -602,42 +679,7 @@ function cASTAtomizeExpr(expr) {
 	let lastNonOpIdx = -1,
 		running = false;
 
-	// Bundle non-AND/OR and recursively call the atomizer
-	for (let i = expr.length - 1; i >= 0; i--) {
-		const item = expr[i];
-
-		if (isFmt(item, "operator")) {
-			if (AND_OR.hasOwnProperty(item.name))
-				tryBundle(i + 1);
-			else
-				running = true;
-		} else {
-			if (isFmt(item, "group"))
-				cASTAtomizeExpr(item.children);
-			if (!running)
-				lastNonOpIdx = i; 
-		}
-	}
-
-	tryBundle(0);
-	running = false;
-
-	// Bundle AND
-	for (let i = expr.length - 1; i >= 0; i--) {
-		const item = expr[i];
-
-		if (isFmt(item, "operator")) {
-			if (item.name != "AND")
-				tryBundle(i + 1);
-			else
-				running = true;
-		} else if (!running)
-			lastNonOpIdx = i;
-	}
-
-	tryBundle(0);
-
-	function tryBundle(idx) {
+	const tryBundle = idx => {
 		if (!running || lastNonOpIdx - idx < 2 || (idx == 0 && lastNonOpIdx == expr.length - 1))
 			return;
 
@@ -645,6 +687,46 @@ function cASTAtomizeExpr(expr) {
 		expr[idx] = mkGroup(items);
 		
 		running = false;		
+	};
+
+	// Bundle non-AND/OR and recursively call the atomizer
+	for (let i = expr.length - 1; i >= 0; i--) {
+		const item = expr[i];
+
+		if (isToken(item, "operator")) {
+			if (AND_OR.has(item.value))
+				tryBundle(i + 1);
+			else
+				running = true;
+		} else {
+			if (isToken(item, "group"))
+				cASTAtomizeExpr(item.children);
+			if (!running)
+				lastNonOpIdx = i;
+		}
+	}
+
+	tryBundle(0);
+	running = false;
+
+	// Bundle all operators in order of precedence
+	for (let i = 0, l = OP_PRECEDENCE.length; i < l; i++) {
+		const operators = OP_PRECEDENCE[i];
+
+		for (let j = expr.length - 1; j >= 0; j--) {
+			const item = expr[j];
+	
+			if (isToken(item, "operator")) {
+				if (!operators.has(item.value) && !item.unary)
+					tryBundle(j + 1);
+				else
+					running = true;
+			} else if (!running)
+				lastNonOpIdx = j;
+		}
+	
+		tryBundle(0);
+		running = false;
 	}
 }
 
@@ -662,7 +744,7 @@ function toLiteral(str, defaultToSmartRef) {
 
 	if (ex)
 		return ex[2];
-	if (constantLiterals.hasOwnProperty(str))
+	if (hasOwn(constantLiterals, str))
 		return constantLiterals[str];
 	if (!isNaN(Number(str)))
 		return Number(str);
@@ -677,25 +759,11 @@ function toLiteral(str, defaultToSmartRef) {
 	return str;
 }
 
-function flattenGroups(arr, depth = Infinity, out = []) {
-	for (let i = 0, l = arr.length; i < l; i++) {
-		const item = arr[i];
-
-		if (depth > 0 && isFmt(item, "group"))
-			flattenGroups(item.children, depth - 1, out);
-		else
-			out.push(item);
-	}
-
-	return out;
-}
-
 function resolveFormat(parsedFormat, meta) {
-	const store = meta.store,
-		formatArgs = meta;
+	const store = meta.store;
 
 	// Resolves to a string
-	function resolve(parsed) {
+	const resolve = parsed => {
 		if (parsed == null)
 			return "";
 
@@ -717,79 +785,88 @@ function resolveFormat(parsedFormat, meta) {
 		}
 
 		return out;
-	}
+	};
 
 	// Resolves to any type
-	function resolveToken(fmt) {
-		if (!isFmt(fmt))
-			return fmt;
+	const resolveToken = token => {
+		if (!isToken(token))
+			return token;
 
-		switch (fmt.type) {
+		switch (token.type) {
 			case "variable":
-				return resolveRef(store, fmt.value, formatArgs, resolveArgs(resolveToken, fmt.args));
+				return resolveRef(store, token, meta, resolveArgs(resolveToken, token.args));
 			
 			case "formatter":
-				return padFormatter(getFormatterUnit(store.date, fmt.class), fmt);
+				return padFormatter(getFormatterUnit(store.date, token.class), token);
 				
-			case "smartRef":
-				const value = resolveRef(store, fmt.value, formatArgs);
+			case "smartRef": {
+				const value = resolveRef(store, token, meta);
 				if (value === undefined)
-					return fmt.value;
+					return token.value;
 				return value;
+			}
 
-			case "fmtRef":
+			case "fmtRef": {
 				// This is used to pass a correct format trace
 				// It could be done by calling resolveFormat with an updated
 				// meta object, but to save processing we can just change the trace
 				// data temporarily.
 				const fTrace = meta.formatTrace;
 
-				meta.formatTrace = resolveRefTrace(fTrace, fmt.value, formatArgs);
+				meta.formatTrace = resolveRefTrace(fTrace, token, meta);
 				
 				const parsed = parseFormat(meta.formatTrace.data),
 					resolved = resolve(parsed);
 
-				meta.formatScope = fTrace;
+				meta.formatTrace = fTrace;
 
 				return resolved;
+			}
 
-			case "selector":
-				let exprVal = resolveExpr(resolveToken, fmt.expr),
+			case "selector": {
+				let exprVal = resolveExpr(resolveToken, token.expr),
 					term = null;
 
-				switch (fmt.coerce) {
+				switch (token.coerce) {
 					case "boolean":
 						exprVal = Boolean(exprVal);
 						break;
+
 					case "string":
 						exprVal = String(exprVal);
 						break;
+
 					case "number":
 					case "integer":
 						exprVal = Number(exprVal);
 						if (isNaN(exprVal))
 							exprVal = -1;
-						/* falls through */
-					case "integer":
-						exprVal = Math.floor(exprVal);
-						break;
+
+						if (token.coerce == "integer")
+							exprVal = Math.floor(exprVal);
 				}
 
 				switch (typeof exprVal) {
 					case "boolean":
-						term = fmt.terms[+!exprVal];
+						term = token.terms[+!exprVal];
 						break;
+
 					case "number":
-						term = fmt.terms[exprVal];
+						term = token.terms[exprVal];
 						break;
+
 					case "string":
-						term = fmt.termsMap[exprVal] || fmt.defaultTerm;
+						term = token.termsMap[exprVal] || token.defaultTerm;
 						break;
 				}
 
-			return term ? term.term : "";
+				return term ? term.term : "";
+			}
+
+			case "interpolator":
+				return resolveExpr(resolveToken, token.expr);
 		}
-	}
+	};
 
 	return resolve(parsedFormat);
 }
@@ -803,26 +880,13 @@ function resolveArgs(resolveToken, args) {
 }
 
 function resolveExpr(resolveToken, expr) {
-	let idx = 0,
-		sCircOp = null,
-		val = evalTape();
-
-	while (idx < expr.length) {
-		const nextVal = evalTape();
-
-		if (sCircOp && ((sCircOp == "AND" && !val) || (sCircOp == "OR" && val)))
-			return val;
-
-		val = nextVal;
-	}
-
-	function evalTape() {
+	const evalTape = _ => {
 		const item = expr[idx++];
 
-		if (isFmt(item, "group"))
+		if (isToken(item, "group"))
 			return resolveExpr(resolveToken, item.children);
 
-		if (!isFmt(item, "operator"))
+		if (!isToken(item, "operator"))
 			return resolveToken(item);
 
 		switch (item.value) {
@@ -864,28 +928,111 @@ function resolveExpr(resolveToken, expr) {
 				return val >> evalTape();
 			case ">>>":
 				return val >>> evalTape();
+			case "+":
+				if (item.unary)
+					return +evalTape();
+
+				return val + evalTape();
+			case "-":
+				if (item.unary)
+					return -evalTape();
+
+				return val - evalTape();
+			case "*": {
+				return overload(
+					val,
+					evalTape(),
+					[
+						{
+							left: "string",
+							right: "number",
+							run: (l, r) => repeat(l, r)
+						},
+						{
+							left: "any",
+							right: "any",
+							run: (l, r) => l * r
+						}
+					]
+				);
+			}
+			case "/":
+				return val / evalTape();
+			case "//":
+				return Math.floor(val / evalTape());
+			case "**":
+				return Math.pow(val, evalTape());
+			case "??":
+				if (val == null)
+					return evalTape();
+				
+				idx++;
+				return val;
+			case "%":
+				return val % evalTape();
 		}
+	};
+
+	let idx = 0,
+		sCircOp = null,
+		val = evalTape();
+
+	while (idx < expr.length) {
+		const nextVal = evalTape();
+
+		if (sCircOp && ((sCircOp == "AND" && !val) || (sCircOp == "OR" && val)))
+			return val;
+
+		val = nextVal;
 	}
 
 	return val;
 }
 
-function resolveRef(store, ref, formatArgs, args = []) {
-	let item = get(store, ref, undefined, "context");
+function overload(left, right, conditions, def) {
+	for (let i = 0, l = conditions.length; i < l; i++) {
+		const condition = conditions[i],
+			lml = matchType(left, condition.left),
+			rmr = matchType(right, condition.right);
 
-	if (typeof item.data == "function") {
-		const v = item.context[item.key](formatArgs, ...args);
-		return v;
+		if (lml && rmr)
+			return condition.run(left, right);
+
+		if (condition.swappable === false)
+			continue;
+
+		const lmr = matchType(left, condition.right),
+			rml = matchType(right, condition.left);
+
+		if (lmr && rml)
+			return condition.run(right, left);
+	}
+
+	return def;
+}
+
+function resolveRef(store, token, meta, args = []) {
+	let item = get(store, token.value, undefined, "context");
+
+	if (typeof item.data == "function" && token.invoking) {
+		meta.context = item.context;
+		meta.token = token;
+		meta.args = args;
+		return item.context[item.key](meta, ...args);
 	}
 
 	return item.data;
 }
 
-function resolveRefCaller(store, ref, formatArgs, ...args) {
-	let item = get(store, ref, undefined, "context");
+function resolveRefCaller(store, token, meta, ...args) {
+	let item = get(store, token.value, undefined, "context");
 
-	if (typeof item.data == "function")
-		item.data =  item.context[item.key](formatArgs, ...args);
+	if (typeof item.data == "function" && token.invoking) {
+		meta.context = item.context;
+		meta.token = token;
+		meta.args = args;
+		item.data = item.context[item.key](meta, ...args);
+	}
 
 	return item;
 }
@@ -893,13 +1040,15 @@ function resolveRefCaller(store, ref, formatArgs, ...args) {
 const isTraceObj = sym("isTraceObj"),
 	stepRegex = /^\.*/;
 
-function resolveRefTrace(store, refOrPath, formatArgs, args = []) {
+function resolveRefTrace(store, tokenOrPath, meta, args = []) {
 	let steps = 0,
-		path = refOrPath;
+		path = isToken(tokenOrPath) ?
+			tokenOrPath.value :
+			tokenOrPath;
 
-	if (typeof refOrPath == "string") {
-		steps = stepRegex.exec(refOrPath)[0].length;
-		path = splitPath(refOrPath.substr(steps));
+	if (typeof path == "string") {
+		steps = stepRegex.exec(path)[0].length;
+		path = splitPath(path.substr(steps));
 	}
 
 	if (store && store[isTraceObj]) {
@@ -915,7 +1064,12 @@ function resolveRefTrace(store, refOrPath, formatArgs, args = []) {
 
 	let item = get(store, path, undefined, "context");
 
-	item.data = resolveVal(item.data, formatArgs, ...args);
+	if (meta) {
+		meta.context = item.context;
+		meta.token = isToken(tokenOrPath) ? tokenOrPath : null;
+		meta.args = args;
+	}
+	item.data = resolveVal(item.data, meta, ...args);
 	item.store = store;
 	item.path = path;
 	item[isTraceObj] = true;
@@ -923,21 +1077,28 @@ function resolveRefTrace(store, refOrPath, formatArgs, args = []) {
 	return item;
 }
 
-function isFmt(candidate, type) {
-	if (!candidate)
+function isToken(candidate, ...types) {
+	if (!candidate || typeof candidate != "object" || !hasOwn(candidate, "formatToken"))
 		return false;
 
-	if (typeof type == "string")
-		return candidate.hasOwnProperty("formatToken") && candidate.type == type;
+	if (!types.length)
+		return true;
 
-	return candidate.hasOwnProperty("formatToken");
+	for (let i = 0, l = types.length; i < l; i++) {
+		const type = types[i];
+
+		if (typeof type == "string" && candidate.type == type)
+			return true;
+	}
+
+	return false;
 }
 
-function queryPermissions(fmt, action) {
-	if (!fmt || !fmt.formatToken)
+function queryPermissions(token, action) {
+	if (!token || !token.formatToken)
 		return false;
 
-	const partition = TOKEN_DATA[fmt.type];
+	const partition = TOKEN_DATA[token.type];
 	
 	if (!partition)
 		return false;
@@ -946,6 +1107,9 @@ function queryPermissions(fmt, action) {
 }
 
 function getFormatterUnit(date, cls) {
+	if (!(date instanceof Date))
+		return 0;
+
 	switch (cls) {
 		case "year":
 			return date.getFullYear();
@@ -960,6 +1124,8 @@ function getFormatterUnit(date, cls) {
 		case "second":
 			return date.getSeconds();
 	}
+
+	return 0;
 }
 
 function padFormatter(num, formatter) {
@@ -971,7 +1137,7 @@ function padFormatter(num, formatter) {
 }
 
 function processFormatter(args, formatter, getter) {
-	if (isFmt(formatter, "formatter")) {
+	if (isToken(formatter, "formatter")) {
 		let out = getFormatterUnit(args.store.date, formatter.class);
 
 		const outCandidate = typeof getter == "function" ? getter(true, out, formatter) : out;
@@ -982,7 +1148,7 @@ function processFormatter(args, formatter, getter) {
 			return padFormatter(out, formatter);
 		else if (typeof out == "string")
 			return out;
-		else if (isFmt(out, "formatter"))
+		else if (isToken(out, "formatter"))
 			return padFormatter(getFormatterUnit(args.store.date, out.class), out);
 	} else {
 		const outCandidate = typeof getter == "function" ? getter(false, 0, null) : getter;
@@ -1005,7 +1171,8 @@ export {
 	parseFormat,
 	resolveFormat,
 	// Utils, etc
-	isFmt,
+	isToken,
+	isToken as isFmt,
 	resolveRef,
 	resolveRefCaller,
 	resolveRefTrace,

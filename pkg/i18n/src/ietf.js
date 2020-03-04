@@ -98,10 +98,15 @@ export default class IETF {
 		for (let i = 0, l = subtagPriority.length; i < l; i++) {
 			const subtag = subtagData[subtagPriority[i]].tag;
 
-			score <<= 1;
+			score *= 3;
 
 			if (locale[subtag] == locale2[subtag] && locale[subtag] !== null)
-				score += 1;
+				score += 2;
+			else if (!i)
+				return 0;
+
+			if (locale[subtag] != locale2[subtag])
+				score--;
 		}
 
 		return score;

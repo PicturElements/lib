@@ -182,29 +182,36 @@ class I18NManager extends Hookable {
 			null :
 			(isObject(vars) ? vars : { x: vars });
 
+		const meta = {
+			formatTrace: null,
+			parsedFormat: null,
+			store: new this.stdLib(baseStore, vars),
+			manager: this,
+			locale,
+			context: null,
+			token: null,
+			args: []
+		};
+
 		const p = splitPath(format),
 			partition = this.getPartition(locale);
 		let formatTrace = null,
 			outFormat = format;
 		
 		if (typeof format == "string") {
-			formatTrace = resolveRefTrace(partition, p);
+			formatTrace = resolveRefTrace(partition, p, meta);
 			outFormat = formatTrace.data;
 		}
 			
 		if (!formatTrace || formatTrace.data === undefined || typeof formatTrace.data != "string") {
-			formatTrace = resolveRefTrace(partition, "");
+			formatTrace = resolveRefTrace(partition, "", meta);
 			outFormat = format;
 		}
 		
 		const parsedFormat = parseFormat(outFormat);
-		return resolveFormat(parsedFormat, {
-			formatTrace,
-			parsedFormat,
-			store: new this.stdLib(baseStore, vars),
-			manager: this,
-			locale
-		});
+		meta.formatTrace = formatTrace;
+		meta.parsedFormat = parsedFormat;
+		return resolveFormat(parsedFormat, meta);
 	}
 
 	dateCompose(format, vars, date, locale) {
