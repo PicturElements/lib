@@ -13,22 +13,27 @@ import {
 export default function get(data, path, def, options = {}) {
 	options = createOptionsObject(options, optionsTemplates);
 	
-	let split = Array.isArray(path) ? path : splitPath(path),
+	const split = Array.isArray(path) ? path : splitPath(path),
 		trace = [],
 		nodeTrace = [],
-		parent = data,
-		child = null,
+		resolveKey = typeof options.resolveKey == "function" ?
+			options.resolveKey :
+			null;
+	let parent = data,
+		childKey = null,
 		match = true,
 		built = false;
 
 	for (let i = options.pathOffset || 0, l = split.length; i < l; i++) {
-		const prop = split[i];
+		const key = resolveKey ?
+			resolveKey(split[i], i, split) :
+			split[i];
 
-		if (!data || prop === undefined || (data[prop] === undefined && !hasOwn(data, prop, true))) {
+		if (!data || key === undefined || (data[key] === undefined && !hasOwn(data, key, true))) {
 			match = false;
 
 			if (options.autoBuild) {
-				data[prop] = split[i + 1] != null && !isNaN(split[i + 1]) ? [] : {};
+				data[key] = split[i + 1] != null && !isNaN(split[i + 1]) ? [] : {};
 				built = true;
 			} else {
 				data = def;
@@ -37,13 +42,13 @@ export default function get(data, path, def, options = {}) {
 		}
 
 		if (options.trace) {
-			trace.push(prop);
+			trace.push(key);
 			nodeTrace.push(data);
 		}
 
 		parent = data;
-		child = prop;
-		data = data[prop];
+		childKey = key;
+		data = data[key];
 	}
 
 	const bundledOutput = options.context || options.trace;
@@ -57,7 +62,7 @@ export default function get(data, path, def, options = {}) {
 
 	if (options.context) {
 		data.context = parent;
-		data.key = child;
+		data.key = childKey;
 	}
 
 	if (options.trace) {
