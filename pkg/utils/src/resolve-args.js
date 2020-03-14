@@ -56,6 +56,7 @@ import getFunctionName from "./get-function-name";
 // required
 // default
 // coalesce
+// resolve
 //
 // name:
 // Parameter name
@@ -70,6 +71,10 @@ import getFunctionName from "./get-function-name";
 // If truthy, arguments will be added to an array as long as the type matcher matches.
 // The array will be used as the named argument. Default values are still supported, but
 // are added to the array instead of the outbound arguments
+//
+// resolve:
+// Method that resolves failing arguments. The resulting value from this is run through
+// type matching
 
 export default function resolveArgs(args, signature, options) {
 	options = createOptionsObject(options, optionsTemplates);
@@ -100,6 +105,11 @@ export default function resolveArgs(args, signature, options) {
 			arg = useSingleSource ? args[0][sgn.name] : args[argPtr],
 			def = sgn.default,
 			key = options.returnArgList ? i : sgn.name;
+
+		if (sgn.coalesce && argPtr >= args.length) {
+			argsOut[key] = argsOut[key] || [];
+			break;
+		}
 		
 		if (matchType(arg, sgn.type)) {
 			if (sgn.coalesce) {
@@ -111,15 +121,28 @@ export default function resolveArgs(args, signature, options) {
 
 			argPtr++;
 		} else {
+			if (typeof sgn.resolve == "function") {
+				const resolved = sgn.resolve(arg, sgn);
+
+				if (matchType(resolved, sgn.type)) {
+					if (sgn.coalesce) {
+						argsOut[key] = argsOut[key] || [];
+						argsOut[key].push(resolved);
+					} else
+						argsOut[key] = resolved;
+
+					continue;
+				}
+			}
+
 			if (sgn.coalesce && (argsOut[key] || !sgn.required)) {
-				if (!argsOut[key])
-					argsOut[key] = [];
+				argsOut[key] = argsOut[key] || [];
 				continue;
 			}
 
 			if (arg == null)
 				argPtr++;
-
+			
 			argsOut[key] = isObj(def) ? clone(def) : def;
 
 			if (sgn.required) {
