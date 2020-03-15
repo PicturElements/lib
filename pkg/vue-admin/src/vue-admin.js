@@ -2,7 +2,8 @@ import {
 	get,
 	hasOwn,
 	isObject,
-	resolveArgs
+	resolveArgs,
+	compileTaggedTemplate
 } from "@qtxr/utils";
 
 import { ComponentWrapperManager } from "@qtxr/vue-wrap-component";
@@ -141,7 +142,8 @@ export default class VueAdmin extends Hookable {
 		return this;
 	}
 	
-	route(routeTree) {
+	route(...routeData) {
+		const routeTree = compileTaggedTemplate(...routeData);
 		this.routes = parseRoutes(this, routeTree);
 		this.usePlugin("routing");
 	}
