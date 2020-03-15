@@ -93,7 +93,15 @@ export default class Hookable extends DeferredPromise {
 	hookAll(hooks, forcedName) {
 		const dispatch = (partitionName, d) => {
 			const handler = typeof d == "function" ? d : d.handler;
-			this.hook(partitionName, handler, d.nickname, d.namespace, d.ttl, d.guard);
+
+			this.hook(
+				partitionName,
+				handler,
+				d.nickname,
+				d.namespace,
+				d.ttl,
+				d.guard
+			);
 		};
 
 		if (Array.isArray(hooks)) {
