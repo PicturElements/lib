@@ -47,22 +47,22 @@ const PASSIVE_IGNORE = {
 
 const COMMON_PROCESSOR_OPTIONS = {
 	processors: {
-		validate: (cell, runtime, wrappedResponse, errorMsg) => {
+		validate: ({ cell }, wrappedResponse, errorMsg) => {
 			return wrappedResponse.success && wrappedResponse.payload ?
 				null :
 				getErrorMsg(cell, wrappedResponse, errorMsg);
 		},
-		success: (cell, runtime, wrappedResponse) => wrappedResponse,
-		fail: (cell, runtime, wrappedResponse) => wrappedResponse,
-		data: (cell, runtime, data) => data,
-		runtime: (cell, runtime) => runtime
+		success: (a, wrappedResponse) => wrappedResponse,
+		fail: (a, wrappedResponse) => wrappedResponse,
+		data: (a, data) => data,
+		runtime: ({ runtime }) => runtime
 	},
 	transformers: {
 		validate(proc) {
 			if (typeof proc == "string") {
 				const [ accessor, errorMsg ] = proc.trim().split(/\s*:\s*/);
 	
-				return (cell, runtime, wrappedResponse) => {
+				return ({ cell }, wrappedResponse) => {
 					if (get(wrappedResponse, accessor) && wrappedResponse.success)
 						return null;
 	
@@ -71,7 +71,7 @@ const COMMON_PROCESSOR_OPTIONS = {
 			} else if (Array.isArray(proc)) {
 				const [ accessor, value, errorMsg ] = proc;
 	
-				return (cell, runtime, wrappedResponse) => {
+				return ({ cell }, wrappedResponse) => {
 					if (get(wrappedResponse, accessor) == value && wrappedResponse.success)
 						return null;
 	
@@ -85,7 +85,7 @@ const COMMON_PROCESSOR_OPTIONS = {
 					errorMsgPath
 				} = proc;
 	
-				return (cell, runtime, wrappedResponse) => {
+				return ({ cell }, wrappedResponse) => {
 					let match = true;
 	
 					if (Array.isArray(matches)) {
@@ -101,7 +101,7 @@ const COMMON_PROCESSOR_OPTIONS = {
 						else
 							match = Boolean(get(wrappedResponse, matches));
 					} else if (typeof matches == "function")
-						match = Boolean(matches(cell, wrappedResponse));
+						match = Boolean(matches(cell.args, wrappedResponse));
 	
 					if (match && wrappedResponse.success)
 						return null;
@@ -117,7 +117,7 @@ const COMMON_PROCESSOR_OPTIONS = {
 		},
 		data(proc) {
 			if (typeof proc == "string" || Array.isArray(proc)) {
-				return (cell, runtime, data) => {
+				return (a, data) => {
 					return get(data, proc);
 				};
 			}
@@ -129,7 +129,7 @@ const COMMON_PROCESSOR_OPTIONS = {
 
 			switch (typeof proc) {
 				case "string":
-					keyer = (cell, runtime, item) => get(item, proc);
+					keyer = (a, item) => get(item, proc);
 					break;
 
 				case "function":
@@ -140,7 +140,7 @@ const COMMON_PROCESSOR_OPTIONS = {
 					return null;
 			}
 
-			return (cell, runtime, item) => {
+			return ({ cell, runtime }, item) => {
 				const key = keyer(cell, runtime, item);
 
 				if (!isPrimitive(key))
@@ -176,7 +176,7 @@ const DEFAULT_PROCESSOR_OPTIONS = {
 };
 
 const DEFAULT_WATCHER_TASK_DISPATCHERS = {
-	fetch(cell, changes) {
+	fetch({ cell }, changes) {
 		return cell._fetch({
 			changes
 		});
@@ -201,12 +201,18 @@ const GET_ARGS = [
 
 export default class DataCell extends Hookable {
 	constructor(config = {}, initConfig = {}) {
-		super();
+		super({
+			hookable: {
+				noOwnerArg: true
+			}
+		});
 
 		config = mergePresets(config, DataCell.presets, {
 			defaultKey: "default",
 			keys: ["preset", "presets"],
-			injectConfig: config.passive ? PASSIVE_IGNORE : null
+			injectConfig: config.passive ?
+				PASSIVE_IGNORE :
+				null
 		});
 
 		const classifier = inject(
@@ -283,6 +289,15 @@ export default class DataCell extends Hookable {
 		// mutated during program execution
 		this.pendingRuntime = null;
 
+		// Processor / handler arguments. This object contains references
+		// and runtime data that is passed as the first argument to processors,
+		// handlers, callbacks, and hooks. This object may be mutated at any point,
+		// but that is primarily reserved for internal use
+		this.args = {
+			cell: this,
+			runtime: {}
+		};
+
 		// Save partitioned data for external reference
 		this.processors = processors;
 		this.config = newConfig;
@@ -304,7 +319,7 @@ export default class DataCell extends Hookable {
 				},
 				"cloneTarget|override"
 			),
-			this
+			this.args
 		);
 
 		// Don't run this on derived classes
@@ -323,10 +338,14 @@ export default class DataCell extends Hookable {
 			this.setState(this.config.state);
 
 		if (typeof get(initConfig, "on.created") == "function")
-			initConfig.on.created(this);
+			initConfig.on.created(this.args);
 
 		if (!initConfig.preventAutoFetch && this.config.autoFetch)
 			this.fetch();
+	}
+
+	callHooks(partitionName, ...args) {
+		return super.callHooks(partitionName, this.args, ...args);
 	}
 
 	setData(data) {
@@ -339,11 +358,12 @@ export default class DataCell extends Hookable {
 			resolveVal(this.defaultRuntime, this, {})
 		) || {};
 
+		this.args.runtime = this.pendingRuntime;
+
 		for (let i = 0, l = runtimes.length; i < l; i++) {
 			const runtime = resolveVal(
 				runtimes[i],
-				this,
-				this.pendingRuntime
+				this.args
 			);
 
 			inject(this.pendingRuntime, runtime, "override");
@@ -363,18 +383,15 @@ export default class DataCell extends Hookable {
 	_fetch(runtime, ...args) {
 		if (this.state.loading) {
 			return new Promise(resolve => {
-				this.hook({
-					partitionName: "fetched",
-					ttl: 1,
-					handler: (cell, response) => resolve(response)
-				});
+				this.hook("fetched", (a, response) => resolve(response), 1);
 			});
 		}
 
 		const fetcher = this.fetcher,
 			doFetch = async _ => {
+				this.args.runtime = runtime;
 				this.setState("loading");
-				this.callHooks("loading", runtime);
+				this.callHooks("loading");
 
 				this.baseRuntime.state = this.state;
 
@@ -385,21 +402,30 @@ export default class DataCell extends Hookable {
 	
 				runtime = inject(runtime, this.baseRuntime);
 	
-				runtime = this.process("runtime")(runtime);
+				this.args.runtime = runtime;
+				runtime = this.process("runtime")(runtime) || runtime;
+				this.args.runtime = runtime;
 				this.pendingRuntime = null;
 	
-				const response = await fetcher.fetch(runtime, ...args);
-	
-				if (response.success) {
+				const response = await fetcher.fetch(this.args, ...args);
+
+				if (!response.isDataCellResponse) {
 					this.setState("loaded");
-					response.processedData = this.process("data")(runtime, response.payload);
-					this.setData(response.processedData, runtime);
+					let data = this.process("data")(response);
+					this.setData(data);
+					this.callHooks("success", response);
+				} else if (response.success) {
+					this.setState("loaded");
+					response.processedData = this.process("data")(response.payload);
+					response.runtime = runtime;
+					this.setData(response.processedData);
 					this.callHooks("success", response);
 				} else {
 					this.setState("error", {
 						errorMsg: response.errorMsg
 					});
 					response.processedData = null;
+					response.runtime = runtime;
 					this.callHooks("fail", response);
 				}
 	
@@ -410,7 +436,6 @@ export default class DataCell extends Hookable {
 				fetcher.enqueuedResolvers = [];
 				fetcher.deferredFetch = null;
 				fetcher.throttledFetch = null;
-				response.runtime = runtime;
 				this.callHooks("fetched", response);
 				return response;
 			};
@@ -593,22 +618,22 @@ export default class DataCell extends Hookable {
 	
 		switch (characteristics.method) {
 			case "get":
-				fetcher.fetch = (runtime, url = null, preset = null) => {
-					return fetchRequest(this, runtime, "get", url, preset);
+				fetcher.fetch = (a, url = null, preset = null) => {
+					return fetchRequest(a, "get", url, preset);
 				};
 				break;
 			
 			case "post":
-				fetcher.fetch = (runtime, url = null, preset = null) => {
-					return fetchRequest(this, runtime, "post", url, preset);
+				fetcher.fetch = (a, url = null, preset = null) => {
+					return fetchRequest(a, "post", url, preset);
 				};
 				break;
 	
 			case "custom": {
 				const fetchHandler = config.fetch || config.handler;
 	
-				fetcher.fetch = (runtime, ...args) => {
-					return fetchCustom(this, runtime, fetchHandler, ...args);
+				fetcher.fetch = (a, ...args) => {
+					return fetchCustom(a, fetchHandler, ...args);
 				};
 				break;
 			}
@@ -748,7 +773,9 @@ export default class DataCell extends Hookable {
 	static resolveConfig(config) {
 		return mergePresets(config, DataCell.presets, {
 			keys: ["preset", "presets"],
-			injectConfig: config.passive ? PASSIVE_IGNORE : null
+			injectConfig: config.passive ?
+				PASSIVE_IGNORE :
+				null
 		});
 	}
 }
@@ -784,7 +811,9 @@ function applyStateTransforms(cell, newState) {
 				key
 			});
 
-		newState = isObject(transformedState) ? transformedState : newState;
+		newState = isObject(transformedState) ?
+			transformedState :
+			newState;
 
 		for (const k in newState) {
 			if (!newState.hasOwnProperty(k) || k == key)
@@ -851,10 +880,10 @@ function dispatchChanges(cell, changes) {
 				tasks[dispatcher[batchKey]].changes.push(change);
 			else {
 				dispatcher[batchKey] = tasks.length;
-				tasks[tasks.length] = {
+				tasks.push({
 					dispatch: dispatcher,
 					changes: [change]
-				};
+				});
 			}
 		} else
 			throw new Error(`Failed to dispatch changes: '${change.property}' does not have a valid dispatcher`);
@@ -862,7 +891,7 @@ function dispatchChanges(cell, changes) {
 
 	for (let i = 0, l = tasks.length; i < l; i++) {
 		delete tasks[i].dispatch[batchKey];
-		tasks[i].dispatch(cell, tasks[i].changes);
+		tasks[i].dispatch(cell.args, tasks[i].changes);
 	}
 
 	function resolveDispatcher(dispatcher) {
@@ -885,7 +914,7 @@ function dispatchChanges(cell, changes) {
 	}
 }
 
-function fetchRequest(cell, runtime, method = "get", url = null, preset = null) {
+function fetchRequest(a, method = "get", url = null, preset = null) {
 	method = method.toLowerCase();
 	
 	if (typeof url != "string") {
@@ -895,8 +924,13 @@ function fetchRequest(cell, runtime, method = "get", url = null, preset = null) 
 		url = null;
 	}
 
+	const {
+		cell,
+		runtime
+	} = a;
+
 	return new Promise(resolve => {
-		const runtimePreset = cell.process("preset")(runtime, runtime.preset);
+		const runtimePreset = cell.process("preset")(runtime.preset);
 
 		cell.xhrManager
 			.use(cell.xhrPreset, runtimePreset, preset)
@@ -908,10 +942,10 @@ function fetchRequest(cell, runtime, method = "get", url = null, preset = null) 
 					xhrState
 				});
 
-				const validation = validate(cell, runtime, successResponse);
+				const validation = validate(cell, successResponse);
 
 				if (!validation) {
-					successResponse = cell.process("success")(runtime, successResponse);
+					successResponse = cell.process("success")(successResponse);
 					resolve(successResponse);
 				} else {
 					let failResponse = cell.mkErrorResponse(validation, {
@@ -920,12 +954,14 @@ function fetchRequest(cell, runtime, method = "get", url = null, preset = null) 
 						xhrState
 					});
 
-					failResponse = cell.process("fail")(runtime, failResponse);
+					failResponse = cell.process("fail")(failResponse);
 					resolve(failResponse);
 				}
 			})
 			.fail((payloadOrStatus, xhr, xhrState) => {
-				const payload = (typeof payloadOrStatus != "number") ? payloadOrStatus : null;
+				const payload = (typeof payloadOrStatus != "number") ?
+					payloadOrStatus :
+					null;
 				
 				let failResponse = cell.mkErrorResponse("Unknown Error", {
 					payload,
@@ -934,17 +970,19 @@ function fetchRequest(cell, runtime, method = "get", url = null, preset = null) 
 					xhrState
 				});
 
-				failResponse = cell.process("fail")(runtime, failResponse);
-				const validation = validate(cell, runtime, failResponse);
+				failResponse = cell.process("fail")(failResponse);
+				const validation = validate(cell, failResponse);
 				failResponse.errorMsg = validation;
 				resolve(failResponse);
 			});
 	});
 }
 
-async function fetchCustom(cell, runtime, handler, ...args) {
+async function fetchCustom(a, handler, ...args) {
+	const { cell } = a;
+
 	try {
-		const response = await handler(cell, runtime, ...args);
+		const response = await handler(a, ...args);
 		let wrappedResponse = response && response.isDataCellResponse ? 
 			response : (
 				response === null && !cell.config.errorOnReject ?
@@ -952,32 +990,33 @@ async function fetchCustom(cell, runtime, handler, ...args) {
 					cell.mkSuccessResponse(response)
 			);
 
-		const validation = validate(cell, runtime, wrappedResponse);
+		const validation = validate(cell, wrappedResponse);
 
 		if (validation == null)
-			return wrappedResponse;
-		
-		return cell.mkErrorResponse(validation);
+			return cell.process("success")(wrappedResponse);
+
+		const failResponse = cell.mkErrorResponse(validation);
+		return cell.process("fail")(failResponse);
 	} catch (e) {
 		let failResponse = cell.mkErrorResponse("Unknown Error", {
 			payload: null
 		});
 
-		failResponse = cell.process("fail")(runtime, failResponse);
-		const validation = validate(cell, runtime, failResponse, e.message);
+		failResponse = cell.process("fail")(failResponse);
+		const validation = validate(cell, failResponse, e.message);
 		failResponse.errorMsg = validation;
 		return failResponse;
 	}
 }
 
-function validate(cell, runtime, data, errorMsg) {
-	const validation = cell.process("validate")(runtime, data, errorMsg);
+function validate(cell, data, errorMsg) {
+	const validation = cell.process("validate")(data, errorMsg);
 	return typeof validation == "string" ? validation : null;
 }
 
 function getErrorMsg(cell, wrappedResponse, errorMsg) {
 	errorMsg = typeof errorMsg == "function" ?
-		errorMsg(cell, wrappedResponse) :
+		errorMsg(cell.args, wrappedResponse) :
 		errorMsg;
 
 	if (errorMsg)
