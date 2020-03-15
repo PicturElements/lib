@@ -12,6 +12,7 @@
 	"test": "[color]{@black: %phrases.black%}{@white: %phrases.white%}{%phrases.def%}",
 	"test2": "[color == $upper(color)]{color is upper case}{color is not upper case}",
 	"test3": {
-		"tst": "[%.test% == 'white']{test matches 'white'}{test doesn't match 'white'}"
+		"test": "[%.test% == 'white']{test matches 'white'}{test doesn't match 'white'}",
+		"print": "%.test%"
 	}
 }

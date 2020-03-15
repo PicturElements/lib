@@ -20,12 +20,14 @@ import { AssetLoader } from "@qtxr/request";
 import { KeyedLinkedList } from "@qtxr/ds";
 import URL from "@qtxr/url";
 import IETF from "./ietf";
+
 import {
 	parseFormat,
 	resolveFormat,
 	resolveRefTrace
 } from "./lang";
-import langStdLib from "./lang-std-lib";
+import langStdLib from "./lang/std-lib";
+import customGrammars from "./lang/custom-grammars";
 
 const RESERVED_KEYS = {
 	default: true,
@@ -208,7 +210,9 @@ class I18NManager extends Hookable {
 			outFormat = format;
 		}
 		
-		const parsedFormat = parseFormat(outFormat);
+		const parsedFormat = parseFormat(outFormat, {
+			customGrammars
+		});
 		meta.formatTrace = formatTrace;
 		meta.parsedFormat = parsedFormat;
 		return resolveFormat(parsedFormat, meta);
@@ -247,7 +251,7 @@ class I18NManager extends Hookable {
 		locale = IETF.coerce(locale);
 		this.requestedLocale = locale;
 
-		this.fetch(null, locale, config, lazy)
+		return this.fetch(null, locale, config, lazy)
 			.then(partition => {
 				const oldLocale = this.locale;
 

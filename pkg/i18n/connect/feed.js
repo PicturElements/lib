@@ -38,3 +38,14 @@ feed.example("get", {
 		};
 	}
 });
+
+feed.example("dateDiff", {
+	require: ["I18N"],
+	description: "Prints a date difference",
+	handler({ I18N }) {
+		return I18N.dfmt("$dateDiff($d(2020, 1, 12), 3, [$spacing, ' '], [yy, $label], [ll, $label], [dd, $label], [hh, $label], [mm, $label], [ss, $label])", {
+			spacing: a => a.index < a.length - 1 || a.length < 2 ? ", " : ", and ",
+			label: a => a.formatter.class + (Number(a.value) == 1 ? "" : "s")
+		});
+	}
+});
