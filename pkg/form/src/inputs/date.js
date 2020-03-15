@@ -48,7 +48,7 @@ Date.formalize
 		.as("string")
 		.to(getDateData)
 		.from(d => dateDataToDate(d).toUTCString())
-	.if(Date)
+	.if(NativeDate)
 		.as("date")
 		.to(getDateData)
 		.from(dateDataToDate)
