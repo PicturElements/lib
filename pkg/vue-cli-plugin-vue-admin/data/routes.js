@@ -15,7 +15,7 @@ const getRoutes = config => {
 			inject: {
 				dataCells: {
 					loginCell: {
-						fetch: serialize.rawReplaceKey(`fetch(...args) {
+						fetch: serialize.rawReplaceKey(`fetch(a, ...args) {
 				return new Promise(resolve => {
 					setTimeout(_ => {
 						resolve(Math.random() < 0.5 ? null : { data: "abcd" });
