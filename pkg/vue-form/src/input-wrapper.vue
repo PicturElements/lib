@@ -180,7 +180,7 @@
 		:class="{ disabled: dis }"
 		:meta="meta")
 		template(
-			v-if="$scopedSlots['option']"
+			v-if="$scopedSlots['radio-option'] || $scopedSlots[`${cl.input.name}-option`]"
 			#option="option")
 			slot(:name="`${cl.input.name}-option`" v-bind="option")
 				slot(name="radio-option" v-bind="option")
