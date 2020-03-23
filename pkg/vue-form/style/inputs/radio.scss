@@ -70,11 +70,6 @@ $radio-params: (
 			cursor: pointer;
 		}
 	
-		.radio-custom-content-wrapper {
-			margin-left: 1.8em;
-			padding-left: 10px;
-		}
-	
 		&.error {
 			.radio-option:not(:active) {
 				background: $error-background;

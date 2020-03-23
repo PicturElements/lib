@@ -179,6 +179,11 @@
 		:disabled="dis"
 		:class="{ disabled: dis }"
 		:meta="meta")
+		template(
+			v-if="$scopedSlots['option']"
+			#option="option")
+			slot(:name="`${cl.input.name}-option`" v-bind="option")
+				slot(name="radio-option" v-bind="option")
 		template(#label="option")
 			slot(:name="`${cl.input.name}-label`" v-bind="option")
 				slot(name="radio-label" v-bind="option")

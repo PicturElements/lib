@@ -5,7 +5,9 @@
 			.radio-top
 				button.radio-option(
 					:disabled="disabled"
+					:class="{ custom: $scopedSlots['option'] }"
 					@click="trigger(option)")
+					slot(name="option" v-bind="wrapOption(option)")
 				.label(@click="trigger(option)")
 					slot(name="label" v-bind="wrapOption(option)")
 						| {{ getLabel(option) }}
