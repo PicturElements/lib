@@ -87,7 +87,7 @@ export default class VueAdmin extends Hookable {
 		// Add views
 		viewMap = viewMap || {};
 		for (const k in viewMap) {
-			if (!viewMap.hasOwnProperty(k))
+			if (!hasOwn(viewMap, k, false))
 				continue;
 
 			this.view(
@@ -100,14 +100,14 @@ export default class VueAdmin extends Hookable {
 		// Set up assertions
 		this.assert = {
 			hasInterface: interfaceName => {
-				if (!this.interfaces.hasOwnProperty(interfaceName))
+				if (!hasOwn(this.interfaces, interfaceName))
 					throw new Error(`Assertion failed: no interface by name '${interfaceName}' exists`);
 			},
 			hasInterfaceMethod: (interfaceName, methodName) => {
 				this.assert.hasInterface(interfaceName);
 
 				const partition = this.interfaces[interfaceName];
-				if (!partition.interface.hasOwnProperty(methodName) || typeof partition.interface[methodName] != "function")
+				if (!hasOwn(partition.interface, methodName) || typeof partition.interface[methodName] != "function")
 					throw new Error(`Assertion failed: interface '${interfaceName}' doesn't have a method '${methodName}'`);
 			}
 		};
@@ -129,7 +129,7 @@ export default class VueAdmin extends Hookable {
 	view(id, component, viewConfig) {
 		if (!id || typeof id != "string" || !validViewIdRegex.test(id))
 			throw new Error(`Cannot create view: invalid ID`);
-		if (this.views.hasOwnProperty(id))
+		if (hasOwn(this.views, id))
 			throw new Error(`Cannot create view: a view with ID '${id}' already exists`);
 		if (!component)
 			throw new Error(`Cannot create view: invalid component`);
@@ -204,7 +204,7 @@ export default class VueAdmin extends Hookable {
 		// View
 		if (typeof idOrComponent != "string")
 			throw new Error("Cannot wrap view component: ID is not a string");
-		if (!this.views.hasOwnProperty(idOrComponent))
+		if (!hasOwn(this.views, idOrComponent))
 			throw new Error(`Cannot wrap view component: '${idOrComponent}' is not a known view`);
 		if (!isObject(view))
 			throw new Error(`Cannot wrap view component: supplied view '${idOrComponent}' is not a view object`);
@@ -242,12 +242,12 @@ export default class VueAdmin extends Hookable {
 		if (!isObject(inter))
 			throw new Error(`Cannot supply '${interfaceName}': interface is not an object`);
 
-		if (inter.hasOwnProperty("interfaceName") && typeof inter.interfaceName == "string")
+		if (hasOwn(inter, "interfaceName") && typeof inter.interfaceName == "string")
 			interfaceName = inter.interfaceName;
 
 		if (!interfaceName || typeof interfaceName != "string")
 			throw new Error(`Cannot supply: interface (${interfaceName}) is not valid`);
-		if (this.interfaces.hasOwnProperty(interfaceName))
+		if (hasOwn(this.interfaces, interfaceName))
 			throw new Error(`Cannot supply '${interfaceName}': VueAdmin instance aready has an interface with this name`);
 
 		if (hasInit(inter)) {
@@ -257,7 +257,7 @@ export default class VueAdmin extends Hookable {
 					config: inter
 				};
 
-				if (inter.hasOwnProperty("connectAdmin") && typeof inter.connectAdmin == "function")
+				if (hasOwn(inter, "connectAdmin") && typeof inter.connectAdmin == "function")
 					inter.connectAdmin(this);
 
 				return this;
@@ -277,7 +277,7 @@ export default class VueAdmin extends Hookable {
 			config: inter
 		};
 
-		if (inter.hasOwnProperty("connectAdmin") && typeof inter.connectAdmin == "function")
+		if (hasOwn(inter, "connectAdmin") && typeof inter.connectAdmin == "function")
 			inter.connectAdmin(this);
 
 		return this;
@@ -306,7 +306,7 @@ export default class VueAdmin extends Hookable {
 	}
 
 	usePlugin(pluginName, ...args) {
-		if (typeof pluginName != "string" || !this.registeredPlugins.hasOwnProperty(pluginName))
+		if (typeof pluginName != "string" || !hasOwn(this.registeredPlugins, pluginName))
 			return this;
 
 		const plugin = this.plugins[pluginName] || {
@@ -328,7 +328,7 @@ export default class VueAdmin extends Hookable {
 
 		plugin.config.use(this, plugin.meta, ...args);
 
-		if (plugin.config.hasOwnProperty("connectAdmin") && typeof plugin.config.connectAdmin == "function")
+		if (hasOwn(plugin.config, "connectAdmin") && typeof plugin.config.connectAdmin == "function")
 			plugin.config.connectAdmin(this);
 
 		plugin.meta.uses++;
@@ -363,7 +363,7 @@ export default class VueAdmin extends Hookable {
 	}
 
 	callMethod(methodName, withContext = false, strict = false) {
-		if (!this.methods.hasOwnProperty(methodName)) {
+		if (!hasOwn(this.methods, methodName)) {
 			if (strict)
 				throw new Error(`Cannot call method: no known method by name '${methodName}'`);
 
@@ -396,7 +396,7 @@ function injectComponents(admin, view) {
 		viewComponents = view.components;
 
 	for (const k in viewComponents) {
-		if (!viewComponents.hasOwnProperty(k) || typeof viewComponents[k] != "string")
+		if (!hasOwn(viewComponents, k) || typeof viewComponents[k] != "string")
 			continue;
 
 		const component = get(components, viewComponents[k]);
@@ -408,7 +408,7 @@ function injectComponents(admin, view) {
 	}
 
 	for (const k in components) {
-		if (!components.hasOwnProperty(k) || !isComponent(components[k]) || viewComponents.hasOwnProperty(k))
+		if (!hasOwn(components, k) || !isComponent(components[k]) || hasOwn(viewComponents, k))
 			continue;
 
 		viewComponents[k] = components[k];
@@ -416,11 +416,11 @@ function injectComponents(admin, view) {
 }
 
 function isComponent(candidate) {
-	return Boolean(candidate) && typeof candidate == "object" && candidate.hasOwnProperty("_compiled");
+	return Boolean(candidate) && typeof candidate == "object" && hasOwn(candidate, "_compiled");
 }
 
 function wrapComponent(admin, component) {
-	if (!component.mixins && !admin.mixins.hasOwnProperty("default"))
+	if (!component.mixins && !hasOwn(admin.mixins, "default"))
 		return admin.wrapperManager.wrap(component);
 
 	component = Object.assign({}, component);
@@ -432,12 +432,12 @@ function wrapComponent(admin, component) {
 
 	component = admin.wrapperManager.wrap(component);
 
-	if (admin.mixins.hasOwnProperty("default"))
+	if (hasOwn(admin.mixins, "default"))
 		component.addMixin("default", admin.mixins.default);
 
 	for (let i = 0, l = mixins.length; i < l; i++) {
 		if (typeof mixins[i] == "string") {
-			if (!admin.mixins.hasOwnProperty(mixins[i]))
+			if (!hasOwn(admin.mixins, mixins[i]))
 				throw new Error(`Cannot resolve mixin '${mixins[i]}': no registered mixin found`);
 
 			component.addMixin(mixins[i], admin.mixins[mixins[i]]);
@@ -454,12 +454,12 @@ function connect(admin, wrapper, meta) {
 	// Connect interfaces
 	const interfaces = admin.interfaces;
 	for (const k in interfaces) {
-		if (!interfaces.hasOwnProperty(k))
+		if (!hasOwn(interfaces, k))
 			continue;
 
 		const { config } = interfaces[k];
 
-		if (!config.hasOwnProperty("connect") || typeof config.connect != "function")
+		if (!hasOwn(config, "connect") || typeof config.connect != "function")
 			continue;
 
 		config.connect(admin, wrapper, meta);
@@ -468,12 +468,12 @@ function connect(admin, wrapper, meta) {
 	// Connect plugins
 	const plugins = admin.plugins;
 	for (const k in plugins) {
-		if (!plugins.hasOwnProperty(k))
+		if (!hasOwn(plugins, k))
 			continue;
 
 		const { config } = plugins[k];
 
-		if (!config.hasOwnProperty("connect") || typeof config.connect != "function")
+		if (!hasOwn(config, "connect") || typeof config.connect != "function")
 			continue;
 
 		config.connect(admin, wrapper, meta);
@@ -481,14 +481,14 @@ function connect(admin, wrapper, meta) {
 }
 
 function hasInit(supplier) {
-	return supplier.hasOwnProperty("init") && typeof supplier.init == "function";
+	return hasOwn(supplier, "init") && typeof supplier.init == "function";
 }
 
 function stripConfigProps(inter, keys) {
 	const stripped = {};
 
 	for (const k in inter) {
-		if (inter.hasOwnProperty(k) && !keys.hasOwnProperty(k))
+		if (hasOwn(inter, k) && !hasOwn(keys, k))
 			stripped[k] = inter[k];
 	}
 
