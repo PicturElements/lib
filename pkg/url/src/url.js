@@ -16,7 +16,7 @@ const weakmapSupported = typeof WeakMap != "undefined",
 			return this.map[inst._uid];
 		},
 		has(inst) {
-			return this.map.hasOwnProperty(inst._uid);
+			return hasOwn(this.map, inst._uid);
 		},
 		delete(inst) {
 			return this.has(inst) ? delete this.map[inst._uid] : false;
@@ -33,13 +33,13 @@ const URL_PARSERS = [
 		guard(inst, otomy) {
 			return Boolean(inst.protocol);
 		},
-		regex: /^[^\/:]+/
+		regex: /^[^/:]+/
 	}, {
 		key: "port",
 		guard(inst, otomy) {
 			return Boolean(inst.hostname);
 		},
-		regex: /^:([^\s\/]+)/,
+		regex: /^:([^\s/]+)/,
 		capture: 1
 	}, {
 		key: "pathname",
@@ -97,10 +97,10 @@ class SearchParams {
 	}
 
 	_isInvalidType(value) {
-		return value !== null && INVALID_PARAM_TYPES.hasOwnProperty(typeof value);
+		return value !== null && hasOwn(INVALID_PARAM_TYPES, typeof value);
 	}
 
-	add(key, value) {
+	set(key, value) {
 		if (typeof key != "string" || this._isInvalidType(value))
 			return this;
 
@@ -143,7 +143,7 @@ class SearchParams {
 	}
 
 	has(key) {
-		return typeof key == "string" && this.map.hasOwnProperty(key);
+		return typeof key == "string" && hasOwn(this.map, key);
 	}
 
 	get(key) {
@@ -405,7 +405,7 @@ export default class URL {
 
 	get relative() {
 		const data = URL_MAP.get(this);
-		return !Boolean(data.hostname);
+		return !data.hostname;
 	}
 
 	clone() {
@@ -414,7 +414,9 @@ export default class URL {
 			cData = URL_MAP.get(cloned);
 
 		Object.assign(cData, tData);
-		cData.path = tData.path.slice().map(v => Object.assign({}, v));
+		cData.path = tData.path
+			.slice()
+			.map(v => Object.assign({}, v));
 		cData.searchParams = tData.searchParams.clone();
 
 		return cloned;
@@ -549,7 +551,7 @@ function parsePath(path) {
 		if (!component)
 			continue;
 
-		if (pathComponentClassifiers.hasOwnProperty(component)) {
+		if (hasOwn(pathComponentClassifiers, component)) {
 			const classifier = pathComponentClassifiers[component];
 	
 			if (classifier)
@@ -616,7 +618,7 @@ function coerceUrl(url) {
 	if (url instanceof URL)
 		return url;
 
-	if (URL.cache.hasOwnProperty(url))
+	if (hasOwn(URL.cache, url))
 		return URL.cache[url];
 
 	return new URL(url);
