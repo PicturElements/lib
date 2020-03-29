@@ -11,7 +11,9 @@ import hasOwn from "./has-own";
 // Faster but slightly less feature rich clone function
 export default function cloneFast(obj, options) {
 	options = createOptionsObject(options, optionsTemplates);
-	const depth = options.shallow ? 0 : (options.hasOwnProperty("depth") ? options.depth : Infinity);
+	const depth = options.shallow ?
+		0 :
+		(hasOwn(options, "depth") ? options.depth : Infinity);
 
 	const cl = (o, d) => {
 		if (typeof o == "object" && o != null) {

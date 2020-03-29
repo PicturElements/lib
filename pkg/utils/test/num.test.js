@@ -8,10 +8,10 @@ import {
 
 test("round", () => {
 	expect(round(0)).toBe(0);
-	expect(round(0.1234)).toBe(0.12);
+	expect(round(0.1234, 2)).toBe(0.12);
 	expect(round(0.12345, 4)).toBe(0.1235);
 	expect(round(1000000.12345, 4)).toBe(1000000.1235);
-	expect(round(-14.2453)).toBe(-14.25);
+	expect(round(-14.2453, 2)).toBe(-14.25);
 });
 
 test("roundCustom", () => {

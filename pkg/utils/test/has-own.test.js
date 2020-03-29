@@ -13,11 +13,11 @@ it("matches own properties only", () => {
 	expect(set.size == 0 && !hasOwn(set, "size"));
 });
 
-it("matches string property keys but not symbol keys", () => {
+it("matches string property keys but not symbol keys if allowSymbols is set to false", () => {
 	expect(hasOwn(OBJ, "a")).toBe(true);
 	expect(hasOwn.polyfill(OBJ, "a")).toBe(true);
-	expect(hasOwn(OBJ, Symbol.for("c"))).toBe(false);
-	expect(hasOwn.polyfill(OBJ, `${POLYFILL_PREFIXES.symbol}sym`)).toBe(false);
+	expect(hasOwn(OBJ, Symbol.for("c"), false)).toBe(false);
+	expect(hasOwn.polyfill(OBJ, `${POLYFILL_PREFIXES.symbol}sym`, false)).toBe(false);
 });
 
 it("matches string symbol keys with allowSymbol flag", () => {

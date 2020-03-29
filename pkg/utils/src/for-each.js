@@ -161,7 +161,7 @@ export default function forEach(obj, callback, options){
 			}
 		} else {
 			for (let k in obj) {
-				if (hasOwn(obj, k) && callback(obj[k], k, obj) == jmpT) {
+				if (hasOwn(obj, k, false) && callback(obj[k], k, obj) == jmpT) {
 					if (shouldContinue(options))
 						continue;
 					return brk(options);
@@ -170,7 +170,7 @@ export default function forEach(obj, callback, options){
 		}
 	} else {
 		const arrCB = options.sparse ? (v, k, obj) => {
-			if (hasOwn(obj, k))
+			if (hasOwn(obj, k, false))
 				callback(v, k, obj);
 		} : callback;
 

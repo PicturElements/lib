@@ -29,7 +29,7 @@ export default function get(data, path, def, options = {}) {
 			resolveKey(split[i], i, split) :
 			split[i];
 
-		if (!data || key === undefined || (data[key] === undefined && !hasOwn(data, key, true))) {
+		if (!data || key === undefined || (data[key] === undefined && !hasOwn(data, key))) {
 			match = false;
 
 			if (options.autoBuild) {

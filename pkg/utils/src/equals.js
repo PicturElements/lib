@@ -1,16 +1,18 @@
 import hasOwn from "./has-own";
-import { keys } from "./obj";
+import { keys, extend } from "./obj";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./options";
+import { QNDSet } from "./internal/poly";
 import { sym } from "./sym";
 import { isObj } from "./is";
 
-// TODO: remove runtime object and make equals
+// TODO: remove runtime object and make
 // structurally similar to clone and inject
 
 let eqRuntime = {
+	inexSet: null,
 	lazy: false,
 	circular: false
 };
@@ -18,7 +20,9 @@ let eqRuntime = {
 const equalSym = sym("equal");
 
 function equals(valA, valB, options) {
-	eqRuntime = createOptionsObject(options, optionsTemplates);
+	eqRuntime = Object.assign({
+		inexSet: new QNDSet()
+	}, createOptionsObject(options, optionsTemplates));
 	return eq(valA, valB);
 }
 
@@ -48,7 +52,7 @@ function eq(a, b) {
 				return false;
 
 			if (eqRuntime.circular)
-				a[equalSym] = true;
+				extend(a, equalSym, true, _ => eqRuntime.inexSet.add(a));
 
 			let result;
 
@@ -72,8 +76,13 @@ function eq(a, b) {
 
 function eqArray(a, b) {
 	for (let i = a.length - 1; i >= 0; i--) {
-		if (eqRuntime.circular && isObj(a[i]) && hasOwn(a[i], equalSym, true))
-			continue;
+		if (eqRuntime.circular && isObj(a[i])) {
+			if (hasOwn(a[i], equalSym))
+				continue;
+
+			if (!Object.isExtensible(a[i]) && eqRuntime.inexSet.has(a[i]))
+				continue;
+		}
 
 		if (!eq(a[i], b[i]))
 			return false;
@@ -85,9 +94,19 @@ function eqArray(a, b) {
 function eqObject(a, b) {
 	if (eqRuntime.lazy) {
 		for (const k in a) {
-			const recursive = !eqRuntime.circular || !(isObj(a[k]) && hasOwn(a[k], equalSym, true));
+			let recursive = true;
 
-			if ((hasOwn(a, k) && !hasOwn(b, k)) || (recursive && !eq(a[k], b[k])))
+			if ((hasOwn(a, k, false) && !hasOwn(b, k, false)))
+				return false;
+
+			if (eqRuntime.circular && isObj(a[k])) {
+				if (hasOwn(a[k], equalSym))
+					recursive = false;
+				else if (!Object.isExtensible(a[k]) && eqRuntime.inexSet.has(a[k]))
+					recursive = false;
+			}
+
+			if (recursive && !eq(a[k], b[k]))
 				return false;
 		}
 	} else {
@@ -98,10 +117,17 @@ function eqObject(a, b) {
 			return false;
 
 		for (let i = ks.length - 1; i >= 0; i--) {
-			const k = ks[i],
-				recursive = !eqRuntime.circular || !(isObj(a[k]) && hasOwn(a[k], equalSym, true));
+			const k = ks[i];
+			let recursive = true;
 
-			if (!hasOwn(b, k) || (recursive && !eq(a[k], b[k])))
+			if (eqRuntime.circular && isObj(a[k])) {
+				if (hasOwn(a[k], equalSym))
+					recursive = false;
+				else if (!Object.isExtensible(a[k]) && eqRuntime.inexSet.has(a[k]))
+					recursive = false;
+			}
+
+			if (!hasOwn(b, k, false) || (recursive && !eq(a[k], b[k])))
 				return false;
 		}
 	}

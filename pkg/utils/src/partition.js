@@ -6,7 +6,7 @@ export default function partition(data, partitionMap, classifier, defaultPartiti
 		return partitionMap;
 	
 	for (const k in data) {
-		if (!hasOwn(data, k))
+		if (!hasOwn(data, k, false))
 			continue;
 
 		let cls = null;

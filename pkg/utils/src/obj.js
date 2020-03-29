@@ -6,20 +6,21 @@ import {
 	isObj,
 	isObject,
 	isPrimitive,
-	isArrResolvable
+	isArrResolvable,
+	isValidObjectKey
 } from "./is";
 import splitPath from "./split-path";
 import hasOwn from "./has-own";
 import resolveArgs from "./resolve-args";
 import map from "./map";
-import serialize from "./serialize";
+import get from "./get";
 
 // allowNonexistent - inject property values for
 // properties that don't exist on the object
 const objToArrParamSignature = [
 	{ name: "obj", type: "object", required: true},
 	{ name: "order", type: Array },
-	{ name: "processor", type: "function", default: (val, key, obj) => val },
+	{ name: "processor", type: "function", default: value => value },
 	{ name: "allowNonexistent", type: "boolean", default: true }
 ];
 
@@ -40,12 +41,12 @@ function objToArr(...args) {
 
 	if (order) {
 		for (let i = 0, l = order.length; i < l; i++) {
-			if (obj.hasOwnProperty(order[i]) || allowNonexistent)
+			if (allowNonexistent || hasOwn(obj, order[i]))
 				out.push(processor(obj[order[i]], order[i], obj));
 		}
 	} else {
 		for (const k in obj) {
-			if (obj.hasOwnProperty(k))
+			if (hasOwn(obj, k, false))
 				out.push(processor(obj[k], k, obj));
 		}
 	}
@@ -53,21 +54,23 @@ function objToArr(...args) {
 	return out;
 }
 
-const keys = typeof Symbol == "undefined" ? Object.keys : o => {
-	if (o == null)
-		throw new TypeError("Cannot convert undefined or null to object");
+const keys = typeof Symbol == "undefined" ?
+	Object.keys :
+	o => {
+		if (o == null)
+			throw new TypeError("Cannot convert undefined or null to object");
 
-	const out = [];
+		const out = [];
 
-	for (let k in o) {
-		if (!hasOwn(o, k))
-			continue;
+		for (let k in o) {
+			if (!hasOwn(o, k, false))
+				continue;
 
-		out.push(k);
-	}
+			out.push(k);
+		}
 
-	return out;
-};
+		return out;
+	};
 
 const isDirSym = sym("isDir"),
 	dirPathSym = sym("dirPath"),
@@ -90,7 +93,7 @@ function getDirectory(root, path = "", returnRestPath = false) {
 
 		if (restPath)
 			restPath.push(key);
-		else if (!dir.hasOwnProperty(key)) {
+		else if (!hasOwn(dir, key)) {
 			const subdir = {};
 			setDirMeta(subdir, key, dir[dirPathSym], dir);
 			dir[key] = subdir;
@@ -135,7 +138,7 @@ function setDirMeta(dir, name = "", path = "", parent = null) {
 }
 
 function isDir(candidate) {
-	return Boolean(candidate) && candidate.hasOwnProperty(isDirSym);
+	return Boolean(candidate) && hasOwn(candidate, isDirSym);
 }
 
 // NEVER edit these for backwards compatibility
@@ -159,7 +162,7 @@ function uncirculate(obj, options) {
 			if (!v || typeof v != "object")
 				return v;
 
-			if (v.hasOwnProperty(circularIdKey)) {
+			if (hasOwn(v, circularIdKey)) {
 				if (v[circularIdKey] == -1)
 					v[circularIdKey] = circularCount++;
 
@@ -197,13 +200,13 @@ function uncirculate(obj, options) {
 }
 
 function circulate(obj, options) {
-	if (!isObj(obj) || !obj.hasOwnProperty(circularIsKey))
+	if (!isObj(obj) || !hasOwn(obj, circularIsKey))
 		return obj;
 
 	const refs = {};
 
 	const circ = o => {
-		const hasId = o.hasOwnProperty(circularIdKey),
+		const hasId = hasOwn(o, circularIdKey),
 			outStruct = isArrResolvable(o) ? [] : {};
 
 		if (hasId)
@@ -213,7 +216,7 @@ function circulate(obj, options) {
 			if (!isObj(v))
 				return v;
 
-			if (v.hasOwnProperty(circularRefKey))
+			if (hasOwn(v, circularRefKey))
 				return refs[v[circularRefKey]];
 
 			return circ(v);
@@ -231,11 +234,11 @@ function circulate(obj, options) {
 }
 
 function isCircular(obj) {
-	return Boolean(isObj(obj)) && obj.hasOwnProperty(circularIsKey);
+	return Boolean(isObj(obj)) && hasOwn(obj, circularIsKey);
 }
 
 function getCircularId(obj) {
-	if (!isObj(obj) || !obj.hasOwnProperty(circularIdKey))
+	if (!isObj(obj) || !hasOwn(obj, circularIdKey))
 		return -1;
 
 	return obj[circularIdKey];
@@ -305,8 +308,8 @@ function earmark(markKey, items, aliases) {
 			return;
 		}
 
-		if (hasOwn(marked, name, true)) {
-			console.warn(`Cannot earmark: correspondence between a target and earmark ${serialize(name)} has already been establised`);
+		if (hasOwn(marked, name)) {
+			console.warn(`Cannot earmark: correspondence between a target and earmark ${name} has already been establised`);
 			return;
 		}
 
@@ -331,7 +334,7 @@ function earmark(markKey, items, aliases) {
 
 function reassign(target, source, struct, keyMap) {
 	for (const k in keyMap) {
-		if (!hasOwn(keyMap, k) || !hasOwn(source, k))
+		if (!hasOwn(keyMap, k, false) || !hasOwn(source, k, false))
 			continue;
 
 		const keys = keyMap[k];
@@ -345,6 +348,81 @@ function reassign(target, source, struct, keyMap) {
 	}
 
 	return target;
+}
+
+function aliasCore(target, keyOrMap, shallow, ...aliases) {
+	let appliedCount = 0;
+
+	const apply = (key, alis) => {
+		console.log(target, key, alis);
+
+		const ctx = get(target, key, null, "context");
+		if (!ctx.match)
+			return;
+
+		key = ctx.key;
+		alis = Array.isArray(alis) ? alis : [alis];
+
+		let descriptor,
+			owner = ctx.context;
+
+		while (true) {
+			if (!owner)
+				break;
+
+			descriptor = Object.getOwnPropertyDescriptor(owner, key);
+	
+			if (descriptor || shallow)
+				break;
+	
+			owner = Object.getPrototypeOf(owner);
+		}
+
+		if (!descriptor)
+			return;
+
+		for (let i = 0, l = alis.length; i < l; i++) {
+			if (!isValidObjectKey(alis[i]))
+				continue;
+
+			const ctx2 = get(target, alis[i], null, "context|autoBuild");
+			Object.defineProperty(ctx2.context, ctx2.key, descriptor);
+			appliedCount++;
+		}
+	};
+
+	if (isObject(keyOrMap)) {
+		if (aliases.length)
+			console.warn("Alias arguments are ignored if a key map is supplied");
+
+		for (const k in keyOrMap) {
+			if (hasOwn(keyOrMap, k))
+				apply(k, keyOrMap[k]);
+		}
+	} else
+		apply(keyOrMap, aliases);
+	
+	return appliedCount;
+}
+
+function alias(target, keyOrMap, ...aliases) {
+	return aliasCore(target, keyOrMap, false, ...aliases);
+}
+
+function aliasOwn(target, keyOrMap, ...aliases) {
+	return aliasCore(target, keyOrMap, false, ...aliases);
+}
+
+function extend(target, key, value, fallback) {
+	if (!hasOwn(target, key) && !Object.isExtensible(target)) {
+		if (typeof fallback == "function")
+			fallback(target, key, value);
+		
+		return false;
+	}
+
+	target[key] = value;
+	return true;
 }
 
 export {
@@ -364,5 +442,8 @@ export {
 	writeProtect,
 	revokeWriteProtect,
 	earmark,
-	reassign
+	reassign,
+	alias,
+	aliasOwn,
+	extend
 };

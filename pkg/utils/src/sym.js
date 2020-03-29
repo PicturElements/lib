@@ -16,7 +16,7 @@ const setSymbol = typeof Symbol == "undefined" ? (obj, symbol, value = null) => 
 	if (!isSymbol(symbol))
 		return warnSymbolSet(symbol, obj);
 
-	if (hasOwn(obj, symbol, true))
+	if (hasOwn(obj, symbol))
 		obj[symbol] = value;
 
 	Object.defineProperty(obj, symbol, {

@@ -1,7 +1,7 @@
 import { isMapLike } from "./lazy/is";
 import map from "./map";
 import filterMut from "./filter-mut";
-import QNDSet from "./qnd-set";
+import { QNDSet } from "./internal/poly";
 import forEach from "./for-each";
 
 function nub(arr) {
@@ -36,8 +36,13 @@ function remFromArr(arr, item, g = true) {
 	});
 }
 
+function pick(arr) {
+	return arr[Math.floor(Math.random() * arr.length)];
+}
+
 export {
 	nub,
 	from,
-	remFromArr
+	remFromArr,
+	pick
 };

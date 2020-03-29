@@ -16,8 +16,8 @@ import mkAccessor from "./mk-accessor";
 export default function matchQuery(value, query, options) {
 	options = createOptionsObject(options, optionsTemplates);
 	const guard = typeof options.guard == "function" ? options.guard : null,
-		guardMatch = typeof hasOwn(options, "guardMatch") ? options.guardMatch : true,
-		nullishMatch = typeof hasOwn(options, "nullishMatch") ? options.nullishMatch : true;
+		guardMatch = hasOwn(options, "guardMatch") ? options.guardMatch : true,
+		nullishMatch = hasOwn(options, "nullishMatch") ? options.nullishMatch : true;
 
 	const match = (v, q, matchRuntime) => {
 		if (!isObj(v) || !isObj(q))

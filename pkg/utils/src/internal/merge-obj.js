@@ -18,7 +18,7 @@ function composeMergerTemplates(...templates) {
 			continue;
 
 		for (const k in template) {
-			if (!hasOwn(template, k))
+			if (!hasOwn(template, k, false))
 				continue;
 
 			templatesOut[k] = Object.freeze(

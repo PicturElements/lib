@@ -48,7 +48,7 @@ export default function serialize(data, optionsOrIndentStr = {}) {
 		if (replacer && !preventReplace)
 			item = replacer(key, item, wrapItem, indent);
 
-		if (isObject(item) && hasOwn(item, WRAPPED_SYM, true)) {
+		if (isObject(item) && hasOwn(item, WRAPPED_SYM)) {
 			switch (item[WRAPPED_SYM]) {
 				case "raw":
 					return typeof item.data == "string" ?
