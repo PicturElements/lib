@@ -1,12 +1,15 @@
 import {
-	isIterable,
-	setSymbol
+	alias,
+	isObj,
+	hasOwn,
+	isObject,
+	setSymbol,
+	isIterable
 } from "@qtxr/utils";
 import { SYM_ITER_KEY } from "@qtxr/utils/internal";
 import KeyedLinkedList from "./keyed-linked-list";
 
 let idCounter = 0;
-const symbolIsSupported = typeof Symbol != "undefined";
 
 export default class MapSetBase {
 	constructor(iterable) {
@@ -18,7 +21,12 @@ export default class MapSetBase {
 			number: {},
 			bigint: {},
 			boolUndefNull: {},
-			object: Object.create(null)
+			object: Object.create(null),
+			inex: {
+				array: [],
+				object: [],
+				instance: []
+			}
 		};
 
 		this.insertions = new KeyedLinkedList();
@@ -29,12 +37,13 @@ export default class MapSetBase {
 	// Complexity: O(1)
 	add(key, value) {
 		const insertion = getInsertion(this, key);
-		let kv = insertion;
+		
+		if (insertion) {
+			insertion[1] = value;
+			return this;
+		}
 
-		if (insertion)
-			kv[1] = value;
-		else
-			kv = [key, value, this.order++];
+		const kv = [key, value, this.order++];
 
 		switch (typeof key) {
 			case "string":
@@ -55,25 +64,24 @@ export default class MapSetBase {
 				this.maps.boolUndefNull[key] = kv;
 				break;
 
-			default:
+			default: {
 				if (key == null) {
 					this.maps.boolUndefNull.null = kv;
 					break;
 				}
 				
-				if (key.hasOwnProperty(this.key)) {
+				if (hasOwn(key, this.key)) {
 					this.maps.object[key[this.key]] = kv;
 					break;
 				}
-				
-				const id = idCounter++;
 
-				if (symbolIsSupported)
-					key[this.key] = id;
-				else
+				if (Object.isExtensible(key)) {
+					const id = idCounter++;
 					setSymbol(key, this.key, id);
-				
-				this.maps.object[id] = kv;
+					this.maps.object[id] = kv;
+				} else
+					this.maps.inex[getInexMapName(key)].push(kv);
+			}
 		}
 
 		if (!insertion) {
@@ -96,15 +104,28 @@ export default class MapSetBase {
 	// Complexity: O(1)
 	delete(key) {
 		const map = getMapName(this, key);
-		if (!map)
+		if (!map) {
+			if (isObj(key) && !Object.isExtensible(key)) {
+				const data = getInexInsertion(this, key);
+				if (!data)
+					return false;
+
+				this.insertions.delete(data.insertion[2]);
+				this.maps.inex[data.name].splice(data.index, 1);
+				this.size--;
+				return true;
+			}
+
 			return false;
+		}
 
 		this.size--;
 
 		if (map == "object") {
 			this.insertions.delete(this.maps.object[key[this.key]][2]);
 			delete this.maps.object[key[this.key]];
-			return delete key[this.key];
+			delete key[this.key];
+			return true;
 		}
 
 		this.insertions.delete(this.maps[map][key][2]);
@@ -113,14 +134,22 @@ export default class MapSetBase {
 
 	// Complexity: O(n) to clear all object references
 	clear() {
-		this.maps.strSym = {};
-		this.maps.number = {};
-		this.maps.boolUndefNull = {};
-
 		const ob = this.maps.object;
 		for (let k in ob)
 			delete ob[k][this.key];
-		this.maps.object = Object.create(null);
+
+		this.maps = {
+			strSym: {},
+			number: {},
+			bigint: {},
+			boolUndefNull: {},
+			object: Object.create(null),
+			inex: {
+				array: [],
+				object: [],
+				instance: []
+			}
+		};
 
 		this.insertions.clear();
 		this.size = 0;
@@ -128,7 +157,14 @@ export default class MapSetBase {
 
 	// Complexity: O(1)
 	has(key) {
-		return Boolean(getMapName(this, key));
+		const has = Boolean(getMapName(this, key));
+		if (has)
+			return true;
+		
+		if (isObj(key) && !Object.isExtensible(key))
+			return Boolean(getInexInsertion(this, key));
+
+		return has;
 	}
 
 	forEach(callback, thisArg) {
@@ -150,12 +186,21 @@ export default class MapSetBase {
 	}
 }
 
-MapSetBase.prototype[SYM_ITER_KEY] = MapSetBase.prototype.entries;
+alias(MapSetBase.prototype, {
+	entries: SYM_ITER_KEY,
+	add: "set"
+});
 
 function getInsertion(map, key) {
 	const mapName = getMapName(map, key);
-	if (!mapName)
-		return;
+	if (!mapName) {
+		if (isObj(key) && !Object.isExtensible(key)) {
+			const data = getInexInsertion(map, key);
+			return data && data.insertion;
+		}
+
+		return null;
+	}
 
 	if (mapName == "object")
 		return map.maps[mapName][key[map.key]];
@@ -169,21 +214,49 @@ function getMapName(map, key) {
 	switch (typeof key) {
 		case "string":
 		case "symbol":
-			return maps.strSym.hasOwnProperty(key) ? "strSym" : null;
+			return hasOwn(maps.strSym, key) ? "strSym" : null;
 
 		case "number":
-			return maps.number.hasOwnProperty(key) ? "number" : null;
+			return hasOwn(maps.number, key) ? "number" : null;
 
 		case "bigint":
-			return maps.bigint.hasOwnProperty(key) ? "bigint" : null;
+			return hasOwn(maps.bigint, key) ? "bigint" : null;
 
 		case "undefined":
 		case "boolean":
-			return maps.boolUndefNull.hasOwnProperty(key) ? "boolUndefNull" : null;
+			return hasOwn(maps.boolUndefNull, key) ? "boolUndefNull" : null;
 
 		default:
 			if (key == null)
-				return maps.boolUndefNull.hasOwnProperty(key) ? "boolUndefNull" : null;
+				return hasOwn(maps.boolUndefNull, key) ? "boolUndefNull" : null;
+
 			return key[map.key] in maps.object ? "object" : null;
 	}
+}
+
+function getInexMapName(key) {
+	if (Array.isArray(key))
+		return "array";
+
+	if (isObject(key))
+		return "object";
+
+	return "instance";
+}
+
+function getInexInsertion(map, key) {
+	const name = getInexMapName(key),
+		inex = map.maps.inex[name];
+
+	for (let i = 0, l = inex.length; i < l; i++) {
+		if (inex[i][0] == key) {
+			return {
+				name,
+				insertion: inex[i],
+				index: i
+			};
+		}
+	}
+
+	return null;
 }

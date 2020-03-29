@@ -1,7 +1,8 @@
 import {
+	sym,
+	alias,
 	forEach,
-	isArrayLike,
-	sym
+	isArrayLike
 } from "@qtxr/utils";
 import MapSetBase from "./map-set-base";
 

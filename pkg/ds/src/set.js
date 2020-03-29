@@ -1,6 +1,7 @@
 import {
-	forEach,
-	sym
+	sym,
+	alias,
+	forEach
 } from "@qtxr/utils";
 import { SYM_ITER_KEY } from "@qtxr/utils/internal";
 import MapSetBase from "./map-set-base";
@@ -8,7 +9,6 @@ import MapSetBase from "./map-set-base";
 export default class Set extends MapSetBase {
 	constructor(iterable) {
 		super(iterable);
-
 		this.key = sym("SetPrivateKey");
 
 		forEach(iterable, entry => {
@@ -25,4 +25,7 @@ export default class Set extends MapSetBase {
 	}
 }
 
-Set.prototype[SYM_ITER_KEY] = Set.prototype.values;
+alias(Set.prototype, {
+	values: SYM_ITER_KEY,
+	add: "set"
+});

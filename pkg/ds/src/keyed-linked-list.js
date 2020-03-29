@@ -1,4 +1,5 @@
 import {
+	alias,
 	forEach,
 	isPrimitive,
 	isArrayLike
@@ -248,7 +249,7 @@ export default class KeyedLinkedList {
 	}
 }
 
-KeyedLinkedList.prototype[SYM_ITER_KEY] = KeyedLinkedList.prototype.entries;
+alias(KeyedLinkedList.prototype, "entries", SYM_ITER_KEY);
 
 function assertValidKey(key) {
 	if (isPrimitive(key))

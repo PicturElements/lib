@@ -1,4 +1,5 @@
 import {
+	alias,
 	resolveArgs,
 	findClosest,
 	binarySearch
@@ -144,6 +145,8 @@ export default class PartitionedBinaryArray extends Array {
 		return true;
 	}
 }
+
+alias(PartitionedBinaryArray.prototype, "add", "set");
 
 function rootBinarySearch(pba, hash) {
 	if (!pba.length)

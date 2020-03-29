@@ -1,3 +1,5 @@
+import { hasOwn } from "@qtxr/utils";
+
 export default class Trie {
 	constructor() {
 		this.root = {
@@ -12,7 +14,7 @@ export default class Trie {
 		this.sortKeys = true;
 	}
 
-	add(key, value) {
+	set(key, value) {
 		if (arguments.length == 1)
 			value = key;
 
@@ -32,7 +34,7 @@ export default class Trie {
 			const char = key[i];
 			let currNode = trieNode[char];
 
-			if (!trieNode.hasOwnProperty(char)) {
+			if (!hasOwn(trieNode, char)) {
 				trieNode.childCount++;
 				this.nodeCount++;
 
@@ -75,7 +77,7 @@ export default class Trie {
 		for (let i = 0; i < length; i++) {
 			const char = key[i];
 
-			if (!trieNode.hasOwnProperty(char))
+			if (!hasOwn(trieNode, char))
 				break;
 
 			trieNode = trieNode[char];
@@ -104,13 +106,13 @@ export default class Trie {
 		while (true) {
 			const char = next(count++);
 
-			if (!node.hasOwnProperty(char))
+			if (!hasOwn(node, char))
 				break;
 
 			match += char;
 			node = node[char];
 
-			if (node.hasOwnProperty("value")) {
+			if (hasOwn(node, "value")) {
 				return {
 					key: match,
 					value: node.value,
@@ -134,13 +136,13 @@ export default class Trie {
 		while (true) {
 			const char = next(count++);
 
-			if (!node.hasOwnProperty(char))
+			if (!hasOwn(node, char))
 				break;
 
 			match += char;
 			node = node[char];
 
-			if (node.hasOwnProperty("value"))
+			if (hasOwn(node, "value"))
 				lastMatch = match;
 		}
 
@@ -160,7 +162,7 @@ export default class Trie {
 			node = this.root;
 
 		while (c = key[idx++], c) {
-			if (!node.hasOwnProperty(c))
+			if (!hasOwn(node, c))
 				return null;
 			
 			node = node[c];
@@ -190,7 +192,7 @@ export default class Trie {
 			return matches;
 
 		const collect = (node, str) => {
-			if (node.hasOwnProperty("value")) {
+			if (hasOwn(node, "value")) {
 				switch (type) {
 					case "key":
 						matches.push(str);
@@ -229,7 +231,7 @@ function deleteBranch(trie, node, key) {
 		removeSequentially(node.keys, char, trie.sortKeys);
 		delete node[char];
 
-		if (node.hasOwnProperty("value"))
+		if (hasOwn(node, "value"))
 			break;
 	}
 }

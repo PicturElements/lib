@@ -1,13 +1,11 @@
 import {
 	get,
-	splitPath,
+	alias,
 	forEach,
 	isObject,
+	splitPath,
 	binaryIndexOf
 } from "@qtxr/utils";
-
-// This class creates a map-like structure
-// That's fully serializable 
 
 export default class StructuredMap extends Array {
 	constructor(structure, parent = null) {
@@ -116,6 +114,20 @@ export default class StructuredMap extends Array {
 		return path;
 	}
 
+	add(item) {
+		const path = this.getPath(item);
+		let map = this;
+
+		for (let i = 0, l = path.length; i < l; i++) {
+			const key = path[i],
+				partition = map._resolvePartition(key, i == l - 1 ? item : null);
+
+			map = partition.children;
+		}
+
+		return this;
+	}
+
 	get(itemOrPath) {
 		const path = isObject(itemOrPath) ?
 			this.getPath(itemOrPath) :
@@ -134,20 +146,6 @@ export default class StructuredMap extends Array {
 		}
 
 		return partition && partition.value;
-	}
-
-	add(item) {
-		const path = this.getPath(item);
-		let map = this;
-
-		for (let i = 0, l = path.length; i < l; i++) {
-			const key = path[i],
-				partition = map._resolvePartition(key, i == l - 1 ? item : null);
-
-			map = partition.children;
-		}
-
-		return this;
 	}
 
 	delete(item) {
@@ -203,3 +201,5 @@ export default class StructuredMap extends Array {
 		this.lookup = {};
 	}
 }
+
+alias(StructuredMap.prototype, "add", "set");

@@ -1,4 +1,5 @@
 import {
+	alias,
 	compileGlob,
 	binarySearch
 } from "@qtxr/utils";
@@ -115,6 +116,8 @@ export default class Keys {
 		return true;
 	}
 }
+
+alias(Keys.prototype, "add", "set");
 
 const anyRegex = /^(?:\*)$/;
 
