@@ -21,7 +21,7 @@ function buildExposed(pkgName, locals) {
 	]);
 }
 
-async function buildExposedPartition(pkgName, exposeType, locals) {
+function buildExposedPartition(pkgName, exposeType, locals) {
 	return new Promise(resolve => {
 		const partition = locals[exposeType],
 			startTime = Date.now();
@@ -92,9 +92,9 @@ async function buildExposedPartition(pkgName, exposeType, locals) {
 	});
 }
 
-async function resolveLocals(pkgName, package) {
+async function resolveLocals(pkgName, pkg) {
 	const locals = {
-		package,
+		package: pkg,
 		title: pkgName,
 		scripts: [],
 		entries: [],
@@ -102,11 +102,11 @@ async function resolveLocals(pkgName, package) {
 		alerts: []
 	};
 
-	if (!package.qlib || !package.qlib.expose)
+	if (!pkg.qlib || !pkg.qlib.expose)
 		return locals;
 
 	const root = join("pkg", pkgName),
-		expose = package.qlib.expose,
+		expose = pkg.qlib.expose,
 		scripts = expose.scripts,
 		styles = expose.styles;
 

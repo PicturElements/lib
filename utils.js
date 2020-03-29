@@ -1,5 +1,3 @@
-const path = require("path");
-
 // Miscellaneous pure utilities not pertinent to CLI, the file system, or OS
 
 function promisify(func, paramNamesOrParamMap, returnKeyOrReturnIndex, optionsOrCallback) {
