@@ -34,6 +34,9 @@ export default function splitPath(path) {
 	if (Array.isArray(path))
 		return path;
 
+	if (typeof path == "symbol")
+		return [path];
+
 	if (typeof path != "string" && typeof path != "number")
 		return [];
 
