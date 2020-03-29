@@ -1,4 +1,7 @@
-import { isObject } from "@qtxr/utils";
+import {
+	hasOwn,
+	isObject
+} from "@qtxr/utils";
 
 const taskHooks = ["beforeMount", "mounted", "beforeUpdate", "updated"];
 
@@ -31,7 +34,7 @@ function runTasks(vm, tasks, hookName) {
 		}
 	} else if (isObject(tasks)) {
 		for (const k in tasks) {
-			if (!tasks.hasOwnProperty(k) || k != hookName)
+			if (!hasOwn(tasks, k) || k != hookName)
 				continue;
 
 			const task = tasks[k];

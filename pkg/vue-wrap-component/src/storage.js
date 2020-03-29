@@ -1,3 +1,4 @@
+import { hasOwn } from "@qtxr/utils";
 import { KeyedLinkedList } from "@qtxr/ds";
 
 export default class Storage extends KeyedLinkedList {
@@ -13,7 +14,7 @@ export default class Storage extends KeyedLinkedList {
 			return null;
 		}
 
-		if (this.partitions.hasOwnProperty(key))
+		if (hasOwn(this.partitions, key))
 			return this.partitions[key];
 
 		this.partitions[key] = new Storage(this);
@@ -27,7 +28,7 @@ export default class Storage extends KeyedLinkedList {
 			return out;
 
 		for (const k in this.partitions) {
-			if (this.partitions.hasOwnProperty(k))
+			if (hasOwn(this.partitions, k))
 				out[k] = this.partitions[k].extract(deep);
 		}
 

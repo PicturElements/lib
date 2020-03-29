@@ -1,5 +1,6 @@
 import {
 	get,
+	hasOwn,
 	isObject
 } from "@qtxr/utils";
 
@@ -16,7 +17,7 @@ export default {
 				};
 		
 			for (const k in state) {
-				if (state.hasOwnProperty(k) && !gotten.data.hasOwnProperty(k))
+				if (hasOwn(state, k) && !hasOwn(gotten.data, k))
 					gotten.data[k] = state[k];
 			}
 
@@ -110,7 +111,7 @@ function setLoadingState(partition, data) {
 	}
 
 	for (const k in partition) {
-		if (partition.hasOwnProperty(k))
+		if (hasOwn(partition, k))
 			partition[k] = state[k];
 	}
 }

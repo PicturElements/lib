@@ -65,7 +65,7 @@ class ComponentWrapperManager {
 
 		if (isObject(config.suppliers)) {
 			for (const k in config.suppliers) {
-				if (hasOwn(config.suppliers, k))
+				if (hasOwn(config.suppliers, k, false))
 					this.supply(k, config.suppliers[k]);
 			}
 		}
@@ -81,7 +81,7 @@ class ComponentWrapperManager {
 			throw new Error(`Cannot supply '${name}': supplier is not an object`);
 		if (!name || typeof name != "string")
 			throw new Error(`Cannot supply: name (${name}) is not valid; name must be a truthy string`);
-		if (this.suppliers.hasOwnProperty(name))
+		if (hasOwn(this.suppliers, name))
 			throw new Error(`Cannot supply '${name}': this ComponentWrapperManager aready has a supplier with this name`);
 
 		if (hasInit(supplier)) {
@@ -116,7 +116,7 @@ class ComponentWrapperManager {
 
 	autoSupply() {
 		for (const k in suppliers) {
-			if (hasOwn(suppliers, k) && !hasInit(suppliers[k]))
+			if (hasOwn(suppliers, k, false) && !hasInit(suppliers[k]))
 				this.supply(k);
 		}
 
@@ -156,7 +156,7 @@ class ComponentWrapper {
 	use(supplierName, ...args) {
 		if (typeof supplierName != "string")
 			throw new TypeError("Cannot use: supplier name must be a string");
-		if (!this.manager.suppliers.hasOwnProperty(supplierName))
+		if (!hasOwn(this.manager.suppliers, supplierName))
 			throw new Error(`Cannot use: no known supplier with name '${supplierName}'`);
 
 		let used = !!this.used[supplierName];
@@ -181,7 +181,7 @@ class ComponentWrapper {
 	}
 
 	getInjectorPartition(partititonName) {
-		if (!this.exporterInjectors.hasOwnProperty(partititonName))
+		if (!hasOwn(this.exporterInjectors, partititonName))
 			throw new Error(`Cannot get injector partition at '${partititonName}': no partition found`);
 
 		return this.exporterInjectors[partititonName][0];
@@ -193,7 +193,7 @@ class ComponentWrapper {
 			let added = false;
 
 			for (const k in typeOrComponent) {
-				if (!typeOrComponent.hasOwnProperty(k))
+				if (!hasOwn(typeOrComponent, k))
 					continue;
 
 				added = this.add(k, typeOrComponent[k]) || added;
@@ -202,7 +202,7 @@ class ComponentWrapper {
 			return added;
 		}
 
-		if (!value || typeof typeOrComponent != "string" || !dataMap.hasOwnProperty(typeOrComponent))
+		if (!value || typeof typeOrComponent != "string" || !hasOwn(dataMap, typeOrComponent))
 			return false;
 
 		const addKey = dataMap[typeOrComponent];
@@ -212,11 +212,11 @@ class ComponentWrapper {
 				this[addKey](i, value[i]);
 		} else if (isObject(value)) {
 			for (const k in value) {
-				if (value.hasOwnProperty(k))
+				if (hasOwn(value, k))
 					this[addKey](k, value[k]);
 			}
 		} else if (typeof value == "function") {
-			if (!this.exporterInjectors.hasOwnProperty(typeOrComponent))
+			if (!hasOwn(this.exporterInjectors, typeOrComponent))
 				throw new Error(`Cannot add injector at '${typeOrComponent}': no injector partition defined`);
 
 			this.exporterInjectors[typeOrComponent].push(value);
@@ -288,7 +288,7 @@ class ComponentWrapper {
 	addMethod(key, method) {
 		const methods = this.component.methods;
 
-		if (methods.hasOwnProperty(key))
+		if (hasOwn(methods, key))
 			throw new Error(`Tried overriding method '${key}'`);
 		if (typeof method != "function")
 			throw new Error(`Cannot add method '${key}': supplied method is not a function`);
@@ -299,7 +299,7 @@ class ComponentWrapper {
 	addComputed(key, comp) {
 		const computed = this.component.computed;
 
-		if (computed.hasOwnProperty(key))
+		if (hasOwn(computed, key))
 			throw new Error(`Tried overriding computed property '${key}'`);
 		if (typeof comp != "function")
 			throw new Error(`Cannot add computed property '${key}': supplied value is not a function`);
@@ -326,7 +326,7 @@ class ComponentWrapper {
 	addComponent(key, component) {
 		const components = this.component.components;
 
-		if (components.hasOwnProperty(key))
+		if (hasOwn(components, key))
 			throw new Error(`Tried overriding component '${key}'`);
 
 		components[key] = component;
@@ -351,7 +351,7 @@ class ComponentWrapper {
 			exporterInjectors = this.exporterInjectors;
 
 		for (const k in exporterInjectors) {
-			if (!exporterInjectors.hasOwnProperty(k))
+			if (!hasOwn(exporterInjectors, k))
 				continue;
 
 			const exporter = this.manager.exporters[k];
@@ -398,7 +398,7 @@ ComponentWrapper.prototype.assert = {
 	
 		if (Array.isArray(props) && props.indexOf(key) != -1)
 			err();
-		else if (isObject(props) && props.hasOwnProperty(key))
+		else if (isObject(props) && hasOwn(props, key))
 			err();
 	}
 };
@@ -476,7 +476,7 @@ function nestHook(target, key, hook) {
 }
 
 function hasInit(supplier) {
-	return supplier.hasOwnProperty("init") && typeof supplier.init == "function";
+	return hasOwn(supplier, "init") && typeof supplier.init == "function";
 }
 
 function resolvePropKey(key, value) {

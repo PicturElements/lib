@@ -1,8 +1,10 @@
+import { hasOwn } from "@qtxr/utils";
+
 export default {
 	use({ wrapper }, partitionName = "events") {
 		const data = wrapper.getInjectorPartition("data");
 		
-		if (!data.hasOwnProperty(partitionName))
+		if (!hasOwn(data, partitionName))
 			data[partitionName] = [];
 		else if (!Array.isArray(data[partitionName].constructor)) {
 			console.warn(`Refuses to use events because component data already has a non-array property with key '${partitionName}'`);
@@ -28,6 +30,7 @@ export default {
 			});
 	
 			target.addEventListener(type, interceptingCallback, options);
+			return _ => callback.call(null, null, vm);
 		});
 
 		wrapper.addHook("beforeDestroy", function() {
