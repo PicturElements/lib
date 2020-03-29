@@ -14,7 +14,11 @@ function isNativeSimpleObject(val) {
 	if (typeof val != "object" || val == null)
 		return false;
 
-	const constr = Object.getPrototypeOf(val).constructor;
+	const proto = Object.getPrototypeOf(val);
+	if (!proto)
+		return true;
+	
+	const constr = proto.constructor;
 	return constr == Object || constr == Array;
 }
 
