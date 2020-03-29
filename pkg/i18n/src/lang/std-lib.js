@@ -16,15 +16,15 @@ const datePeriods = {
 };
 
 const langStdLib = {
-	day(a, accessor) {	// Suggested key: day
+	day(a, accessor) {		// Suggested accessor: day
 		const data = a.manager.get(accessor) || [];
 		return data[a.store.date.getDay()];
 	},
-	month(a, accessor) {	// Suggested key: month
+	month(a, accessor) {	// Suggested accessor: month
 		const data = a.manager.get(accessor) || [];
 		return data[a.store.date.getMonth()];
 	},
-	ampm(a, accessor) {	// Suggested key: meridiem
+	ampm(a, accessor) {		// Suggested accessor: meridiem
 		const data = a.manager.get(accessor) || ["AM", "PM"];
 		return data[Math.floor(a.store.date.getHours() / 12)];
 	},

@@ -8,6 +8,7 @@ import {
 	isObj,
 	isObject,
 	coerceToObj,
+	alias,
 	inject,
 	hasOwn,
 	forEach,
@@ -134,7 +135,7 @@ class I18NManager extends Hookable {
 								relativePath = fullPath.indexOf(baseUrl) == 0 ?
 									fullPath.substr(baseUrl.length) :
 									fullPath,
-								ex = /[\\\/.]+([a-z0-9-]+)/i.exec(relativePath);
+								ex = /[\\/.]+([a-z0-9-]+)/i.exec(relativePath);
 
 							if (ex)
 								locale = new IETF(ex[1]);
@@ -159,7 +160,8 @@ class I18NManager extends Hookable {
 						if (!hasOwn(this.sitemap, k))
 							continue;
 
-						this.sitemap[k] = this.sitemap[k].map(s => new IETF(s));
+						this.sitemap[k] = this.sitemap[k]
+							.map(s => new IETF(s));
 					}
 				}
 			});
@@ -370,12 +372,12 @@ class I18NManager extends Hookable {
 
 		if (newLocale) {
 			partition = coerceToObj(null, inData);
-			partition[META_SYM] = {
+			setSymbol(partition, META_SYM, {
 				path,
 				dependencies,
 				suppliedBy: {},
 				supplyTime: 0
-			};
+			});
 			this.locales.push(locale);
 			this.store[locale.value] = partition;
 
@@ -393,7 +395,7 @@ class I18NManager extends Hookable {
 			const part = this.localePartitions[i],
 				meta = part[META_SYM];
 
-			if (part != partition && (!hasOwn(meta.suppliedBy, path) || force)) {
+			if (part != partition && (force || !hasOwn(meta.suppliedBy, path))) {
 				supplyLocaleData(part, partition, locale, this.locales[i]);
 				meta.suppliedBy[path] = true;
 			}
@@ -408,10 +410,10 @@ class I18NManager extends Hookable {
 	}
 }
 
-I18NManager.prototype.format = I18NManager.prototype.compose;
-I18NManager.prototype.fmt = I18NManager.prototype.compose;
-I18NManager.prototype.dateFormat = I18NManager.prototype.dateCompose;
-I18NManager.prototype.dfmt = I18NManager.prototype.dateCompose;
+alias(I18NManager.prototype, {
+	compose: ["format", "fmt"],
+	dateCompose: ["dateFormat", "dfmt"]
+});
 
 function supplyLocaleData(partition, data, locale, targetLocale) {
 	const similarity = IETF.compare(locale, targetLocale);
@@ -419,13 +421,13 @@ function supplyLocaleData(partition, data, locale, targetLocale) {
 	const supply = (part, d) => {
 		let map;
 
-		if (!hasOwn(part, OWNER_MAP_SYM, true)) {
+		if (!hasOwn(part, OWNER_MAP_SYM)) {
 			map = new KeyedLinkedList();
 			setSymbol(part, OWNER_MAP_SYM, map);
 		} else
 			map = part[OWNER_MAP_SYM];
 
-		if (hasOwn(d, OWNER_MAP_SYM, true))
+		if (hasOwn(d, OWNER_MAP_SYM))
 			d[OWNER_MAP_SYM].forEach((ls, k) => inj(part, map, d[k], k));
 		else
 			forEach(d, (v, k) => inj(part, map, v, k));

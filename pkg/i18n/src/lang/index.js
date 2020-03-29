@@ -297,7 +297,7 @@ function parseFormat(format, parseMeta = {}) {
 // Additional processing will be done by processAST, most notably constructing
 // and verifying expressions, arguments, literals, and accessors
 function parse(format, currentStack) {
-	const formatRegex = /(\/\*(?:.|\s)*?\*\/)|((?:[^\\\s(){}[\]$%#@"'`,<>&|!?~^+\-\/*=]|\\[#$]{|\\.)+)|(["'`])(?:\\.|.)*?\3|((?:@([bnis]))?(\[|#{|\${))|((]|})\s*{(?:@((?:[a-z0-9_[\].-]|\\.)+):\s?)?)|([%$(])(\.*)|([)}\]])|(?:(\|\|?|&&?|={2,3}|!==?|>>>?|<<|[<>]=?|[!~^]|[+-]|\*{1,2}|\/{1,2}|\?{2}|%))|(,)/gi,
+	const formatRegex = /(\/\*(?:.|\s)*?\*\/)|((?:[^\\\s(){}[\]$%#@"'`,<>&|!?~^+\-/*=]|\\[#$]{|\\.)+)|(["'`])(?:\\.|.)*?\3|((?:@([bnis]))?(\[|#{|\${))|((]|})\s*{(?:@((?:[a-z0-9_[\].-]|\\.)+):\s?)?)|([%$(])(\.*)|([)}\]])|(?:(\|\|?|&&?|={2,3}|!==?|>>>?|<<|[<>]=?|[!~^]|[+-]|\*{1,2}|\/{1,2}|\?{2}|%))|(,)/gi,
 		outStruct = [],
 		structStack = currentStack || [],
 		stackLen = structStack.length;
@@ -527,7 +527,7 @@ function parse(format, currentStack) {
 				break;
 			}
 
-			case "opener":
+			case "opener": {
 				let validOpener = true;
 
 				switch (capture) {
@@ -608,6 +608,7 @@ function parse(format, currentStack) {
 				if (validOpener)
 					break;
 				/* falls through */
+			}
 
 			// Terminators must come after openers, as some openers are identical
 			// to terminators and will fall through the above case block
@@ -713,6 +714,9 @@ function mkNode(data = {}, exOrIndex = null) {
 			data.literal = exOrIndex[0];
 	}
 
+	if (!hasOwn(data, "resolvable"))
+		data.resolvable = true;
+ 
 	data.isNode = true;
 	return data;
 }
@@ -970,7 +974,7 @@ function pASTResolveFormats(nodes, parseMeta = {}) {
 			if (!regex.global)
 				break;
 
-			offset = (ex.index + match.length);
+			offset = ex.index + match.length;
 		}
 
 		return newNodes;
@@ -1041,12 +1045,13 @@ function pASTCleanAccessor(node, parseMeta = {}) {
 		const term = accessor[i];
 
 		switch (term.type) {
-			case "accessorTerm":
+			case "accessorTerm": {
 				const split = splitPath(term.value);
 
 				for (let i = 0, l = split.length; i < l; i++)
 					cleanAccessor.push(split[i]);
 				break;
+			}
 
 			case "computedAccessorTerm":
 				pASTFormatExpr(term.expr, parseMeta);
