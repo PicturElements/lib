@@ -354,8 +354,6 @@ function aliasCore(target, keyOrMap, shallow, ...aliases) {
 	let appliedCount = 0;
 
 	const apply = (key, alis) => {
-		console.log(target, key, alis);
-
 		const ctx = get(target, key, null, "context");
 		if (!ctx.match)
 			return;
