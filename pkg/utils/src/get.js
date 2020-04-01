@@ -26,7 +26,7 @@ export default function get(data, path, def, options = {}) {
 
 	for (let i = options.pathOffset || 0, l = split.length; i < l; i++) {
 		const key = resolveKey ?
-			resolveKey(split[i], i, split) :
+			resolveKey(split[i], i, split, data) :
 			split[i];
 
 		if (!data || key === undefined || (data[key] === undefined && !hasOwn(data, key))) {
