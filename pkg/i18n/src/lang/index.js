@@ -484,6 +484,7 @@ function parse(format, currentStack) {
 
 			// new selector term {term}
 			case "selectorTerm": {
+				runAutoPop("selectorTerm", capture);
 				const alsh = getParentNodeByType("arrayLiteralOrSelectorHead", structStack);
 
 				if (alsh) {
@@ -498,7 +499,6 @@ function parse(format, currentStack) {
 					alsh.defaultTerm = null;
 					delete alsh.value;
 				} else if (getCapturingMatch(ex, "precedingSelectorToken") == "]") {
-					runAutoPop("selectorTerm", capture);
 					const head = getParentNodeByType("selectorHead", structStack);
 
 					if (!head) {
