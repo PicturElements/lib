@@ -275,6 +275,8 @@ const FORMAT_CAPTURING_GROUPS = [
 ];
 const FORMAT_CACHE = {};
 
+window.FORMAT_CACHE = FORMAT_CACHE;
+
 function parseFormat(format, parseMeta = {}) {
 	if (format == null || !isPrimitive(format))
 		return [];
@@ -832,7 +834,7 @@ function processAST(nodes, parseMeta = {}) {
 	parseMeta.stack = parseMeta.stack || [];
 	const stack = parseMeta.stack;
 
-	pASTResolveFormats(nodes, parseMeta);
+	pASTResolveGrammars(nodes, parseMeta);
 
 	for (let i = 0, l = nodes.length; i < l; i++) {
 		const node = nodes[i];
@@ -906,7 +908,7 @@ function pASTStripWhitespace(nodes) {
 	});
 }
 
-function pASTResolveFormats(nodes, parseMeta = {}) {
+function pASTResolveGrammars(nodes, parseMeta = {}) {
 	const grammars = parseMeta.customGrammars;
 
 	if (!Array.isArray(grammars))
@@ -1292,14 +1294,12 @@ function resolveFormat(parsedFormat, meta = {}) {
 				// meta object, but to save processing we can just change the trace
 				// data temporarily
 				const fTrace = meta.formatTrace;
-
-				meta.formatTrace = resolveRefTrace(fTrace, node, meta);
+				meta.formatTrace = resolveRefTrace(fTrace, node, meta, [], resolveNode);
 
 				const parsed = parseFormat(meta.formatTrace.data),
 					resolved = resolve(parsed);
 
 				meta.formatTrace = fTrace;
-
 				return resolved;
 			}
 
@@ -1393,6 +1393,42 @@ function resolveExpr(expr, resolver = resolveFormat, meta = {}) {
 	return rt.val;
 }
 
+const ADD_OVERLOAD = [
+	// Python-esque list concatenation
+	{
+		left: Array,
+		right: Array,
+		run: (l, r) => l.concat(r)
+	},
+	(l, r) => l + r
+];
+
+const MUL_OVERLOAD = [
+	// Python-esque string repetition
+	{
+		left: "string",
+		right: "number",
+		run: (l, r) => repeat(l, r)
+	},
+	// ...and list repetition
+	{
+		left: Array,
+		right: "number",
+		run: (l, r) => {
+			const out = [],
+				len = l.length;
+
+			while (r--) {
+				for (let i = 0; i < len; i++)
+					out.push(l[i]);
+			}
+
+			return out;
+		}
+	},
+	(l, r) => l * r
+];
+
 function evalTape(rt) {
 	const term = rt.expr[rt.idx++];
 
@@ -1445,30 +1481,14 @@ function evalTape(rt) {
 			if (term.unary)
 				return +evalTape(rt);
 
-			return rt.val + evalTape(rt);
+			return overload(rt.val, evalTape(rt), ADD_OVERLOAD);
 		case "-":
 			if (term.unary)
 				return -evalTape(rt);
 
 			return rt.val - evalTape(rt);
-		case "*": {
-			return overload(
-				rt.val,
-				evalTape(rt),
-				[
-					{
-						left: "string",
-						right: "number",
-						run: (l, r) => repeat(l, r)
-					},
-					{
-						left: "any",
-						right: "any",
-						run: (l, r) => l * r
-					}
-				]
-			);
-		}
+		case "*":
+			return overload(rt.val, evalTape(rt), MUL_OVERLOAD);
 		case "/":
 			return rt.val / evalTape(rt);
 		case "//":
@@ -1488,8 +1508,12 @@ function evalTape(rt) {
 
 function overload(left, right, conditions, def) {
 	for (let i = 0, l = conditions.length; i < l; i++) {
-		const condition = conditions[i],
-			lml = matchType(left, condition.left),
+		const condition = conditions[i];
+
+		if (typeof condition == "function")
+			return condition(left, right);
+
+		const lml = matchType(left, condition.left),
 			rmr = matchType(right, condition.right);
 
 		if (lml && rmr)
@@ -1534,20 +1558,26 @@ function resolveRefCaller(store, node, meta, ...args) {
 	return item;
 }
 
-function resolveGet(store, node, meta) {
-	if (node.type != "variable")
-		return get(store, node.value, undefined, "context");
+function resolveGet(store, nodeOrAccessor, meta, resolver = resolveFormat) {
+	let accessor = nodeOrAccessor;
 
-	if (node.staticAccessor)
-		return get(store, node.accessor, undefined, "context");
+	if (isNode(nodeOrAccessor)) {
+		if (nodeOrAccessor.type != "variable")
+			return get(store, nodeOrAccessor.value, undefined, "context");
 
-	return get(store, node.accessor, undefined, {
+		if (nodeOrAccessor.staticAccessor)
+			return get(store, nodeOrAccessor.accessor, undefined, "context");
+		
+		accessor = nodeOrAccessor.accessor;
+	}
+
+	return get(store, accessor, undefined, {
 		context: true,
 		resolveKey: term => {
 			if (isPrimitive(term))
 				return term;
 
-			return resolveFormat(term, meta);
+			return resolver(term, meta);
 		}
 	});
 }
@@ -1555,7 +1585,7 @@ function resolveGet(store, node, meta) {
 const isTraceObj = sym("isTraceObj"),
 	stepRegex = /^\.*/;
 
-function resolveRefTrace(store, nodeOrPath, meta, args = []) {
+function resolveRefTrace(store, nodeOrPath, meta, args = [], resolver = resolveFormat) {
 	let steps = 0,
 		path = nodeOrPath;
 
@@ -1580,13 +1610,14 @@ function resolveRefTrace(store, nodeOrPath, meta, args = []) {
 		store = store.store;
 	}
 
-	let item = get(store, path, undefined, "context");
+	let item = resolveGet(store, path, meta, resolver);
 
 	if (meta) {
 		meta.context = item.context;
 		meta.node = isNode(nodeOrPath) ? nodeOrPath : null;
 		meta.args = args;
 	}
+
 	item.data = resolveVal(item.data, meta, ...args);
 	item.store = store;
 	item.path = path;
