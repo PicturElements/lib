@@ -69,6 +69,7 @@ function mergeObject(
 				logMergeError(error, mergerPrecursor, templates, mergeType) ||
 				blank
 			);
+
 		case "object":
 			if (Array.isArray(mergerPrecursor))
 				return merge(mergerPrecursor, templates, error, mergeType, mergeFunction);
@@ -76,6 +77,7 @@ function mergeObject(
 			return mergerPrecursor ?
 				mergerPrecursor :
 				blank;
+
 		default:
 			return blank;
 	}
@@ -95,6 +97,7 @@ function mergeObjectWithDefault(
 				logMergeError(error, optionsPrecursor, templates, mergeType) ||
 				mergeObject(def, templates, error, mergeType)
 			);
+
 		case "object":
 			if (Array.isArray(optionsPrecursor))
 				return merge(optionsPrecursor, templates, error, mergeType, mergeFunction);
@@ -102,6 +105,7 @@ function mergeObjectWithDefault(
 			return optionsPrecursor ?
 				optionsPrecursor :
 				mergeObject(def, templates, error, mergeType);
+
 		default:
 			return mergeObject(def, templates, error, mergeType);
 	}

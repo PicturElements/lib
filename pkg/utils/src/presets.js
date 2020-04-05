@@ -26,7 +26,7 @@ function mergePresets(data, presets, config = {}) {
 
 	const merge = out => {
 		const mrg = (outData, preset, key, force) => {
-			if (!key || !preset || (!force && visitedKeys.hasOwnProperty(key)))
+			if (!key || !preset || (!force && hasOwn(visitedKeys, key)))
 				return null;
 			
 			visitedKeys[key] = true;
@@ -68,7 +68,7 @@ function mergePresets(data, presets, config = {}) {
 		const k = config.key || config.keys,
 			keys = Array.isArray(k) ? k : [k];
 
-		if (config.hasOwnProperty("defaultKey"))
+		if (hasOwn(config, "defaultKey"))
 			out = mrg(out, presets[config.defaultKey], config.defaultKey) || out;
 
 		for (let i = 0, l = keys.length; i < l; i++) {
@@ -88,5 +88,6 @@ function mergePresets(data, presets, config = {}) {
 export {
 	composePresets,
 	addPreset,
+	mergePresets as applyPresets,
 	mergePresets
 };

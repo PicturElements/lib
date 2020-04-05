@@ -2,6 +2,7 @@ import {
 	SYM_ITER_KEY,
 	POLYFILL_PREFIXES
 } from "./internal/constants";
+import hasOwn from "./has-own";
 
 const docAll = typeof document == "undefined" ? [] : document.all;
 
@@ -157,6 +158,13 @@ function isTaggedTemplateArgs(args) {
 	return Boolean(firstArg && firstArg.raw) && Array.isArray(firstArg) && Array.isArray(firstArg.raw);
 }
 
+function isStandardPropertyDescriptor(descriptor) {
+	if (!descriptor || !hasOwn(descriptor, "value"))
+		return false;
+
+	return descriptor.writable && descriptor.enumerable && descriptor.configurable;
+}
+
 export {
 	isDirectInstanceof,
 	isNativeSimpleObject,
@@ -173,5 +181,6 @@ export {
 	isEnv,
 	isNativeFunction,
 	isThenable,
-	isTaggedTemplateArgs
+	isTaggedTemplateArgs,
+	isStandardPropertyDescriptor
 };

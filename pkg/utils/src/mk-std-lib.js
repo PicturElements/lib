@@ -1,77 +1,68 @@
 import { sym } from "./sym";
+import { isStandardPropertyDescriptor } from "./is";
+import hasOwn from "./has-own";
+import resolveArgs from "./resolve-args";
 
-// STDLib making function. Leverages the prototype chain to prevent
+// Standard library collecting function. Leverages the prototype chain to prevent
 // needlessly having to Object.assign new clean objects every time
 // an object with standard methods/fields is needed
 
-const stdNameSym = sym("standard library name");
+const NAME_SYM = sym("standard library name"),
+	PARAMS = [
+		{ name: "name", type: "string" },
+		{ name: "libs", coalesce: true }
+	];
 
-export default function mkStdLib(name, ...libs) {
-	if (typeof name != "string" || name == "StdLib")
-		return mkAnonymousStdLib(name, ...libs);
+export default function mkStdLib(...args) {
+	const {
+		name,
+		libs
+	} = resolveArgs(args, PARAMS);
 
-	// Only do this because it may be useful for clarity
-	// to have STDLib instances have a descriptive name
-	const constr = Function("assign", `return function ${name}() { assign(this, arguments); }`)(assign);
+	// If a name is provided, create a custom named constructor
+	const impl = name ?
+		mkNamedStdLibImpl(name) :
+		mkAnonymousStdLibImpl();
 
-	constr.add = (key, val) => {
+	impl.add = (key, val) => {
 		if (!key || typeof key != "string")
-			return console.warn(`Cannot add ${name} function: ${key} is not a valid key`);
+			return console.warn(`Cannot add ${impl[NAME_SYM]} function: ${key} is not a valid key`);
 
-		constr.prototype[key] = val;
+		impl.prototype[key] = val;
 	};
 
-	constr.remove = key => {
-		if (constr.prototype.hasOwnProperty(key))
-			return delete constr.prototype[key];
+	impl.remove = key => {
+		if (hasOwn(impl.prototype, key))
+			return delete impl.prototype[key];
 
 		return false;
 	};
 
-	constr.has = (instOrKey, key) => {
+	impl.has = (instOrKey, key) => {
 		if (isStdLib(instOrKey))
-			return instOrKey.hasOwnProperty(key) || constr.prototype.hasOwnProperty(key);
+			return hasOwn(instOrKey, key) || hasOwn(impl.prototype, key);
 
-		return constr.prototype.hasOwnProperty(instOrKey);
+		return hasOwn(impl.prototype, instOrKey);
 	};
 
-	constr[stdNameSym] = name;
-	assign(constr.prototype, libs);
-
-	return constr;
+	assign(impl.prototype, libs);
+	return impl;
 }
 
-function mkAnonymousStdLib(...libs) {
+function mkNamedStdLibImpl(name) {
+	const impl = Function("assign", `return function ${name}() { assign(this, arguments); }`)(assign);
+	impl[NAME_SYM] = name;
+	return impl;
+}
+
+function mkAnonymousStdLibImpl() {
 	class StdLib {
 		constructor(...extend) {
 			assign(this, extend);
 		}
-	
-		static add(key, val) {
-			if (!key || typeof key != "string")
-				return console.warn(`Cannot add STDLib function: ${key} is not a valid key`);
-	
-			this.prototype[key] = val;
-		}
-	
-		static remove(key) {
-			if (this.prototype.hasOwnProperty(key))
-				return delete this.prototype[key];
-	
-			return false;
-		}
-
-		static has(instOrKey, key) {
-			if (isStdLib(instOrKey))
-				return instOrKey.hasOwnProperty(key) || this.prototype.hasOwnProperty(key);
-
-			return this.prototype.hasOwnProperty(instOrKey);
-		}	
 	}
 
-	StdLib[stdNameSym] = "StdLib";
-	assign(StdLib.prototype, libs);
-
+	StdLib[NAME_SYM] = "StdLib";
 	return StdLib;
 }
 
@@ -82,18 +73,24 @@ function assign(target, sources) {
 	for (let i = 0, l = sources.length; i < l; i++) {
 		const source = sources[i];
 
-		// Unlike to Object.assign, don't accept
-		// non-object lib values
+		// Unlike to Object.assign, don't accept non-object lib values
 		if (!source || source.constructor != Object)
 			continue;
 
 		for (const k in source) {
-			if (!k || source.hasOwnProperty(k))
+			const descriptor = Object.getOwnPropertyDescriptor(source, k);
+
+			if (!descriptor)
+				continue;
+
+			if (isStandardPropertyDescriptor(descriptor))
 				target[k] = source[k];
+			else
+				Object.defineProperty(target, k, descriptor);
 		}
 	}
 }
 
 function isStdLib(candidate) {
-	return Boolean(candidate) && candidate.hasOwnProperty(stdNameSym);
+	return Boolean(candidate) && hasOwn(candidate, NAME_SYM);
 }
