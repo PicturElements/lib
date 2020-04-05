@@ -22,15 +22,29 @@ export default function get(data, path, def, options = {}) {
 	let parent = data,
 		childKey = null,
 		match = true,
-		built = false;
+		built = false,
+		error = null;
+		
+	const useBundledOutput = options.context || options.trace || options.info;
 
 	for (let i = options.pathOffset || 0, l = split.length; i < l; i++) {
 		const key = resolveKey ?
 			resolveKey(split[i], i, split, data) :
 			split[i];
 
-		if (!data || key === undefined || (data[key] === undefined && !hasOwn(data, key))) {
+		if (!data || key === undefined || ((data[key] === undefined || options.own) && !hasOwn(data, key))) {
 			match = false;
+
+			if (useBundledOutput) {
+				if (!data)
+					error = "no-data";
+				else if (key === undefined)
+					error = "no-key";
+				else if (data[key] === undefined && !hasOwn(data, key))
+					error = "no-value";
+				else if (options.own && !hasOwn(data, key))
+					error = "proto-access";
+			}
 
 			if (options.autoBuild) {
 				data[key] = split[i + 1] != null && !isNaN(split[i + 1]) ? [] : {};
@@ -51,12 +65,12 @@ export default function get(data, path, def, options = {}) {
 		data = data[key];
 	}
 
-	const bundledOutput = options.context || options.trace;
-	if (bundledOutput) {
+	if (useBundledOutput) {
 		data = {
 			data,
 			match,
-			built
+			built,
+			error
 		};
 	}
 
@@ -77,8 +91,10 @@ const optionsTemplates = composeOptionsTemplates({
 	autoBuild: true,
 	context: true,
 	trace: true,
+	info: true,
 	traceContext: {
 		trace: true,
 		context: true,
-	}
+	},
+	own: true
 });

@@ -1,4 +1,5 @@
 import { unescape } from "./str-replace";
+import hasOwn from "./has-own";
 
 const regexSources = {
 	// /[$a-z0-9_-]+|\[(?:(["'`])((?:[^\\]|\\.)*?)\1|((?:[^\\\]]*|\\.)+?))\]"/gi
@@ -40,7 +41,7 @@ export default function splitPath(path) {
 	if (typeof path != "string" && typeof path != "number")
 		return [];
 
-	if (splitCache.hasOwnProperty(path))
+	if (hasOwn(splitCache, path))
 		return splitCache[path];
 
 	const out = [];
