@@ -1,4 +1,5 @@
 import {
+	hasOwn,
 	filterMut,
 	resolveArgs
 } from "@qtxr/utils";
@@ -240,12 +241,18 @@ const langStdLib = {
 		error(a, ...args) {
 			console.error(...args);
 		}
+	},
+	get dateString() {
+		const date = this.date || new Date();
+		return date.toDateString();
 	}
 };
 
-"abs|acos|acosh|asin|asinh|atan|atanh|atan2|ceil|cbrt|expm1|clz32|cos|cosh|exp|floor|fround|hypot|imul|log|log1p|log2|log10|max|min|pow|random|sign|sin|sinh|sqrt|tan|tanh|trunc".split("|")
-	.forEach(name => {
-		langStdLib[name] = (a, ...args) => m[name](...args);
-	});
+(_ => {
+	for (let k in m) {
+		if (hasOwn(m, k))
+			langStdLib[k] = (a, ...args) => m[k](...args);
+	}
+})();
 
 export default langStdLib;

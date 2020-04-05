@@ -179,7 +179,7 @@ class I18NManager extends Hookable {
 		return copy ? clone(gotten) : gotten;
 	}
 
-	compose(format, vars, locale, baseStore = {}) {
+	format(format, vars, locale, baseStore = {}) {
 		locale = IETF.coerce(locale);
 		locale = locale.valid ? locale : this.locale;
 		vars = vars == null ?
@@ -220,13 +220,13 @@ class I18NManager extends Hookable {
 		return resolveFormat(parsedFormat, meta);
 	}
 
-	dateCompose(format, vars, date, locale) {
+	dateFormat(format, vars, date, locale) {
 		if (typeof date == "string" || (typeof date == "number" && !isNaN(date)))
 			date = new Date(date);
 		if (!(date instanceof Date) || isNaN(date.valueOf()))
 			date = new Date();
 
-		return this.compose(format, vars, locale, {
+		return this.format(format, vars, locale, {
 			date
 		});
 	}
@@ -411,8 +411,8 @@ class I18NManager extends Hookable {
 }
 
 alias(I18NManager.prototype, {
-	compose: ["format", "fmt"],
-	dateCompose: ["dateFormat", "dfmt"]
+	format: ["compose", "fmt"],
+	dateFormat: ["dfmt", "dateCompose"]
 });
 
 function supplyLocaleData(partition, data, locale, targetLocale) {

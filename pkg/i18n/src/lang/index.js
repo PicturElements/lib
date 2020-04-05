@@ -10,6 +10,7 @@ import {
 	filterMut,
 	matchType,
 	resolveVal,
+	mkAccessor,
 	isPrimitive
 } from "@qtxr/utils";
 
@@ -255,8 +256,8 @@ const OP_PRECEDENCE = [
 // recursive functions may cause problems. Regex literals in inner scopes will carry a slightly
 // bigger overhead than outer scope regexes, but engines can optimize the parsing of the literal
 // so that there's no significant performance difference
-// 
-// const formatRegex = /.../gi; To see the full regex, check parse
+//
+// const formatRegex = /.../gi; To see the full regex, check parse()
 const FORMAT_CAPTURING_GROUPS = [
 	"comment",
 	"literal",					// Literal string, which may contain custom grammars
@@ -273,9 +274,8 @@ const FORMAT_CAPTURING_GROUPS = [
 	"operator",					// Operator (boolean, bitwise, arithmetic)
 	"separator"					// Separates parameter nodes
 ];
-const FORMAT_CACHE = {};
 
-window.FORMAT_CACHE = FORMAT_CACHE;
+const FORMAT_CACHE = {};
 
 function parseFormat(format, parseMeta = {}) {
 	if (format == null || !isPrimitive(format))
@@ -1559,27 +1559,56 @@ function resolveRefCaller(store, node, meta, ...args) {
 }
 
 function resolveGet(store, nodeOrAccessor, meta, resolver = resolveFormat) {
-	let accessor = nodeOrAccessor;
+	const getConfig = {
+		own: true,
+		context: true
+	};
+
+	let accessor = nodeOrAccessor,
+		useResolvedKeys = true;
 
 	if (isNode(nodeOrAccessor)) {
-		if (nodeOrAccessor.type != "variable")
-			return get(store, nodeOrAccessor.value, undefined, "context");
-
-		if (nodeOrAccessor.staticAccessor)
-			return get(store, nodeOrAccessor.accessor, undefined, "context");
-		
-		accessor = nodeOrAccessor.accessor;
+		if (nodeOrAccessor.type != "variable") {
+			accessor = nodeOrAccessor.value;
+			useResolvedKeys = false;
+		} else if (nodeOrAccessor.staticAccessor) {
+			accessor = nodeOrAccessor.accessor;
+			useResolvedKeys = false;
+		}
 	}
 
-	return get(store, accessor, undefined, {
-		context: true,
-		resolveKey: term => {
+	if (useResolvedKeys) {
+		getConfig.resolveKey = term => {
 			if (isPrimitive(term))
 				return term;
 
 			return resolver(term, meta);
+		};
+	}
+
+	accessor = splitPath(accessor);
+
+	// If the store is an StdLib instance, check that the accessor only accesses
+	// data defined in secure contexts. Due to how mkStdLib is defined, it's
+	// not possible to access the prototype of its emitted instances without direct access
+	// If the store is an StdLib instance, extract the root of the accessor. By doing this,
+	// it's possible to safely get the data within it it by disallowing prototype access
+	if (store && meta && meta.store == store && !hasOwn(store, accessor[0])) {
+		if (hasOwn(Object.getPrototypeOf(store), accessor[0])) {
+			store = {
+				[accessor[0]]: store[accessor[0]]
+			};
 		}
-	});
+	}
+
+	const item = get(store, accessor, undefined, getConfig);
+
+	switch (item.error) {
+		case "proto-access":
+			console.warn(`Cannot access ${mkAccessor(accessor)}: the provided accessor accesses a prototype property, which is not allowed due to security concerns`);
+	}
+
+	return item;
 }
 
 const isTraceObj = sym("isTraceObj"),
