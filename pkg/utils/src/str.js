@@ -111,10 +111,6 @@ compileTaggedTemplate.with = options => {
 	return compileTaggedTemplate;
 };
 
-const ArrImpl = typeof Uint16Array == "undefined" ?
-	Array :
-	Uint16Array;
-
 const ALL_OPS = {
 	substitution: true,
 	insertion: true,
@@ -174,10 +170,9 @@ const distanceOptionsTemplates = composeOptionsTemplates({
 	}
 });
 
-// Damerau–Levenshtein distance
-// https://stackoverflow.com/questions/3866249/modifying-levenshtein-distance-algorithm-to-not-calculate-all-distances
-// http://www.let.rug.nl/kleiweg/lev/
-
+// Damerau–Levenshtein distance, with modifications based by
+// Apache Commons Lang implementation as found here:
+// https://stackoverflow.com/a/35069964
 function distance(a = "", b = "", options = {}) {
 	if (a == b)
 		return 0;
@@ -203,7 +198,7 @@ function distance(a = "", b = "", options = {}) {
 		bl = tmpLen;
 	}
 
-	if (maxDistance != null && Math.abs(al - bl) > maxDistance)
+	if (maxDistance && al - bl > maxDistance)
 		return Infinity;
 
 	if (!al)
@@ -212,7 +207,7 @@ function distance(a = "", b = "", options = {}) {
 		return al || 0;
 
 	const alphabet = {},
-		matrix = new ArrImpl(al * bl),
+		matrix = Array(al * bl),
 		sw = typeof weights.substitution == "number" ? weights.substitution : 1,
 		iw = typeof weights.insertion == "number" ? weights.insertion : 1,
 		dw = typeof weights.deletion == "number" ? weights.deletion : 1,
@@ -222,7 +217,13 @@ function distance(a = "", b = "", options = {}) {
 		const ac = a[i];
 		let db = 0,
 			jStart = 0,
-			jEnd = bl;
+			jEnd = bl,
+			rowMin = Infinity;
+
+		if (maxDistance) {
+			jEnd = Math.min(i + maxDistance + 1, bl);
+			jStart = Math.max(jEnd - maxDistance * 2 - 1, 0);
+		}
 
 		for (let j = jStart; j < jEnd; j++) {
 			const bc = b[j];
@@ -236,7 +237,7 @@ function distance(a = "", b = "", options = {}) {
 				else if (!j)
 					cost = i;
 				else
-					cost = matrix[(i - 1) * bl + (j - 1)] || 0;
+					cost = nullish(matrix[(i - 1) * bl + (j - 1)]);
 				cost += Number(ac != bc);
 
 				if (cost * sw < min)
@@ -248,7 +249,7 @@ function distance(a = "", b = "", options = {}) {
 				if (!j)
 					cost = i + 1;
 				else
-					cost = (matrix[i * bl + (j - 1)] || 0) + 1;
+					cost = nullish(matrix[i * bl + (j - 1)]) + 1;
 
 				if (cost * iw < min)
 					min = cost * iw;
@@ -259,7 +260,7 @@ function distance(a = "", b = "", options = {}) {
 				if (!i)
 					cost = j + 1;
 				else
-					cost = (matrix[(i - 1) * bl + j] || 0) + 1;
+					cost = nullish(matrix[(i - 1) * bl + j]) + 1;
 
 				if (cost * dw < min)
 					min = cost * dw;
@@ -281,7 +282,7 @@ function distance(a = "", b = "", options = {}) {
 						else if (!l)
 							cost = k + 2;
 						else
-							cost = matrix[(k - 1) * bl + (l - 1)] || 0;
+							cost = nullish(matrix[(k - 1) * bl + (l - 1)]);
 
 						cost += ((i - k - 1) + 1 + (j - l - 1));
 					}
@@ -291,19 +292,33 @@ function distance(a = "", b = "", options = {}) {
 				}
 			}
 
-			if (maxDistance != null && (i == j || (j == bl - 1 && i > j))) {
-				if (min > maxDistance)
-					return Infinity;
-			}
+			if (maxDistance && min < rowMin)
+				rowMin = min;
 
 			matrix[i * bl + j] = min;
 		}
+
+		// rowMin gives a lower bound for the distance after each
+		// Operation. At best, it catches an out of bounds distance,
+		// and at worst it lets the algorithm run slightly longer
+		if (maxDistance && rowMin > maxDistance)
+			return Infinity;
 		
 		if (ops.transposition)
 			alphabet[ac] = i;
 	}
 
+	if (maxDistance && matrix[matrix.length - 1] > maxDistance)
+		return Infinity;
+
 	return matrix[matrix.length - 1];
+}
+
+function nullish(candidate) {
+	if (candidate == null)
+		return Infinity;
+
+	return candidate;
 }
 
 export {
