@@ -7,7 +7,7 @@
 }
 
 @function add-attr($out, $attr, $value) {
-	@if (type-of($value) == "string" and $value == "") {
+	@if type-of($value) == "string" and $value == "" {
 		@return $out;
 	}
 

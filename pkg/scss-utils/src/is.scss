@@ -1,0 +1,7 @@
+@function is-empty-map($candidate) {
+	@return type-of($candidate) == list and length($candidate) == 0;
+}
+
+@function is-map($candidate) {
+	@return type-of($candidate) == map or is-empty-map($candidate);
+}

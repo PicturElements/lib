@@ -1,15 +1,32 @@
 @use "./string.scss" as *;
+@use "./is.scss" as *;
 
 @function map-deep-get($map, $accessor, $separator: ".") {
 	$path: str-split($accessor, $separator);
 	
 	@each $component in $path {
-		@if (type-of($map) != map) {
+		@if not is-map($map) {
 			@return ();
 		}
 		
 		$map: map-get($map, $component);
 	}
 	
-	@return if(type-of($map) == map, $map, ());
+	@return if(is-map($map), $map, ());
+}
+
+@function map-deep-merge($map, $map2, $max-depth: 1000) {
+	@each $key, $value in $map2 {
+		@if not (map-has-key($map, $key) or is-map($value)) {
+			$map: map-merge($map, ($key: $value));
+		} @else {
+			@if not is-map(map-get($map, $key)) or $max-depth <= 0 {
+				$map: map-merge($map, ($key: $value));
+			} @else {
+				$map: map-merge($map, ($key: map-deep-merge(map-get($map, $key), $value, $max-depth - 1)));
+			}
+		}
+	}
+	
+	@return $map;
 }
