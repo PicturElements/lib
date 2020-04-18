@@ -2,19 +2,21 @@ import {
 	isObject,
 	isFiniteNum
 } from "@qtxr/utils";
-import BaseInput, { INJECT } from "./base-input";
+import Input, { INJECT } from "./input";
 import resolveCards from "../assets/date-cards";
 
 const NativeDate = window.Date;
 
-export default class Date extends BaseInput {
+export default class Date extends Input {
 	constructor(name, options, form) {
 		super(name, options, form, {
 			range: "boolean",
 			cards: "Array|Object",
 			dayLabels: "Array|function",
 			monthLabels: "Array|function",
-			rangeSeparator: "string"
+			rangeSeparator: "string",
+			minDate: "Date|string|number",
+			maxDate: "Date|string|number"
 		});
 
 		Object.assign(this, resolveCards(this.cards));

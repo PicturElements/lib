@@ -1,4 +1,5 @@
 import {
+	hasOwn,
 	inject,
 	isObject,
 	resolveVal
@@ -10,30 +11,30 @@ const DIALS = {
 		accessor: "hour",
 		defaultDial: false,
 		extent: 24,
-		displayExtent: inp => inp.meridiem ? 12 : 24,
+		displayExtent: ({ input }) => input.meridiem ? 12 : 24,
 		toPerc: null,
 		toVal: null,
 		delimitations: 12,
 		resolution: 1,
 		tickResolution: 1,
-		display: (inp, val, runtime) => inp.meridiem ? (val % 12 || 12) : val,
-		minDisplayLength: (inp, runtime) => inp.meridiem ? 1 : 2,
-		modifyDisplay(inp, val, runtime) {
-			const labels = resolveVal(inp.ampmLabels, inp) || ["AM", "PM"];
-			runtime.meridiem = labels[Math.floor(val / 12)];
+		display: ({ input }, val, rt) => input.meridiem ? (val % 12 || 12) : val,
+		minDisplayLength: ({ input }, rt) => input.meridiem ? 1 : 2,
+		modifyDisplay(runtime, val, rt) {
+			const labels = resolveVal(runtime.input.ampmLabels, runtime) || ["AM", "PM"];
+			rt.meridiem = labels[Math.floor(val / 12)];
 		},
 		shortActions: {
-			visible: (inp, val, dd) => inp.meridiem,
+			visible: ({ input }, val, dd) => input.meridiem,
 			buttons: [
 				{
-					label: (inp, val, dd) => (resolveVal(inp.ampmLabels, inp) || ["AM"])[0],
-					class: (inp, val, dd) => val < 12 ? "active" : null,
-					action: (inp, val, dd) => dd.setValue(val % 12)
+					label: (runtime, val, dd) => (resolveVal(runtime.input.ampmLabels, runtime) || ["AM"])[0],
+					class: (runtime, val, dd) => val < 12 ? "active" : null,
+					action: (runtime, val, dd) => dd.setValue(val % 12)
 				},
 				{
-					label: (inp, val, dd) => (resolveVal(inp.ampmLabels, inp) || [null, "PM"])[1],
-					class: (inp, val, dd) => val < 12 ? null : "active",
-					action: (inp, val, dd) => dd.setValue(12 + val % 12)
+					label: (runtime, val, dd) => (resolveVal(runtime.input.ampmLabels, runtime) || [null, "PM"])[1],
+					class: (runtime, val, dd) => val < 12 ? null : "active",
+					action: (runtime, val, dd) => dd.setValue(12 + val % 12)
 				}
 			]
 		},
@@ -55,7 +56,7 @@ const DIALS = {
 		resolution: 5,
 		tickResolution: 5,
 		display: null,
-		minDisplayLength: inp => inp.meridiem ? 1 : 2,
+		minDisplayLength: ({ input }) => input.meridiem ? 1 : 2,
 		modifyDisplay: null,
 		displayDelimiter: null,
 		hand: {
@@ -75,7 +76,7 @@ const DIALS = {
 		resolution: 5,
 		tickResolution: 5,
 		display: null,
-		minDisplayLength: inp => inp.meridiem ? 1 : 2,
+		minDisplayLength: ({ input }) => input.meridiem ? 1 : 2,
 		modifyDisplay: null,
 		displayDelimiter: null,
 		hand: {
@@ -98,7 +99,7 @@ export default function resolveDials(dials = DEFAULT_DIALS) {
 
 	const resolve = dial => {
 		if (typeof dial == "string") {
-			if (!DIALS.hasOwnProperty(dial))
+			if (!hasOwn(DIALS, dial))
 				throw new Error(`Cannot resolve dial: '${dial}' is not a known dial template`);
 
 			dial = DIALS[dial];
@@ -110,7 +111,7 @@ export default function resolveDials(dials = DEFAULT_DIALS) {
 		if (!dial.name || typeof dial.name != "string")
 			throw new TypeError("Cannot resolve dial: no valid name provided");
 
-		if (nameMap.hasOwnProperty(dial.name))
+		if (hasOwn(nameMap, dial.name))
 			throw new Error(`Cannot resolve dial: dial by name '${dial.name}' already defined`);
 		nameMap[dial.name] = true;
 
@@ -119,7 +120,7 @@ export default function resolveDials(dials = DEFAULT_DIALS) {
 			return;
 		}
 
-		if (DIALS.hasOwnProperty(dial.name))
+		if (hasOwn(DIALS, dial.name))
 			dial = inject(dial, DIALS[dial.name], "cloneTarget");
 
 		outDials.push(dial);
@@ -132,7 +133,7 @@ export default function resolveDials(dials = DEFAULT_DIALS) {
 		for (let i = 0, l = DIAL_ORDER.length; i < l; i++) {
 			const name = DIAL_ORDER[i];
 
-			if (!dials.hasOwnProperty(name))
+			if (!hasOwn(dials, name))
 				continue;
 
 			if (isObject(dials[name])) {

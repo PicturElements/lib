@@ -1,7 +1,7 @@
-import BaseInput, { INJECT } from "./base-input";
+import Input, { INJECT } from "./input";
 import resolveDials from "../assets/dials";
 
-export default class Time extends BaseInput {
+export default class Time extends Input {
 	constructor(name, options, form) {
 		super(name, options, form, {
 			meridiem: "boolean",

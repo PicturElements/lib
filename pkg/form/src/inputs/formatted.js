@@ -4,11 +4,11 @@ import {
 	hasAncestor,
 	requestFrame
 } from "@qtxr/utils";
-import BaseInput from "./base-input";
+import Input from "./input";
 
 const VNODE_ID_ATTR = "data-v-node-id";
 
-export default class Formatted extends BaseInput {
+export default class Formatted extends Input {
 	constructor(name, options, form) {
 		super(name, options, form, {
 			formatters: Array,

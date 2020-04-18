@@ -1,13 +1,12 @@
-import BaseInput from "./base-input";
+import Input from "./input";
 
-export default class Count extends BaseInput {
+export default class Count extends Input {
 	constructor(name, options, form) {
 		super(name, options, form, {
 			min: "number",
 			max: "number",
 			step: "number",
-			ticks: Array,
-			compact: "boolean"
+			ticks: "Array|function"
 		});
 	}
 }

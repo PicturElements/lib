@@ -1,11 +1,12 @@
 import {
 	round,
+	hasOwn,
 	reassign,
 	isObject
 } from "@qtxr/utils";
-import BaseInput, { INJECT } from "./base-input";
+import Input, { INJECT } from "./input";
 
-export default class Coordinates extends BaseInput {
+export default class Coordinates extends Input {
 	constructor(name, options, form) {
 		super(name, options, form, {
 			mapOptions: Object,
@@ -153,7 +154,7 @@ function parseCoordinate(str) {
 			break;
 
 		const [
-			match,
+			_,
 			prefix,
 			prefixId,
 			degrees,
@@ -170,7 +171,7 @@ function parseCoordinate(str) {
 		if (prefixId && postfixId)
 			coordinateRegex.lastIndex--;
 
-		if (!latLngMap.hasOwnProperty(direction))
+		if (!hasOwn(latLngMap, direction))
 			continue;
 
 		const [
@@ -202,8 +203,6 @@ function parseCoordinate(str) {
 
 	return coordData;
 }
-
-window.parseCoordinate = parseCoordinate;
 
 function constructCoordinateStr(coordData) {
 	const constr = d => {

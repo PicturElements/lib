@@ -1,15 +1,14 @@
 import { basicInterpolate } from "@qtxr/utils";
 
-// When adding defaults, remember this:
+// When adding templates, remember this:
 // https://stackoverflow.com/questions/21177489/selectionstart-selectionend-on-input-type-number-no-longer-allowed-in-chrome
-// If not absolutely necessary, use text, search, password, tel, or url types or else checkWord
-// will not work properly
+// If not absolutely necessary, use text, search, password, tel, or url types - or else checkWord will not work properly
 
-const emailRegex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/i,
+const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/i,
 	dateRegex = /^(\d{1,2})\s*\/\s*(\d{2})$/,
 	nameRegex = /[^\d,./\\"=@#$%^&*(){}[\]!?|~<>;]/;
 
-const defaults = {
+const templates = {
 	address: {
 		value: "",
 		validate: mkRangeValidator(1, Infinity, "Please specify an address")
@@ -28,8 +27,8 @@ const defaults = {
 		checkWord(str) {
 			return str.length <= 4;
 		},
-		validate(val) {
-			if (!/^\d{3,4}$/.test(val))
+		validate({ value }) {
+			if (!/^\d{3,4}$/.test(value))
 				return "CVV numbers are between 3 and 4 digits in length";
 		}
 	},
@@ -37,8 +36,8 @@ const defaults = {
 		type: "tel",
 		value: "",
 		checkKey: /[\d/\s]/,
-		validate(val) {
-			const ex = dateRegex.exec(val);
+		validate({ value }) {
+			const ex = dateRegex.exec(value);
 
 			if (!ex)
 				return "Dates follow this syntax: MM/YY";
@@ -59,10 +58,13 @@ const defaults = {
 			if (monthNo > lastExpiryMonthNo)
 				return "Expiry date too far ahead";
 		},
-		extract(val, inp, payload) {
-			const ex = dateRegex.exec(val);
-			payload.month = Number(ex[1]);
-			payload.year = Number(ex[2]);
+		extract({ value, demux }) {
+			const ex = dateRegex.exec(value);
+
+			return demux({
+				month: Number(ex[1]),
+				year: Number(ex[2])
+			});
 		}
 	},
 	"cc-number": {
@@ -72,16 +74,16 @@ const defaults = {
 		checkWord(str) {
 			return str.replace(/\s/g, "").length <= 19;
 		},
-		validate(val) {
-			val = val.replace(/\s/g, "");
+		validate({ value }) {
+			value = value.replace(/\s/g, "");
 
-			if (!/^\d{13,19}$/.test(val))
+			if (!/^\d{13,19}$/.test(value))
 				return "Card numbers are between 13 and 19 digits in length";
-			else if (!luhn(val))
+			else if (!luhn(value))
 				return "This is not a valid card number";
 		},
-		extract(val) {
-			return val.replace(/\s/g, "");
+		extract({ value }) {
+			return value.replace(/\s/g, "");
 		}
 	},
 	checkbox: {
@@ -95,8 +97,8 @@ const defaults = {
 	coordinates: {
 		type: "coordinates",
 		value: null,
-		validate(val, inp, inps) {
-			if (val == null)
+		validate({ value }) {
+			if (value == null)
 				return "Please provide a coordinate";
 		}
 	},
@@ -115,12 +117,12 @@ const defaults = {
 	date: {
 		type: "date",
 		value: null,
-		validate(val, inp, inps) {
-			if (!inp.range)
-				return val == null ? "Please specify a date" : null;
+		validate({ value, input }) {
+			if (!input.range)
+				return value == null ? "Please specify a date" : null;
 
-			for (let i = 0, l = val.length; i < l; i++) {
-				if (val[i] == null)
+			for (let i = 0, l = value.length; i < l; i++) {
+				if (value[i] == null)
 					return "Please specify a date";
 			}
 		}
@@ -133,8 +135,8 @@ const defaults = {
 	dropdown: {
 		type: "dropdown",
 		value: null,
-		validate(val) {
-			if (val === null)
+		validate({ value }) {
+			if (value === null)
 				return "Please select a value";
 		}
 	},
@@ -166,7 +168,16 @@ const defaults = {
 	},
 	list: {
 		type: "list",
-		value: null
+		value: null,
+		validate({ value }) {
+			if (!value.length)
+				return "Supply a list item";
+
+			for (let i = 0, l = value.length; i < l; i++) {
+				if (!value[i].valid)
+					return "Invalid list item";
+			}
+		}
 	},
 	media: {
 		type: "media",
@@ -175,16 +186,16 @@ const defaults = {
 			w: 600,
 			h: 600
 		},
-		validate(val, inp) {
-			if ((inp.multiple && !val.length) || val === null)
+		validate({ value, input }) {
+			if ((input.multiple && !value.length) || value === null)
 				return "No media uploaded";
 		}
 	},
 	multi: {
 		type: "multi",
 		value: null,
-		validate(val, inp) {
-			if (!val.length)
+		validate({ value }) {
+			if (!value || !value.length)
 				return "No selection";
 		}
 	},
@@ -197,8 +208,8 @@ const defaults = {
 	password: {
 		type: "password",
 		value: "",
-		validate(val, inp, inps) {
-			if (val.length < 8)
+		validate({ value }) {
+			if (value.length < 8)
 				return "Password too short. Minimum: 8 characters";
 		},
 		propagate: "password2"
@@ -206,13 +217,13 @@ const defaults = {
 	password2: {
 		type: "password",
 		value: "",
-		validate(val, inp, inps) {
-			if (!inp.initialized)
+		validate({ value, input, inputs }) {
+			if (!input.modified)
 				return;
 
-			if (val.length < 8)
+			if (value.length < 8)
 				return "Password too short. Minimum: 8 characters";
-			if (inps.password.value != val)
+			if (inputs.password.value != value)
 				return "These passwords don't match";
 		}
 	},
@@ -224,8 +235,8 @@ const defaults = {
 	radio: {
 		type: "radio",
 		value: null,
-		validate(val) {
-			if (val === null)
+		validate({ value }) {
+			if (value === null)
 				return "Please select a value";
 		}
 	},
@@ -245,24 +256,24 @@ const defaults = {
 		type: "textarea",
 		value: "",
 		maxLength: 10000,
-		validate(val, inp, inps) {
-			if (!val.length)
+		validate({ value, input }) {
+			if (!value.length)
 				return "Please enter a value";
 
-			if (val.length > inp.maxLength)
-				return `Maximum length surpassed: ${val.length}/${inp.maxLength}`;
+			if (value.length > input.maxLength)
+				return `Maximum length surpassed: ${value.length}/${input.maxLength}`;
 		}
 	},
 	time: {
 		type: "time",
 		value: null,
 		meridiem: true,
-		validate(val, inp, inps) {
-			if (!inp.range)
-				return val == null ? "Please specify a time" : null;
+		validate({ value, input }) {
+			if (!input.range)
+				return value == null ? "Please specify a time" : null;
 
-			for (let i = 0, l = val.length; i < l; i++) {
-				if (val[i] == null)
+			for (let i = 0, l = value.length; i < l; i++) {
+				if (value[i] == null)
 					return "Please specify a time";
 			}
 		}
@@ -272,12 +283,12 @@ const defaults = {
 		value: [null, null],
 		range: true,
 		meridiem: true,
-		validate(val, inp, inps) {
-			if (!inp.range)
-				return val == null ? "Please specify a time" : null;
+		validate({ value, input }) {
+			if (!input.range)
+				return value == null ? "Please specify a time" : null;
 
-			for (let i = 0, l = val.length; i < l; i++) {
-				if (val[i] == null)
+			for (let i = 0, l = value.length; i < l; i++) {
+				if (value[i] == null)
 					return "Please specify a time";
 			}
 		}
@@ -325,8 +336,8 @@ function luhn(str) {
 function mkRegexValidator(regex, errorMsg, invert) {
 	invert = !invert;
 
-	return val => {
-		if (regex.test(val) ^ invert)
+	return ({ value }) => {
+		if (regex.test(value) ^ invert)
 			return errorMsg;
 	};
 }
@@ -335,25 +346,25 @@ function mkRangeValidator(min, max, shortMsg = "Text too short. Minimum: $min", 
 	min = min || 1;
 	max = max || Infinity;
 
-	return val => {
+	return ({ value }) => {
 		let msg = null;
 
-		if (val.length < min)
+		if (value.length < min)
 			msg = shortMsg;
-		if (val.length > max)
+		if (value.length > max)
 			msg = longMsg;
 
 		if (typeof msg == "string") {
 			return basicInterpolate(msg, {
 				min,
 				max,
-				len: val.length
+				len: value.length
 			});
 		}
 	};
 }
 
-export default defaults;
+export default templates;
 
 export {
 	luhn,

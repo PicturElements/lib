@@ -1,4 +1,5 @@
 import {
+	hasOwn,
 	inject,
 	isObject,
 	resolveVal
@@ -13,34 +14,37 @@ const DATE_CARDS = {
 		accessor: "day",
 		defaultCard: false,
 		dayOffset: 1,
-		labels: inp => resolveVal(inp.dayLabels, inp) || WEEKDAY_LABELS,
-		display: (inp, subVal, labels) => subVal,
+		labels: runtime => resolveVal(runtime.input.dayLabels, runtime) || WEEKDAY_LABELS,
+		display: (runtime, subVal, labels) => subVal,
 		back: null,
 		forwards: null,
 		guideSize: true,
-		hideHeader: false
+		hideHeader: false,
+		staticHeight: false
 	},
 	month: {
 		name: "month",
 		accessor: "month",
 		defaultCard: false,
-		labels: inp => resolveVal(inp.monthLabels, inp) || MONTH_LABELS,
-		display: (inp, subVal, labels) => labels[subVal],
-		back: false,
-		forwards: false,
+		labels: runtime => resolveVal(runtime.input.monthLabels, runtime) || MONTH_LABELS,
+		display: (runtime, subVal, labels) => labels[subVal],
+		back: null,
+		forwards: null,
 		guideSize: false,
-		hideHeader: false
+		hideHeader: false,
+		staticHeight: true
 	},
 	year: {
 		name: "year",
 		accessor: "year",
 		defaultCard: false,
 		labels: null,
-		display: (inp, subVal, labels) => subVal,
+		display: (runtime, subVal, labels) => subVal,
 		back: false,
 		forwards: false,
 		guideSize: false,
-		hideHeader: true
+		hideHeader: true,
+		staticHeight: false
 	}
 };
 
@@ -54,7 +58,7 @@ export default function resolveCards(cards = DEFAULT_CARDS) {
 
 	const resolve = card => {
 		if (typeof card == "string") {
-			if (!DATE_CARDS.hasOwnProperty(card))
+			if (!hasOwn(DATE_CARDS, card))
 				throw new Error(`Cannot resolve card: '${card}' is not a known card template`);
 
 			card = DATE_CARDS[card];
@@ -66,11 +70,11 @@ export default function resolveCards(cards = DEFAULT_CARDS) {
 		if (!card.name || typeof card.name != "string")
 			throw new TypeError("Cannot resolve card: no valid name provided");
 
-		if (nameMap.hasOwnProperty(card.name))
+		if (hasOwn(nameMap, card.name))
 			throw new Error(`Cannot resolve card: card by name '${card.name}' already defined`);
 		nameMap[card.name] = true;
 
-		if (DATE_CARDS.hasOwnProperty(card.name))
+		if (hasOwn(DATE_CARDS, card.name))
 			card = inject(card, DATE_CARDS[card.name], "cloneTarget");
 
 		if (card.guideSize)
@@ -94,7 +98,7 @@ export default function resolveCards(cards = DEFAULT_CARDS) {
 	for (let i = 0, l = CARD_ORDER.length; i < l; i++) {
 		const name = CARD_ORDER[i];
 
-		if (!cards.hasOwnProperty(name))
+		if (!hasOwn(cards, name))
 			continue;
 
 		if (isObject(cards[name])) {

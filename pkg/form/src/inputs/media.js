@@ -1,10 +1,10 @@
-import BaseInput, { INJECT } from "./base-input";
+import Input, { INJECT } from "./input";
 import {
 	isObject,
 	inject
 } from "@qtxr/utils";
 
-export default class Media extends BaseInput {
+export default class Media extends Input {
 	constructor(name, options, form) {
 		options = inject(options, {
 			mediaOptions: {

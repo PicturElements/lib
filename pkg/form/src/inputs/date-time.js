@@ -2,11 +2,11 @@ import {
 	isObject,
 	isFiniteNum
 } from "@qtxr/utils";
-import BaseInput, { INJECT } from "./base-input";
+import Input, { INJECT } from "./input";
 import resolveCards from "../assets/date-cards";
 import resolveDials from "../assets/dials";
 
-export default class DateTime extends BaseInput {
+export default class DateTime extends Input {
 	constructor(name, options, form) {
 		super(name, options, form, {
 			meridiem: "boolean",
@@ -15,7 +15,9 @@ export default class DateTime extends BaseInput {
 			dials: "Array|Object",
 			dayLabels: "Array|function",
 			monthLabels: "Array|function",
-			rangeSeparator: "string"
+			rangeSeparator: "string",
+			minDate: "Date|string|number",
+			maxDate: "Date|string|number"
 		});
 
 		Object.assign(this, resolveCards(this.cards));

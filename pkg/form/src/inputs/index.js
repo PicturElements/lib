@@ -1,4 +1,3 @@
-import Input from "./input";
 import Checkbox from "./checkbox";
 import Coordinates from "./coordinates";
 import Count from "./count";
@@ -10,6 +9,7 @@ import List from "./list";
 import Media from "./media";
 import Multi from "./multi";
 import Radio from "./radio";
+import Text from "./text";
 import TextArea from "./textarea";
 import Time from "./time";
 
@@ -27,12 +27,13 @@ const inputTypes = {
 	media: "media",
 	multi: "multi",
 	radio: "radio",
+	text: "text",
 	textarea: "textarea",
 	time: "time"
 };
 
 const inputConstructors = {
-	default: Input,
+	default: Text,
 	checkbox: Checkbox,
 	coordinates: Coordinates,
 	count: Count,
@@ -44,6 +45,7 @@ const inputConstructors = {
 	media: Media,
 	multi: Multi,
 	radio: Radio,
+	text: Text,
 	textarea: TextArea,
 	time: Time
 };

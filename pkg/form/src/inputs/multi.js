@@ -1,6 +1,6 @@
-import BaseInput from "./base-input";
+import Input from "./input";
 
-export default class Multi extends BaseInput {
+export default class Multi extends Input {
 	constructor(name, options, form) {
 		super(name, options, form, {
 			options: "Array|function",

@@ -1,46 +1,70 @@
 import {
 	get,
+	set,
 	splitPath,
 	isObj,
 	hasOwn,
+	alias,
 	equals,
 	inject,
 	forEach,
 	isObject,
 	partition,
 	resolveVal,
+	resolveArgs,
 	splitClean,
 	requestFrame,
-	composeOptionsTemplates,
+	composePresets,
+	addPreset,
+	mergePresets,
 	createOptionsObject
 } from "@qtxr/utils";
 import { Hookable } from "@qtxr/bc";
+import { KeyedLinkedList } from "@qtxr/ds"; 
 
-import defaults from "./form-defaults";
+import templates from "./templates";
 
 // Inputs
 import {
 	inputTypes,
 	inputConstructors
 } from "./inputs";
-import BaseInput, {
+import Input, {
 	CHECK,
 	TRIGGER,
 	SELF_TRIGGER,
 	EXTRACT
-} from "./inputs/base-input";
+} from "./inputs/input";
 import FormRows from "./form-rows";
 
 let id = 0;
+
 const partitionClassifier = {
-	valid: "inst",
-	changed: "inst",
-	validateRequiredOnly: "inst"
+	validateRequiredOnly: "options",
+	noDuplicateNames: "options",
+	bareInputs: "options"
 };
+
+const LINK_PARAMS = [
+	{ name: "source", type: "object|function", default: null },
+	{ name: "target", type: "object|function", default: null },
+	{ name: "async", type: "boolean", default: false }
+];
+
+const LINK_ROWS_PARAMS = [
+	{ name: "rows", type: "Object|Array", required: true },
+	{ name: "source", type: "object|function", default: null },
+	{ name: "target", type: "object|function", default: null },
+	{ name: "async", type: "boolean", default: false }
+];
 
 export default class Form extends Hookable {
 	constructor(...optionsAndPresets) {
-		super();
+		super({
+			hookable: {
+				noOwnerArg: true
+			}
+		});
 
 		const masterPreset = {
 			hooks: {},
@@ -58,7 +82,7 @@ export default class Form extends Hookable {
 				let preset = null;
 	
 				if (typeof item == "string") {
-					if (!Form.presets.hasOwnProperty(item))
+					if (!hasOwn(Form.presets, item))
 						throw new Error(`Invalid preset '${item}'`);
 	
 					preset = Form.presets[item];
@@ -66,9 +90,9 @@ export default class Form extends Hookable {
 					preset = item;
 
 				inject(masterPreset, {
-					hooks: resolveVal(preset.hooks, this) || {},
-					options: resolveVal(preset.options, this) || {},
-					meta: resolveVal(preset.meta, this) || {}
+					hooks: resolveVal(preset.hooks, this.mkRuntime()) || {},
+					options: resolveVal(preset.options, this.mkRuntime()) || {},
+					meta: resolveVal(preset.meta, this.mkRuntime()) || {}
 				}, "override");
 			} else if (isObject(item))
 				inject(masterPreset.options, item, "override");
@@ -89,8 +113,8 @@ export default class Form extends Hookable {
 		this.updateInitialized = false;
 
 		// State
-		this.valid = true;
-		this.changed = false;
+		this.invalidInputs = new KeyedLinkedList();
+		this.changes = new KeyedLinkedList();
 		this.meta = masterPreset.meta;
 
 		this.options = {
@@ -110,7 +134,6 @@ export default class Form extends Hookable {
 		this.hookAll(masterPreset.hooks);
 
 		partition(masterPreset.options, {
-			inst: this,
 			options: this.options
 		}, partitionClassifier, "options");
 	}
@@ -125,7 +148,7 @@ export default class Form extends Hookable {
 		if (!options || typeof options != "object")
 			throw new TypeError("Cannot connect: input options must be an object");
 
-		const hasField = this.inputs.hasOwnProperty(name);
+		const hasField = hasOwn(this.inputs, name);
 
 		if (!hasField)
 			this.keys.push(name);
@@ -152,7 +175,7 @@ export default class Form extends Hookable {
 		return inp;
 	}
 
-	connectRows(rows) {
+	connectRows(rows, values = {}) {
 		const foundNames = {};
 		
 		const connect = (row, depth) => {
@@ -161,7 +184,7 @@ export default class Form extends Hookable {
 					const partition = {};
 
 					for (const k in row) {
-						if (!row.hasOwnProperty(k))
+						if (!hasOwn(row, k))
 							continue;
 
 						partition[k] = connect(row[k], 0);
@@ -180,52 +203,56 @@ export default class Form extends Hookable {
 			for (let i = 0, l = row.length; i < l; i++) {
 				const cell = row[i];
 
-				if (Array.isArray(cell))
+				if (Array.isArray(cell)) {
 					out.push(connect(cell, depth + 1));
-				else {
-					let cellProcessed = null;
-
-					if (typeof cell == "string") {
-						const nameOptions = splitClean(cell, /\s*:\s*/);
-
-						cellProcessed = {
-							name: nameOptions[1] || nameOptions[0],
-							opt: nameOptions[0]
-						};
-					} else {
-						cellProcessed = Object.assign({}, cell);
-
-						if (cellProcessed.opt)
-							Form.mod({}, cellProcessed.opt, cellProcessed);
-						else
-							cellProcessed.opt = cellProcessed;
-					}
-
-					if (cellProcessed.classes)
-						cellProcessed.class = cellProcessed.classes;
-					else {
-						cellProcessed.class = typeof cellProcessed.class == "string" ? {
-							input: cellProcessed.class
-						} : cellProcessed.class || {};
-					}
-
-					const options = cellProcessed.opt,
-						name = Form.resolveInputName(cellProcessed.name) || Form.resolveInputName(options);
-					delete cellProcessed.opt;
-					
-					// Clear old inputs when necessary
-					if (!foundNames.hasOwnProperty(name)) {
-						if (!this.options.noDuplicateNames)
-							delete this.inputs[name];
-
-						foundNames[name] = true;
-					} else if (this.options.noDuplicateNames)
-						throw new Error(`Cannot connect: duplicate inputs by name "${name}". To support multiple inputs with the same name, use the 'noDuplicateNames' option`);
-
-					cellProcessed.input = this.connect(name, options);
-					cellProcessed.isInputCell = true;
-					out.push(depth ? cellProcessed : [cellProcessed]);
+					continue;
 				}
+
+				let cellProcessed = null;
+
+				if (typeof cell == "string") {
+					const nameOptions = splitClean(cell, /\s*:\s*/);
+
+					cellProcessed = {
+						name: nameOptions[1] || nameOptions[0],
+						opt: nameOptions[0]
+					};
+				} else {
+					cellProcessed = Object.assign({}, cell);
+
+					if (cellProcessed.opt)
+						Form.mod({}, cellProcessed.opt, cellProcessed);
+					else
+						cellProcessed.opt = cellProcessed;
+				}
+
+				if (cellProcessed.classes)
+					cellProcessed.class = cellProcessed.classes;
+				else {
+					cellProcessed.class = typeof cellProcessed.class == "string" ?
+						{ input: cellProcessed.class } :
+						cellProcessed.class || {};
+				}
+
+				const options = cellProcessed.opt,
+					name = Form.resolveInputName(cellProcessed.name) || Form.resolveInputName(options);
+				delete cellProcessed.opt;
+				
+				// Clear old inputs when necessary
+				if (!hasOwn(foundNames, name)) {
+					if (!this.options.noDuplicateNames)
+						delete this.inputs[name];
+
+					foundNames[name] = true;
+				} else if (this.options.noDuplicateNames)
+					throw new Error(`Cannot connect: duplicate inputs by name "${name}". To support multiple inputs with the same name, use the 'noDuplicateNames' option`);
+
+				if (values && hasOwn(values, name))
+					options.value = values[name];
+
+				cellProcessed.input = this.connect(name, options);
+				cellProcessed.isInputCell = true;
+				out.push(depth ? cellProcessed : [cellProcessed]);
 			}
 
 			return out;
@@ -238,10 +265,17 @@ export default class Form extends Hookable {
 
 	// Combines connectRows and link,
 	// with support for async connection
-	linkRows(rows, target, async = false) {
+	linkRows(...args) {
+		const {
+			rows,
+			source,
+			target,
+			async
+		} = resolveArgs(args, LINK_ROWS_PARAMS);
+
 		const dispatch = _ => {
 			const struct = this.connectRows(rows);
-			this.link(target);
+			this.link(source, target);
 			return struct;
 		};
 
@@ -254,32 +288,28 @@ export default class Form extends Hookable {
 		return dispatch();
 	}
 
-	// DEPRECATED: use connectRows instead
-	connectAll(inputs) {
-		for (const k in inputs) {
-			if (!inputs.hasOwnProperty(k))
-				continue;
+	link(...args) {
+		let {
+			source,
+			target,
+			async
+		} = resolveArgs(args, LINK_PARAMS);
 
-			this.connect(k, inputs[k]);
-		}
+		if (!target)
+			target = source;
 
-		return this;
-	}
-
-	disconnect(name) {
-		if (this.inputs.hasOwnProperty(name)) {
-			delete this.inputs[name];
-			this.keys.splice(this.keys.indexOf(name));
-		}
-	}
-
-	link(target, async = false) {
 		const dispatch = _ => {
-			if (!isObj(target))
-				throw new Error("Cannot link: link target must be an object");
+			const src = resolveVal(source, this.mkRuntime());
 
-			this.setValues(target, true);
-			this.hook("update", (f, inp) => this.extractOne(inp, target, true));
+			if (!isObj(src))
+				throw new Error("Cannot link: link source must be an object");
+
+			this.hook("change", runtime => {
+				const targ = resolveVal(target, runtime);
+				this.extractOne(runtime.input, targ, true);
+			});
+
+			this.setValues(src, true);
 		};
 
 		if (async)
@@ -290,9 +320,16 @@ export default class Form extends Hookable {
 		return this;
 	}
 
+	disconnect(name) {
+		if (hasOwn(this.inputs, name)) {
+			delete this.inputs[name];
+			this.keys.splice(this.keys.indexOf(name));
+		}
+	}
+
 	propagate(targets) {
 		const send = name => {
-			if (this.inputs.hasOwnProperty(name) && !this.propagateMap.hasOwnProperty(name)) {
+			if (hasOwn(this.inputs, name) && !hasOwn(this.propagateMap, name)) {
 				this.propagateMap[name] = true;
 				this.inputs[name][SELF_TRIGGER](null);
 			}
@@ -322,7 +359,7 @@ export default class Form extends Hookable {
 				}
 			}
 
-			if (!matched && !values.hasOwnProperty(inp.name))
+			if (!matched && !hasOwn(values, inp.name))
 				return;
 
 			if (value !== null)
@@ -338,41 +375,47 @@ export default class Form extends Hookable {
 
 	setInputs(data) {
 		this.forEach(inp => {
-			if (data.hasOwnProperty(inp.name) && isObject(data[inp.name]))
+			if (hasOwn(data, inp.name) && isObject(data[inp.name]))
 				Object.assign(inp, data[inp.name]);
 		});
 	}
 
-	extract(inputOrName = null) {
-		if (typeof inputOrName == "string" || inputOrName instanceof BaseInput)
+	extract(inputOrName = null, target = null) {
+		if (typeof inputOrName == "string" || inputOrName instanceof Input)
 			return this.extractOne(inputOrName);
 
-		const out = {};
-		this.forEach(inp => this.extractOne(inp, out));
-		return out;
+		target = target || {};
+		this.forEach(inp => this.extractOne(inp, target, false, true));
+		return target;
 	}
 
-	extractOne(inputOrName, target = null, replace = false) {
+	extractOne(inputOrName, target = null, replace = false, demux = false) {
 		const inp = typeof inputOrName == "string" ?
 			this.inputs[inputOrName] :
 			inputOrName;
 
-		if (!(inp instanceof BaseInput))
+		if (!(inp instanceof Input))
 			return;
 
-		let val = inp[EXTRACT]();
+		const extracted = inp[EXTRACT](null, demux);
+		let val = demux ? extracted.value : extracted,
+			source = demux ? extracted.source : "native";
 
 		if (inp.nullable && val == null)
 			val = null;
 
 		if (target && val !== undefined) {
-			if (typeof inp.path == "string") {
-				const built = get(target, inp.path, null, "context|autoBuild");
-				built.context[built.key] = val;
-			} else {
+			if (source == "demux") {
+				for (const k in val) {
+					if (hasOwn(val, k))
+						set(target, k, val[k]);
+				}
+			} else if (typeof inp.path == "string")
+				set(target, inp.path, val);
+			else {
 				const name = inp.name;
 
-				if (!replace && target.hasOwnProperty(name)) {
+				if (!replace && hasOwn(target, name)) {
 					if (!Array.isArray(target[name]))
 						target[name] = [target[name]];
 
@@ -382,52 +425,18 @@ export default class Form extends Hookable {
 			}
 		}
 
-		return val;
+		return extracted;
 	}
 
-	clear() {
-		this.updateInitialized = true;
-
-		this.forEach(inp => {
-			inp.initialized = false;
-			inp.valid = true;
-			inp.updateValue(inp.hasOwnProperty("default") ? inp.default : "");
-		});
-
-		this.changed = false;
-
-		this.callHooks("updated", this.inputs);
-		this.valid = this.validate();
-		this.updateInitialized = false;
-	}
-
-	trigger() {
-		this.updateInitialized = true;
-
-		this.forEach(inp => inp[TRIGGER](inp.value));
-
-		this.callHooks("updated", this.inputs);
-		this.updateInitialized = false;
-	}
-
-	val(accessor) {
-		const path = splitPath(accessor),
-			val = this.inputs.hasOwnProperty(path[0]) ? this.inputs[path[0]].value : null;
-
-		return get(val, path, null, {
-			pathOffset: 1
-		});
-	}
-
-	forEach(callback) {
+	forEach(callback, forAll = false) {
 		if (typeof callback != "function")
 			return;
 
 		const dispatch = (inp, key) => {
-			if (!inp.exists)
-				return;
+			if (!forAll && !inp.exists)
+				return true;
 
-			callback(inp, key, this.inputs);
+			return callback(inp, key, this.inputs);
 		};
 
 		const keys = this.keys;
@@ -437,26 +446,159 @@ export default class Form extends Hookable {
 				item = this.inputs[key];
 
 			if (Array.isArray(item)) {
-				for (let j = 0, l2 = item.length; j < l2; j++)
-					dispatch(item[j], key);
-			} else
-				dispatch(item, key);
+				for (let j = 0, l2 = item.length; j < l2; j++) {
+					if (dispatch(item[j], key) === false)
+						return false;
+				}
+			} else if (dispatch(item, key) === false)
+				return false;
 		}
+
+		return true;
+	}
+
+	clear() {
+		this.updateInitialized = true;
+		this.forEach(inp => {
+			inp.clear();
+		});
+		this.callHooks("updated", this.inputs);
+		this.updateInitialized = false;
+	}
+
+	trigger() {
+		this.updateInitialized = true;
+		this.forEach(inp => {
+			inp[TRIGGER](inp.value);
+		});
+		this.callHooks("updated", this.inputs);
+		this.updateInitialized = false;
+	}
+
+	val(accessor, format = null) {
+		const path = splitPath(accessor),
+			val = hasOwn(this.inputs, path[0]) ?
+				this.inputs[path[0]].val(format) :
+				null;
+
+		return get(val, path, null, {
+			pathOffset: 1
+		});
+	}
+
+	set(values) {
+		this.setValues(values, true);
 	}
 
 	validate() {
-		let valid = true;
-	
-		this.forEach(inp => {
-			valid = valid && inp.validate().valid;
-		});
-	
-		return valid;
+		return this.forEach(inp => inp.validate().valid);
 	}
 
-	triggerValidate() {
-		this.trigger();
-		return this.valid;
+	// Semi-private methods
+	updateValid(inputOrName, valid = null) {
+		const inp = typeof inputOrName == "string" ?
+			this.inputs[inputOrName] :
+			inputOrName;
+
+		if (!inp)
+			return;
+		
+		valid = typeof valid == "boolean" ?
+			valid :
+			inp.valid;
+
+		const size = this.invalidInputs.size;
+
+		if (valid)
+			this.invalidInputs.delete(inp.name);
+		else
+			this.invalidInputs.push(inp.name, inp);
+
+		if (!size ^ !this.invalidInputs.size)
+			this.callHooks("validstatechange", !this.invalidInputs.size, this.invalidInputs);
+	}
+
+	updateChanged(inputOrName, changed = null) {
+		const inp = typeof inputOrName == "string" ?
+			this.inputs[inputOrName] :
+			inputOrName;
+
+		if (!inp)
+			return;
+		
+		changed = typeof changed == "boolean" ?
+			changed :
+			inp.changed;
+
+		const size = this.changes.size;
+
+		if (changed)
+			this.changes.push(inp.name, inp);
+		else
+			this.changes.delete(inp.name);
+		
+		if (!size ^ !this.changes.size)
+			this.callHooks("changestatechange", Boolean(this.changes.size), this.changes);
+	}
+
+	mkRuntime(...sources) {
+		const runtime = {
+			form: this,
+			inputs: this.inputs,
+			inputsStruct: this.inputsStruct
+		};
+
+		for (let i = 0, l = sources.length; i < l; i++) {
+			const src = sources[i];
+
+			// This feature is primarily supported to unify the APIs
+			// of Form and view layer implementations like @qtxr/vue-form
+			if (typeof src == "string") {
+				const [
+					key,
+					path
+				] = src.split(":");
+
+				runtime[key] = get(runtime, path);
+			} else if (isObject(src))
+				inject(runtime, src, "override");
+		}
+
+		return runtime;
+	}
+
+	callHooks(partitionName, ...args) {
+		super.callHooks(
+			partitionName,
+			this.mkRuntime({
+				partitionName
+			}),
+			...args
+		);
+	}
+
+	callHooksWithCustomRuntime(partitionName, runtime) {
+		return (...args) => {
+			super.callHooks(
+				partitionName,
+				runtime,
+				...args
+			);
+		};
+	}
+
+	get changed() {
+		return Boolean(this.changes.size);
+	}
+
+	set changed(changed) {
+		this.forEach(inp => {
+			inp.changed = changed;
+		});
+	}
+
+	get valid() {
+		return !this.invalidInputs.size;
 	}
 
 	static trigger(inp, ...args) {
@@ -474,11 +616,16 @@ export default class Form extends Hookable {
 			};
 		}
 
-		return Object.assign({}, createOptionsObject(
+		options = createOptionsObject(
 			options,
-			Form.defaults,
+			Form.templates,
 			`Form has no default input '${options}'`
-		));
+		);
+
+		return mergePresets(options, Form.templates, {
+			defaultKey: "default",
+			keys: ["template", "templates", "default", "defaults"]
+		});
 	}
 
 	static resolveInputName(nameOrConfig) {
@@ -486,13 +633,15 @@ export default class Form extends Hookable {
 			if (typeof nameOrConfig.name == "string")
 				return nameOrConfig.name ? nameOrConfig.name : null;
 			
-			if (!nameOrConfig.hasOwnProperty("name") && typeof nameOrConfig.path == "string")
-				return "@@name-from-path@@:" + nameOrConfig.path;
+			if (!hasOwn(nameOrConfig, "name") && typeof nameOrConfig.path == "string")
+				return "@path@:" + nameOrConfig.path;
 
 			return null;
 		}
 		
-		return (nameOrConfig && typeof nameOrConfig == "string") ? nameOrConfig : null;
+		return (nameOrConfig && typeof nameOrConfig == "string") ?
+			nameOrConfig :
+			null;
 	}
 
 	// Standard function to modify input options
@@ -506,12 +655,15 @@ export default class Form extends Hookable {
 				case "boolean":
 					options.required = m;
 					break;
+
 				case "function":
 					options.validate = m;
 					break;
+
 				case "object":
 					Object.assign(options, m);
 					break;
+
 				case "string":
 					Object.assign(options, Form.normalizeOptions(m));
 					break;
@@ -545,7 +697,7 @@ export default class Form extends Hookable {
 		if (!optionsOrInput)
 			return inputTypes.default;
 
-		return inputTypes.hasOwnProperty(optionsOrInput.type) ?
+		return hasOwn(inputTypes, optionsOrInput.type) ?
 			inputTypes[optionsOrInput.type] :
 			inputTypes.default;
 	}
@@ -553,66 +705,104 @@ export default class Form extends Hookable {
 	static getInputConstructor(optionsOrInput) {
 		const type = this.getInputType(optionsOrInput);
 
-		return inputConstructors.hasOwnProperty(type) ?
+		return hasOwn(inputConstructors, type) ?
 			inputConstructors[type] :
 			inputConstructors.default;
 	}
 
-	static defineDefault(name, def) {
-		return this.define("default", name, def, "defaults", isObject, "supplied default is not an object");
+	static defineTemplate(name, template) {
+		return this.define({
+			type: "template",
+			target: Form.templates,
+			name,
+			data: template,
+			validate: isObject,
+			validationMsg: "supplied default is not an object",
+			apply: _ => addPreset(Form.templates, name, template)
+		});
 	}
 
 	static definePreset(name, preset) {
-		return this.define("preset", name, preset, "presets", isObject, "supplied preset is not an object");
+		return this.define({
+			type: "preset",
+			target: Form.presets,
+			name,
+			data: preset,
+			validate: isObject,
+			validationMsg: "supplied preset is not an object",
+			apply: _ => addPreset(Form.templates, name, preset)
+		});
 	}
 
-	static define(type, name, data, partitionName = type, validate = null, validationMsg = null) {
-		if (!type || typeof type != "string") {
-			console.warn("Cannot define: type must be a truthy string");
-			return this;
-		}
+	static define(options) {
+		const {
+			type,
+			target,
+			name,
+			data,
+			validate = null,
+			validationMsg = null,
+			apply = null
+		} = options;
 
-		if (!hasOwn(this, partitionName) || !isObject(this[partitionName])) {
-			console.warn(`Cannot define ${type}: invalid partition target`);
+		const warn = msg => {
+			console.warn(msg);
 			return this;
-		}
+		};
 
-		if (!name || typeof name != "string") {
-			console.warn(`Cannot define ${type}: name must be a truthy string`);
-			return this;
-		}
+		if (!type || typeof type != "string")
+			return warn("Cannot define: type must be a truthy string");
 
-		if (hasOwn(this[partitionName], name)) {
-			console.warn(`Cannot define ${type}: '${name}' is already a known preset`);
-			return this;
-		}
+		if (!isObject(target))
+			return warn(`Cannot define ${type}: invalid partition target`);
+
+		if (!name || typeof name != "string")
+			return warn(`Cannot define ${type}: name must be a truthy string`);
+
+		if (hasOwn(target, name))
+			return warn(`Cannot define ${type}: '${name}' is already a known ${type}`);
 
 		if (typeof validate == "function") {
 			const validation = validate(data);
 
-			if (typeof validation == "string") {
-				console.warn(`Cannot define ${type}: ${validation}`);
-				return this;
-			} else if (validation === false) {
-				console.warn(`Cannot define ${type}: ${validationMsg || "validation failed"}`);
-				return this;
-			}
+			if (typeof validation == "string")
+				return warn(`Cannot define ${type}: ${validation}`);
+			else if (validation === false)
+				return warn(`Cannot define ${type}: ${validationMsg || "validation failed"}`);
 		}
 
-		this[partitionName][name] = data;
+		if (typeof apply == "function")
+			apply(target, name, data);
+		else
+			target[name] = data;
+
+		return this;
+	}
+
+	// DEPRECATED: use connectRows instead
+	connectAll(inputs) {
+		for (const k in inputs) {
+			if (!hasOwn(inputs, k))
+				continue;
+
+			this.connect(k, inputs[k]);
+		}
+
 		return this;
 	}
 }
 
-Form.defaults = composeOptionsTemplates(defaults);
+alias(Form.prototype, {
+	extractOne: "pluck",
+	hook: "on",
+	unhook: "off",
+	get: "extract"
+});
 
-Form.presets = {
+Form.templates = composePresets(templates);
+Form.presets = composePresets({
 	std: {
-		hooks: {
-			trigger: form => form.valid = form.validate()
-		},
 		options: {
-			valid: false,
 			validateRequiredOnly: true
 		}
 	},
@@ -621,7 +811,7 @@ Form.presets = {
 			bareInputs: true
 		}
 	}
-};
+});
 
 // value, input, inputs
 Form.validators = {
