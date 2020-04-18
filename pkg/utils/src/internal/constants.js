@@ -20,7 +20,7 @@ const DOM_NAMESPACES = [
 	{
 		uri: "http://www.w3.org/2000/svg",
 		tagGetter(t) { return t.replace("svg:", ""); },
-		tags: lookup("svg:a|svg:font|svg:script|svg:style|svg:title".split("|"))
+		tags: lookup("svg:a|svg:font|svg:script|svg:style|svg:title")
 	}
 ];
 

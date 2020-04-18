@@ -1,12 +1,14 @@
 import {
 	isConstructor,
-	isNativeFunction
+	isNativeFunction,
+	isNativeConstructor
 } from "./is";
 import { getGlobalScope } from "./env";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./options";
+import hasOwn from "./has-own";
 
 const typesCache = {
 	// typeof keys
@@ -30,7 +32,7 @@ export default function matchType(val, type, options, forceFalseDefault = false)
 	options = createOptionsObject(options, optionsTemplates);
 
 	if (typeof type == "string") {
-		if (typesCache.hasOwnProperty(type))
+		if (hasOwn(typesCache, type))
 			type = typesCache[type];
 		else
 			type = resolveType(type);
@@ -39,11 +41,13 @@ export default function matchType(val, type, options, forceFalseDefault = false)
 	if (typeof type == "string")
 		return typeof val == type;
 	else if (typeof type == "function") {
-		if (isConstructor(type)) {
+		if (isNativeConstructor(type)) {
 			if (options.strictConstructor !== false)
 				return val != null && val.constructor == type;
 			
-			return typeof val == "object" ? val instanceof type : val != null && val.constructor == type;
+			return typeof val == "object" ?
+				val instanceof type :
+				val != null && val.constructor == type;
 		}
 
 		return Boolean(type(val));
@@ -59,7 +63,9 @@ export default function matchType(val, type, options, forceFalseDefault = false)
 	if (forceFalseDefault)
 		return false;
 
-	return options.hasOwnProperty("defaultMatch") ? options.defaultMatch : true;
+	return hasOwn(options, "defaultMatch") ?
+		options.defaultMatch :
+		true;
 }
 
 function resolveType(signature) {
@@ -70,7 +76,7 @@ function resolveType(signature) {
 	for (let i = 0, l = typeIds.length; i < l; i++) {
 		const typeId = typeIds[i];
 
-		if (typesCache.hasOwnProperty(typeId)) {
+		if (hasOwn(typesCache, typeId)) {
 			types.push(typesCache[typeId]);
 			continue;
 		}

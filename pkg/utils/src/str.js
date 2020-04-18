@@ -2,6 +2,10 @@ import { getWrappedRange } from "./range";
 import { isTaggedTemplateArgs } from "./is";
 import serialize from "./serialize";
 import repeat from "./repeat";
+import {
+	composeOptionsTemplates,
+	createOptionsObject
+} from "./options";
 
 function padStart(str, length = 2, padChar = " ") {
 	str = String(str);
@@ -107,6 +111,201 @@ compileTaggedTemplate.with = options => {
 	return compileTaggedTemplate;
 };
 
+const ArrImpl = typeof Uint16Array == "undefined" ?
+	Array :
+	Uint16Array;
+
+const ALL_OPS = {
+	substitution: true,
+	insertion: true,
+	deletion: true,
+	transposition: true
+};
+
+const WEIGHTS = {
+	substitution: 1,
+	insertion: 1,
+	deletion: 1,
+	transposition: 1
+};
+
+const distanceOptionsTemplates = composeOptionsTemplates({
+	substitution: {
+		ops: {
+			substitution: true
+		}
+	},
+	insertion: {
+		ops: {
+			insertion: true
+		}
+	},
+	deletion: {
+		ops: {
+			deletion: true
+		}
+	},
+	transposition: {
+		ops: {
+			transposition: true
+		}
+	},
+	light: {
+		ops: {
+			substitution: true,
+			insertion: true,
+			deletion: true
+		}
+	},
+	full: {
+		ops: ALL_OPS
+	},
+	md1: {
+		maxDistance: 1
+	},
+	md2: {
+		maxDistance: 2
+	},
+	md3: {
+		maxDistance: 3
+	},
+	md4: {
+		maxDistance: 4
+	}
+});
+
+// Damerau–Levenshtein distance
+// https://stackoverflow.com/questions/3866249/modifying-levenshtein-distance-algorithm-to-not-calculate-all-distances
+// http://www.let.rug.nl/kleiweg/lev/
+
+function distance(a = "", b = "", options = {}) {
+	if (a == b)
+		return 0;
+
+	options = createOptionsObject(options, distanceOptionsTemplates);
+
+	const ops = options.ops || ALL_OPS,
+		weights = options.weights || WEIGHTS,
+		maxDistance = typeof options.maxDistance == "number" ?
+			options.maxDistance :
+			null;
+
+	let al = a.length,
+		bl = b.length;
+
+	if (al < bl) {
+		let tmpStr = a,
+			tmpLen = al;
+
+		a = b;
+		b = tmpStr;
+		al = bl;
+		bl = tmpLen;
+	}
+
+	if (maxDistance != null && Math.abs(al - bl) > maxDistance)
+		return Infinity;
+
+	if (!al)
+		return bl || 0;
+	if (!bl)
+		return al || 0;
+
+	const alphabet = {},
+		matrix = new ArrImpl(al * bl),
+		sw = typeof weights.substitution == "number" ? weights.substitution : 1,
+		iw = typeof weights.insertion == "number" ? weights.insertion : 1,
+		dw = typeof weights.deletion == "number" ? weights.deletion : 1,
+		tw = typeof weights.transposition == "number" ? weights.transposition : 1;
+
+	for (let i = 0; i < al; i++) {
+		const ac = a[i];
+		let db = 0,
+			jStart = 0,
+			jEnd = bl;
+
+		for (let j = jStart; j < jEnd; j++) {
+			const bc = b[j];
+			let min = Infinity,
+				cost;
+
+			// Substitution
+			if (ops.substitution) {
+				if (!i)
+					cost = j;
+				else if (!j)
+					cost = i;
+				else
+					cost = matrix[(i - 1) * bl + (j - 1)] || 0;
+				cost += Number(ac != bc);
+
+				if (cost * sw < min)
+					min = cost * sw;
+			}
+
+			// Insertion
+			if (ops.insertion) {
+				if (!j)
+					cost = i + 1;
+				else
+					cost = (matrix[i * bl + (j - 1)] || 0) + 1;
+
+				if (cost * iw < min)
+					min = cost * iw;
+			}
+			
+			// Deletion
+			if (ops.deletion) {
+				if (!i)
+					cost = j + 1;
+				else
+					cost = (matrix[(i - 1) * bl + j] || 0) + 1;
+
+				if (cost * dw < min)
+					min = cost * dw;
+			}
+
+			// Transposition
+			if (ops.transposition) {
+				if (ac == bc)
+					db = j;
+				else {
+					const k = alphabet[bc] || 0,
+						l = db;
+
+					if (k < 0 || l < 0)
+						cost = Infinity;
+					else {
+						if (!k)
+							cost = l + 2;
+						else if (!l)
+							cost = k + 2;
+						else
+							cost = matrix[(k - 1) * bl + (l - 1)] || 0;
+
+						cost += ((i - k - 1) + 1 + (j - l - 1));
+					}
+
+					if (cost * tw < min)
+						min = cost * tw;
+				}
+			}
+
+			if (maxDistance != null && (i == j || (j == bl - 1 && i > j))) {
+				if (min > maxDistance)
+					return Infinity;
+			}
+
+			matrix[i * bl + j] = min;
+		}
+		
+		if (ops.transposition)
+			alphabet[ac] = i;
+	}
+
+	return matrix[matrix.length - 1];
+}
+
 export {
 	repeat,
 	padStart,
@@ -114,5 +313,6 @@ export {
 	spliceStr,
 	trimStr,
 	splitClean,
-	compileTaggedTemplate
+	compileTaggedTemplate,
+	distance
 };

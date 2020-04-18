@@ -128,9 +128,11 @@ export default function resolveArgs(args, signature, options) {
 					if (sgn.coalesce) {
 						argsOut[key] = argsOut[key] || [];
 						argsOut[key].push(resolved);
+						i--;
 					} else
 						argsOut[key] = resolved;
 
+					argPtr++;
 					continue;
 				}
 			}

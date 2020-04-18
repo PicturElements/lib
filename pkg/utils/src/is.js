@@ -3,6 +3,7 @@ import {
 	POLYFILL_PREFIXES
 } from "./internal/constants";
 import hasOwn from "./has-own";
+import getFunctionName from "./get-function-name";
 
 const docAll = typeof document == "undefined" ? [] : document.all;
 
@@ -41,6 +42,10 @@ function isInstance(val) {
 
 function isConstructor(val) {
 	return val !== null && val !== undefined && val.prototype != null && val.prototype.constructor == val;
+}
+
+function isNativeConstructor(val) {
+	return isConstructor(val) && isNativeFunction(val) && isUpperCase(getFunctionName(val)[0]);
 }
 
 function isPrimitive(val) {
@@ -131,15 +136,46 @@ function isEnv(env, def = "production") {
 	return process.env.NODE_ENV == env;
 }
 
-const nativeFuncRegex = /{\s*\[native code\]\s*}\s*$/;
-
 function isNativeFunction(candidate) {
 	if (typeof candidate != "function")
 		return false;
 
 	const funcStr = candidate.toString();
+	let foundOpenBrace = false;
 
-	return funcStr.length < 1000 && nativeFuncRegex.test(funcStr);
+	if (funcStr.length > 500)
+		return false;
+
+	for (let i = 0, l = funcStr.length; i < l; i++) {
+		const c = funcStr[i];
+
+		if (foundOpenBrace) {
+			if (c == "[")
+				return funcStr.substr(i, 13) == "[native code]";
+			
+			if (!isWhitespace(c))
+				return false;
+		} else if (c == "{")
+			foundOpenBrace = true;
+	}
+
+	return false;
+}
+
+function isWhitespace(char) {
+	if (typeof char != "string" || char.length != 1)
+		return false;
+
+	const code = char.charCodeAt(0);
+	return code > 8 && code < 14 || code == 32;
+}
+
+function isLowerCase(char) {
+	return char.toLowerCase() == char;
+}
+
+function isUpperCase(char) {
+	return char.toUpperCase() == char;
 }
 
 function isThenable(candidate) {
@@ -172,6 +208,7 @@ export {
 	isObject,
 	isInstance,
 	isConstructor,
+	isNativeConstructor,
 	isPrimitive,
 	isValidObjectKey,
 	isSymbol,
@@ -180,6 +217,9 @@ export {
 	isArrResolvable,
 	isEnv,
 	isNativeFunction,
+	isWhitespace,
+	isLowerCase,
+	isUpperCase,
 	isThenable,
 	isTaggedTemplateArgs,
 	isStandardPropertyDescriptor

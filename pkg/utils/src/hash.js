@@ -31,8 +31,6 @@ function runHash(value) {
 			return `big:${value}`;
 		case "boolean":
 			return `bool:${value}`;
-		case "boolean":
-			return `bool:${value}`;
 		case "string":
 			return `str:${hashString(value)}`;
 		case "function":
