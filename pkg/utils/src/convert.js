@@ -1,4 +1,5 @@
 import { isObject } from "./is";
+import hasOwn from "./has-own";
 
 // API:
 // convert accepts a lookup table, which is structured as follows:
@@ -28,13 +29,13 @@ function convert(lookup, val, from, to) {
 	if (from == to)
 		return val;
 
-	if (!lookup.hasOwnProperty(from))
+	if (!hasOwn(lookup, from))
 		return null;
 
 	const fromPart = lookup[from];
 
 	if (isObject(fromPart)) {
-		if (!fromPart || !fromPart.hasOwnProperty(to))
+		if (!fromPart || !hasOwn(fromPart, to))
 			return null;
 
 		const conv = fromPart[to];
@@ -59,13 +60,13 @@ function fillInLookup(lookup) {
 	lookup = Object.assign({}, lookup);
 
 	for (const k in lookup) {
-		if (!lookup.hasOwnProperty(k) || !isObject(lookup[k]))
+		if (!hasOwn(lookup, k) || !isObject(lookup[k]))
 			continue;
 
 		const partition = lookup[k];
 
 		for (const k2 in partition) {
-			if (partition.hasOwnProperty(k2) && !lookup.hasOwnProperty(k2))
+			if (hasOwn(partition, k2) && !hasOwn(lookup, k2))
 				lookup[k2] = k;
 		}
 	}

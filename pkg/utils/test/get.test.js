@@ -109,6 +109,7 @@ describe("options work", () => {
 				built: false,
 				context: DATA.arr,
 				data: false,
+				error: null,
 				key: "0",
 				match: true
 			});
@@ -118,6 +119,7 @@ describe("options work", () => {
 				built: false,
 				context: DATA.arr,
 				data: 42,
+				error: "no-data",
 				key: "0",
 				match: false
 			});
@@ -142,6 +144,7 @@ describe("options work", () => {
 			.toStrictEqual({
 				built: false,
 				data: DATA.nest.obj.arr,
+				error: null,
 				match: true,
 				nodeTrace: [DATA, DATA.nest, DATA.nest.obj],
 				trace: ["nest", "obj", "arr"]
@@ -151,6 +154,7 @@ describe("options work", () => {
 			.toStrictEqual({
 				built: false,
 				data: null,
+				error: "no-value",
 				match: false,
 				nodeTrace: [DATA, DATA.nest, DATA.nest.obj],
 				trace: ["nest", "obj", "arr"]
@@ -166,6 +170,7 @@ describe("options work", () => {
 				built: true,
 				data: {},
 				match: false,
+				error: "no-value",
 				nodeTrace: [d, d.nest, d.nest.obj, d.nest.obj.arr],
 				trace: ["nest", "obj", "arr", "nothing"]
 			});
@@ -177,6 +182,7 @@ describe("options work", () => {
 				built: false,
 				context: DATA.nest.obj,
 				data: DATA.nest.obj.arr,
+				error: null,
 				match: true,
 				key: "arr",
 				nodeTrace: [DATA, DATA.nest, DATA.nest.obj],
@@ -188,6 +194,7 @@ describe("options work", () => {
 				built: false,
 				context: DATA.nest.obj,
 				data: null,
+				error: "no-value",
 				match: false,
 				key: "arr",
 				nodeTrace: [DATA, DATA.nest, DATA.nest.obj],
@@ -204,6 +211,7 @@ describe("options work", () => {
 			built: true,
 			context: d.nest.obj.arr,
 			data: {},
+			error: "no-value",
 			match: false,
 			key: "nothing",
 			nodeTrace: [d, d.nest, d.nest.obj, d.nest.obj.arr],

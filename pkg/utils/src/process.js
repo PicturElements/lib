@@ -1,5 +1,6 @@
 import inject from "./inject";
 import { isObject } from "./is";
+import hasOwn from "./has-own";
 
 // Difference between hooks and processors
 // Processors are similar to hooks, but behave like highly specialized
@@ -49,16 +50,16 @@ function mkProcessor(optionsOrProcessors, ...initialArgs) {
 	} = normalizeProcessorOptions(optionsOrProcessors);
 
 	return (type, proc, ...args) => {
-		let processor = processors.hasOwnProperty(type) ? processors[type] : null;
+		let processor = hasOwn(processors, type) ? processors[type] : null;
 
-		if (isObject(proc) && proc.hasOwnProperty(type))
+		if (isObject(proc) && hasOwn(proc, type))
 			processor = proc[type];
 
 		if (typeof dispatcher == "function")
 			return dispatcher(processor, transformers, ...initialArgs, ...args);
 
 		return (...curriedArgs) => {
-			if (transformers.hasOwnProperty(type) && typeof transformers[type] == "function")
+			if (hasOwn(transformers, type) && typeof transformers[type] == "function")
 				processor = transformers[type](processor, ...initialArgs, ...args, ...curriedArgs);
 
 			if (typeof processor == "function")
@@ -87,7 +88,7 @@ function normalizeProcessorOptions(optionsOrProcessors) {
 	if (!isObject(optionsOrProcessors))
 		return options;
 
-	if (optionsOrProcessors.hasOwnProperty("processors")) {
+	if (hasOwn(optionsOrProcessors, "processors")) {
 		options.processors = setObj(optionsOrProcessors.processors, options.processors);
 		options.transformers = setObj(optionsOrProcessors.transformers, options.transformers);
 		options.dispatcher = optionsOrProcessors.dispatch;

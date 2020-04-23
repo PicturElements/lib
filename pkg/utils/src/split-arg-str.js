@@ -1,4 +1,5 @@
 import { cleanRegex } from "./regex";
+import hasOwn from "./has-own";
 
 const argSeparatorCache = {};
 
@@ -13,7 +14,7 @@ export default function splitArgStr(str, argSeparator = ",") {
 	if (isRegexArgSep) {
 		const key = argSeparator.toString();
 
-		if (argSeparatorCache.hasOwnProperty(key))
+		if (hasOwn(argSeparatorCache, key))
 			argSeparator = argSeparatorCache[key];
 		else {
 			const flags = argSeparator.flags.indexOf("g") == -1 ?
@@ -27,7 +28,7 @@ export default function splitArgStr(str, argSeparator = ",") {
 		console.warn(`Argument separator (${argSeparator}) is invalid. Expect bad output`);
 		argSeparator = "";
 	} else if (argSeparator.length > 1) {
-		if (argSeparatorCache.hasOwnProperty(argSeparator))
+		if (hasOwn(argSeparatorCache, argSeparator))
 			argSeparator = argSeparatorCache[argSeparator];
 		else
 			argSeparator = argSeparatorCache[argSeparator] = new RegExp(cleanRegex(argSeparator), "gi");

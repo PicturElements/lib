@@ -54,7 +54,7 @@ function objToArr(...args) {
 	return out;
 }
 
-const keys = typeof Symbol == "undefined" ?
+const keys = typeof Symbol != "undefined" ?
 	Object.keys :
 	o => {
 		if (o == null)

@@ -321,7 +321,6 @@ describe("handles breaks correctly", () => {
 
 	test("calls an .exit postfix operation once upon break", () => {
 		const func = jest.fn();
-		let a = null;
 
 		forEach(ARR, _ => forEach.BREAK_ALL)
 			.exit(_ => {

@@ -7,6 +7,7 @@ import {
 import parseStr from "./parse-str";
 import parseArgStr from "./parse-arg-str";
 import matchType from "./match-type";
+import hasOwn from "./has-own";
 
 // TODO: check where null should be a valid default value
 // TODO: fix lvl
@@ -44,7 +45,7 @@ export default function infill(target, source, optionsOrRuntime) {
 				parsedName = parsed.name,
 				parsedKey = parsed.params.arg || k;
 
-			if (runtime.modifiers.hasOwnProperty(parsedName)) {
+			if (hasOwn(runtime.modifiers, parsedName)) {
 				runtime.modifiers[parsedName](Object.assign({
 					target: target[parsedKey],
 					parentTarget: target,
@@ -56,7 +57,7 @@ export default function infill(target, source, optionsOrRuntime) {
 				}, parsed.params));
 			} else
 				console.warn(`'${parsedName}' is not a known modifier`);
-		} else if (source.hasOwnProperty(k))
+		} else if (hasOwn(source, k))
 			target[k] = infill(target[k], source[k], runtime);
 	}
 

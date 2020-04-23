@@ -57,7 +57,7 @@ export default function matchQuery(value, query, options) {
 				typeModifier
 			} = parsedQueryKey;
 
-			if (visitedKeys.hasOwnProperty(key))
+			if (hasOwn(visitedKeys, key))
 				throw new Error(`Key '${key}' has already been declared on this query object (as '${visitedKeys[key]}', at ${mkAccessor(matchRuntime.accessor)})`);
 
 			visitedKeys[key] = srcKey;

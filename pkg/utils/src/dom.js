@@ -1,7 +1,7 @@
 import { nub } from "./arr";
 import { isObject } from "./is";
 import { splitClean } from "./str";
-import repeat from "./repeat";
+import forEach from "./for-each";
 import casing from "./casing";
 import hasOwn from "./has-own";
 import parseEntityStr from "./parse-entity-str";
@@ -355,14 +355,36 @@ function joinStl(styles, callArgs) {
 	return outStyle;
 }
 
-function mergeAttributes(targetAttrs, sourceAttrs, config) {
-	targetAttrs = targetAttrs || mkAttrRepresentationObj();
+function joinAttributes(...attrs) {
+	const outAttrs = mkAttrRepresentationObj();
 
-	for (let key in sourceAttrs) {
-		let value = sourceAttrs[key];
+	for (let i = 0, l = attrs.length; i < l; i++) {
+		const src = attrs[i];
+
+		for (let k in src) {
+			if (!hasOwn(src, k))
+				continue;
+
+			switch (k) {
+				case "style":
+					outAttrs.style = joinStyle(outAttrs.style, src.style);
+					break;
+
+				case "class":
+					outAttrs.class = joinClassAsArray(outAttrs.class, src.class);
+					break;
+
+				case "data":
+					Object.assign(outAttrs.data, src.data);
+					break;
+
+				default:
+					outAttrs[k] = src[k];
+			}
+		}
 	}
 
-	return targetAttrs;
+	return outAttrs;
 }
 
 function printClass(classes) {
@@ -418,41 +440,89 @@ const optionsTemplates = composeOptionsTemplates({
 	raw: true
 });
 
+// Ugly but highly flexible DOM generator
+// This utility supports the following inputs:
+// 1.	object, object[]
+//		Object representation of a node, as emitted by parsePugStr, etc
+// 2.	Node, Node[]
+//		Native Node DOM tree
 function genDom(nodes, options = {}) {
 	options = createOptionsObject(options, optionsTemplates);
-	
-	if (isObject(nodes))
+
+	if (nodes instanceof Node && nodes.nodeType == Node.DOCUMENT_FRAGMENT_NODE)
+		nodes = nodes.children;
+	else if (!Array.isArray(nodes))
 		nodes = [nodes];
 
-	const frag = document.createDocumentFragment(),
-		raw = options.raw,
-		minified = typeof options.minified == "boolean" ? options.minified : false,
+	const raw = options.raw,
+		root = raw ?
+			"" :
+			document.createDocumentFragment(),
+		minified = typeof options.minified == "boolean" ?
+			options.minified :
+			false,
 		comments = options.comments,
 		indentStr = minified ?
 			"" :
-			(typeof options.indent == "string" ? options.indent : "\t");
+			(typeof options.indent == "string" ? options.indent : "\t"),
+		processAttribute = typeof options.processAttribute == "function" ? options.processAttribute : null,
+		processAttributes = typeof options.processAttributes == "function" ? options.processAttributes : null,
+		processType = typeof options.processType == "function" ? options.processType : null,
+		processTag = typeof options.processTag == "function" ? options.processTag : null;
 
+	if (!nodes.length)
+		return root;
+	
+	const useNativeNodes = nodes[0] instanceof Node;
 	let str = "";
 
-	if (!Array.isArray(nodes) || !nodes.length)
-		return frag;
-
 	const gen = (nds, parent, indent) => {
-		if (!Array.isArray(nds))
+		if (!nds || !nds.length)
 			return;
 		
 		for (let i = 0, l = nds.length; i < l; i++) {
 			const node = nds[i],
 				breakStr = (!minified && str) ? "\n" : "";
+			let type = getNodeType(node),
+				tag = getTagName(node);
 
-			if (node.type == "comment") {
+			if (processType) {
+				type = processType({
+					type,
+					sourceNode: node
+				}) || type;
+			}
+
+			if (processTag) {
+				tag = processTag({
+					tag,
+					sourceNode: node
+				}) || tag;
+			}
+
+			if (type == "fragment") {
+				const children = useNativeNodes ?
+					node.childNodes :
+					node.children;
+
+				if (children && children.length)
+					gen(children, parent, indent);
+
+				continue;
+			}
+
+			if (type == "comment") {
 				if (!comments || (raw && minified))
 					continue;
 
+				const content = useNativeNodes ?
+					node.textContent :
+					node.content.trim();
+
 				if (raw)
-					str += `${breakStr}${repeat(indentStr, indent)}<!-- ${node.content.trim()} -->`;
+					str += `${breakStr}${indent}<!-- ${content} -->`;
 				else
-					parent.appendChild(document.createComment(node.content.trim()));
+					parent.appendChild(document.createComment(content));
 
 				continue;
 			}
@@ -460,98 +530,175 @@ function genDom(nodes, options = {}) {
 			if (raw)
 				str += breakStr;
 
-			if (node.type == "text") {
+			if (type == "text") {
+				const content = useNativeNodes ?
+					node.textContent :
+					parseEntityStr(node.content);
+
 				if (raw) {
-					if (minified && i > 0 && nds[i - 1].type == "text")
+					if (minified && i > 0 && getNodeType(nds[i - 1]) == "text")
 						str += "\\n";
 
-					str += repeat(indentStr, indent) + parseEntityStr(node.content);
+					str += indent + content;
 				} else
-					parent.appendChild(document.createTextNode(parseEntityStr(node.content)));
+					parent.appendChild(document.createTextNode(content));
 
 				continue;
 			}
 			
-			let el;
+			let nd;
 
 			if (raw)
-				str += `${repeat(indentStr, indent)}<${node.tag}`;
-			else
-				el = document.createElementNS(node.namespace || DEF_NS, node.tag);
+				str += `${indent}<${tag}`;
+			else {
+				if (useNativeNodes)
+					nd = document.createElementNS(node.namespaceURI, tag);
+				else
+					nd = document.createElementNS(node.namespace || DEF_NS, tag);
+			}
 
-			for (const k in node.attributes) {
-				if (!hasOwn(node.attributes, k))
-					continue;
+			let attributes = node.attributes;
 
-				const attr = node.attributes[k];
+			if (processAttributes) {
+				const attrs = [],
+					attrsMap = {},
+					indexMap = {};
 
-				switch (k) {
+				forEach(attributes, (value, key) => {
+					if (useNativeNodes) {
+						key = value.name;
+						value = value.nodeValue;
+					}
+
+					indexMap[key] = attrs.length;
+					attrs.push([key, value]);
+					attrsMap[key] = value;
+				});
+
+				const set = (key, value) => {
+					if (isObject(key)) {
+						for (const k in key) {
+							if (hasOwn(key, k))
+								set(k, key[k]);
+						}
+
+						return;
+					}
+
+					if (!hasOwn(indexMap, key))
+						indexMap[key] = attrs.length;
+
+					attrs[indexMap[key]] = [key, value];
+				};
+
+				processAttributes({
+					attributes: attrsMap,
+					set,
+					node: nd,
+					sourceNode: node
+				});
+
+				attributes = attrs;
+			}
+
+			forEach(attributes, (value, key) => {
+				if (processAttributes) {
+					key = value[0];
+					value = value[1];
+				} else if (useNativeNodes) {
+					key = value.name;
+					value = value.nodeValue;
+				}
+
+				switch (key) {
 					case "style":
-						setAttr(k, printStyle(attr) || null, el);
+						setAttr(key, printStyle(value) || null, value, nd, node);
 						break;
 
 					case "class":
-						setAttr(k, printClass(attr) || null, el);
+						setAttr(key, printClass(value) || null, value, nd, node);
 						break;
 
 					case "data":
-						for (const k2 in attr) {
-							if (hasOwn(attr, k2))
-								setAttr(casing(k2).to.data, attr[k2], el);
+						for (const k2 in value) {
+							if (hasOwn(value, k2))
+								setAttr(casing(k2).to.data, value[k2], value, nd, node);
 						}
 						break;
 
 					default:
-						setAttr(k, attr, el);
+						setAttr(key, value, value, nd, node);
 				}
-			}
+			});
 
 			if (raw)
 				str += ">";
 
-			if (!node.void) {
-				const children = Array.isArray(node.children) && node.children.length ?
-					node.children :
-					null;
+			if (!node.void && (!useNativeNodes || !getTagProperties(node).void)) {
+				const children = useNativeNodes ?
+					node.childNodes :
+					node.children;
 
-				if (children) {
-					gen(children, el, indent + 1);
+				if (children && children.length) {
+					gen(children, nd, indent + indentStr);
 
 					if (!minified && raw)
-						str += `\n${repeat(indentStr, indent)}`;
+						str += `\n${indent}`;
 				}
 
 				if (raw)
-					str += `<${node.tag}>`;
+					str += `</${tag}>`;
 			}
 
 			if (!raw)
-				parent.appendChild(el);
+				parent.appendChild(nd);
 		}
 	};
 
-	const setAttr = (key, value, el) => {
+	const setAttr = (key, value, rawValue, node, sourceNode) => {
+		if (processAttribute) {
+			value = processAttribute({
+				key,
+				value,
+				rawValue,
+				node,
+				sourceNode
+			});
+		}
+
 		if (value == null)
 			return;
 
-		if (raw)
-			str += ` ${key}="${value}"`;
-		else
-			el.setAttribute(key, value);
+		value = String(value);
+
+		if (raw) {
+			if (!value)
+				str += ` ${key}`;
+			else
+				str += ` ${key}="${value}"`;
+		} else
+			node.setAttribute(key, value);
 	};
 	
-	gen(nodes, frag, 0);
+	gen(nodes, root, "");
 
 	if (raw)
 		return str;
 
 	if (nodes.length == 1)
-		return frag.firstChild;
+		return root.firstChild;
 
-	return frag;
+	return root;
+}
+
+function serializeDom(nodes, options = {}) {
+	return genDom(nodes, ["raw|minified", options]);
 }
 
 function getTagProperties(tag) {
+	if (tag instanceof Node)
+		tag = getTagName(tag);
+
 	let props = {
 		tag,
 		void: VOID_TAGS.has(tag),
@@ -571,6 +718,46 @@ function getTagProperties(tag) {
 	return props;
 }
 
+function getNodeType(node) {
+	if (node instanceof Node) {
+		switch (node.nodeType) {
+			case Node.ELEMENT_NODE:
+				return "element";
+			case Node.TEXT_NODE:
+				return "text";
+			case Node.CDATA_SECTION_NODE:
+				return "cdata";
+			case Node.PROCESSING_INSTRUCTION_NODE:
+				return "processing-instruction";
+			case Node.COMMENT_NODE:
+				return "comment";
+			case Node.DOCUMENT_NODE:
+				return "document";
+			case Node.DOCUMENT_TYPE_NODE:
+				return "doctype";
+			case Node.DOCUMENT_FRAGMENT_NODE:
+				return "fragment";
+			default:
+				return null;
+		}
+	} else if (node && node.type == "string")
+		return node.type;
+	
+	return null;
+}
+
+function getTagName(node) {
+	if (node instanceof Node) {
+		if (node.namespaceURI == DEF_NS)
+			return node.tagName.toLowerCase();
+
+		return node.tagName;
+	} else if (node && node.tag == "string")
+		return node.tag;
+
+	return null;
+}
+
 export {
 	hasAncestor,
 	hasAncestorBySelector,
@@ -585,15 +772,17 @@ export {
 	joinClassAsArray,
 	joinClassWithArgs,
 	joinClassAsArrayWithArgs,
-	// Style joining,
+	// Style joining
 	joinStyle,
 	joinStyleWithArgs,
 	// Attribute processing
-	mergeAttributes,
+	joinAttributes,
 	// Printing / rendering
 	printClass,
 	printStyle,
 	genDom,
-	// Meta
-	getTagProperties
+	serializeDom,
+	// Information
+	getTagProperties,
+	getNodeType
 };

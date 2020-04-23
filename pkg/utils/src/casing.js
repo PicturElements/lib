@@ -2,6 +2,7 @@ import { matchAll } from "./regex";
 import { splitClean } from "./str";
 import { isObject } from "./is";
 import concatMut from "./concat-mut";
+import hasOwn from "./has-own";
 
 // This library assumes only ASCII A-Z letters are being
 // used when differentiating between upper/lower case
@@ -118,7 +119,7 @@ casing.session = {
 };
 
 casing.from = type => {
-	if (!splitters.hasOwnProperty(type)) {
+	if (!hasOwn(splitters, type)) {
 		console.error(`No casing splitter for type '${type}'`);
 		return casing;
 	}
@@ -128,7 +129,7 @@ casing.from = type => {
 };
 
 casing.to = type => {
-	if (!joiners.hasOwnProperty(type)) {
+	if (!hasOwn(joiners, type)) {
 		console.error(`No casing joiner for type '${type}'`);
 		return "";
 	}
@@ -158,7 +159,7 @@ casing.define = (type, config = {}) => {
 		return casing;
 	}
 
-	if (splitters.hasOwnProperty(type)) {
+	if (hasOwn(splitters, type)) {
 		console.error(`Cannot define casing transform: type '${type}' is already defined`);
 		return casing;
 	}
@@ -201,7 +202,7 @@ function resetCasingSession() {
 		joinerDescriptors = {};
 
 	for (const k in splitters) {
-		if (!splitters.hasOwnProperty(k))
+		if (!hasOwn(splitters, k))
 			continue;
 
 		splitterDescriptors[k] = {
@@ -210,7 +211,7 @@ function resetCasingSession() {
 	}
 
 	for (const k in joiners) {
-		if (!joiners.hasOwnProperty(k))
+		if (!hasOwn(joiners, k))
 			continue;
 
 		joinerDescriptors[k] = {

@@ -1,6 +1,6 @@
 // Important: keep up to date with parse-prop-str
-
 import combine from "./combine";
+import hasOwn from "./has-own";
 
 const affixes = combine([
 	["", "@"],		// prefix: typing
@@ -10,7 +10,7 @@ const affixes = combine([
 const variationsCache = {};
 
 export default function getPropStrVariations(key) {
-	if (variationsCache.hasOwnProperty(key))
+	if (hasOwn(variationsCache, key))
 		return variationsCache[key];
 
 	const variations = [];

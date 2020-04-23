@@ -1,4 +1,5 @@
 import { sym } from "./sym";
+import hasOwn from "./has-own";
 
 const memoizeKey = sym("memoize");
 
@@ -25,8 +26,8 @@ export default function memoize(func, ...args) {
 		}
 	}
 
-	if (func.hasOwnProperty(memoizeKey)) {
-		if (func[memoizeKey].hasOwnProperty(key))
+	if (hasOwn(func, memoizeKey)) {
+		if (hasOwn(func[memoizeKey], key))
 			return func[memoizeKey][key];
 	} else
 		func[memoizeKey] = {};

@@ -158,7 +158,7 @@ function test(iter = 1e6, strLen = 20, saveAllCollisions = false) {
 		const hash = hashString(randStr);
 
 		if (saveAllCollisions) {
-			if (!hashed.hasOwnProperty(hash))
+			if (!hasOwn(hashed, hash))
 				hashed[hash] = [];
 
 			hashed[hash].push(randStr);
@@ -168,7 +168,7 @@ function test(iter = 1e6, strLen = 20, saveAllCollisions = false) {
 				collisions++;
 			}
 		} else {
-			if (hashed.hasOwnProperty(hash)) {
+			if (hasOwn(hashed, hash)) {
 				console.log(hashed[hash], randStr, i / iter);
 				collisions++;
 			}

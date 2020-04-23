@@ -1,8 +1,9 @@
 import get from "./get";
+import hasOwn from "./has-own";
 
 export default function mapExtract(target, map, src) {
 	for (const k in map) {
-		if (!map.hasOwnProperty(k))
+		if (!hasOwn(map, k))
 			continue;
 
 		let path = map[k],

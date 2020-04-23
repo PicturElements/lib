@@ -10,23 +10,17 @@ import {
 import map from "./map";
 import hasOwn from "./has-own";
 import { QNDMap } from "./internal/poly";
-import { sym } from "./sym";
-import { extend } from "./obj";
+
+const REF_MAP = new QNDMap();
 
 export default function clone(obj, options) {
 	options = createOptionsObject(options, optionsTemplates);
-	const inexMap = options.circular ?
-			new QNDMap() :
-			null,
-		depth = options.shallow ?
-			0 :
-			(hasOwn(options, "depth") ?
-				options.depth :
-				Infinity
-			),
-		clonedSym = options.circular ?
-			sym("cloned") :
-			null;
+	const depth = options.shallow ?
+		0 :
+		(hasOwn(options, "depth") ?
+			options.depth :
+			Infinity
+		);
 
 	const cl = (o, d) => {
 		if (!isObj(o))
@@ -42,20 +36,17 @@ export default function clone(obj, options) {
 		const objOut = isArrResolvable(o) ? [] : {};
 
 		if (options.circular)
-			extend(o, clonedSym, objOut, (t, k, v) => inexMap.set(o, v));
+			REF_MAP.set(o, objOut);
 
 		map(o, v => {
 			if (!isObj(v) || d >= depth)
 				return v;
 
 			if (options.circular) {
-				if (!Object.isExtensible(o)) {
-					const item = inexMap.get(o);
+				const item = REF_MAP.get(o);
 
-					if (item)
-						return item;
-				} else if (hasOwn(v, clonedSym))
-					return v[clonedSym];
+				if (item)
+					return item;
 			}
 
 			return cl(v, d + 1);
@@ -67,9 +58,6 @@ export default function clone(obj, options) {
 			for (let i = 0, l = symbols.length; i < l; i++) {
 				const sym = symbols[i];
 
-				if (sym == clonedSym)
-					continue;
-
 				objOut[sym] = d < depth ?
 					cl(o[sym], d + 1) :
 					o[sym];
@@ -77,7 +65,7 @@ export default function clone(obj, options) {
 		}
 
 		if (options.circular)
-			delete o[clonedSym];
+			REF_MAP.delete(o);
 
 		return objOut;
 	};

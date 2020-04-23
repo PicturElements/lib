@@ -2,6 +2,7 @@ import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./options";
+import hasOwn from "./has-own";
 
 // Returns an index around which the comparator proximity is minimal
 function binarySearch(arr, comparator, reverse = false) {
@@ -121,7 +122,7 @@ function findClosest(arr, comparator, options) {
 		end = arr.length - 1,
 		pivot = Math.floor((start + end) / 2);
 
-	if (typeof options.hintIndex == "number" && arr.hasOwnProperty(options.hintIndex)) {
+	if (typeof options.hintIndex == "number" && hasOwn(arr, options.hintIndex)) {
 		if (comparator(arr[options.hintIndex]) == 0)
 			return dispatch(options.hintIndex, 0);
 

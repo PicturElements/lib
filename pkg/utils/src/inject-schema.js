@@ -1,6 +1,7 @@
 import inject from "./inject";
 import parsePropStr from "./parse-prop-str";
 import getPropStrCombinations from "./get-prop-str-combinations";
+import hasOwn from "./has-own";
 
 // Based on inject.js, but before a value is set, any keys with
 // the same core value are removed from the object.
@@ -29,7 +30,7 @@ function reduceCombinations(target, baseKey, key, combinations) {
 	for (let i = 0, l = combinations.length; i < l; i++) {
 		const combination = combinations[i];
 
-		if (target.hasOwnProperty(combination)) {
+		if (hasOwn(target, combination)) {
 			if (collectedKey)
 				throw new Error(`Key '${baseKey}' has already been declared on this object (as '${collectedKey}')`);
 

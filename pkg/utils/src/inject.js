@@ -8,8 +8,6 @@ import clone from "./clone";
 import hasOwn from "./has-own";
 import matchQuery from "./match-query";
 import { QNDSet } from "./internal/poly";
-import { sym } from "./sym";
-import { extend } from "./obj";
 import {
 	composeMergerTemplates,
 	mergeObject
@@ -28,15 +26,10 @@ import {
 	}
 */
 
+const REF_SET = new QNDSet();
+
 export default function inject(target, extender, options) {
 	options = mergeObject(options, optionsTemplates, null, "option");
-
-	const visitedSym = options.circular ?
-			sym("inject visited") :
-			null,
-		inexSet = options.circular ?
-			new QNDSet() :
-			null;
 	
 	if (options.clone || options.cloneTarget)
 		target = clone(target, options);
@@ -63,7 +56,7 @@ export default function inject(target, extender, options) {
 		ext = coerceToObj(ext);
 
 		if (options.circular)
-			extend(ext, visitedSym, true, _ => inexSet.add(ext));
+			REF_SET.add(ext);
 
 		if (Array.isArray(ext)) {
 			const len = options.restrictiveTarget ?
@@ -80,17 +73,13 @@ export default function inject(target, extender, options) {
 		if (options.injectSymbols && typeof Symbol != "undefined") {
 			const symbols = Object.getOwnPropertySymbols(ext);
 
-			for (let i = 0, l = symbols.length; i < l; i++) {
-				if (symbols[i] == visitedSym)
-					continue;
-
+			for (let i = 0, l = symbols.length; i < l; i++)
 				doInject(symbols[i], targ, ext, runtime, true);
-			}
 		}
 
 		if (options.circular) {
-			delete ext[visitedSym];
-			delete targ[visitedSym];
+			REF_SET.delete(ext);
+			REF_SET.delete(targ);
 		}
 
 		return targ;
@@ -132,9 +121,7 @@ export default function inject(target, extender, options) {
 				runtime.ignore = ignore && ignore[key];
 				
 				if (options.circular) {
-					if (hasOwn(ext[key], visitedSym))
-						val = ext[key];
-					else if (!Object.isExtensible(ext[key]) && inexSet.has(ext[key]))
+					if (REF_SET.has(ext[key]))
 						val = ext[key];
 					else
 						val = inj(val, ext[key], runtime);

@@ -70,6 +70,7 @@ export { default as parseTreeStr } from "./src/parse-tree-str";
 export { default as partition } from "./src/partition";
 export { default as query } from "./src/query";
 export { default as queryFilterMut } from "./src/query-filter-mut";
+export { default as rasterize } from "./src/rasterize";
 export { default as repeat } from "./src/repeat";
 export { default as resolveArgs } from "./src/resolve-args";
 export { default as serialize } from "./src/serialize";

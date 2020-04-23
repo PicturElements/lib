@@ -1,4 +1,5 @@
 import { SYM_ITER_KEY } from "./internal/constants";
+import VolatileMap from "./internal/volatile-map";
 import {
 	isArrayLike,
 	isDirectInstanceof,
@@ -11,6 +12,7 @@ import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./options";
+import { keys } from "./obj";
 import hasOwn from "./has-own";
 
 // Polymorphic forEach
@@ -28,7 +30,7 @@ import hasOwn from "./has-own";
 // c. the target object is a non-iterable object
 // d. the target object is an iterable and the reverse flag is truthy
 //
-// in general, forEach returns itself. However, this is not the case in the folllowing cases:
+// in general, forEach returns itself. However, this is not the case in the following cases:
 //
 // forEach supports breaking, continuing, and labels. The syntax is meant
 // to be similar to native loops. The general syntax is this:
@@ -93,6 +95,8 @@ import hasOwn from "./has-own";
 //				  the last one, as in this case the returned value is forEach itself
 //				  and as such it cannot propagate as a token would
 
+const CACHE_STORE = new VolatileMap();
+
 export default function forEach(obj, callback, options){
 	if (obj === null || obj === undefined || typeof callback != "function")
 		return forEach;
@@ -100,7 +104,33 @@ export default function forEach(obj, callback, options){
 	options = createOptionsObject(options || forEach._options, optionsTemplates);
 	forEach._options = null;
 
-	if (obj[SYM_ITER_KEY] && (options.iterable || !isArrayLike(obj))) {
+	const {
+		iterable,
+		reverse,
+		sparse,
+		symbols = options.overSymbols,
+		cacheKeys
+	} = options;
+
+	if (!iterable && isArrayLike(obj)) {
+		if (reverse) {
+			for (let i = obj.length - 1; i >= 0; i--) {
+				if (invokeCallback(callback, obj, i, false, sparse)) {
+					if (shouldContinue(options))
+						continue;
+					return brk(options);
+				}
+			}
+		} else {
+			for (let i = 0; i < obj.length; i++) {
+				if (invokeCallback(callback, obj, i, false, sparse)) {
+					if (shouldContinue(options))
+						continue;
+					return brk(options);
+				}
+			}
+		}
+	} else if (typeof obj[SYM_ITER_KEY] == "function") {
 		const iterator = obj[SYM_ITER_KEY](),
 			setLike = options.isSetLike || isSetLike(obj),
 			mapLike = options.isMapLike || isMapLike(obj),
@@ -125,9 +155,9 @@ export default function forEach(obj, callback, options){
 			} else // assume number index as key
 				vk = [item.value, idx];
 
-			if (options.reverse)
+			if (reverse)
 				stack.push(vk);
-			else if (callback(vk[0], vk[1], obj) == jmpT) {
+			else if (invokeCallbackVK(callback, obj, vk)) {
 				if (shouldContinue(options))
 					continue;
 				return brk(options);
@@ -137,54 +167,42 @@ export default function forEach(obj, callback, options){
 		// options.reverse
 		let i = stack.length;
 		while (i--) {
-			if (callback(stack[i][0], stack[i][1], obj) == jmpT) {
+			if (invokeCallbackVK(callback, obj, stack[i])) {
 				if (shouldContinue(options))
 					continue;
 				return brk(options);
 			}
 		}
-	} else if (isDirectInstanceof(obj, Object) || !isArrayLike(obj)) {
-		if (options.reverse) {
-			const keys = Object.keys(obj);
-			let k;
-			
-			for (let i = keys.length - 1; i >= 0; i--) {
-				k = keys[i];
-				// The keys are already own property names,
-				// but in browsers where Symbol isn't supported we still
-				// need to check for bad keys
-				if (hasOwn(obj, keys[i], options.overSymbols) && callback(obj[k], k, obj) == jmpT) {
-					if (shouldContinue(options))
-						continue;
-					return brk(options);
-				}
-			}
-		} else {
-			for (let k in obj) {
-				if (hasOwn(obj, k, false) && callback(obj[k], k, obj) == jmpT) {
-					if (shouldContinue(options))
-						continue;
-					return brk(options);
-				}
-			}
-		}
-	} else {
-		const arrCB = options.sparse ? (v, k, obj) => {
-			if (hasOwn(obj, k, false))
-				callback(v, k, obj);
-		} : callback;
+	} else if (isDirectInstanceof(obj, Object)) {
+		// In V8, the speed difference/memory usage
+		// between Object.keys/for and for-in are
+		// negligible, but in SpiderMonkey the former is
+		// far faster
+		let ks;
 
-		if (options.reverse) {
-			for (let i = obj.length - 1; i >= 0; i--) {
-				if (arrCB(obj[i], i, obj) == jmpT) {
+		if (typeof cacheKeys == "number") {
+			const value = CACHE_STORE.get(obj);
+
+			if (value)
+				ks = value;
+			else {
+				ks = keys(obj);
+				CACHE_STORE.set(obj, ks, cacheKeys);
+			}
+		} else
+			ks = keys(obj);
+
+		if (reverse) {
+			for (let i = ks.length - 1; i >= 0; i--) {
+				if (invokeCallback(callback, obj, ks[i], symbols, !symbols)) {
 					if (shouldContinue(options))
 						continue;
 					return brk(options);
 				}
 			}
 		} else {
-			for (let i = 0; i < obj.length; i++) {
-				if (arrCB(obj[i], i, obj) == jmpT) {
+			for (let i = 0, l = ks.length; i < l; i++) {
+				if (invokeCallback(callback, obj, ks[i], symbols, !symbols)) {
 					if (shouldContinue(options))
 						continue;
 					return brk(options);
@@ -193,11 +211,11 @@ export default function forEach(obj, callback, options){
 		}
 	}
 
-	if (options.overSymbols && typeof Symbol != "undefined") {
-		const symbols = Object.getOwnPropertySymbols(obj);
+	if (symbols && typeof Symbol != "undefined") {
+		const syms = Object.getOwnPropertySymbols(obj);
 
-		for (let i = 0, l = symbols.length; i < l; i++) {
-			const sym = symbols[i];
+		for (let i = 0, l = syms.length; i < l; i++) {
+			const sym = syms[i];
 
 			if (callback(obj[sym], sym, obj) == jmpT) {
 				if (shouldContinue(options))
@@ -311,6 +329,19 @@ Object.defineProperties(forEach, {
 	}
 });
 
+function invokeCallback(callback, obj, k, symbols, checkExistence) {
+	if (checkExistence && !hasOwn(obj, k, symbols))
+		return false;
+
+	const retVal = callback(obj[k], k, obj);
+	return typeof retVal == "function" && retVal == jmpT;
+}
+
+function invokeCallbackVK(callback, obj, vk) {
+	const retVal = callback(vk[0], vk[1], obj);
+	return typeof retVal == "function" && retVal == jmpT;
+}
+
 function shouldContinue(options) {
 	if (jmpObj.mode !== "continue")
 		return false;
@@ -345,5 +376,7 @@ const optionsTemplates = composeOptionsTemplates({
 		flipKV: false
 	},
 	sparse: true,
-	overSymbols: true
+	symbols: true,
+	overSymbols: true,
+	cacheKeys: 100
 });

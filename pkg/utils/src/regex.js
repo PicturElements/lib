@@ -1,14 +1,10 @@
 function cleanRegex(str) {
-	return str.replace(/[$^()\[\]\/\\{}.*+?|]/g, "\\$&");
+	return str.replace(/[$^()[\]/\\{}.*+?|]/g, "\\$&");
 }
 
 function matchAll(str, regex, captureOrCapturePriority = 0) {
-	if (!regex.global) {
-		const ex = regex.exec(str);
-		return ex ? [ex[0]] : [];
-	}
-
 	const matches = [],
+		isGlobal = regex.global,
 		usePriority = Array.isArray(captureOrCapturePriority),
 		priority = captureOrCapturePriority,
 		priorityLen = priority && priority.length;
@@ -35,6 +31,9 @@ function matchAll(str, regex, captureOrCapturePriority = 0) {
 
 		if (match != null)
 			matches.push(match);
+
+		if (!isGlobal)
+			return matches;
 	}
 }
 

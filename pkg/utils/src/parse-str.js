@@ -1,4 +1,5 @@
 import parseStrStr from "./parse-str-str";
+import hasOwn from "./has-own";
 
 const kwLiterals = {
 	true: true,
@@ -16,7 +17,7 @@ export default function parseStr(str) {
 		return str;
 
 	// Parse keyword literals (booleans, null, undefined, etc)
-	if (kwLiterals.hasOwnProperty(str))
+	if (hasOwn(kwLiterals, str))
 		return kwLiterals[str];
 	// Parse numbers
 	if (str && !isNaN(Number(str)))
@@ -29,23 +30,25 @@ export default function parseStr(str) {
 
 	// Parse strings and symbols, starting off with a naive (and fast) char check
 	switch (firstChar) {
-		case "S":
+		case "S": {
 			const sEx = symbolParseRegex.exec(str);
 			if (sEx) {
 				if (sEx[1])
 					return Symbol[sEx[1]](parseStr(sEx[2]) || sEx[2]);
 				return Symbol(parseStr(sEx[2]) || sEx[2]);
 			}
+		}
 
 			break;
 		case "\"":
 		case "'":
-		case "`":
+		case "`": {
 			const parsed = parseStrStr(str);
 			if (parsed !== null)
 				return parsed;
 
 			break;
+		}
 		case "{":
 		case "[":
 			return parseObj(str);

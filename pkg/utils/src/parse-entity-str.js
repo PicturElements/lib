@@ -2,7 +2,8 @@ const entityCache = Object.create(null),
 	entityResolveElem = document.createElement("div");
 
 // This function is quite ugly, but is roughly twice as performant
-// as the equivalent 
+// as equivalent strategies like setting and reading innerHTML on an
+// element directly while not requiring a database of entities
 export default function parseEntityStr(str) {
 	let outStr = "",
 		match = "",

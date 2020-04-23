@@ -4,8 +4,9 @@ import {
 } from "./options";
 import { escape } from "./str-replace";
 import { cleanRegex } from "./regex";
+import hasOwn from "./has-own";
 
-const globRegex = /\\([^\\\/])|(\?|\*\*|\*)|\[(!)?([^\\\/]*?)\]|([$^()\[\]\/\\{}.*+?|])/g,
+const globRegex = /\\([^\\/])|(\?|\*\*|\*)|\[(!)?([^\\/]*?)\]|([$^()[\]/\\{}.*+?|])/g,
 	globCache = {},
 	boundaryCache = {};
 
@@ -21,10 +22,10 @@ function compileGlob(glob, options) {
 		flags = options.flags || "",
 		globKey = `${glob}@${flags}/${+matchStart}${+matchEnd}@@${boundaryPrecursor}`;
 
-	if (globCache.hasOwnProperty(globKey))
+	if (hasOwn(globCache, globKey))
 		return globCache[globKey];
 
-	if (!boundaryCache.hasOwnProperty(boundaryPrecursor)) {
+	if (!hasOwn(boundaryCache, boundaryPrecursor)) {
 		// First escape properly, then clean that for regex construction
 		const regexStr = cleanRegex(escape(boundaryPrecursor));
 		boundaryCache[boundaryPrecursor] = regexStr ?
