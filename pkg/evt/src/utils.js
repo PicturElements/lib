@@ -1,18 +1,18 @@
+import {
+	hasOwn,
+	isObject,
+	spliceStr,
+	applyPattern
+} from "@qtxr/utils";
+import EVT from "./evt";
 import evtValidators from "./validators";
-
-function isValidKey(evt, type) {
-	if (!evt.key || !type || (!evtValidators.hasOwnProperty(type) && type.constructor != Object))
-		return true;
-
-	return checkKey(evt, evt.key.toLowerCase(), evtValidators[type] || type);
-}
 
 // https://stackoverflow.com/questions/21177489/selectionstart-selectionend-on-input-type-number-no-longer-allowed-in-chrome
 // https://html.spec.whatwg.org/multipage/input.html#do-not-apply
-// Please note that if the target text, search, password, tel, or url types or else checkWord
-// will not work properly
+// Please note that if the target type isn't text, search, password, tel, or url,
+// checkWord will not work properly
 
-const validTypes = {
+const VALID_TYPES = {
 	text: true,
 	search: true,
 	password: true,
@@ -20,11 +20,18 @@ const validTypes = {
 	url: true
 };
 
+function isValidKey(evt, type) {
+	if (!evt.key || !type || (!hasOwn(evtValidators, type) && type.constructor != Object))
+		return true;
+
+	return checkKey(evt, evt.key.toLowerCase(), evtValidators[type] || type);
+}
+
 function isValidWord(evt, type) {
 	const target = evt.target,
 		val = target.value || "";
 
-	if (!evt.key || evt.key.length != 1 || !type || (!evtValidators.hasOwnProperty(type) && type.constructor != Object))
+	if (!evt.key || evt.key.length != 1 || !type || (!hasOwn(evtValidators, type) && !isObject(type)))
 		return true;
 
 	if (!("selectionStart" in target)) {
@@ -32,10 +39,15 @@ function isValidWord(evt, type) {
 		return true;
 	}
 
-	if (target.type && !validTypes.hasOwnProperty(target.type))
+	if (target.type && !hasOwn(VALID_TYPES, target.type))
 		console.warn(`Cannot get selection bounds for input with type '${target.type}' and so cannot accurately determine the value string. Please consider changing the input type to either text, search, password, tel, or url.`);
 
-	const testStr = val.substr(0, target.selectionStart) + evt.key + val.substr(target.selectionEnd);
+	const testStr = spliceStr(
+		val,
+		target.selectionStart,
+		target.selectionEnd,
+		evt.key
+	);
 	return validateStr(testStr, evtValidators[type] || type);
 }
 
@@ -45,7 +57,10 @@ function checkKey(evt, key, validatorPartition) {
 	if (typeof checker == "function")
 		return validatorPartition.check(key);
 
-	if ((key.length > 1 && validatorPartition.allowNonPrintable !== false) || (validatorPartition.allowBindings !== false && (evt.ctrlKey || evt.metaKey || evt.altKey)))
+	const validKey = key.length > 1 && validatorPartition.allowNonPrintable !== false,
+		validBinding = validatorPartition.allowBindings !== false && hasModifierKey(evt);
+
+	if (validKey || validBinding)
 		return true;
 
 	if (checker instanceof RegExp)
@@ -84,8 +99,93 @@ function getCoords(evt, element = null) {
 	};
 }
 
+function hasModifierKey(evt) {
+	return Boolean(evt && (evt.ctrlKey || evt.altKey || evt.shiftKey || evt.metaKey));
+}
+
+function runPattern(evt, args) {
+	const result = {
+		output: null,
+		success: false,
+		prevent: false
+	};
+
+	if (!("selectionStart" in evt.target)) {
+		console.warn("Cannot run pattern: event target must be an input with a selectionStart property");
+		return result;
+	}
+
+	let res;
+
+	switch (evt.type) {
+		case "paste":
+			res = runPatternPaste(evt, args);
+			break;
+
+		case "keydown":
+			res = runPatternKeydown(evt, args);
+			break;
+	}
+
+	if (!res) {
+		result.success = true;
+		return result;
+	}
+
+	Object.assign(result, res);
+	result.success = true;
+	result.prevent = true;
+	return result;
+}
+
+function runPatternPaste(evt, args) {
+	const insertion = (evt.clipboardData || window.clipboardData).getData("text"),
+		target = evt.target;
+
+	if (!insertion)
+		return null;
+
+	return applyPattern(Object.assign({
+		source: target.value,
+		start: target.selectionStart,
+		end: target.selectionEnd,
+		insertion
+	}, args));
+}
+
+function runPatternKeydown(evt, args) {
+	const target = evt.target;
+	let ss = target.selectionStart,
+		se = target.selectionEnd,
+		key = evt.key,
+		insertion = key,
+		deletion = 0;
+
+	switch (EVT.getKey(evt)) {
+		case "backspace":
+			insertion = "";
+			if (ss == se)
+				deletion = 1;
+			break;
+
+		default:
+			if (key.length > 1 || hasModifierKey(evt))
+				return null;
+	}
+
+	return applyPattern(Object.assign({
+		source: target.value,
+		start: ss,
+		end: se,
+		insertion,
+		deletion
+	}, args));
+}
+
 export {
 	isValidKey,
 	isValidWord,
-	getCoords
+	getCoords,
+	hasModifierKey,
+	runPattern
 };

@@ -1,3 +1,5 @@
+import { hasOwn } from "@qtxr/utils";
+
 const evtValidators = {
 	natural: {
 		check: /\d/,
@@ -19,7 +21,7 @@ const evtValidators = {
 	},
 	singleLine: {
 		check(key) {
-			return !this.disallowed.hasOwnProperty(key);
+			return !hasOwn(this.disallowed, key);
 		},
 		disallowed: {
 			enter: true
