@@ -1,11 +1,17 @@
 import get from "./get";
 import { isObj } from "./is";
 
-export default function set(data, path, value, options) {
-	const gotten = get(data, path, null, [
-		"autoBuild|context",
-		options
-	]);
+const GET_OPTS = {
+	autoBuild: true,
+	context: true
+};
+
+export default function set(target, path, value, options) {
+	options = options ?
+		[GET_OPTS, options] :
+		GET_OPTS;
+
+	const gotten = get(target, path, null, options);
 
 	if (isObj(gotten.context))
 		gotten.context[gotten.key] = value;

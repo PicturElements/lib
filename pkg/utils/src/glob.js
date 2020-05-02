@@ -36,7 +36,14 @@ function compileGlob(glob, options) {
 	const boundary = boundaryCache[boundaryPrecursor];
 
 	let isGlob = false,
-		regex = glob.replace(globRegex, (match, escaped, wildcard, negate, charset, special) => {
+		regex = glob.replace(globRegex, (
+			match,
+			escaped,
+			wildcard,
+			negate,
+			charset,
+			special
+		) => {
 			if (escaped)
 				return match;
 
@@ -89,6 +96,14 @@ const optionsTemplates = composeOptionsTemplates({
 	}
 });
 
+function matchGlob(str, glob, options) {
+	if (typeof str != "string" || typeof glob != "string")
+		return false;
+
+	return compileGlob(glob, options).regex.test(str);
+}
+
 export {
-	compileGlob
+	compileGlob,
+	matchGlob
 };

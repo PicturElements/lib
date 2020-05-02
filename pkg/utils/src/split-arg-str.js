@@ -1,31 +1,39 @@
-import { cleanRegex } from "./regex";
+import {
+	cleanRegex,
+	injectRegexFlags,
+	stickyExec
+} from "./regex";
 import hasOwn from "./has-own";
+import supports from "./internal/supports";
 
 const argSeparatorCache = {};
 
 export default function splitArgStr(str, argSeparator = ",") {
 	const args = [];
-	let isRegexArgSep = argSeparator instanceof RegExp,
+	let useRegexArgSep = argSeparator instanceof RegExp,
 		quote = null,
 		structStackDepth = 0,
 		arg = "",
 		lastChar = null;
 
-	if (isRegexArgSep) {
+	if (useRegexArgSep) {
 		const key = argSeparator.toString();
 
 		if (hasOwn(argSeparatorCache, key))
 			argSeparator = argSeparatorCache[key];
 		else {
-			const flags = argSeparator.flags.indexOf("g") == -1 ?
-				`${argSeparator.flags}g` :
-				argSeparator.flags;
+			if (supports.regex.sticky)
+				argSeparator = injectRegexFlags(argSeparator, "y", true);
+			else
+				argSeparator = injectRegexFlags(argSeparator, "g", true);
 
-			argSeparator = new RegExp(argSeparator.source, flags);
 			argSeparatorCache[key] = argSeparator;
 		}
-	} else if (!argSeparator || typeof argSeparator != "string") {
-		console.warn(`Argument separator (${argSeparator}) is invalid. Expect bad output`);
+	} else if (typeof argSeparator != "string") {
+		console.warn(`Argument separator with is invalid: type ${typeof argSeparator}`);
+		argSeparator = "";
+	} else if (!argSeparator) {
+		console.warn(`Argument separator is invalid: empty string`);
 		argSeparator = "";
 	} else if (argSeparator.length > 1) {
 		if (hasOwn(argSeparatorCache, argSeparator))
@@ -33,15 +41,14 @@ export default function splitArgStr(str, argSeparator = ",") {
 		else
 			argSeparator = argSeparatorCache[argSeparator] = new RegExp(cleanRegex(argSeparator), "gi");
 
-		isRegexArgSep = true;
+		useRegexArgSep = true;
 	}
 
 	for (let i = 0, l = str.length; i < l; i++) {
 		const char = str[i];
 
-		if (isRegexArgSep && !quote && !structStackDepth) {
-			argSeparator.lastIndex = i;
-			const ex = argSeparator.exec(str);
+		if (useRegexArgSep && !quote && !structStackDepth) {
+			const ex = stickyExec(argSeparator, str, i);
 
 			if (ex && ex.index == i) {
 				args.push(arg.trim());
@@ -87,7 +94,7 @@ export default function splitArgStr(str, argSeparator = ",") {
 		lastChar = char;
 	}
 
-	if (arg || lastChar == argSeparator)
+	if (arg || (useRegexArgSep && lastChar == argSeparator))
 		args.push(arg.trim());
 	
 	return args;

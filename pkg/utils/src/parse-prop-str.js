@@ -13,19 +13,19 @@ export default function parsePropStr(key) {
 	switch (key[lastIdx]) {
 		case "?":
 			ret.lazy = true;
-			ret.key = key.substr(0, lastIdx);
+			ret.key = key.substring(0, lastIdx);
 			break;
 		
 		case "!":
 			ret.strict = true;
-			ret.key = key.substr(0, lastIdx);
+			ret.key = key.substring(0, lastIdx);
 			break;
 	}
 
 	switch (key[0]) {
 		case "@":
 			ret.typeModifier = true;
-			ret.key = ret.key.substr(1);
+			ret.key = ret.key.substring(1);
 			break;
 	}
 

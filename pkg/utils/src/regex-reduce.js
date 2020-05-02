@@ -38,7 +38,7 @@ function regexReduceSingular(str, target, handler) {
 
 	target[handler.key] = resolveValWithPassedFallback(handler.process, ex[handler.capture || 0]);
 
-	return str.substr(0, ex.index) + str.substr(ex.index + ex[0].length, str.length);
+	return str.substring(0, ex.index) + str.substring(ex.index + ex[0].length, str.length);
 }
 
 function regexReduceMultiple(str, target, handler) {
@@ -64,7 +64,7 @@ function regexReduceMultiple(str, target, handler) {
 
 	target[handler.key] = resolveValWithPassedFallback(handler.process, arr);
 
-	return str.substr(0, startIdx) + str.substr(endIdx, str.length - endIdx);
+	return str.substring(0, startIdx) + str.substring(endIdx, str.length);
 }
 
 export {

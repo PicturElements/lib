@@ -112,7 +112,7 @@ function parseNodes(str) {
 				});
 				break;
 
-			case "element":
+			case "element": {
 				Object.assign(node, {
 					children: [],
 					attributes: {
@@ -135,6 +135,7 @@ function parseNodes(str) {
 					})
 				);
 				break;
+			}
 		}
 
 		nodes.push(node);

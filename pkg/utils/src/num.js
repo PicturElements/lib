@@ -37,7 +37,7 @@ function roundToLen(num, length) {
 	if (nil >= length || numDec % numMask == 0)
 		return sign + Math.round(num);
 
-	return sign + numInt + "." + ("" + numDec).substr(1);
+	return sign + numInt + "." + ("" + numDec).substring(1);
 }
 
 function numLen(num) {

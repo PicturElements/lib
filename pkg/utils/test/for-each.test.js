@@ -205,8 +205,8 @@ describe("handles breaks correctly", () => {
 		},
 		finishingFunc = (target, options) => {
 			let count = 0;
-			const breakRet = forEach(target, _ => count++, options);
-			return breakRet != forEach.BREAK && count == 4;
+			forEach(target, _ => count++, options);
+			return count == 4;
 		};
 
 	test("breaks with arrays", () => {

@@ -11,8 +11,8 @@ export default function getFunctionName(func) {
 
 	const stringified = String(func);
 
-	if (stringified.indexOf("[object") == 0)
-		return stringified.replace("[object ", "").slice(0, -1);
+	if (stringified[0] == "[")
+		return stringified.slice(8, -1);
 	else {
 		const ex = funcNameFindRegex.exec(stringified);
 		if (ex)

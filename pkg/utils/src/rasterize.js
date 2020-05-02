@@ -12,7 +12,7 @@ const ATTRIBUTES = "alignment-baseline:auto;baseline-shift:0px;color;color-inter
 		let [key, value = null] = kv.split(":");
 
 		if (value && value[0] == "/")
-			value = new RegExp(value.substr(1, value.length - 2));
+			value = new RegExp(value.substring(1, value.length - 1));
 
 		return [key, value];
 	});
@@ -33,7 +33,7 @@ export default function rasterize(node, options = {}) {
 
 	return new Promise(resolve => {
 		if (!(node instanceof SVGElement))
-			return null;
+			return resolve(null);
 
 		const viewBox = node.viewBox.baseVal,
 			scale = options.scale || 1,
@@ -41,7 +41,7 @@ export default function rasterize(node, options = {}) {
 			h = Math.floor((options.height || viewBox.height || node.height.baseVal.value) * scale);
 
 		if (!(w * h))
-			return null;
+			return resolve(null);
 
 		const canvas = document.createElement("canvas"),
 			ctx = canvas.getContext("2d"),

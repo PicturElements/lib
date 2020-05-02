@@ -26,7 +26,7 @@ export default function serialize(data, optionsOrIndentStr = {}) {
 		quoteChar = typeof options.quote == "string" && !options.jsonCompatible ? options.quote : "\"",
 		bareString = options.bareString && !options.jsonCompatible,
 		optionalReplacer = typeof options.replace == "function" ? options.replace : null,
-		replacer = (key, item, wrap) => {
+		replace = (key, item, wrap) => {
 			if (key == circularIdKey)
 				return;
 
@@ -45,8 +45,8 @@ export default function serialize(data, optionsOrIndentStr = {}) {
 		};
 
 	const srz = (key, item, indent = 0, preventReplace = false, preventBareString = false) => {
-		if (replacer && !preventReplace)
-			item = replacer(key, item, wrapItem, indent);
+		if (replace && !preventReplace)
+			item = replace(key, item, wrapItem, indent);
 
 		if (isObject(item) && hasOwn(item, WRAPPED_SYM)) {
 			switch (item[WRAPPED_SYM]) {
@@ -125,7 +125,9 @@ export default function serialize(data, optionsOrIndentStr = {}) {
 					);
 				}
 				
-				return item.toString().split(/\n|\r/).join(`\n${repeat(indentStr, indent)}`);
+				return item.toString()
+					.split(/\n|\r/)
+					.join(`\n${repeat(indentStr, indent)}`);
 
 			case "symbol":
 				if (options.jsonCompatible)

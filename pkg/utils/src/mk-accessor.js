@@ -1,7 +1,7 @@
 import { cleanPath } from "./str-replace";
 import splitPath from "./split-path";
 
-const abnormalRegex = splitPath.regexes.hasAbnormalPropertyChar;
+const abnormalRegex = splitPath.regexes.abnormalPropertyChars;
 
 export default function mkAccessor(path) {
 	if (!Array.isArray(path))

@@ -30,12 +30,12 @@ function padEnd(str, length = 2, padChar = " ") {
 function spliceStr(str, from, to, replacement, relative = false) {
 	const range = getWrappedRange(from, to, str.length, relative);
 	replacement = replacement == null ? "" : String(replacement);
-	return str.substr(0, range[0]) + replacement + str.substr(range[1]);
+	return str.substring(0, range[0]) + replacement + str.substring(range[1]);
 }
 
 function trimStr(str, start, end) {
 	start = start || 0;
-	return str.substr(start, str.length - (end || 0) - start);
+	return str.substring(start, str.length - (end || 0));
 }
 
 function splitClean(str, splitter, subTrim = true) {

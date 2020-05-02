@@ -37,7 +37,7 @@ const joiners = {
 		let out = split[0].toLowerCase();
 
 		for (let i = 1, l = split.length; i < l; i++)
-			out += (split[i][0].toUpperCase() + split[i].substr(1).toLowerCase());
+			out += (split[i][0].toUpperCase() + split[i].substring(1).toLowerCase());
 
 		return out;
 	},
@@ -61,7 +61,7 @@ const joiners = {
 		let out = "";
 
 		for (let i = 0, l = split.length; i < l; i++)
-			out += (split[i][0].toUpperCase() + split[i].substr(1).toLowerCase());
+			out += (split[i][0].toUpperCase() + split[i].substring(1).toLowerCase());
 
 		return out;
 	},
@@ -80,7 +80,7 @@ const joiners = {
 			if (i)
 				out += "-";
 
-			out += (split[i][0].toUpperCase() + split[i].substr(1).toLowerCase());
+			out += (split[i][0].toUpperCase() + split[i].substring(1).toLowerCase());
 		}
 
 		return out;
@@ -92,7 +92,7 @@ const joiners = {
 			if (i)
 				out += " ";
 
-			out += (split[i][0].toUpperCase() + split[i].substr(1));
+			out += (split[i][0].toUpperCase() + split[i].substring(1));
 		}
 
 		return out;

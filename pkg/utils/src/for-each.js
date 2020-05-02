@@ -30,7 +30,8 @@ import hasOwn from "./has-own";
 // c. the target object is a non-iterable object
 // d. the target object is an iterable and the reverse flag is truthy
 //
-// in general, forEach returns itself. However, this is not the case in the following cases:
+// forEach returns itself, except if a loop has been broken or deeply continued
+// However, it will always return itself at the root level
 //
 // forEach supports breaking, continuing, and labels. The syntax is meant
 // to be similar to native loops. The general syntax is this:
@@ -97,11 +98,19 @@ import hasOwn from "./has-own";
 
 const CACHE_STORE = new VolatileMap();
 
-export default function forEach(obj, callback, options){
-	if (obj === null || obj === undefined || typeof callback != "function")
+export default function forEach(obj, callback, options) {
+	if (!jmpObj.callDepth) {
+		jmpObj.aborted = false;
+		// Resetting this should only be needed when
+		// a BREAK / CONTINUE getter has been invoked
+		jmpObj.active = false;
+	}
+
+	if (obj === null || obj === undefined || typeof callback != "function" || jmpObj.active)
 		return forEach;
 
 	options = createOptionsObject(options || forEach._options, optionsTemplates);
+	jmpObj.callDepth++;
 	forEach._options = null;
 
 	const {
@@ -225,6 +234,9 @@ export default function forEach(obj, callback, options){
 		}
 	}
 
+	jmpObj.callDepth--;
+	jmpObj.active = false;
+	jmpObj.aborted = false;
 	return forEach;
 }
 
@@ -245,24 +257,16 @@ forEach.o = opt => {
 	return forEach;
 };
 
-forEach.done = function(func) {
-	if (this == forEach) {
-		if (typeof func == "function")
-			func.call(null);
+forEach.done = func => {
+	if (!jmpObj.aborted && typeof func == "function")
+		func.call(null);
 		
-		return forEach;
-	}
-
-	return jmpT;
+	return forEach;
 };
 
 forEach.exit = function(func) {
-	if (this == jmpT) {
-		if (typeof func == "function")
-			func.call(null);
-
-		return jmpT;
-	}
+	if (jmpObj.aborted && typeof func == "function")
+		func.call(null);
 
 	return forEach;
 };
@@ -289,7 +293,10 @@ jmpT.isContinue = false;
 forEach._JMP_OBJ = {
 	depth: Infinity,
 	label: null,
-	mode: null
+	mode: null,
+	active: false,
+	callDepth: 0,
+	aborted: true
 };
 
 const jmpObj = forEach._JMP_OBJ;
@@ -300,6 +307,8 @@ Object.defineProperties(forEach, {
 			jmpObj.depth = 1;
 			jmpObj.label = null;
 			jmpObj.mode = "break";
+			jmpObj.active = true;
+			jmpObj.aborted = true;
 			return jmpT;
 		}
 	},
@@ -308,6 +317,8 @@ Object.defineProperties(forEach, {
 			jmpObj.depth = Infinity;
 			jmpObj.label = null;
 			jmpObj.mode = "break";
+			jmpObj.active = true;
+			jmpObj.aborted = true;
 			return jmpT;
 		}
 	},
@@ -316,6 +327,8 @@ Object.defineProperties(forEach, {
 			jmpObj.depth = 1;
 			jmpObj.label = null;
 			jmpObj.mode = "continue";
+			jmpObj.active = true;
+			jmpObj.aborted = true;
 			return jmpT;
 		}
 	},
@@ -324,6 +337,8 @@ Object.defineProperties(forEach, {
 			jmpObj.depth = Infinity;
 			jmpObj.label = null;
 			jmpObj.mode = "continue";
+			jmpObj.active = true;
+			jmpObj.aborted = true;
 			return jmpT;
 		}
 	}
@@ -333,35 +348,49 @@ function invokeCallback(callback, obj, k, symbols, checkExistence) {
 	if (checkExistence && !hasOwn(obj, k, symbols))
 		return false;
 
-	const retVal = callback(obj[k], k, obj);
-	return typeof retVal == "function" && retVal == jmpT;
+	callback(obj[k], k, obj);
+	return jmpObj.active;
 }
 
 function invokeCallbackVK(callback, obj, vk) {
-	const retVal = callback(vk[0], vk[1], obj);
-	return typeof retVal == "function" && retVal == jmpT;
+	callback(vk[0], vk[1], obj);
+	return jmpObj.active;
 }
 
 function shouldContinue(options) {
 	if (jmpObj.mode !== "continue")
 		return false;
 
-	if (jmpObj.depth == 1)
+	if (jmpObj.depth == 1) {
+		jmpObj.active = false;
 		return true;
+	}
 
-	if (jmpObj.label !== null && options.label == jmpObj.label)
+	if (jmpObj.label !== null && options.label == jmpObj.label) {
+		jmpObj.active = false;
 		return true;
+	}
+
+	return false;
 }
 
 // VERY IMPORTANT:
 // this function implicitly invalidates tokens by returning
 // forEach instead of the token
 function brk(options) {
-	if (--jmpObj.depth <= 0)
-		return forEach;
+	jmpObj.callDepth--;
 
-	if (jmpObj.label !== null && options.label == jmpObj.label)
+	if (--jmpObj.depth <= 0 || !jmpObj.callDepth) {
+		jmpObj.active = false;
+		jmpObj.aborted = true;
 		return forEach;
+	}
+
+	if (jmpObj.label !== null && options.label == jmpObj.label) {
+		jmpObj.active = false;
+		jmpObj.aborted = true;
+		return forEach;
+	}
 
 	return jmpT;
 }

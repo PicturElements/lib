@@ -13,6 +13,7 @@ export * from "./src/matrix";
 export * from "./src/num";
 export * from "./src/obj";
 export * from "./src/options";
+export * from "./src/pattern";
 export * from "./src/presets";
 export * from "./src/process";
 export * from "./src/range";
@@ -77,6 +78,7 @@ export { default as serialize } from "./src/serialize";
 export { default as set } from "./src/set";
 export { default as splitArgStr } from "./src/split-arg-str";
 export { default as splitPath } from "./src/split-path";
+export { default as type } from "./src/lazy/type";
 
 // Backwards compatibility
 export { default as queryObj } from "./src/query";

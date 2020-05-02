@@ -77,7 +77,7 @@ function resolveFunc(resolverOrTarget, keyOrResolver, key = null) {
 			if (this[keyOrResolver] != func)
 				return console.error(`Cannot resolve function: given key '${keyOrResolver}' doesn't match at target`, this);
 
-			func = resolverOrTarget();
+			func = resolverOrTarget.apply(this, arguments);
 			this[keyOrResolver] = func;
 			return func.apply(this, arguments);
 		};
@@ -91,7 +91,7 @@ function resolveFunc(resolverOrTarget, keyOrResolver, key = null) {
 			if (resolverOrTarget[key] != func)
 				return console.error(`Cannot resolve function: given key '${key}' doesn't match at target`, resolverOrTarget);
 
-			func = keyOrResolver();
+			func = keyOrResolver.apply(this, arguments);
 			resolverOrTarget[key] = func;
 			return func.apply(this, arguments);
 		};
@@ -99,7 +99,7 @@ function resolveFunc(resolverOrTarget, keyOrResolver, key = null) {
 		return func;
 	} else if (typeof resolverOrTarget == "function") {
 		let func = function() {
-			func = resolverOrTarget();
+			func = resolverOrTarget.apply(this, arguments);
 			return func.apply(this, arguments);
 		};
 	

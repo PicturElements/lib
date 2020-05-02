@@ -7,5 +7,5 @@ export default function parseFloatStr(str) {
 	if (typeof str != "string" || !floatStrRegex.test(str))
 		return NaN;
 
-	return Number(str.substr(0, str.length - 1));
+	return Number(str.substring(0, str.length - 1));
 }

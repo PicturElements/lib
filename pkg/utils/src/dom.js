@@ -740,7 +740,7 @@ function getNodeType(node) {
 			default:
 				return null;
 		}
-	} else if (node && node.type == "string")
+	} else if (node && typeof node.type == "string")
 		return node.type;
 	
 	return null;
@@ -752,7 +752,7 @@ function getTagName(node) {
 			return node.tagName.toLowerCase();
 
 		return node.tagName;
-	} else if (node && node.tag == "string")
+	} else if (node && typeof node.tag == "string")
 		return node.tag;
 
 	return null;

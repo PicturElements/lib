@@ -16,7 +16,7 @@ const regexes = {
 	path: new RegExp(regexSources.path, "gi"),
 	match: new RegExp(regexSources.match, "gi"),
 	normalPropertyChars: new RegExp(regexSources.normalPropertyChars, "gi"),
-	hasAbnormalPropertyChar: new RegExp(regexSources.abnormalPropertyChars, "i")
+	abnormalPropertyChars: new RegExp(regexSources.abnormalPropertyChars, "i")
 };
 
 // /\[((?:[^\\[\]]*(?:\\.)?)*)\]|\.?((?:[^\\[\].]*(?:\\.)?)*)/g
