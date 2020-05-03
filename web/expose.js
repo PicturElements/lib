@@ -30,44 +30,7 @@ function buildExposedPartition(pkgName, exposeType, locals) {
 		if (!partition || !partition.length)
 			return resolve(true);
 
-		let options = (type => {
-			switch (type) {
-				case "scripts":
-					return {
-						mode: "development",
-						entry: {},
-						output: {
-							filename: "[name].js",
-							path: join(__dirname, "bundles", pkgName, type),
-						}
-					};
-				
-				case "styles":
-					return {
-						mode: "development",
-						module: {
-							rules: [
-								{
-									test: /\.s[ac]ss$/i,
-									use: [
-										MiniCssExtractPlugin.loader,
-										"css-loader",
-										"sass-loader"
-									]
-								}
-							]
-						},
-						entry: {},
-						output: {
-							filename: "[name].css",
-							path: join(__dirname, "bundles", pkgName, exposeType)
-						},
-						plugins: [
-							new MiniCssExtractPlugin()
-						]
-					};
-			}
-		})(exposeType);
+		const options = getWebpackOptions(pkgName, exposeType);
 
 		for (const item of partition) {
 			if (!item.hasOwnProperty("entry"))
@@ -193,6 +156,45 @@ async function buildExposedAtPkg(pkgName, pkg = null) {
 	console.log(`Built exposed files for package '${pkgName}' (${Date.now() - startTime} ms)`);
 
 	return statuses;
+}
+
+function getWebpackOptions(pkgName, type) {
+	switch (type) {
+		case "scripts":
+			return {
+				mode: "development",
+				entry: {},
+				output: {
+					filename: "[name].js",
+					path: join(__dirname, "bundles", pkgName, type),
+				}
+			};
+		
+		case "styles":
+			return {
+				mode: "development",
+				module: {
+					rules: [
+						{
+							test: /\.s[ac]ss$/i,
+							use: [
+								MiniCssExtractPlugin.loader,
+								"css-loader",
+								"sass-loader"
+							]
+						}
+					]
+				},
+				entry: {},
+				output: {
+					filename: "[name].css",
+					path: join(__dirname, "bundles", pkgName, type)
+				},
+				plugins: [
+					new MiniCssExtractPlugin()
+				]
+			};
+	}
 }
 
 module.exports = {

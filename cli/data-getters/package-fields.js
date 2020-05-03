@@ -18,7 +18,7 @@ const getPackageFields = _ => ([
 	}, {
 		name: "main",
 		value: "",
-		validate: input => /^[a-z0-9-._~()'!*:@,;\/]+$/i.test(input),
+		validate: input => /^[a-z0-9-._~()'!*:@,;/]+$/i.test(input),
 		process: input => coerceFilePath(input),
 		precedence: 0
 	}, {
