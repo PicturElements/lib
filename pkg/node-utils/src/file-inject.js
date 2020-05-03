@@ -197,8 +197,12 @@ function injectInline(args) {
 	} = args;
 	const line = match.line,
 		lineStr = line.data,
-		startStr = config.injectMode == "end" ? lineStr.substr(0, match.start) + match.match : lineStr.substr(0, match.start),
-		endStr = config.injectMode == "start" ? match.match + lineStr.substr(match.end) : lineStr.substr(match.end);
+		startStr = config.injectMode == "end" ?
+			lineStr.substring(0, match.start) + match.match :
+			lineStr.substring(0, match.start),
+		endStr = config.injectMode == "start" ?
+			match.match + lineStr.substring(match.end) :
+			lineStr.substring(match.end);
 
 	if (injection.length == 1) {
 		const injectStr = `${padding}${annotate("il-start")}${padding}${injection[0]}${padding}${annotate("il-end")}${padding}`;
@@ -379,7 +383,7 @@ function matchLine(matcherObj, line, lineNo, startIdx = 0) {
 	const matcherName = matcherObj.order[matcherObj.orderPtr],
 		matcher = matcherObj.matcher[matcherName],
 		matcherType = getMatcherType(matcher),
-		testStr = line.data.substr(startIdx);
+		testStr = line.data.substring(startIdx);
 
 	const dispatchMatch = (idx, match) => {
 		const absStartIdx = startIdx + idx,
@@ -409,20 +413,22 @@ function matchLine(matcherObj, line, lineNo, startIdx = 0) {
 	};
 
 	switch (matcherType) {
-		case "regex":
+		case "regex": {
 			matcher.lastIndex = 0;
 			const ex = matcher.exec(testStr);
 			if (ex)
 				return dispatchMatch(ex.index, ex[0]);
 			break;
+		}
 
-		case "string":
+		case "string": {
 			const idx = testStr.indexOf(matcher);
 			if (idx > -1)
 				return dispatchMatch(idx, matcher);
 			break;
+		}
 
-		case "function":
+		case "function": {
 			const result = matcher({
 				testStr,
 				line,
@@ -438,6 +444,7 @@ function matchLine(matcherObj, line, lineNo, startIdx = 0) {
 			}
 			
 			break;
+		}
 	}
 
 	return false;
@@ -528,7 +535,7 @@ function initLine(data, owner) {
 	return {
 		owner,
 		data,
-		content: data.substr(indent.length),
+		content: data.substring(indent.length),
 		indent,
 		indentType,
 		indentWidth: indent.length,
@@ -543,7 +550,7 @@ function updateLine(line, data) {
 	const indent = getIndent(data);
 
 	line.data = data;
-	line.content = data.substr(indent.length);
+	line.content = data.substring(indent.length);
 	line.indent = indent;
 	line.indentWidth = indent.length / line.owner.indentComponentWidth;
 	line.isBlank = data == indent;
