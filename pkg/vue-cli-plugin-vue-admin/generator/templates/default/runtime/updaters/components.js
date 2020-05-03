@@ -148,6 +148,6 @@ function toDirCamelCase(pth) {
 
 function toPascalCase(file) {
 	return file.split(/[_-]+/)
-		.map(s => s[0].toUpperCase() + s.substr(1))
+		.map(s => s[0].toUpperCase() + s.substring(1))
 		.join("");
 }

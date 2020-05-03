@@ -221,10 +221,9 @@ $theme: (
 			highlight: $highlight,
 			highlight-complement: $highlight-complement
 		),
-		// This also serves as the base style for
-		// other inputs, which can be overwritten,
-		// in each input map
-		input: (
+		// Base style for all inputs, which can be extended
+		// or inherited by each input map
+		base: (
 			height: $input-master-height,
 			border-radius: 3px,
 

@@ -85,7 +85,7 @@
 
 				for (let i = 1, l = cl.length; i < l; i++) {
 					if (cl[i].indexOf("ico-") == 0) {
-						this.processedName = cl[i].substr(4);
+						this.processedName = cl[i].substring(4);
 						break;
 					}
 				}
