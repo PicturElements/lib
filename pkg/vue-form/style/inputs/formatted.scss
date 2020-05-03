@@ -1,29 +1,31 @@
 $formatted-params: (
+	// Basic
 	"border-radius",
+	"error-color",
 	"background",
 	"error-background",
 	"border",
 	"focus-border",
 	"error-border",
-	"focus-border-color",
-	"error-color"
+	"focus-border-color"
 );
 
 @mixin formatted(
+	// Basic
 	$border-radius: 1px,
+	$error-color: #ab0f2f,
 	$background: white,
 	$error-background: #ffe7ec,
 	$border: 1px solid #dadada,
 	$focus-border: 1px solid #1e2021,
 	$error-border: 1px solid #e8879b,
-	$focus-border-color: #1e2021,
-	$error-color: #ab0f2f
+	$focus-border-color: #1e2021
 ) {
 	.inp-formatted {
 		.formatted-content-editable {
 			width: 100%;
 			padding: 6px 8px;
-			background: transparent;
+			background: $background;
 			border: $border;
 			border-radius: $border-radius;
 			outline: none;

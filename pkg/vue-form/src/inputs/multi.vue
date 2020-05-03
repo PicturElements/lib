@@ -1,53 +1,53 @@
 <template lang="pug">
-	.input-wrapper.multi.inp-multi(:class="[ expanded ? 'open' : null, input.noSearch ? 'no-search' : null, isMobile() ? 'mobi' : null, validationState, dropdownDirection ]")
-		textarea.focus-probe(
-			:disabled="disabled"
-			@focus="expand"
-			@blur="enqueueCollapse"
-			ref="focusProbe")
-		.collapse-target(@click="collapse")
-		.selection-box(
-			@mousedown="triggerExpand"
-			@click="triggerExpand"
-			ref="selectionBox")
-			template(v-if="$scopedSlots['selection-item']")
-				template(v-for="(item, idx) in input.value")
-					slot(
-						name="selection-item"
-						v-bind="{ index: idx, item, data: item, delete: _ => deleteSelectionItem(idx) }")
-			.default-selection-item(
-				v-else
-				v-for="(item, idx) in input.value")
-				span.selection-item.value
-					slot(
-						name="selection-item-value"
-						v-bind="{ index: idx, item, data: item, delete: _ => deleteSelectionItem(idx) }") {{ getLabel(item) }}
-				.delete-section-item(@click="deleteSelectionItem(idx)") &times;
-		.search-box(
-			:style="searchBoxStyle"
-			@mousedown="triggerExpand"
-			@touchstart="triggerExpand"
-			ref="searchBox")
+	Drop.input-wrapper.multi.inp-multi(
+		:class="cl({ 'no-search': res(input.noSearch) })"
+		:disabled="dis"
+		:flushDropdown="true"
+		scrollTarget=".options"
+		@expand="expand"
+		@key="key"
+		@assets="assets => dropAssets = assets")
+		template(#expando-box="rt")
+			.selection-box(
+				@mousedown="triggerExpand"
+				@click="triggerExpand"
+				ref="selectionBox")
+				template(v-if="$scopedSlots['selection-item']")
+					template(v-for="(item, idx) in input.value")
+						slot(
+							name="selection-item"
+							v-bind="bind({ index: idx, item, data: item, delete: _ => deleteSelectionItem(idx) })")
+				.default-selection-item(
+					v-else
+					v-for="(item, idx) in input.value")
+					span.selection-item.value
+						slot(
+							name="selection-item-value"
+							v-bind="bind({ index: idx, item, data: item, delete: _ => deleteSelectionItem(idx) })") {{ getLabel(item) }}
+					.delete-section-item(@click="deleteSelectionItem(idx)") &times;
+		template(#content="{ focus, blur, adaptiveBlur }")
 			.search-input-box(v-if="!input.noSearch")
 				input.search-input(
-					v-model="query"
-					tabindex="-1"
-					:disabled="disabled"
 					:class="{ 'pseudo-disabled': searchDisabled }"
+					v-model="query"
+					v-bind="inpProps"
 					@keydown="guardInput"
 					@input="triggerSearch"
-					@focus="expand"
-					@blur="enqueueCollapse"
+					@focus="focus"
+					@blur="adaptiveBlur"
 					ref="searchInput")
 				button.search-refresh(
 					v-if="!noRefresh"
 					tabindex="-1"
 					:disabled="searchDisabled"
+					@mousedown="focus"
+					@focus="focus"
+					@blur="adaptiveBlur"
 					@click="search(true)")
 			.search-results-wrapper
 				.search-results-box(ref="searchResultsBox")
 					template(v-if="!options.length")
-						slot(name="no-search-results" v-bind="this")
+						slot(name="no-search-results" v-bind="bnd")
 							.no-search-results No results found
 					.search-result(
 						v-else-if="$scopedSlots['search-result']"
@@ -56,7 +56,7 @@
 						@mousemove="setOptionPtr(idx)")
 						slot(
 							name="search-result"
-							v-bind="{ index: idx, option, data: option, optionPtr, select: _ => triggerAddToSelection(option, idx) }")
+							v-bind="bind({ index: idx, option, data: option, optionPtr, select: _ => triggerAddToSelection(option, idx) })")
 					.search-result.default-search-result(
 						v-else
 						v-for="(option, idx) in options"
@@ -67,9 +67,9 @@
 						span.search-result-value
 							slot(
 								name="search-result-value"
-								v-bind="{ index: idx, option, data: option, optionPtr, select: _ => triggerAddToSelection(option, idx) }") {{ getLabel(option) }}
+								v-bind="bind({ index: idx, option, data: option, optionPtr, select: _ => triggerAddToSelection(option, idx) })") {{ getLabel(option) }}
 				.loading-overlay(v-if="loading")
-					slot(name="loading-icon" v-bind="this")
+					slot(name="loading-icon" v-bind="bnd")
 </template>
 
 <script>
@@ -83,6 +83,8 @@
 		requestFrame
 	} from "@qtxr/utils";
 	import mixin from "../mixin";
+
+	import Drop from "../core/drop.vue";
 	
 	const PADDING = 30,
 		BOTTOM_BIAS = 0.5;
@@ -91,11 +93,6 @@
 		name: "Multi",
 		mixins: [mixin],
 		data: _ => ({
-			expanded: false,
-			expansionRequested: false,
-			dropdownDirection: null,
-			searchBoxStyle: null,
-			updateLoopInitialized: false,
 			loading: false,
 			deferTimeout: null,
 			searchDisabled: false,
@@ -106,7 +103,7 @@
 			options: [],
 			optionPtr: -1,
 			lastOptionPtr: -1,
-			globalKeyListener: null
+			dropAssets: null
 		}),
 		methods: {
 			async search(refresh = false) {
@@ -267,56 +264,12 @@
 					this.options = this.computeDisplayedOptions(this.searchedOptions);
 			},
 			trigger(val) {
-				if (!this.disabled)
+				if (!this.inert)
 					this.input.trigger(val);
 			},
 			getLabel(option) {
 				const label = (option && option.hasOwnProperty("label")) ? option.label : option;
 				return typeof label == "object" ? "" : label;
-			},
-			initUpdateLoop() {
-				if (!this.updateLoopInitialized) {
-					this.updateLoopInitialized = true;
-					this.updateFixedBox();
-				}
-			},
-			updateFixedBox() {
-				if (!this.expanded || !this.$refs.searchBox) {
-					this.searchBoxStyle = null;
-					this.updateLoopInitialized = false;
-					return;
-				}
-
-				const style = getComputedStyle(this.$refs.searchBox),
-					bcr = this.$refs.selectionBox.getBoundingClientRect(),
-					borderBox = style.boxSizing == "border-box",
-					sHeight = this.$refs.searchBox.scrollHeight,
-					bTop = borderBox ? 0 : parseFloat(style.borderTopWidth),
-					bRight = borderBox ? 0 : parseFloat(style.borderRightWidth),
-					bBottom = borderBox ? 0 : parseFloat(style.borderBottomWidth),
-					bLeft = borderBox ? 0 : parseFloat(style.borderLeftWidth),
-					topAvailable = bcr.top - PADDING,
-					bottomAvailable = window.innerHeight - (bcr.top + bcr.height) - PADDING,
-					placeBottom = bottomAvailable > (topAvailable * BOTTOM_BIAS) || sHeight < bottomAvailable - 100,
-					maxHeight = placeBottom ? bottomAvailable : topAvailable;
-
-				const stl = {
-					position: "fixed",
-					top: placeBottom ? `${bcr.top + bcr.height - bBottom}px` : null,
-					bottom: placeBottom ? null : `${window.innerHeight - bcr.top - bTop}px`,
-					borderTop: placeBottom ? "none" : null,
-					borderBottom: placeBottom ? null : "none",
-					left: `${bcr.left}px`,
-					width: `${bcr.width - bLeft - bRight}px`,
-					maxHeight: `${maxHeight}px`
-				};
-
-				if (!equals(stl, this.searchBoxStyle)) {
-					this.searchBoxStyle = stl;
-					this.dropdownDirection = placeBottom ? "place-bottom" : "place-top";
-				}
-
-				requestFrame(_ => this.updateFixedBox());
 			},
 			incrementOptionPtr() {
 				if (!this.options.length)
@@ -374,36 +327,29 @@
 				else
 					this.$refs.focusProbe.blur();
 			},
-			enqueueCollapse() {
-				requestFrame(_ => {
-					const active = document.activeElement;
-
-					if (active != this.$refs.focusProbe && active != this.$refs.searchInput)
-						this.collapse();
-				});
-			},
 			expand() {
-				if (this.disabled)
+				if (this.inert)
 					return;
 
 				if (!this.expanded)
 					this.search();
-
-				this.expanded = true;
-				this.initUpdateLoop();
-
-				if (!this.isMobile())
-					requestFrame(_ => (this.$refs.searchInput || this.$refs.focusProbe).focus());
 			},
-			collapse(evt) {
-				if (this.expansionRequested)
-					return;
+			key(evt, key) {
+				switch (key) {
+					case "up":
+						this.decrementOptionPtr();
+						evt.preventDefault();
+						break;
 
-				this.expanded = false;
-				this.dropdownDirection = null;
-				this.setOptionPtr(-1);
-				if (!this.isMobile())
-					this.$refs.focusProbe.blur();
+					case "down":
+						this.incrementOptionPtr();
+						evt.preventDefault();
+						break;
+
+					case "enter":
+						this.selectOptionWithPtr();
+						break;
+				}
 			}
 		},
 		computed: {
@@ -417,32 +363,8 @@
 		props: {
 			input: Multi
 		},
-		beforeMount() {
-			this.globalKeyListener = evt => {
-				if (!this.expanded)
-					return;
-
-				switch (EVT.getKey(evt)) {
-					case "up":
-						this.decrementOptionPtr();
-						evt.preventDefault();
-						break;
-					case "down":
-						this.incrementOptionPtr();
-						evt.preventDefault();
-						break;
-					case "enter":
-						this.selectOptionWithPtr();
-						break;
-					case "escape":
-						this.collapse();
-						break;
-				}
-			};
-			document.body.addEventListener("keydown", this.globalKeyListener);
-		},
-		beforeDestroy() {
-			document.body.removeEventListener("keydown", this.globalKeyListener);
+		components: {
+			Drop
 		}
 	};
 </script>

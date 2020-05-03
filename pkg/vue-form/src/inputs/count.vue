@@ -1,16 +1,16 @@
 <template lang="pug">
-	.input-wrapper.count.inp-count(:class="{ compact: input.compact }")
-		template(v-if="input.compact")
+	.input-wrapper.count.inp-count(:class="cl({ compact: res(input.compact) })")
+		template(v-if="res(compact)")
 			input(
 				type="tel"
+				v-bind="inpPropsFull"
 				:value="input.value"
-				:disabled="disabled"
 				@keydown="keydown"
 				@change="change")
 			.vertical-count-buttons
 				button.count-btn.up(
 					tabindex="-1"
-					:disabled="disabled"
+					:disabled="inert"
 					@click="up")
 					slot(name="up-symbol")
 						template(v-if="symbols.up") {{ res(symbols.up) }}
@@ -18,7 +18,7 @@
 				.count-btn-sep
 				button.count-btn.down(
 					tabindex="-1"
-					:disabled="disabled"
+					:disabled="inert"
 					@click="down")
 					slot(name="down-symbol")
 						template(v-if="symbols.down") {{ res(symbols.down) }}
@@ -26,18 +26,18 @@
 		template(v-else)
 			button.count-btn.down(
 				tabindex="-1"
-				:disabled="disabled"
+				:disabled="inert"
 				@click="down")
 				slot(name="down-symbol") {{ res(symbols.down) || "-" }}
 			input(
 				type="tel"
+				v-bind="inpPropsFull"
 				:value="input.value"
-				:disabled="disabled"
 				@keydown="keydown"
 				@change="change")
 			button.count-btn.up(
 				tabindex="-1"
-				:disabled="disabled"
+				:disabled="inert"
 				@click="up")
 				slot(name="up-symbol") {{ res(symbols.up) || "+" }}
 </template>
@@ -98,12 +98,13 @@
 				this.input.check(evt, evt.target.value);
 			},
 			fitCount(count) {
+				const ticks = this.res(this.input.ticks, count);
 				let min = this.input.min,
 					max = this.input.max;
 
-				if (Array.isArray(this.input.ticks)) {
-					min = this.input.ticks[0];
-					max = this.input.ticks[this.input.ticks.length - 1];
+				if (Array.isArray(ticks)) {
+					min = ticks[0];
+					max = ticks[ticks.length - 1];
 				}
 
 				min = typeof min == "number" ? (min || 0) : -Infinity;
@@ -113,7 +114,7 @@
 				if (isNaN(newCount))
 					newCount = min;
 
-				if (!this.disabled)
+				if (!this.inert)
 					this.input.trigger(newCount);
 			}
 		},
@@ -122,7 +123,8 @@
 			symbols: {
 				type: Object,
 				default: _ => ({})
-			}
+			},
+			compact: [Boolean, Function]
 		},
 		mounted() {
 			this.fitCount(this.input.value);

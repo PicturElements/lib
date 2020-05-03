@@ -1,28 +1,33 @@
 @use "~@qtxr/scss-utils" as *;
 
 $coordinates-params: (
-	"search-height",
+	// Basic
 	"border-radius",
-	"button-padding",
-	"aspect-ratio",
-	"max-height",
 	"background",
 	"focus-background",
 	"border",
-	"focus-border-color"
+	"focus-border-color",
+	// Specific
+	"search-height",
+	"button-padding",
+	"coords-padding",
+	"aspect-ratio",
+	"max-height"
 );
 
 @mixin coordinates(
-	$search-height: 40px,
+	// Basic
 	$border-radius: 1px,
-	$button-padding: 4px,
-	$coords-padding: 8px,
-	$aspect-ratio: 0.75,
-	$max-height: 400px,
 	$background: white,
 	$focus-background: #f3f3f3,
 	$border: 1px solid #dadada,
-	$focus-border-color: #1e2021
+	$focus-border-color: #1e2021,
+	// Specific
+	$search-height: 40px,
+	$button-padding: 4px,
+	$coords-padding: 8px,
+	$aspect-ratio: 0.75,
+	$max-height: 400px
 ) {
 	.inp-coordinates {
 		&.input-wrapper.disabled {

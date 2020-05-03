@@ -1,5 +1,4 @@
 export { default } from "./src/v-form.vue";
-export { default as Input } from "./src/inputs/input.vue";
 export { default as Checkbox } from "./src/inputs/checkbox.vue";
 export { default as Coordinates } from "./src/inputs/coordinates.vue";
 export { default as Count } from "./src/inputs/count.vue";
@@ -11,5 +10,6 @@ export { default as List } from "./src/inputs/list.vue";
 export { default as Media } from "./src/inputs/media.vue";
 export { default as Multi } from "./src/inputs/multi.vue";
 export { default as Radio } from "./src/inputs/radio.vue";
+export { default as Text } from "./src/inputs/text.vue";
 export { default as Textarea } from "./src/inputs/textarea.vue";
 export { default as Time } from "./src/inputs/time.vue";

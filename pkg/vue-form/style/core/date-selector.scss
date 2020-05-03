@@ -1,6 +1,12 @@
 @use "@qtxr/scss-utils" as *;
 
 $date-selector-params: (
+	// Basic
+	"border-radius",
+	"focus-background",
+	"highlight",
+	"highlight-complement",
+	// Specific
 	"color",
 	"cell-width",
 	"cell-height",
@@ -8,11 +14,16 @@ $date-selector-params: (
 	"cell-border",
 	"cell-border-radius",
 	"selection-border-radius",
-	"highlight",
-	"highlight-complement"
+	"disabled-opacity"
 );
 
 @mixin date-selector(
+	// Basic
+	$border-radius: 1px,
+	$focus-background: #f3f3f3,
+	$highlight: #1b66bf,
+	$highlight-complement: white,
+	// Specific
 	$color: #1e2021,
 	$cell-width: 30px,
 	$cell-height: 30px,
@@ -20,8 +31,7 @@ $date-selector-params: (
 	$cell-border: 1px solid whitesmoke,
 	$cell-border-radius: 1px,
 	$selection-border-radius: 3px,
-	$highlight: #1b66bf,
-	$highlight-complement: white
+	$disabled-opacity: 0.35
 ) {
 	.date-selector {
 		user-select: none;
@@ -36,8 +46,18 @@ $date-selector-params: (
 				align-items: center;
 				flex-grow: 1;
 				margin: 0 10px;
+				font: inherit;
+				color: inherit;
 				font-weight: bold;
+				border: none;
+				outline: none;
+				border-radius: $border-radius;
+				background: transparent;
 				cursor: pointer;
+
+				&:focus {
+					background: $focus-background;
+				}
 			}
 
 			.card-move {
@@ -46,8 +66,13 @@ $date-selector-params: (
 				flex-shrink: 0;
 				border: none;
 				outline: none;
+				border-radius: $border-radius;
 				background: transparent;
 				cursor: pointer;
+
+				&:focus {
+					background: $focus-background;
+				}
 
 				&.back {
 					@include inline-svg(
@@ -95,7 +120,15 @@ $date-selector-params: (
 				align-items: center;
 
 				&.out-of-bounds span {
-					opacity: 0.35;
+					opacity: $disabled-opacity;
+				}
+
+				&.disabled {
+					cursor: default;
+					
+					span {
+						opacity: $disabled-opacity;
+					}
 				}
 
 				&.today {
@@ -250,6 +283,14 @@ $date-selector-params: (
 				flex-basis: 0;
 				justify-content: center;
 				align-items: center;
+
+				&.disabled {
+					cursor: default;
+					
+					span {
+						opacity: $disabled-opacity;
+					}
+				}
 			}
 		}
 
@@ -267,6 +308,14 @@ $date-selector-params: (
 				flex-basis: 0;
 				text-align: center;
 				padding: 10px;
+
+				&.disabled {
+					cursor: default;
+					
+					span {
+						opacity: $disabled-opacity;
+					}
+				}
 			}
 		}
 

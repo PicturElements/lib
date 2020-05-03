@@ -1,42 +1,26 @@
 import { sym } from "@qtxr/utils";
+import utilMixin from "./util-mixin";
 
 const INPUT_HOOK_SYM = sym("input hook");
 
 export default {
+	...utilMixin,
 	data: _ => ({
 		validationMsg: null,
 		validationState: "ok"
 	}),
-	methods: {
-		ac() {
-			if (this.input.bare === false || (!this.input.form.options.bareInputs && !this.input.bare))
-				return null;
-		
-			return "off";
-		},
-		res(val, ...args) {
-			if (typeof val == "function")
-				return val.call(this, this.input, ...args);
-		
-			return val;
-		},
-		isMobile() {
-			const mobileQuery = this.mobileQuery || this.meta.mobileQuery || "(max-aspect-ratio: 1/1) and (max-width: 700px)";
-			return matchMedia(mobileQuery).matches;
-		}
-	},
 	props: {
 		disabled: Boolean,
-		mobileQuery: String,
+		readonly: Boolean,
 		meta: {
 			type: Object,
 			default: _ => ({})
 		}
 	},
 	beforeMount() {
-		this.input.hook("update", inp => {
-			this.validationState = inp.validationState;
-			this.validationMsg = inp.validationMsg || this.validationMsg;
+		this.input.hook("update", ({ input }) => {
+			this.validationState = input.validationState;
+			this.validationMsg = input.validationMsg || input.validationMsg;
 		}, INPUT_HOOK_SYM);
 	},
 	beforeDestroy() {

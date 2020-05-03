@@ -1,15 +1,17 @@
 @use "@qtxr/scss-utils" as *;
 
 $media-params: (
+	// Basic
 	"border-radius",
+	"error-border-color",
+	"highlight",
+	// Specific
 	"slider-width",
 	"icon-width",
 	"icon-shadow",
 	"shade-color",
 	"feature-color",
-	"error-border-color",
 	"output-preview-spacing",
-	"highlight",
 	"raster-light",
 	"raster-dark",
 	"output-preview-height",
@@ -17,19 +19,22 @@ $media-params: (
 	"obscure-duration",
 	"obscure-delay",
 	"reveal-duration",
-	"reveal-delay"
+	"reveal-delay",
+	"pop-duration"
 );
 
 @mixin media(
+	// Basic
 	$border-radius: 1px,
+	$error-border-color: #e8879b,
+	$highlight: #1b66bf,
+	// Specific
 	$slider-width: 6px,
 	$icon-width: 4px,
 	$icon-shadow: 0 2px 3px rgba(0, 0, 0, 0.2),
 	$shade-color: black,
 	$feature-color: white,
-	$error-border-color: #e8879b,
 	$output-preview-spacing: 10px,
-	$highlight: #1b66bf,
 	$raster-light: #222,
 	$raster-dark: #333,
 	$output-preview-height: 80px,

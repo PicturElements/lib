@@ -1,7 +1,10 @@
 <template lang="pug">
 	Drop.input-wrapper.date-time.inp-date-time(
-		:class="[ isMobile() ? 'mobi' : null, validationState ]"
-		@collapse="collapse")
+		:class="classes"
+		:disabled="dis"
+		:adaptive="true"
+		@collapse="collapse"
+		@key="key")
 		template(#expando-box="rt")
 			.date-time-display
 				template(v-for="(runtime, i) in dateDisplayData.cardsData")
@@ -20,23 +23,23 @@
 						span.meridiem(v-if="input.meridiem && runtime.meridiem") {{ runtime.meridiem }}
 		DateSelector(
 			:input="input"
-			@displaydatachange="dd => dateDisplayData = Object.assign({}, dd)"
+			@displaydatachange="dd => dateDisplayData = dd"
 			@trigger="trigger")
 		TimeSelector.time-sel(
 			:input="input"
-			@displaydatachange="dd => timeDisplayData = Object.assign({}, dd)"
+			@displaydatachange="dd => timeDisplayData = dd"
 			@trigger="trigger")
 </template>
 
 <script>
-	import { get } from "@qtxr/utils";
+	import { set } from "@qtxr/utils";
 	import EVT from "@qtxr/evt";
 	import { DateTime } from "@qtxr/form";
 	import mixin from "../mixin";
 
-	import Drop from "../auxiliary/drop.vue";
-	import DateSelector from "../core-inputs/date-selector.vue";
-	import TimeSelector from "../core-inputs/time-selector.vue";
+	import Drop from "../core/drop.vue";
+	import DateSelector from "../core/date-selector.vue";
+	import TimeSelector from "../core/time-selector.vue";
 
 	export default {
 		name: "DateTime",
@@ -47,36 +50,46 @@
 		}),
 		methods: {
 			trigger() {
-				if (this.disabled)
+				if (this.inert)
 					return;
 				
-				const reduce = dials => {
-					const timeData = {};
+				const reduce = (cardsData, dialsData) => {
+					const dateTimeData = {};
 					
-					for (let i = 0, l = dials.length; i < l; i++) {
-						const dialData = dials[i],
-							gotten = get(timeData, dialData.dial.accessor, null, "autoBuild|context");
-
-						gotten.context[gotten.key] = dialData.value;
+					for (let i = 0, l = cardsData.cards.length; i < l; i++) {
+						const cardData = cardsData.cards[i];
+						set(dateTimeData, cardData.card.accessor, cardData.value);
 					}
 
-					return Object.assign({}, this.input.value, timeData);
+					for (let i = 0, l = dialsData.dials.length; i < l; i++) {
+						const dialData = dialsData.dials[i];
+						set(dateTimeData, dialData.dial.accessor, dialData.value);
+					}
+
+					return Object.assign(
+						{},
+						this.input.value,
+						dateTimeData,
+						cardsData.set
+					);
 				};
 
-				const dialsData = this.timeDisplayData.dialsData;
+				const cardsData = this.dateDisplayData.cardsData,
+					dialsData = this.timeDisplayData.dialsData;
 
 				if (this.input.range) {
 					const value = [];
 
-					for (let i = 0, l = dialsData.length; i < l; i++)
-						value.push(reduce(dialsData[i].dials));
+					for (let i = 0, l = cardsData.length; i < l; i++)
+						value.push(reduce(cardsData[i], dialsData[i]));
 
 					this.input.trigger(value);
 				} else
-					this.input.trigger(reduce(dialsData[0].dials));
+					this.input.trigger(reduce(cardsData[0], dialsData[0]));
 			},
 			collapse(evt) {
 				this.dateDisplayData.resetDisplay();
+				this.timeDisplayData.resetDisplay();
 			},
 			key(evt, key, runtime) {
 				switch (key) {

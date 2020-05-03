@@ -1,8 +1,11 @@
 @use "~@qtxr/scss-utils" as *;
 
-$input-params: (
+$text-params: (
+	// Basic
 	"height",
 	"border-radius",
+	"error-color",
+	"autofill-color",
 	"background",
 	"error-background",
 	"autofill-background",
@@ -10,14 +13,15 @@ $input-params: (
 	"focus-border",
 	"error-border",
 	"autofill-border",
-	"focus-border-color",
-	"error-color",
-	"autofill-color"
+	"focus-border-color"
 );
 
-@mixin input(
+@mixin text(
+	// Basic
 	$height: 30px,
 	$border-radius: 1px,
+	$error-color: #ab0f2f,
+	$autofill-color: #276a9e,
 	$background: white,
 	$error-background: #ffe7ec,
 	$autofill-background: #edf7ff,
@@ -25,17 +29,15 @@ $input-params: (
 	$focus-border: 1px solid #1e2021,
 	$error-border: 1px solid #e8879b,
 	$autofill-border: 1px solid #74b4e6,
-	$focus-border-color: #1e2021,
-	$error-color: #ab0f2f,
-	$autofill-color: #276a9e
+	$focus-border-color: #1e2021
 ) {
-	.inp-input {
+	.inp-text {
 		input {
 			-webkit-appearance: none;
 			width: 100%;
 			height: $height;
 			padding: 6px 8px;
-			background: transparent;
+			background: $background;
 			border: $border;
 			border-radius: $border-radius;
 			color: inherit;

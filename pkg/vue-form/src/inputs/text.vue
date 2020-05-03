@@ -1,27 +1,24 @@
 <template lang="pug">
-	.input-wrapper.input.inp-input(:class="validationState")
+	.input-wrapper.text.inp-text(:class="classes")
 		input(
+			v-bind="inpPropsFull"
 			:value="input.value"
 			:type="res(input.type)"
-			:placeholder="res(input.placeholder || placeholder)"
-			:name="res(input.name)"
-			:disabled="disabled"
-			:autocomplete="ac(input)"
 			@keydown="check"
 			@input="trigger")
 		.validation-msg(:class="validationMsg ? 'active' : null") {{ validationMsg }}
 </template>
 
 <script>
-	import { Input } from "@qtxr/form";
+	import { Text } from "@qtxr/form";
 	import mixin from "../mixin";
 
 	export default {
-		name: "Input",
+		name: "TextInput",
 		mixins: [mixin],
 		methods: {
 			trigger(evt) {
-				if (!this.disabled)
+				if (!this.inert)
 					this.input.trigger(evt.target.value);
 			},
 			check(evt) {
@@ -29,8 +26,8 @@
 			}
 		},
 		props: {
-			input: Input,
-			placeholder: String
+			input: Text,
+			placeholder: [String, Function]
 		}
 	}
 </script>

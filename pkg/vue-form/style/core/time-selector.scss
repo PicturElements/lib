@@ -1,22 +1,26 @@
 $time-selector-params: (
+	// Basic
+	"highlight",
+	"highlight-complement",
+	// Specific
 	"dial-background",
-	"dial-background-dark",
+	"dial-background-alt",
 	"blob-radius",
 	"delimitation-padding",
 	"tight-delimitation-padding",
-	"highlight",
-	"highlight-complement",
 	"transition-duration"
 );
 
 @mixin time-selector(
+	// Basic
+	$highlight: #1b66bf,
+	$highlight-complement: white,
+	// Specific
 	$dial-background: whitesmoke,
-	$dial-background-dark: #dadee2,
+	$dial-background-alt: #dadee2,
 	$blob-radius: 15px,
 	$delimitation-padding: 20px,
 	$tight-delimitation-padding: 15px,
-	$highlight: #1b66bf,
-	$highlight-complement: white,
 	$transition-duration: 300ms
 ) {
 	.time-selector {
@@ -47,7 +51,7 @@ $time-selector-params: (
 
 				.dial-selector-hand {
 					&.active-hand {
-						background: $dial-background-dark;
+						background: $dial-background-alt;
 						color: inherit;
 					}
 

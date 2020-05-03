@@ -1,20 +1,25 @@
 $count-params: (
+	// Basic
+	"height",
 	"border-radius",
-	"border",
+	"background",
 	"focus-background",
-	"height"
+	"border"
 );
 
 @mixin count(
+	// Basic
+	$height: 30px,
 	$border-radius: 1px,
-	$border: 1px solid #dadada,
+	$background: white,
 	$focus-background: #f3f3f3,
-	$height: 30px
+	$border: 1px solid #dadada
 ) {
 	.inp-count {
 		display: flex;
 		height: $height;
 		width: 120px;
+		background: $background;
 		border: $border;
 		border-radius: $border-radius;
 

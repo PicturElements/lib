@@ -1,13 +1,15 @@
 @use "~@qtxr/scss-utils" as *;
 
 $multi-params: (
+	// Basic
 	"border-radius",
+	"error-color",
 	"background",
 	"error-background",
 	"border",
-	"focus-border",
 	"error-border",
-	"error-color",
+	"highlight",
+	// Specific
 	"selection-item-color",
 	"selection-item-height",
 	"selection-item-spacing",
@@ -16,19 +18,19 @@ $multi-params: (
 	"max-height",
 	"add-icon-background",
 	"add-icon-color",
-	"highlight",
-	"highlight-complement",
 	"hover-background"
 );
 
 @mixin multi(
+	// Basic
 	$border-radius: 1px,
+	$error-color: #ab0f2f,
 	$background: white,
 	$error-background: #ffe7ec,
 	$border: 1px solid #dadada,
-	$focus-border: 1px solid #1e2021,
 	$error-border: 1px solid #e8879b,
-	$error-color: #ab0f2f,
+	$highlight: #1b66bf,
+	// Specific
 	$selection-item-color: white,
 	$selection-item-height: 24px,
 	$selection-item-spacing: 5px,
@@ -37,16 +39,14 @@ $multi-params: (
 	$max-height: 150px,
 	$add-icon-background: #e6eaef,
 	$add-icon-color: #8291a5,
-	$highlight: #1b66bf,
-	$highlight-complement: white,
 	$hover-background: rgba(128, 128, 128, 0.06)
 ) {
 	.inp-multi {
 		background: $background;
 		-webkit-tap-highlight-color: transparent;
 
-		&.place-bottom .selection-box,
-		&.place-top .search-box {
+		&.place-bottom,
+		&.place-top .dropdown-list {
 			border-radius: $border-radius $border-radius 0 0;
 		}
 
@@ -54,13 +54,17 @@ $multi-params: (
 			border-top: $separator-border;
 		}
 
-		&.place-top .selection-box,
-		&.place-bottom .search-box {
+		&.place-top,
+		&.place-bottom .dropdown-list {
 			border-radius: 0 0 $border-radius $border-radius;
 		}
 
 		&.place-bottom .search-input-box {
 			border-bottom: $separator-border;
+		}
+
+		&.place-top .drop-dropdown {
+			flex-direction: column-reverse;
 		}
 
 		.selection-box {
@@ -197,12 +201,6 @@ $multi-params: (
 						color: $error-background;
 					}
 				}
-			}
-		}
-
-		&.open {
-			&:not(.no-search) .focus-probe {
-				display: none;
 			}
 		}
 

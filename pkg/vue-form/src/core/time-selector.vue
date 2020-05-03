@@ -19,11 +19,13 @@
 		padStart
 	} from "@qtxr/utils";
 	import EVT from "@qtxr/evt";
+	import utilMixin from "../util-mixin";
 
 	import Dials from "./dials.vue";
 
 	export default {
 		name: "TimeSelector",
+		mixins: [utilMixin],
 		data: _ => ({
 			updates: 0,
 			dialsData: [],
@@ -105,10 +107,10 @@
 					let displayVal = value;
 
 					if (typeof dial.display == "function")
-						displayVal = dial.display(this.input, displayVal, dialData.runtime);
+						displayVal = this.res(dial.display, displayVal, dialData.runtime);
 
 					if (typeof dial.modifyDisplay == "function")
-						dial.modifyDisplay(this.input, value, dialData.runtime);
+						this.res(dial.modifyDisplay, value, dialData.runtime);
 
 					displayVal = String(displayVal);
 					const targetLen = this.res(dial.minDisplayLength, dialData.runtime);
@@ -134,8 +136,13 @@
 					this.setDialValue(dials[activeIdx], payload.value);
 				
 				this.activeIndices[this.activeDialsIdx] = payload.nextIdx;
-				this.$emit("trigger");
 				this.emitDisplayData();
+				this.$emit("trigger");
+
+				if (!this.input.range && this.eagerCollapse && this.dropRuntime) {
+					if (!this.dialsData[0].dials[payload.nextIdx])
+						this.dropRuntime.collapse();
+				}
 			},
 			change(idx) {
 				this.activeDialsIdx = idx;
@@ -166,16 +173,12 @@
 					this.activeIndices[i] = this.dialsData[i].defaultIdx;
 
 				this.updates++;
-			},
-			res(val, ...args) {
-				if (typeof val == "function")
-					return val.call(this, this.input, ...args);
-
-				return val;
 			}
 		},
 		props: {
-			input: null
+			input: null,
+			dropRuntime: Object,
+			eagerCollapse: Boolean
 		},
 		components: {
 			Dials

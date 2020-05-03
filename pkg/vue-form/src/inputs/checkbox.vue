@@ -1,12 +1,14 @@
 <template lang="pug">
-	.input-wrapper.checkbox.inp-checkbox(:class="validationState")
+	.input-wrapper.checkbox.inp-checkbox(:class="classes")
 		button(
 			:class="{ checked: input.value }"
-			:disabled="disabled"
+			:disabled="inert"
 			@click="trigger")
-			slot(name="icon" v-bind="input")
+			slot(name="icon" v-bind="bind('checked')")
 				.icon {{ input.value ? "&times;" : "" }}
-		.label(v-if="res(label)" @click="trigger") {{ res(label) }}
+		.label(
+			v-if="res(label)"
+			@click="trigger") {{ res(label) }}
 </template>
 
 <script>
@@ -18,13 +20,13 @@
 		mixins: [mixin],
 		methods: {
 			trigger() {
-				if (!this.disabled)
+				if (!this.inert)
 					this.input.trigger(!this.input.value);
 			}
 		},
 		props: {
 			input: Checkbox,
-			label: String
+			label: [String, Function]
 		}
 	}
 </script>

@@ -1,10 +1,8 @@
 <template lang="pug">
-	.input-wrapper.textarea.inp-textarea(:class="validationState")
+	.input-wrapper.textarea.inp-textarea(:class="classes")
 		textarea(
+			v-bind="inpPropsFull"
 			:value="input.value"
-			:placeholder="res(input.placeholder || placeholder)"
-			:name="res(input.name)"
-			:disabled="disabled"
 			@keydown="check"
 			@input="trigger")
 		.validation-msg(:class="validationMsg ? 'active' : null") {{ validationMsg }}
@@ -19,7 +17,7 @@
 		mixins: [mixin],
 		methods: {
 			trigger(evt) {
-				if (!this.disabled)
+				if (!this.inert)
 					this.input.trigger(evt.target.value);
 			},
 			check(evt) {
@@ -28,7 +26,7 @@
 		},
 		props: {
 			input: TextArea,
-			placeholder: String
+			placeholder: [String, Function]
 		}
 	}
 </script>

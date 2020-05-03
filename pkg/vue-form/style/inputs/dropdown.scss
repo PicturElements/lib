@@ -1,12 +1,14 @@
 @use "~@qtxr/scss-utils" as *;
 
 $dropdown-params: (
+	// Basic
+	"height",
 	"border-radius",
 	"background",
 	"error-background",
 	"border",
 	"error-border",
-	"height",
+	// Specific
 	"padding",
 	"mobile-padding",
 	"separator-border",
@@ -14,16 +16,17 @@ $dropdown-params: (
 );
 
 @mixin dropdown(
+	// Basic
+	$height: 30px,
 	$border-radius: 1px,
+	$error-color: #ab0f2f,
 	$background: white,
 	$error-background: #ffe7ec,
 	$border: 1px solid #dadada,
 	$error-border: 1px solid #e8879b,
-	$height: 30px,
-	$padding: 10px,
-	$mobile-padding: 30px,
-	$separator-border: 1px solid rgba(128, 128, 128, 0.25),
-	$hover-background: rgba(128, 128, 128, 0.06)
+	// Specific
+	$mobile-gap: 30px,
+	$separator-border: 1px solid rgba(128, 128, 128, 0.25)
 ) {
 	.inp-dropdown {
 		position: relative;
@@ -32,9 +35,6 @@ $dropdown-params: (
 		max-width: 100%;
 		border: $border;
 		border-radius: $border-radius;
-		outline: none;
-		text-align: left;
-		padding: 0;
 		background: $background;
 		user-select: none;
 		cursor: pointer;
@@ -57,110 +57,8 @@ $dropdown-params: (
 		&.place-bottom .search-input-box {
 			border-bottom: $separator-border;
 		}
-	
-		.dropdown-option {
-			line-height: $height;
-			height: $height;
-			padding: 0 $padding;
-			white-space: nowrap;
 
-			&.selected-option {
-				background: $hover-background;
-			}
-	
-			+ .dropdown-option {
-				border-top: $separator-border;
-			}
-
-			&.dropdown-active-option {
-				padding-right: $height;
-				pointer-events: none;
-	
-				> .dropdown-icon {
-					position: absolute;
-					top: 0;
-					right: 0;
-					height: 100%;
-				}
-
-				> .default-icon {
-					padding: 0 14px;
-					font-size: 0;
-			
-					&:before {
-						content: "";
-						position: absolute;
-						top: 50%;
-						left: 50%;
-						margin: -7px -5px;
-						border: 1px solid;
-						border-left-color: transparent;
-						border-top-color: transparent;
-						width: 10px;
-						height: 10px;
-						border-radius: 0 1px 2px 1px;
-						transform: rotate(45deg);
-						opacity: 0.6;
-						transition: transform 200ms;
-					}
-				}
-			}
-	
-			&.selected .dropdown-option-inner {
-				opacity: 0.5;
-			}
-	
-			.dropdown-option-inner {
-				height: 100%;
-			}
-	
-			.placeholder {
-				opacity: 0.6;
-				font-style: italic;
-			}
-		}
-	
-		.dropdown-list {
-			position: relative;
-			display: flex;
-			flex-direction: column;
-			box-sizing: content-box;
-			border: inherit;
-			background: inherit;
-
-			.options-wrapper {
-				position: relative;
-				display: flex;
-				flex-direction: column;
-				flex-grow: 1;
-				overflow: hidden;
-			}
-
-			.options {
-				position: relative;
-				overflow: auto;
-			}
-
-			.no-search-results {
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				height: 60px;
-				font-size: 95%;
-			}
-
-			.loading-overlay {
-				position: absolute;
-				top: 0;
-				left: 0;
-				width: 100%;
-				height: 100%;
-				background: rgba($background, 0.8);
-				z-index: 10000;
-			}
-		}
-
-		&.place-top .dropdown-list {
+		&.place-top .drop-dropdown {
 			flex-direction: column-reverse;
 		}
 
@@ -171,19 +69,7 @@ $dropdown-params: (
 			left: 0;
 		}
 	
-		&:not(.open):not(.error) {
-			background: transparent !important;
-		}
-	
 		&.open {
-			&:not(.no-search) .focus-probe {
-				display: none;
-			}
-
-			.dropdown-active-option .default-icon:before {
-				transform: translateY(5px) rotate(-135deg);
-			}
-	
 			.dropdown-list {
 				visibility: visible;
 				z-index: 10000000;
@@ -193,12 +79,43 @@ $dropdown-params: (
 		&.error {
 			&:not(.open) {
 				background: $error-background;
+				color: $error-color;
 				border: $error-border;
 	
 				.placeholder {
 					opacity: 1;
 				}
 			}
+		}
+		
+		.active-option {
+			> .dropdown-icon {
+				position: absolute;
+				top: 0;
+				right: 0;
+				height: 100%;
+			}
+		}
+
+		.drop-dropdown {
+			position: relative;
+			display: flex;
+			flex-direction: column;
+			box-sizing: content-box;
+			border: inherit;
+			background: inherit;
+			border-radius: $border-radius;
+
+			.options-wrapper {
+				position: relative;
+				display: flex;
+				flex-direction: column;
+				flex-grow: 1;
+			}
+		}
+
+		.intermediate-padding {
+			height: 80px;
 		}
 
 		// Mobile styling
@@ -207,11 +124,11 @@ $dropdown-params: (
 				.dropdown-list {
 					position: fixed;
 					top: 50%;
-					left: $mobile-padding;
-					right: $mobile-padding;
+					left: $mobile-gap;
+					right: $mobile-gap;
 					width: auto;
 					max-height: 90%;
-					max-height: calc(100% - #{$mobile-padding * 2});
+					max-height: calc(100% - #{$mobile-gap * 2});
 					transform: translateY(-50%);
 					z-index: 10000001;
 				}

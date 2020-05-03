@@ -6,24 +6,25 @@
 			template(v-for="cell in row")
 				.input-box(
 					v-if="cell.input.visible"
-					:class="joinClass(cell.class.box, `input-box-${cell.input.type || 'text'}`)"
+					:class="jc(cell.class.box, `input-box-${cell.input.type || 'text'}`)"
 					:data-name="cell.input.name")
 					p.title(
 						v-if="cell.title"
-						:class="joinClass({ required: cell.input.required }, cell.class.title)")
-							| {{ res(cell.title) }}
-					slot(:name="`${cell.input.name}-pre-content`" v-bind="cell.input")
-						slot(name="pre-content" v-bind="cell.input")
+						:class="jc({ required: cell.input.required }, cell.class.title)")
+							| {{ res(cell, cell.title) }}
+					slot(:name="`${cell.input.name}-pre-content`" v-bind="bind(cell)")
+						slot(name="pre-content" v-bind="bind(cell)")
 					InputWrapper(
 						:class="cell.class.input"
 						:cell="cell"
 						:meta="inputMeta"
 						:verifiedVisibility="true"
 						:disabled="cell.input.disabled"
+						:readonly="cell.input.readonly"
 						:key="cell.input.id")
 						template(
 							v-for="(_, name) in $scopedSlots"
-							v-slot:[name]="d")
+							#[name]="d")
 							slot(v-if="name != 'form'"
 								:name="name"
 								v-bind="d")
@@ -31,8 +32,8 @@
 							VForm(
 								:form="d.form"
 								:rows="d.rows")
-					slot(:name="`${cell.input.name}-post-content`" v-bind="cell.input")
-						slot(name="post-content" v-bind="cell.input")
+					slot(:name="`${cell.input.name}-post-content`" v-bind="bind(cell)")
+						slot(name="post-content" v-bind="bind(cell)")
 </template>
 
 <script>
@@ -65,12 +66,28 @@
 			};
 		},
 		methods: {
-			joinClass,
-			res(val, ...args) {
+			jc: joinClass,
+			mkRuntime(cell) {
+				return {
+					self: this,
+					input: cell.input,
+					form: cell.input.form,
+					rootForm: cell.input.form,
+					inputs: cell.input.form.inputs,
+					rootInputs: cell.input.form.inputs,
+					inputsStruct: cell.input.form.inputsStruct,
+					rootInputsStruct: cell.input.form.inputsStruct,
+					value: cell.input.value
+				};
+			},
+			res(cell, val, ...args) {
 				if (typeof val == "function")
-					return val.call(this, this.form, ...args);
+					return val.call(this, this.mkRuntime(cell), ...args);
 
 				return val;
+			},
+			bind(cell) {
+				return this.mkRuntime(cell);
 			}
 		},
 		computed: {

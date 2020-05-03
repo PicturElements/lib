@@ -1,29 +1,33 @@
 @use "~@qtxr/scss-utils" as *;
 
 $search-input-box-params: (
+	// Basic
 	"border-radius",
 	"border",
 	"focus-border",
+	"highlight",
+	"highlight-complement",
+	// Specific
 	"search-box-background",
 	"search-box-padding",
 	"search-input-height",
 	"search-input-background",
-	"highlight",
-	"highlight-complement",
 	"stroke"
 );
 
 // TODO: search-box-* => * redundancy
 @mixin search-input-box(
+	// Basic
 	$border-radius: 1px,
 	$border: 1px solid #dadada,
 	$focus-border: 1px solid #1e2021,
+	$highlight: #1b66bf,
+	$highlight-complement: white,
+	// Specific
 	$search-box-background: whitesmoke,
 	$search-box-padding: 10px,
 	$search-input-height: 30px,
 	$search-input-background: white,
-	$highlight: #1b66bf,
-	$highlight-complement: white,
 	$stroke: rgba(0, 0, 0, 0.2)
 ) {
 	.search-input-box {
@@ -71,6 +75,14 @@ $search-input-box-params: (
 			margin-left: 10px;
 			cursor: pointer;
 
+			&.go {
+				@include inline-svg(
+					$path: "M10 50 h75z M50 15 l35 35 l-35 35",
+					$stroke: $highlight-complement,
+					$stroke-width: 12
+				);
+			}
+
 			&:disabled {
 				background-color: transparent;
 				cursor: default;
@@ -80,6 +92,14 @@ $search-input-box-params: (
 					$stroke: $stroke,
 					$stroke-width: 12
 				);
+
+				&.go {
+					@include inline-svg(
+						$path: "M10 50 h75z M50 15 l35 35 l-35 35",
+						$stroke: $stroke,
+						$stroke-width: 12
+					);
+				}
 			}
 		}
 	}

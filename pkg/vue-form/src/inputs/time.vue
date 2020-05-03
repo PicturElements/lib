@@ -1,6 +1,9 @@
 <template lang="pug">
 	Drop.input-wrapper.time.inp-time(
-		:class="validationState"
+		:class="classes"
+		:disabled="dis"
+		:adaptive="true"
+		:scrollTarget="{ node: '.drop-dropdown-scroll', tolerance: 100 }"
 		@collapse="collapse"
 		@key="key")
 		template(#expando-box="rt")
@@ -12,20 +15,23 @@
 							span.time-sep(v-if="j > 0") {{ typeof input.timeSeparator == "string" ? input.timeSeparator : ":" }}
 							span.time-display-cell(:class="[ dial.class, (rt.expanded && timeDisplayData.activeIndices[i] == j) ? 'active' : null ]") {{ dial.displayVal }}
 						span.meridiem(v-if="input.meridiem && runtime.meridiem") {{ runtime.meridiem }}
-		TimeSelector(
-			:input="input"
-			@displaydatachange="dd => timeDisplayData = Object.assign({}, dd)"
-			@trigger="trigger")
+		template(#default="rt")
+			TimeSelector(
+				:input="input"
+				:dropRuntime="rt"
+				:eagerCollapse="res(eagerCollapse)"
+				@displaydatachange="dd => timeDisplayData = dd"
+				@trigger="trigger")
 </template>
 
 <script>
-	import { get } from "@qtxr/utils";
+	import { set } from "@qtxr/utils";
 	import EVT from "@qtxr/evt";
 	import { Time } from "@qtxr/form";
 	import mixin from "../mixin";
 
-	import Drop from "../auxiliary/drop.vue";
-	import TimeSelector from "../core-inputs/time-selector.vue";
+	import Drop from "../core/drop.vue";
+	import TimeSelector from "../core/time-selector.vue";
 
 	export default {
 		name: "Time",
@@ -35,17 +41,15 @@
 		}),
 		methods: {
 			trigger() {
-				if (this.disabled)
+				if (this.inert)
 					return;
 					
 				const reduce = dials => {
 					const timeData = {};
 
 					for (let i = 0, l = dials.length; i < l; i++) {
-						const dialData = dials[i],
-							gotten = get(timeData, dialData.dial.accessor, null, "autoBuild|context");
-
-						gotten.context[gotten.key] = dialData.value;
+						const dialData = dials[i];
+						set(timeData, dialData.dial.accessor, dialData.value);
 					}
 
 					return timeData;
@@ -86,7 +90,8 @@
 			}
 		},
 		props: {
-			input: Time
+			input: Time,
+			eagerCollapse: [Boolean, Function]
 		},
 		components: {
 			Drop,

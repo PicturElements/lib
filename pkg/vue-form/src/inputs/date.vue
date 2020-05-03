@@ -1,7 +1,11 @@
 <template lang="pug">
 	Drop.input-wrapper.date.inp-date(
-		:class="validationState"
-		@collapse="collapse")
+		:class="classes"
+		:disabled="dis"
+		:adaptive="true"
+		:scrollTargets="['.year-scroll', { node: '.drop-dropdown-scroll', tolerance: 10 }]"
+		@collapse="collapse"
+		@key="key")
 		template(#expando-box="rt")
 			.date-display
 				template(v-for="(runtime, i) in dateDisplayData.cardsData")
@@ -10,19 +14,23 @@
 						template(v-for="(card, j) in runtime.cards")
 							span.date-sep(v-if="j > 0")
 							span.date-display-cell(:class="card.class") {{ card.displayVal }}
-		DateSelector(
-			:input="input"
-			@displaydatachange="dd => dateDisplayData = Object.assign({}, dd)"
-			@trigger="trigger")
+		template(#default="rt")
+			DateSelector(
+				:input="input"
+				:dropRuntime="rt"
+				:eagerCollapse="res(eagerCollapse)"
+				@displaydatachange="dd => dateDisplayData = dd"
+				@trigger="trigger")
 </template>
 
 <script>
+	import { set } from "@qtxr/utils";
 	import EVT from "@qtxr/evt";
 	import { Date as DateInput } from "@qtxr/form";
 	import mixin from "../mixin";
 
-	import Drop from "../auxiliary/drop.vue";
-	import DateSelector from "../core-inputs/date-selector.vue";
+	import Drop from "../core/drop.vue";
+	import DateSelector from "../core/date-selector.vue";
 
 	export default {
 		name: "Date",
@@ -31,9 +39,37 @@
 			dateDisplayData: {}
 		}),
 		methods: {
-			trigger() {
-				if (this.disabled)
+			trigger(value) {
+				if (this.inert)
 					return;
+				
+				const reduce = cardsData => {
+					const dateData = {};
+					
+					for (let i = 0, l = cardsData.cards.length; i < l; i++) {
+						const cardData = cardsData.cards[i];
+						set(dateData, cardData.card.accessor, cardData.value);
+					}
+
+					return Object.assign(
+						{},
+						this.input.value,
+						dateData,
+						cardsData.set
+					);
+				};
+
+				const cardsData = this.dateDisplayData.cardsData;
+
+				if (this.input.range) {
+					const value = [];
+
+					for (let i = 0, l = cardsData.length; i < l; i++)
+						value.push(reduce(cardsData[i]));
+
+					this.input.trigger(value);
+				} else
+					this.input.trigger(reduce(cardsData[0]));
 			},
 			collapse(evt) {
 				this.dateDisplayData.resetDisplay();
@@ -41,8 +77,10 @@
 			key(evt, key, runtime) {
 				switch (key) {
 					case "enter":
-						runtime.collapse();
-						evt.preventDefault();
+						if (runtime.hasNeutralTarget()) {
+							runtime.collapse();
+							evt.preventDefault();
+						}
 						break;
 
 					case "left":
@@ -58,7 +96,8 @@
 			}
 		},
 		props: {
-			input: DateInput
+			input: DateInput,
+			eagerCollapse: [Boolean, Function]
 		},
 		components: {
 			Drop,

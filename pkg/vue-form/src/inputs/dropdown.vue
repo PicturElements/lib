@@ -1,71 +1,78 @@
 <template lang="pug">
-	.input-wrapper.dropdown.inp-dropdown(:class="[ expanded ? 'open' : null, input.noSearch ? 'no-search' : null, isMobile() ? 'mobi' : null, validationState, dropdownDirection ]"
-		ref="dropdownBox")
-		button.mobi-focus(
-			:disabled="disabled"
-			@click="expand")
-		textarea.focus-probe(
-			:disabled="disabled"
-			@focus="expand"
-			@blur="enqueueCollapse"
-			@click="triggerExpand"
-			ref="focusProbe")
-		.collapse-target(@click="collapse")
-		.dropdown-option.dropdown-active-option
-			slot(name="icon" v-bind="$data")
-				.dropdown-icon.default-icon(:class="{ expanded }") {{ expanded ? "-" : "+" }}
-			.dropdown-option-inner
-				span.placeholder(v-if="activeOption == null")
-					| {{ input.placeholder || placeholder }}
-				slot(v-else
-					v-bind="wrapOption(activeOption && activeOption.value)")
-					| {{ getLabel(activeOption && activeOption.value) }}
-		.dropdown-list(
-			:style="listStyle"
-			ref="list")
-			.search-input-box(v-if="!input.noSearch"
-				@mousedown="triggerExpand"
-				@touchstart="triggerExpand")
+	Drop.input-wrapper.dropdown.inp-dropdown(
+		:class="cl({ 'no-search': res(input.noSearch) })"
+		:disabled="dis"
+		:adaptive="true"
+		:flushDropdown="true"
+		:flushWidth="res(flushWidth)"
+		:gap="res(gap)"
+		scrollTarget=".options-scroller"
+		@expand="expand"
+		@collapse="collapse"
+		@assets="assets => dropAssets = assets")
+		template(#expando-box="rt")
+			.options-wrapper
+				.option.active-option.with-icon
+					.option-inner
+						span.placeholder(v-if="activeOption == null")
+							| {{ res(input.placeholder || placeholder) }}
+						slot(v-else
+							name="active-option"
+							v-bind="bindOption(activeOption, true)")
+							slot(
+								:name="getOptionSlotName(input.optionsContext)"
+								v-bind="bindOption(activeOption, true)")
+								slot(v-bind="bindOption(activeOption, true)")
+									| {{ getLabel(activeOption) }}
+					slot(name="icon" v-bind="bnd")
+						.dropdown-icon.default-icon.chevron(:class="{ flip: expanded }")
+		template(#content)
+			.search-input-box(v-if="!input.noSearch")
 				input.search-input(
-					v-model="query"
-					tabindex="-1"
-					:disabled="disabled"
 					:class="{ 'pseudo-disabled': searchDisabled }"
+					v-model="query"
+					v-bind="inpProps"
 					@keydown="guardInput"
 					@input="triggerSearch"
-					@focus="expand"
-					@blur="enqueueCollapse"
 					ref="searchInput")
 				button.search-refresh(
 					v-if="!noRefresh"
-					tabindex="-1"
+					:class="{ go: input.noAutoSearch && query !== lastQuery }"
 					:disabled="searchDisabled"
-					@click="search(true)")
-			.options-wrapper
-				.options(
-					@mousedown.stop="triggerCollapse"
-					ref="options")
+					@click="search(true)"
+					tabindex="-1"
+					ref="searchRefresh")
+			Options(
+				:input="input"
+				:context="input.optionsContext"
+				@trigger="trigger")
+				template(
+					v-for="(_, name) in $scopedSlots"
+					#[name]="d")
+					slot(
+						:name="name"
+						v-bind="d")
+				//- .options(ref="options")
 					template(v-if="!options.length")
-						slot(name="no-search-results" v-bind="this")
+						slot(name="no-search-results" v-bind="bnd")
 							.no-search-results No results found
 					.dropdown-option(
 						v-else
 						v-for="(option, idx) in options"
 						:class="{ selected: option == activeOption, 'selected-option': idx == optionPtr }"
-						@mousedown="trigger(option, idx)"
+						@mousedown="focus"
 						@click="trigger(option, idx)"
 						@mousemove="setOptionPtr(idx)"
 						ref="option")
 						.dropdown-option-inner
-							slot(v-bind="wrapOption(option.value)") {{ getLabel(option.value) }}
-				.loading-overlay(v-if="loading")
-					slot(name="loading-icon" v-bind="this")
+							slot(v-bind="bindOption(option.value)") {{ getLabel(option.value) }}
+				//- .loading-overlay(v-if="loading")
+					slot(name="loading-icon" v-bind="bnd")
 </template>
 
 <script>
 	import {
 		get,
-		equals,
 		cleanRegex,
 		isPrimitive,
 		requestFrame
@@ -73,20 +80,14 @@
 	import { Dropdown } from "@qtxr/form";
 	import EVT from "@qtxr/evt";
 	import mixin from "../mixin";
-	
-	const PADDING = 30,
-		BOTTOM_BIAS = 0.4,
-		NULL = { name: "" };
+
+	import Drop from "../core/drop.vue";
+	import Options from "../core/options.vue";
 
 	export default {
 		name: "Dropdown",
 		mixins: [mixin],
 		data: _ => ({
-			expanded: false,
-			expansionRequested: false,
-			dropdownDirection: null,
-			listStyle: null,
-			updateLoopInitialized: false,
 			loading: false,
 			deferTimeout: null,
 			searchDisabled: false,
@@ -98,14 +99,91 @@
 			optionPtr: -1,
 			lastOptionPtr: -1,
 			bufferedOptionPtr: -1,
-			globalKeyListener: null
+			expanded: false,
+			dropAssets: null
 		}),
 		methods: {
-			async search(refresh = false) {
+			expand() {
+				this.expanded = true;
+				this.search();
+			},
+			collapse() {
+				this.expanded = false;
+			},
+			search(refresh = false) {
+				this.input.optionsContext.search(this.query, refresh);
+			},
+			trigger(option) {
+				if (!this.inert) {
+					this.input.trigger(option.value);
+					this.activeOption = option;
+				}
+
+				this.dropAssets.collapse(2);
+			},
+			triggerSearch() {
+				clearTimeout(this.deferTimeout);
+
+				if (this.input.noAutoSearch)
+					return;
+
+				if (this.input.defer)
+					this.deferTimeout = setTimeout(_ => this.search(), this.input.defer);
+				else
+					this.search();
+			},
+			guardInput(evt) {
+				if (this.searchDisabled) {
+					switch (EVT.getKey(evt)) {
+						case "escape":
+						case "tab":
+							break;
+
+						default:
+							evt.preventDefault();
+					}
+				} else {
+					switch (EVT.getKey(evt)) {
+						case "enter":
+							if (!this.noRefresh)
+								this.search(true);
+							break;
+					}
+				}
+			},
+			getLabel(option) {
+				option = option.value;
+				const label = (option && option.hasOwnProperty("label")) ?
+					option.label :
+					option;
+
+				return typeof label == "object" ? "" : label;
+			},
+			getValue(option) {
+				option = option.value;
+				const value = (option && option.hasOwnProperty("value")) ?
+					option.value :
+					option;
+
+				return typeof value == "object" ? "" : value;
+			},
+			bindOption(option) {
+				return this.bind({
+					fullOption: option,
+					option: option.value,
+					selected: option.selected
+				});
+			},
+			getOptionSlotName(context) {
+				return `${context.config.name}-option`;
+			}
+			/*async search(refresh = false) {
 				if (this.loading || (!this.input.searchOnExpand && !refresh && this.query == this.lastQuery)) {
 					this.updateSelection();
 					return;
 				}
+
+				console.log("searchin'");
 
 				this.searchDisabled = true;
 				this.loading = true;
@@ -133,9 +211,9 @@
 
 				let options;
 
-				if (this.input.initFetchedOptions) {
-					options = await this.input.initFetchedOptions;
-					this.input.initFetchedOptions = null;
+				if (this.input.pendingOptions) {
+					options = await this.input.pendingOptions;
+					console.log("loooool", this.input, options);
 				} else {
 					options = useSearchFetch ?
 						await this.res(this.input.searchFetch, searchArgs, refresh) :
@@ -234,91 +312,42 @@
 				this.lastOptionPtr = -1;
 				clearTimeout(this.deferTimeout);
 
-				if (this.input.defer) {
-					this.deferTimeout = setTimeout(_ => {
-						this.$refs.focusProbe.focus();
-						this.search();
-					}, this.input.defer);
-				} else
+				if (this.input.noAutoSearch)
+					return;
+
+				if (this.input.defer)
+					this.deferTimeout = setTimeout(_ => this.search(), this.input.defer);
+				else
 					this.search();
 			},
 			guardInput(evt) {
-				if (!this.searchDisabled)
-					return;
+				if (this.searchDisabled) {
+					switch (EVT.getKey(evt)) {
+						case "escape":
+						case "tab":
+							break;
 
-				switch (EVT.getKey(evt)) {
-					case "escape":
-					case "tab":
-						break;
-
-					default:
-						evt.preventDefault();
+						default:
+							evt.preventDefault();
+					}
+				} else {
+					switch (EVT.getKey(evt)) {
+						case "enter":
+							if (!this.noRefresh)
+								this.search(true);
+							break;
+					}
 				}
 			},
 			trigger(option, idx) {
-				if (!this.disabled) {
+				if (!this.inert) {
 					this.input.trigger(option.value);
 					this.bufferedOptionPtr = idx;
 					this.activeOption = option;
 					this.input.selectedIndex = option.idx;
 				}
 
-				this.triggerCollapse();
-			},
-			getLabel(option) {
-				const label = (option && option.hasOwnProperty("label")) ? option.label : option;
-				return typeof label == "object" ? "" : label;
-			},
-			getValue(option) {
-				const value = (option && option.hasOwnProperty("label")) ? option.value : option;
-				return typeof value == "object" ? "" : value;
-			},
-			wrapOption(option) {
-				if (typeof option != "object")
-					return { value: option };
-
-				return option;
-			},
-			initUpdateLoop() {
-				if (!this.updateLoopInitialized) {
-					this.updateLoopInitialized = true;
-					this.updateFixedList();
-				}
-			},
-			updateFixedList() {
-				if (!this.expanded || this.isMobile() || !this.$refs.dropdownBox) {
-					this.listStyle = null;
-					this.updateLoopInitialized = false;
-					return;
-				}
-
-				const style = getComputedStyle(this.$refs.dropdownBox),
-					bcr = this.$refs.dropdownBox.getBoundingClientRect(),
-					sHeight = this.$refs.list.scrollHeight,
-					bTop = parseFloat(style.borderTopWidth),
-					bRight = parseFloat(style.borderRightWidth),
-					bBottom = parseFloat(style.borderBottomWidth),
-					bLeft = parseFloat(style.borderLeftWidth),
-					topAvailable = bcr.top - PADDING,
-					bottomAvailable = window.innerHeight - (bcr.top + bcr.height) - PADDING,
-					placeBottom = bottomAvailable > (topAvailable * BOTTOM_BIAS) || sHeight < bottomAvailable,
-					maxHeight = placeBottom ? bottomAvailable : topAvailable;
-
-				const stl = {
-					position: "fixed",
-					top: placeBottom ? `${bcr.top + bcr.height - bBottom}px` : null,
-					bottom: placeBottom ? null : `${window.innerHeight - bcr.top - bTop}px`,
-					left: `${bcr.left}px`,
-					width: `${bcr.width - bLeft - bRight}px`,
-					maxHeight: `${maxHeight}px`
-				};
-
-				if (!equals(stl, this.listStyle)) {
-					this.listStyle = stl;
-					this.dropdownDirection = placeBottom ? "place-bottom" : "place-top";
-				}
-
-				requestFrame(_ => this.updateFixedList());
+				this.dropAssets.blur(2);
 			},
 			incrementOptionPtr() {
 				if (!this.options.length)
@@ -328,7 +357,9 @@
 					this.optionPtr = this.lastOptionPtr - 1;
 
 				this.optionPtr = (this.optionPtr + 1) % this.options.length;
-				this.focusOption();
+
+				if (!this.noRefresh)
+					this.focusOption();
 			},
 			decrementOptionPtr() {
 				if (!this.options.length)
@@ -338,7 +369,9 @@
 					this.optionPtr = this.lastOptionPtr - 1;
 
 				this.optionPtr = (this.options.length + this.optionPtr - 1) % this.options.length;
-				this.focusOption();
+
+				if (!this.noRefresh)
+					this.focusOption();
 			},
 			selectOptionWithPtr() {
 				if (!this.options.length || this.optionPtr == -1 || this.optionPtr >= this.options.length)
@@ -346,9 +379,11 @@
 
 				this.lastOptionPtr = this.optionPtr;
 				this.trigger(this.options[this.optionPtr]);
-				this.collapse();
 			},
 			setOptionPtr(ptr) {
+				if (!this.noRefresh && ptr != -1 && ptr != this.optionPtr)
+					this.blurSearch();
+
 				this.optionPtr = ptr;
 				this.lastOptionPtr = ptr;
 			},
@@ -362,55 +397,44 @@
 					scroll = options.scrollTop + (obcr.top - sbcr.top) - (sbcr.height - obcr.height) / 2;
 
 				options.scrollTop = scroll;
+				this.blurSearch();
 			},
-			triggerExpand() {
-				if (!this.isMobile() && !this.expansionRequested) {
-					this.expansionRequested = true;
-					setTimeout(_ => this.expansionRequested = false, 200);
-				}
-				
-				this.expand();
-			},
-			triggerCollapse() {
-				if (this.isMobile())
-					this.collapse();
-				else
-					this.$refs.focusProbe.blur();
-			},
-			enqueueCollapse() {
-				requestFrame(_ => {
-					const active = document.activeElement;
+			blurSearch() {
+				const searchInput = this.$refs.searchInput,
+					searchRefresh = this.$refs.searchRefresh;
 
-					if (active != this.$refs.focusProbe && active != this.$refs.searchInput)
-						this.collapse();
-				});
+				if (searchInput)
+					searchInput.blur();
+				if (searchRefresh)
+					searchRefresh.blur();
+	
+				this.dropAssets.focus();
 			},
 			expand() {
-				if (this.disabled)
-					return;
+				this.search();
 
-				if (!this.expanded) {
-					this.search();
-
-					if (this.bufferedOptionPtr > -1) {
-						this.setOptionPtr(this.bufferedOptionPtr);
-						requestFrame(_ => this.focusOption());
-					}
+				if (this.bufferedOptionPtr > -1) {
+					this.setOptionPtr(this.bufferedOptionPtr);
+					requestFrame(_ => this.focusOption());
 				}
-
-				this.expanded = true;
-				this.initUpdateLoop();
-
-				if (!this.isMobile() && this.$refs.searchInput)
-					requestFrame(_ => this.$refs.searchInput.focus());
 			},
-			collapse(evt) {
-				if (this.expansionRequested)
-					return;
+			key(evt, key) {
+				switch (key) {
+					case "up":
+						this.decrementOptionPtr();
+						evt.preventDefault();
+						break;
 
-				this.expanded = false;
-				this.dropdownDirection = null;
-			}
+					case "down":
+						this.incrementOptionPtr();
+						evt.preventDefault();
+						break;
+
+					case "enter":
+						this.selectOptionWithPtr();
+						break;
+				}
+			}*/
 		},
 		computed: {
 			noRefresh() {
@@ -420,48 +444,34 @@
 				return typeof this.input.searchFetch != "function" && typeof this.input.options != "function";
 			}
 		},
-		props: {
-			input: Dropdown,
-			placeholder: String
-		},
 		watch: {
 			"input.value"() {
+				const activeOption = this.input.optionsContext.selection[0];
+				if (activeOption)
+					this.activeOption = activeOption;
+			}
+			/*"input.value"(newValue, oldValue) {
 				if (!this.activeOption || !this.input.compare(this.input.value, this.activeOption.value)) {
 					this.updateSelection();
 					this.search();
 				} else
 					this.updateSelection();
-			}
+			}*/
 		},
-		beforeMount() {
-			this.globalKeyListener = evt => {
-				if (!this.expanded)
-					return;
-
-				switch (EVT.getKey(evt)) {
-					case "up":
-						this.decrementOptionPtr();
-						evt.preventDefault();
-						break;
-					case "down":
-						this.incrementOptionPtr();
-						evt.preventDefault();
-						break;
-					case "enter":
-						this.selectOptionWithPtr();
-						break;
-					case "escape":
-						this.collapse();
-						break;
-				}
-			};
-			document.body.addEventListener("keydown", this.globalKeyListener);
-
-			if (this.input.value)
-				this.search();
+		props: {
+			input: Dropdown,
+			flushWidth: [Boolean, Function],
+			placeholder: [String, Function],
+			gap: [Number, Function]
 		},
-		beforeDestroy() {
-			document.body.removeEventListener("keydown", this.globalKeyListener);
+		components: {
+			Drop,
+			Options
+		},
+		mounted() {
+			const activeOption = this.input.optionsContext.selection[0];
+			if (activeOption)
+				this.activeOption = activeOption;
 		}
 	};
 </script>

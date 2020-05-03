@@ -1,5 +1,6 @@
 <template lang="pug">
-	.input-wrapper.coordinates.inp-coordinates(:class="[ searchEnabled ? 'search-enabled' : null, coordsEnabled ? 'coords-enabled' : null, validationState ]")
+	.input-wrapper.coordinates.inp-coordinates(
+		:class="cl({ 'search-enabled': searchEnabled, 'coords-enabled': coordsEnabled })")
 		.map-wrapper
 			.pad-box-wrapper
 				.pad-box
@@ -7,36 +8,36 @@
 				v-once
 				ref="map")
 			.loading-overlay(v-if="loading")
-				slot(name="loading-icon" v-bind="this")
+				slot(name="loading-icon" v-bind="bnd")
 		.coords-box(v-if="coordsEnabled")
 			input(
 				v-model="coordsStr"
-				:disabled="disabled"
+				v-bind="inpProps"
 				@change="setValueFromCoords"
 				@keydown="guardInput($event, true)")
 		.search-box(v-if="searchEnabled")
 			.run-btn-wrapper.run-geolocation
 				button.run-btn(
-					:disabled="geolocationDenied || runningGeolocation"
+					:disabled="geolocationDenied || runningGeolocation || inert"
 					:class="{ active: runningGeolocation }"
 					@click="runGeolocation")
 					svg.run-icon.geolocation-icon
-						slot(name="geolocation-icon" v-bind="this")
+						slot(name="geolocation-icon" v-bind="bnd")
 							svg(viewBox="0 0 10 10")
 								circle(cx="5" cy="5" r="3.5")
 								path(d="M5 0 v4 M5 10 v-4 M0 5 h4 M10 5 h-4")
 			input(
 				v-model="query"
+				v-bind="inpProps"
 				:placeholder="res(input.placeholder || placeholder)"
-				:disabled="disabled"
 				@keydown="guardInput")
 			.run-btn-wrapper.run-search
 				button.run-btn(
-					:disabled="!query || runningSearch || disabled"
+					:disabled="!query || runningSearch || inert"
 					:class="{ active: runningSearch }"
 					@click="runSearch")
 					svg.run-icon.search-icon
-						slot(name="search-icon" v-bind="this")
+						slot(name="search-icon" v-bind="bnd")
 							svg(viewBox="0 0 10 10")
 								circle(cx="6" cy="4" r="3.5")
 								path(d="M3.5 6.5 l-2.5 2.5")
@@ -64,7 +65,7 @@
 		}),
 		methods: {
 			trigger(coords) {
-				if (!this.disabled)
+				if (!this.inert)
 					this.input.trigger(coords);
 			},
 			runSearch() {
@@ -104,7 +105,7 @@
 					this.map.setZoom(15);
 					this.runningGeolocation = false;
 
-					if (!this.disabled) {
+					if (!this.inert) {
 						this.marker.setPosition(cData);
 						this.trigger(cData);
 					}
@@ -152,7 +153,7 @@
 		},
 		props: {
 			input: Coordinates,
-			placeholder: String
+			placeholder: [String, Function]
 		},
 		watch: {
 			"input.value"(val) {
@@ -198,13 +199,13 @@
 				}, this.input.markerConfig)
 			);
 
-			marker.setDraggable(!this.disabled);
+			marker.setDraggable(!this.inert);
 
 			if (this.input.value)
 				marker.setMap(map);
 
 			google.maps.event.addListener(map, "click", evt => {
-				if (this.disabled)
+				if (this.inert)
 					return;
 
 				marker.setPosition(evt.latLng);
@@ -215,7 +216,7 @@
 			});
 
 			google.maps.event.addListener(marker, "dragend", evt => {
-				if (this.disabled)
+				if (this.inert)
 					return;
 
 				this.trigger({

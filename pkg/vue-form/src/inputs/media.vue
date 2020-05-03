@@ -1,7 +1,7 @@
 <template lang="pug">
-	.input-wrapper.media.inp-media
+	.input-wrapper.media.inp-media(:class="classes")
 		.media-upload.a-fill(
-			:class="[ editPhase != 'prompt' ? 'in-use' : null, isMobile() ? 'mobi' : null, validationState ]"
+			:class="{ 'in-use': editPhase != 'prompt' }"
 			:style="{ paddingTop: `${(input.targetSize.h / input.targetSize.w) * 100}%` }"
 			@mousemove="move"
 			@touchmove="move"
@@ -9,7 +9,7 @@
 			@touchend="leave"
 			@mouseleave="leave"
 			@touchleave="leave"
-			@dragenter="focused = disabled !== true && true"
+			@dragenter="focused = inert !== true"
 			@dragleave="focused = false"
 			ref="box")
 			template(v-if="editPhase == 'prompt'")
@@ -54,9 +54,9 @@
 							| click to upload
 				input.upload-inp.a-fill(
 					type="file"
-					:accept="input.mediaOptions.accept"
-					:multiple="input.multiple"
-					:disabled="disabled"
+					v-bind="inpProps"
+					:accept="res(input.mediaOptions.accept)"
+					:multiple="res(input.multiple)"
 					@focus="focused = true"
 					@blur="focused = false"
 					@change="initEdit")
@@ -83,7 +83,7 @@
 					.hit-target.a-fill(@click="toggleVideoPlay")
 				template(v-else-if="mediaType == 'error'")
 					.a-fill.error-msg
-						slot(name="error-message" v-bind="error") {{ error.message }}
+						slot(name="error-message" v-bind="bind({ error })") {{ error.message }}
 				.edit-footer
 					.action.cancel(@click="cancelCurrentEdit")
 						.elem-icon.a-fill.back
@@ -429,6 +429,7 @@
 						this.setImagePosition();
 						break;
 					}
+
 					case "video":
 						this.$refs.video.currentTime = perc * fd.duration;
 						break;
@@ -515,9 +516,11 @@
 					case "image":
 						this.dispatchImage(fd);
 						break;
+
 					case "video":
 						this.dispatchVideo(fd);
 						break;
+
 					case "error":
 						this.dispatchChange();
 						this.nextAction();
@@ -611,7 +614,7 @@
 				this.dispatchChange();
 			},
 			dispatchChange() {
-				if (this.disabled)
+				if (this.inert)
 					return;
 				
 				if (this.input.multiple) {

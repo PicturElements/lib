@@ -1,30 +1,38 @@
 $date-time-params: (
+	// Basic
 	"height",
 	"border-radius",
+	"error-color",
 	"background",
 	"error-background",
 	"border",
-	"separator-border",
 	"error-border",
-	"error-color"
+	// Specific
+	"separator-border"
 );
 
 @mixin date-time(
+	// Basic
 	$height: 30px,
 	$border-radius: 1px,
+	$error-color: #ab0f2f,
 	$background: white,
 	$error-background: #ffe7ec,
 	$border: 1px solid #dadada,
-	$separator-border: 1px solid whitesmoke,
 	$error-border: 1px solid #e8879b,
-	$error-color: #ab0f2f
+	// Specific
+	$separator-border: 1px solid whitesmoke
 ) {
 	.inp-date-time {
 		.drop-expando-box {
+			display: flex;
+			justify-content: center;
+			align-items: center;
 			height: $height;
 			background: $background;
 			border: $border;
 			border-radius: $border-radius;
+			padding: 5px 12px;
 
 			.date-time-display {
 				display: flex;
@@ -64,6 +72,7 @@ $date-time-params: (
 			background: $background;
 			border: $border;
 			border-radius: $border-radius;
+			padding: 10px;
 
 			.time-sel {
 				margin-left: 10px;

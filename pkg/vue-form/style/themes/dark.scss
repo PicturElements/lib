@@ -1,8 +1,7 @@
 $theme: (
-	// This also serves as the base style for
-	// other inputs, which can be overwritten,
-	// in each input map
-	input: (
+	// Base style for all inputs, which can be
+	// extended or inherited by each input map
+	base: (
 		height: 30px,
 		border-radius: 1px,
 		
@@ -34,14 +33,78 @@ $theme: (
 		autofill-border-width: 1px,
 		autofill-border-style: solid,
 		autofill-border-color: #797b82,
-		autofill-border: 1px solid #797b82
+		autofill-border: 1px solid #797b82,
+
+		highlight: #0071d4,
+		highlight-complement: white
 	),
+	// Core component styling
+	core: (
+		// Base style for core components,
+		// extends base map
+		base: (),
+		date-selector: (
+			color: white,
+			cell-width: 30px,
+			cell-height: 30px,
+			cell-padding: 2px,
+			cell-border: 1px solid #333,
+			cell-border-radius: 1px,
+			selection-border-radius: 3px,
+			disabled-opacity: 0.35
+		),
+		drop: (),
+		options: (
+			padding: 10px,
+			expando-background: #222,
+			separator-border: 1px solid rgba(128, 128, 128, 0.25),
+			hover-background: rgba(128, 128, 128, 0.06)
+		),
+		search-input-box: (
+			search-box-background: #333,
+			search-box-padding: 10px,
+			search-input-height: 30px,
+			search-input-background: #151515,
+			stroke: rgba(0, 0, 0, 0.2)
+		),
+		time-selector: (
+			dial-background: #333,
+			dial-background-alt: #555,
+			blob-radius: 15px,
+			delimitation-padding: 20px,
+			tight-delimitation-padding: 15px,
+			transition-duration: 300ms
+		)
+	),
+	// Input style
 	checkbox: (),
+	cordinates: (
+		search-height: 40px,
+		button-padding: 4px,
+		coords-padding: 8px,
+		aspect-ratio: 0.75,
+		max-height: 400px
+	),
 	count: (),
+	date-time: (
+		separator-border: 1px solid #333
+	),
+	date: (),
 	dropdown: (
-		padding: 10px,
-		mobile-padding: 30px,
+		mobile-gap: 30px,
 		separator-border: 1px solid rgba(128, 128, 128, 0.25)
+	),
+	formatted: (),
+	list: (
+		backdrop-background: #111,
+		action-button-size: 20px,
+		add-icon-size: 25px,
+		add-icon-gap: 5px,
+		row-padding: 10px,
+		row-margin: 8px,
+		focus-padding: 5px,
+		focus-transition: 300ms,
+		add-icon-transition: 300ms
 	),
 	media: (
 		slider-width: 6px,
@@ -49,9 +112,7 @@ $theme: (
 		icon-shadow: 0 2px 3px rgba(0, 0, 0, 0.2),
 		shade-color: black,
 		feature-color: white,
-		error-border-color: #e02929,
 		output-preview-spacing: 10px,
-		highlight: #1b66bf,
 		raster-light: #222,
 		raster-dark: #333,
 		output-preview-height: 80px,
@@ -59,51 +120,22 @@ $theme: (
 		obscure-duration: 300ms,
 		obscure-delay: 0ms,
 		reveal-duration: 300ms,
-		reveal-delay: 500ms
+		reveal-delay: 500ms,
+		pop-duration: 300ms
 	),
 	multi: (
-		background: #151515,
-		error-background: #a02222,
-		border: 1px solid #797b82,
-		focus-border: 1px solid #d1d3da,
-		error-border: 1px solid #e02929,
-		error-color: #fff4f4,
-		highlight: #1b66bf,
 		selection-item-color: white,
 		selection-item-height: 24px,
 		selection-item-spacing: 5px,
 		selection-item-border-radius: 2px,
-		search-box-background: #222,
 		separator-border: 1px solid rgba(128, 128, 128, 0.15),
 		max-height: 150px,
-		search-box-padding: 10px,
-		search-input-height: 30px,
 		add-icon-background: #50555a,
-		add-icon-color: #d5dbe4
+		add-icon-color: #d5dbe4,
+		hover-background: rgba(128, 128, 128, 0.06)
 	),
 	radio: (),
-	textarea: (
-		background: #151515,
-		error-background: #a02222,
-		border: 1px solid #797b82,
-		focus-border: 1px solid #d1d3da,
-		error-border: 1px solid #e02929,
-		focus-border-color: #d1d3da,
-		error-color: #fff4f4,
-	),
-	time: (
-		background: #151515,
-		error-background: #a02222,
-		dial-background: #333,
-		dial-background-dark: #222,
-		border: 1px solid #797b82,
-		error-border: 1px solid #e02929,
-		error-color: #fff4f4,
-		blob-radius: 15px,
-		delimitation-padding: 20px,
-		tight-delimitation-padding: 15px,
-		highlight: #1b66bf,
-		highlight-complement: white,
-		transition-duration: 300ms
-	)
+	text: (),
+	textarea: (),
+	time: ()
 );

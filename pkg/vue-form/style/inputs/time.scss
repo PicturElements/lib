@@ -1,32 +1,38 @@
 $time-params: (
+	// Basic
 	"height",
 	"border-radius",
+	"error-color",
 	"background",
 	"error-background",
 	"border",
 	"error-border",
-	"error-color",
 	"highlight",
 	"highlight-complement"
 );
 
 @mixin time(
+	// Basic
 	$height: 30px,
 	$border-radius: 1px,
+	$error-color: #ab0f2f,
 	$background: white,
 	$error-background: #ffe7ec,
 	$border: 1px solid #dadada,
 	$error-border: 1px solid #e8879b,
-	$error-color: #ab0f2f,
 	$highlight: #1b66bf,
 	$highlight-complement: white
 ) {
 	.inp-time {
 		.drop-expando-box {
+			display: flex;
+			justify-content: center;
+			align-items: center;
 			height: $height;
 			background: $background;
 			border: $border;
 			border-radius: $border-radius;
+			padding: 5px 12px;
 
 			.range-sep {
 				margin: 0 0.5em;
@@ -72,6 +78,7 @@ $time-params: (
 			background: $background;
 			border: $border;
 			border-radius: $border-radius;
+			padding: 10px;
 		}
 
 		&.error {

@@ -1,16 +1,20 @@
 $checkbox-params: (
+	// Basic
 	"border-radius",
+	"background",
+	"error-background",
 	"border",
 	"focus-border",
-	"error-background",
 	"error-border"
 );
 
 @mixin checkbox(
+	// Basic
 	$border-radius: 1px,
+	$background: white,
+	$error-background: #ffe7ec,
 	$border: 1px solid #dadada,
 	$focus-border: 1px solid #1e2021,
-	$error-background: #ffe7ec,
 	$error-border: 1px solid #e8879b
 ) {
 	.inp-checkbox {
@@ -23,8 +27,8 @@ $checkbox-params: (
 			position: relative;
 			width: 1.8em;
 			height: 1.8em;
-			background: transparent;
 			color: inherit;
+			background: $background;
 			border: $border;
 			border-radius: $border-radius;
 			padding: 0;

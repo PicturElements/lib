@@ -44,6 +44,7 @@
 					button.short-action-button(
 						v-for="button in action.buttons"
 						:class="button.class"
+						tabindex="-1"
 						@click="button.act") {{ button.label }}
 </template>
 
@@ -57,9 +58,11 @@
 	} from "@qtxr/utils";
 	import { Input } from "@qtxr/form";
 	import EVT from "@qtxr/evt";
+	import utilMixin from "../util-mixin";
 
 	export default {
 		name: "Dials",
+		mixins: [utilMixin],
 		data: _ => ({
 			hovering: false,
 			guideData: {
@@ -245,7 +248,7 @@
 				let displayVal = value;
 
 				if (typeof dial.display == "function")
-					displayVal = dial.display(this.input, value);
+					displayVal = this.res(dial.display, value);
 
 				displayVal = String(displayVal);
 
@@ -322,12 +325,6 @@
 				}
 
 				return shortActions;
-			},
-			res(val, ...args) {
-				if (typeof val == "function")
-					return val.call(this, this.input, ...args);
-
-				return val;
 			}
 		},
 		computed: {

@@ -4,11 +4,11 @@
 		:style="getSelectorStyle()"
 		ref="selector")
 		.card-header
-			button.card-move.back(
+			button.card-move.back.lag-blur(
 				:style="{ visibility: input.cards[activeCardsIdx].back == false ? 'hidden' : null }"
 				@click="back(input.cards[activeCardsIdx])")
-			.card-nav(@click="nextCard") {{ navLabel }}
-			button.card-move.forwards(
+			button.card-nav.lag-blur(@click="nextCard") {{ navLabel }}
+			button.card-move.forwards.lag-blur(
 				:style="{ visibility: input.cards[activeCardsIdx].forwards == false ? 'hidden' : null }"
 				@click="forwards(input.cards[activeCardsIdx])")
 		.date-selector-cards
@@ -52,27 +52,33 @@
 					template(v-else)
 						slot(
 							:name="`${card.name}-card`"
-							v-bind="{ self: this, card, input }")
+							v-bind="bind({ card })")
 </template>
 
 <script>
 	import {
 		get,
-		requestFrame,
-		isFiniteNum
+		isObject,
+		isFiniteNum,
+		requestFrame
 	} from "@qtxr/utils";
 	import EVT from "@qtxr/evt";
 	import { Date as DateInput } from "@qtxr/form";
+	import utilMixin from "../util-mixin";
 
 	export default {
 		name: "DateSelector",
+		mixins: [utilMixin],
 		data: _ => ({
 			cardsData: [],
 			activeCardsIdx: 0,
 			defaultCardsIdx: 0,
 			activeDisplay: null,
 			displayIdx: 0,
-			yearRows: null
+			yearRows: null,
+			cache: {
+				calendarRows: null
+			}
 		}),
 		methods: {
 			// Day card
@@ -89,6 +95,9 @@
 				return labelsOut;
 			},
 			getCalendarRows(card) {
+				if (!this.isActiveCard(card) && this.cache.calendarRows)
+					return this.cache.calendarRows;
+
 				const rows = [],
 					val = this.input.value,
 					isRange = this.input.range,
@@ -96,7 +105,9 @@
 					startHash = this.hashDate(start),
 					end = isRange ? val[1] : val,
 					endHash = this.hashDate(end),
-					ad = this.getActiveDisplay();
+					ad = this.getActiveDisplay(),
+					minDateHash = this.hashDate(this.input.minDate),
+					maxDateHash = this.hashDate(this.input.maxDate);
 
 				const adDate = new Date(ad.year, ad.month),
 					monthLen = new Date(ad.year, ad.month + 1, 0).getDate(),
@@ -136,7 +147,8 @@
 								isRange && active :
 								isRange && (hash >= startHash && hash <= endHash),
 							isStart = isRange && activeStart,
-							isEnd = isRange && activeEnd;
+							isEnd = isRange && activeEnd,
+							isDisabled = hash < minDateHash || (maxDateHash > -1 && hash > maxDateHash);
 
 						if (active) {
 							if (aIdx == -1 && (j - i) < 6 && rows.length)
@@ -158,31 +170,35 @@
 								start: isStart,
 								end: isEnd,
 								today: j == day && isActiveMonth && !oob,
-								"out-of-bounds": oob,
+								disabled: isDisabled,
+								"out-of-bounds": oob || isDisabled,
 								"in-range": inRange,
 								"top-corner": j == i && lastActiveIdx > 0,
 								"bottom-corner": false
 							},
 							setDay: _ => {
+								if (isDisabled)
+									return;
+
 								const d = new Date(ad.year, ad.month, j);
 
 								if (isRange && !start.daySet) {
 									this.displayIdx = 0;
-									this.setActiveDisplayAndTrigger(d, 0);
-									this.setActiveDisplayAndTrigger(d, 1);
+									this.setActiveDisplayAndTrigger(d, card, 0);
+									this.setActiveDisplayAndTrigger(d, card, 1);
 								} else if (isRange) {
 									const startTime = new Date(start.year, start.month, start.day).getTime(),
 										currentTime = d.getTime();
 
 									if (currentTime < startTime || isEnd) {
 										this.displayIdx = 0;
-										this.setActiveDisplayAndTrigger(d, 0);
+										this.setActiveDisplayAndTrigger(d, card, 0);
 									} else {
 										this.displayIdx = 1;
-										this.setActiveDisplayAndTrigger(d, 1);
+										this.setActiveDisplayAndTrigger(d, card, 1);
 									}
 								} else
-									this.setActiveDisplayAndTrigger(d);
+									this.setActiveDisplayAndTrigger(d, card);
 
 								this.previousCard();
 							}
@@ -195,6 +211,7 @@
 					rows.push(row);
 				}
 
+				this.cache.calendarRows = rows;
 				return rows;
 			},
 			// Month card
@@ -205,6 +222,8 @@
 					node = isRange ? val[this.displayIdx] : val,
 					ad = this.getActiveDisplay(),
 					labels = this.res(card.labels),
+					minDateHash = this.hashDate(this.input.minDate, 2),
+					maxDateHash = this.hashDate(this.input.maxDate, 2),
 					w = 4,
 					h = 3;
 
@@ -212,14 +231,22 @@
 					const row = [];
 
 					for (let j = 0; j < w; j++) {
-						const month = i * w + j;
+						const month = i * w + j,
+							monthHash = ad.year * 12 + month,
+							isDisabled = monthHash < minDateHash || (maxDateHash > -1 && monthHash > maxDateHash);
 
 						const cell = {
 							value: labels[month],
 							class: {
-								active: node.month == month && node.monthSet
+								active: node.year == ad.year && node.month == month && node.monthSet,
+								disabled: isDisabled
 							},
-							setMonth: _ => this.setMonth(month, node)
+							setMonth: _ => {
+								if (isDisabled)
+									return;
+
+								this.setMonth(month, card, node);
+							}
 						};
 
 						row.push(cell);
@@ -230,43 +257,25 @@
 
 				return rows;
 			},
-			setMonth(month, node) {
+			setMonth(month, card, node) {
+				const minDate = this.getDate(this.input.minDate);
+				node.year = this.getActiveDisplay().year;
 				node.month = month;
-				node.day = 1;
-				this.setActiveDisplayAndTrigger(node);
-				node.daySet = false;
+
+				if (minDate && minDate.getFullYear() == node.year && minDate.getMonth() == month)
+					node.day = minDate.getDate();
+				else
+					node.day = 1;
+		
+				this.setActiveDisplayAndTrigger(node, card);
 				this.previousCard();
 			},
 			// Year card
 			getYearRows() {
-				const rows = [],
-					val = this.input.value,
-					isRange = this.input.range,
-					node = isRange ? val[this.displayIdx] : val,
-					ad = this.getActiveDisplay(),
-					w = 4,
-					offset = Math.floor(ad.year / w) * w,
-					rowPadding = 20;
-
-				for (let i = -rowPadding; i <= rowPadding; i++) {
-					const row = [];
-
-					for (let j = 0; j < w; j++) {
-						const year = offset + i * w + j;
-
-						const cell = {
-							value: year,
-							class: {
-								active: node.year == year && node.yearSet
-							},
-							setYear: _ => this.setYear(year, node)
-						};
-
-						row.push(cell);
-					}
-
-					rows.push(row);
-				}
+				const rows = this.genYearRows({
+					offset: this.getActiveDisplay().year,
+					padding: 20
+				});
 
 				requestFrame(_ => {
 					const scroll = this.$refs.yearScroll[0],
@@ -278,28 +287,103 @@
 				this.yearRows = rows;
 				return rows;
 			},
-			setYear(year, node) {
+			genYearRows(options) {
+				const rows = [],
+					val = this.input.value,
+					isRange = this.input.range,
+					node = isRange ? val[this.displayIdx] : val,
+					minDateHash = this.hashDate(this.input.minDate, 1),
+					maxDateHash = this.hashDate(this.input.maxDate, 1),
+					offset = Math.floor(options.offset / 4) * 4,
+					start = -(options.paddingStart || options.padding || 0),
+					end = 1 + (options.paddingEnd || options.padding || 0)
+
+				for (let i = start; i < end; i++) {
+					const row = [];
+
+					for (let j = 0; j < 4; j++) {
+						const year = offset + i * 4 + j,
+							isDisabled = year < minDateHash || (maxDateHash > -1 && year > maxDateHash);
+
+						const cell = {
+							value: year,
+							class: {
+								active: node.year == year && node.yearSet,
+								disabled: isDisabled
+							},
+							setYear: _ => {
+								if (isDisabled)
+									return;
+
+								this.setYear(year, this.input.cards[this.activeCardsIdx], node);
+							}
+						};
+
+						row.push(cell);
+					}
+
+					rows.push(row);
+				}
+
+				return rows;
+			},
+			setYear(year, card, node) {
+				const minDate = this.getDate(this.input.minDate);
+
+				if (minDate && minDate.getFullYear() == year) {
+					node.month = minDate.getMonth();
+					node.day = minDate.getDate();
+				} else {
+					node.month = 0;
+					node.day = 1;
+				}
+
 				node.year = year;
-				node.month = 0;
-				node.day = 1;
-				this.setActiveDisplayAndTrigger(node);
-				node.monthSet = false;
-				node.daySet = false;
+				this.setActiveDisplayAndTrigger(node, card);
 				this.previousCard();
 			},
-			handleYearScroll() {
-				
+			handleYearScroll(evt) {
+				const scrollTarget = evt.target,
+					scrollTop = scrollTarget.scrollTop,
+					scrollHeight = scrollTarget.scrollHeight,
+					scrollRealEstate = scrollHeight - scrollTarget.offsetHeight,
+					rowHeight = scrollHeight / scrollTarget.childElementCount,
+					threshold = scrollHeight / 10,
+					shift = 20;
+
+				if (scrollTop < threshold) {
+					const rows = this.genYearRows({
+						offset: this.yearRows[0][0].value,
+						paddingStart: shift,
+						paddingEnd: -1
+					});
+
+					this.yearRows = rows.concat(this.yearRows.slice(0, -shift));
+					scrollTarget.scrollTop += shift * rowHeight;
+				} else if (scrollRealEstate - scrollTop < threshold) {
+					const rows = this.genYearRows({
+						offset: this.yearRows[this.yearRows.length - 1][0].value,
+						paddingStart: 1,
+						paddingEnd: shift
+					});
+
+					this.yearRows = this.yearRows.slice(shift).concat(rows);
+					scrollTarget.scrollTop -= shift * rowHeight;
+				}
 			},
 			// Other methods pertinent to UI
-			hashDate(d) {
-				return (d.year * 12 + d.month) * 50 + d.day;
-			},
 			back(card) {
 				const ad = this.getActiveDisplay();
 
 				if (typeof card.back == "function")
 					this.res(card.back, this);
 				else switch (card.name) {
+					case "month":
+						this.setActiveDisplay({
+							year: ad.year - 1
+						});
+						break;
+
 					case "day":
 						this.setActiveDisplay({
 							year: ad.month ? ad.year : ad.year - 1,
@@ -314,6 +398,12 @@
 				if (typeof card.forwards == "function")
 					this.res(card.forwards, this);
 				else switch (card.name) {
+					case "month":
+						this.setActiveDisplay({
+							year: ad.year + 1
+						});
+						break;
+
 					case "day":
 						this.setActiveDisplay({
 							year: ad.month < 11 ? ad.year : ad.year + 1,
@@ -329,15 +419,69 @@
 			previousCard() {
 				if (this.activeCardsIdx > 0)
 					this.activeCardsIdx--;
+				else if (!this.input.range && this.eagerCollapse && this.dropRuntime)
+					this.dropRuntime.collapse();
 			},
 			// General methods
+			hashDate(d, precision = 3) {
+				let year = null,
+					month = null,
+					day = null;
+
+				if (isObject(d)) {
+					year = d.year;
+					month = d.month;
+					day = d.day;
+				} else {
+					const date = this.getDate(d);
+
+					if (!date)
+						return -1;
+
+					year = date.getFullYear();
+					month = date.getMonth();
+					day = date.getDate();
+				}
+
+				switch (precision) {
+					case 1:
+						return year;
+
+					case 2:
+						return year * 12 + month;
+
+					case 3:
+					default:
+						return (year * 12 + month) * 50 + day;
+				}
+			},
+			getDate(dateData) {
+				let date = this.res(dateData);
+
+				switch (typeof date) {
+					case "number":
+					case "string":
+						date = new Date(date);
+						break;
+				}
+
+				if (date instanceof Date && !isNaN(date.valueOf()))
+					return date;
+
+				return null;
+			},
 			updateCardsData() {
 				const cardsData = [];
 				this.defaultCardsIdx = 0;
 
-				const addCardsData = dateData => {
+				const addCardsData = ad => {
 					const runtime = {
 							defaultIdx: 0,
+							set: {
+								yearSet: ad.yearSet,
+								monthSet: ad.monthSet,
+								daySet: ad.daySet
+							},
 							cards: []
 						},
 						cards = this.input.cards;
@@ -345,7 +489,7 @@
 					for (let i = 0, l = cards.length; i < l; i++) {
 						const card = cards[i],
 							cardData = this.mkCardData(card, runtime),
-							value = get(dateData, cardData.card.accessor, null);
+							value = get(ad, cardData.card.name, null);
 
 						this.setCardValue(cardData, value);
 						if (cardData.card.defaultCard) {
@@ -361,10 +505,10 @@
 				};
 
 				if (this.input.range) {
-					for (let i = 0, l = this.input.value.length; i < l; i++)
-						addCardsData(this.input.value[i]);
+					for (let i = 0, l = this.activeDisplay.length; i < l; i++)
+						addCardsData(this.activeDisplay[i]);
 				} else
-					addCardsData(this.input.value);
+					addCardsData(this.activeDisplay);
 
 				this.cardsData = cardsData;
 				this.emitDisplayData();
@@ -397,16 +541,19 @@
 				cardData.value = value;
 				cardData.displayVal = String(displayVal);
 			},
-			trigger(idx) {
-				const set = (targ, d) => {
-					for (const k in d) {
-						const setKey = `${k}Set`;
-						if (!d.hasOwnProperty(k) || !targ.hasOwnProperty(k))
-							continue;
+			isActiveCard(card) {
+				return this.input.cards[this.activeCardsIdx] == card;
+			},
+			trigger(card, idx) {
+				const set = ad => {
+					let foundIdx = false;
 
-						targ[k] = d[k];
-						if (targ.hasOwnProperty(setKey))
-							targ[setKey] = true;
+					for (let i = 0, l = this.input.cards.length; i < l; i++) {
+						const c = this.input.cards[i];
+						if (c == card)
+							foundIdx = true;
+
+						ad[`${c.name}Set`] = foundIdx;
 					}
 				};
 
@@ -414,17 +561,16 @@
 
 				if (Array.isArray(val)) {
 					if (typeof idx == "number")
-						set(val[idx], this.activeDisplay[idx]);
+						set(this.activeDisplay[idx]);
 					else {
 						for (let i = 0, l = val.length; i < l; i++)
-							set(val[i], this.activeDisplay[i]);
+							set(this.activeDisplay[i]);
 					}
 				} else
-					set(val, this.activeDisplay);
+					set(this.activeDisplay);
 
-				this.$emit("trigger");
 				this.updateCardsData();
-				this.emitDisplayData();
+				this.$emit("trigger");
 			},
 			emitDisplayData() {
 				this.$emit("displaydatachange", {
@@ -435,7 +581,9 @@
 				});
 			},
 			getSelectorStyle() {
-				if (this.input.cards[this.activeCardsIdx].hideHeader) {
+				const card = this.input.cards[this.activeCardsIdx];
+
+				if (card.staticHeight || card.hideHeader) {
 					return {
 						height: `${this.$refs.selector.getBoundingClientRect().height}px`
 					};
@@ -490,24 +638,37 @@
 
 				return outLabels;
 			},
-			setActiveDisplayAndTrigger(data, idx = this.displayIdx) {
+			setActiveDisplayAndTrigger(data, card, idx = this.displayIdx) {
 				this.setActiveDisplay(data, idx);
-				this.trigger(idx)
+				this.trigger(card, idx);
 			},
 			setActiveDisplay(data, idx = this.displayIdx) {
 				const set = (ad, d) => {
-					const year = d instanceof Date ? d.getFullYear() : d.year,
-						month = d instanceof Date ? d.getMonth() : d.month,
-						day = d instanceof Date ? d.getDate() : d.day;
+					if (d instanceof Date) {
+						d = {
+							year: d.getFullYear(),
+							month: d.getMonth(),
+							day: d.getDate()
+						};
+					}
 
-					if (isFiniteNum(year))
-						ad.year = year;
+					for (const k in d) {
+						if (!d.hasOwnProperty(k))
+							continue;
 
-					if (isFiniteNum(month))
-						ad.month = month;
-						
-					if (isFiniteNum(day))
-						ad.day = day;
+						switch (k) {
+							case "year":
+							case "month":
+							case "day":
+								if (isFiniteNum(d[k]))
+									ad[k] = d[k];
+								break;
+
+							default:
+								if (!ad.hasOwnProperty(k))
+									ad[k] = d[k];
+						}
+					}
 				};
 
 				if (Array.isArray(data)) {
@@ -544,12 +705,6 @@
 					return this.activeDisplay[idx];
 
 				return this.activeDisplay;
-			},
-			res(val, ...args) {
-				if (typeof val == "function")
-					return val.call(this, this.input, ...args);
-
-				return val;
 			}
 		},
 		computed: {
@@ -558,13 +713,15 @@
 			}
 		},
 		props: {
-			input: null
+			input: null,
+			dropRuntime: Object,
+			eagerCollapse: Boolean
 		},
 		components: {},
 		watch: {
 			"input.value"() {
-				this.updateCardsData();
 				this.setActiveDisplay(this.input.value);
+				this.updateCardsData();
 				this.yearRows = null;
 			},
 			activeCardsIdx() {
@@ -572,8 +729,8 @@
 			}
 		},
 		beforeMount() {
-			this.updateCardsData();
 			this.setActiveDisplay(this.input.value);
+			this.updateCardsData();
 		}
 	};
 </script>

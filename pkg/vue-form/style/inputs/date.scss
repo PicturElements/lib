@@ -1,44 +1,38 @@
 $date-params: (
+	// Basic
 	"height",
 	"border-radius",
+	"error-color",
 	"background",
 	"error-background",
-	"dial-background",
-	"dial-background-dark",
 	"border",
 	"error-border",
-	"error-color",
-	"blob-radius",
-	"delimitation-padding",
-	"tight-delimitation-padding",
 	"highlight",
-	"highlight-complement",
-	"transition-duration"
+	"highlight-complement"
 );
 
 @mixin date(
+	// Basic
 	$height: 30px,
 	$border-radius: 1px,
+	$error-color: #ab0f2f,
 	$background: white,
 	$error-background: #ffe7ec,
-	$dial-background: whitesmoke,
-	$dial-background-dark: #dadee2,
 	$border: 1px solid #dadada,
 	$error-border: 1px solid #e8879b,
-	$error-color: #ab0f2f,
-	$blob-radius: 15px,
-	$delimitation-padding: 20px,
-	$tight-delimitation-padding: 15px,
 	$highlight: #1b66bf,
-	$highlight-complement: white,
-	$transition-duration: 300ms
+	$highlight-complement: white
 ) {
 	.inp-date {
 		.drop-expando-box {
+			display: flex;
+			justify-content: center;
+			align-items: center;
 			height: $height;
 			background: $background;
 			border: $border;
 			border-radius: $border-radius;
+			padding: 5px 12px;
 
 			.date-display-item {
 				white-space: nowrap;
@@ -72,6 +66,7 @@ $date-params: (
 			background: $background;
 			border: $border;
 			border-radius: $border-radius;
+			padding: 10px;
 		}
 
 		&.error {

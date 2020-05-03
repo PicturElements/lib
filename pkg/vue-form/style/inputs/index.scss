@@ -1,16 +1,14 @@
 @use "~@qtxr/scss-utils" as *;
 
-// Auxiliary styling
-@use "./auxiliary/general.scss" as *;
-@use "./auxiliary/drop.scss" as *;
-@use "./auxiliary/search-input-box.scss" as *;
-
-// Core input styling
-@use "./core-inputs/date-selector.scss" as *;
-@use "./core-inputs/time-selector.scss" as *;
+// Core styling
+@use "../core/date-selector.scss" as *;
+@use "../core/drop.scss" as *;
+@use "../core/options.scss" as *;
+@use "../core/search-input-box.scss" as *;
+@use "../core/time-selector.scss" as *;
 
 // Input styling
-@use "./input.scss" as *;
+@use "./base.scss" as *;
 @use "./checkbox.scss" as *;
 @use "./coordinates.scss" as *;
 @use "./count.scss" as *;
@@ -22,33 +20,36 @@
 @use "./media.scss" as *;
 @use "./multi.scss" as *;
 @use "./radio.scss" as *;
+@use "./text.scss" as *;
 @use "./textarea.scss" as *;
 @use "./time.scss" as *;
 
 @mixin inputs($theme: ()) {
-	// Auxiliary styling
-	@include general(compose-args($theme, $general-params, "general")...);
-	@include drop(compose-args($theme, $drop-params, "general", "drop")...);
-	@include search-input-box(compose-args($theme, $search-input-box-params, "general", "search-input-box")...);
-
-	// Core input styling
-	$core-theme: map-get($theme, "core-inputs");
-	@include date-selector(compose-args($core-theme, $date-selector-params, "general", "date-selector")...);
-	@include time-selector(compose-args($core-theme, $time-selector-params, "general", "time-selector")...);
+	// Core styling
+	$core-theme: map-get($theme, "core");
+	$core-theme: map-merge($core-theme, (
+		base: map-merge(map-get($theme, "base") or (), map-get($core-theme, "base") or ())
+	));
+	@include date-selector(compose-args($core-theme, $date-selector-params, "base", "date-selector")...);
+	@include drop(compose-args($core-theme, $drop-params, "base", "drop")...);
+	@include options(compose-args($core-theme, $options-params, "base", "options")...);
+	@include search-input-box(compose-args($core-theme, $search-input-box-params, "base", "search-input-box")...);
+	@include time-selector(compose-args($core-theme, $time-selector-params, "base", "time-selector")...);
 	
 	// Input style
-	@include input(compose-args($theme, $input-params, "general", "input")...);
-	@include coordinates(compose-args($theme, $coordinates-params, "general", "input", "coordinates")...);
-	@include checkbox(compose-args($theme, $checkbox-params, "general", "input", "checkbox")...);
-	@include count(compose-args($theme, $count-params, "general", "input", "count")...);
-	@include date(compose-args($theme, $date-params, "general", "input", "date")...);
-	@include date-time(compose-args($theme, $date-time-params, "general", "input", "date-time")...);
-	@include dropdown(compose-args($theme, $dropdown-params, "general", "input", "dropdown")...);
-	@include formatted(compose-args($theme, $formatted-params, "general", "input", "formatted")...);
-	@include list-style(compose-args($theme, $list-params, "general", "input", "list")...);
-	@include media(compose-args($theme, $media-params, "general", "input", "media")...);
-	@include multi(compose-args($theme, $multi-params, "general", "input", "multi")...);
-	@include radio(compose-args($theme, $radio-params, "general", "input", "radio")...);
-	@include textarea(compose-args($theme, $textarea-params, "general", "input", "textarea")...);
-	@include time(compose-args($theme, $time-params, "general", "input", "time")...);
+	@include base(compose-args($theme, $base-params, "base")...);
+	@include coordinates(compose-args($theme, $coordinates-params, "base", "coordinates")...);
+	@include checkbox(compose-args($theme, $checkbox-params, "base", "checkbox")...);
+	@include count(compose-args($theme, $count-params, "base", "count")...);
+	@include date(compose-args($theme, $date-params, "base", "date")...);
+	@include date-time(compose-args($theme, $date-time-params, "base", "date-time")...);
+	@include dropdown(compose-args($theme, $dropdown-params, "base", "dropdown")...);
+	@include formatted(compose-args($theme, $formatted-params, "base", "formatted")...);
+	@include list-style(compose-args($theme, $list-params, "base", "list")...);
+	@include media(compose-args($theme, $media-params, "base", "media")...);
+	@include multi(compose-args($theme, $multi-params, "base", "multi")...);
+	@include radio(compose-args($theme, $radio-params, "base", "radio")...);
+	@include text(compose-args($theme, $text-params, "base", "text")...);
+	@include textarea(compose-args($theme, $textarea-params, "base", "textarea")...);
+	@include time(compose-args($theme, $time-params, "base", "time")...);
 }
