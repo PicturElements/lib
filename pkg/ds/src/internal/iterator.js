@@ -1,3 +1,4 @@
+import { hasOwn } from "@qtxr/utils";
 import { SYM_ITER_KEY } from "@qtxr/utils/internal";
 
 export default class Iterator {
@@ -8,7 +9,7 @@ export default class Iterator {
 
 		switch (typeof fetcher) {
 			case "string":
-				if (Iterator.fetchers.hasOwnProperty(fetcher))
+				if (hasOwn(Iterator.fetchers, fetcher))
 					this._fetchNext = Iterator.fetchers[fetcher].bind(this, this, source);
 				break;
 
@@ -61,7 +62,7 @@ export default class Iterator {
 
 Iterator.fetchers = {
 	// Basic ArrayIterator-like fetchers
-	entries: (iter, source, nextIdentifier) => {
+	entries(iter, source, nextIdentifier) {
 		if (nextIdentifier == source.length)
 			return null;
 
@@ -70,7 +71,7 @@ Iterator.fetchers = {
 			nextIdentifier: nextIdentifier + 1
 		};
 	},
-	keys: (iter, source, nextIdentifier) => {
+	keys(iter, source, nextIdentifier) {
 		if (nextIdentifier == source.length)
 			return null;
 
@@ -79,7 +80,7 @@ Iterator.fetchers = {
 			nextIdentifier: nextIdentifier + 1
 		};
 	},
-	values: (iter, source, nextIdentifier) => {
+	values(iter, source, nextIdentifier) {
 		if (nextIdentifier == source.length)
 			return null;
 

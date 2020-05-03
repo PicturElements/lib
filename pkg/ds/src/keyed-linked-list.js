@@ -255,12 +255,13 @@ function assertValidKey(key) {
 	if (isPrimitive(key))
 		return true;
 
-	console.warn("Invalid key: KeyedLinkedList keys must be either strings or symbols");
+	console.warn("Invalid key: KeyedLinkedList keys must be primitive");
 	return false;
 }
 
 function mkIterator(inst, dispatcher) {
-	let n, v;
+	let n,
+		v;
 
 	return new Iterator(
 		inst,
@@ -271,24 +272,24 @@ function mkIterator(inst, dispatcher) {
 			if (n == null)
 				n = inst.head;
 			else if (typeof n == "number")
-				n = inst.find((v, k) => k > n);
+				n = inst.find((_, k) => k > n);
 			else if (!n.linked)
-				n = inst.find((v, k) => k > n.id);
+				n = inst.find((_, k) => k > n.id);
 
 			if (!n)
 				return null;
 
 			switch (dispatcher) {
 				case "key":
-					v = v.key;
+					v = n.key;
 					break;
 
 				case "value":
-					v = v.value;
+					v = n.value;
 					break;
 
 				case "entry":
-					v = [v.key, v.value];
+					v = [n.key, n.value];
 					break;
 
 				case "kv-key":
@@ -309,7 +310,7 @@ function mkIterator(inst, dispatcher) {
 
 			return {
 				value: v,
-				nextIdentifier: n.next || n.id
+				nextIdentifier: n.next || n.id + 1
 			};
 		}
 	);
