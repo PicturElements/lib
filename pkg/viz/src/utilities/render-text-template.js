@@ -1,6 +1,7 @@
 import {
 	get,
 	inject,
+	hasOwn,
 	parseStr,
 	trimStr,
 	spliceStr
@@ -9,7 +10,7 @@ import {
 import { createElemStr } from "./plain-dom";
 
 const textTemplateRegex = /{{((?:\\.|{[^{]|[^{])*?)}}|\[((?:\\.|.)*?)\]/g, 		// /{{((?:[^{}\\]*(?:\\.|{[^{]|}[^}])?)*)}}|\[((?:[^\[\]\\]*(?:\\.)?)*)\]/g,
-	unescapeTextTemplateRegex = /\\([{}\[\]])/g,
+	unescapeTextTemplateRegex = /\\([{}[\]])/g,
 	tagSplitRegex = /([^\s]+)(.*)/, 											// /\s*((?:[^|\\\s]*(?:\\.)?)*)\s*(?:\|(.*))?/,
 	attrSplitRegex = /([^|\s]*?)\s*=\s*(("|')(?:\\.|.)*?\3|[^\s]+)/g,			// /(?:([^\\=\s]*(?:\\.)?)*)\s*=\s*("(?:[^\\"]*(?:\\.)?)*"|'(?:[^\\']*(?:\\.)?)*'|[^\s]+)/g,
 	formatRegex = /((?:\\.|[^{}])*?|^){((?:\\.|.)*?)}/, 						// /((?:[^\\{}]+(?:\\.)?|^)){((?:[^\\{}]*(?:\\.)?)*)}/,
@@ -35,7 +36,7 @@ export default function renderTextTemplate(template, data, secondaryData, placeh
 		const matchLen = ex[0].length,
 			matchIdx = ex.index;
 
-		out += template.substr(idx, matchIdx - idx);
+		out += template.substring(idx, matchIdx);
 
 		if (ex[1]) {		// substitution
 			const tagData = processTemplateTag(ex[1]),
@@ -44,9 +45,11 @@ export default function renderTextTemplate(template, data, secondaryData, placeh
 
 			let item = null;
 
-			if (selector)
-				item = get(selector[1] == "0" ? data : secondaryData, accessor.substr(selector[0].length));
-			else
+			if (selector) {
+				item = get(selector[1] == "0" ?
+					data :
+					secondaryData, accessor.substring(selector[0].length));
+			} else
 				item = get(secondaryData, accessor, get(data, accessor));
 
 			if (typeof item == "function")
@@ -69,7 +72,7 @@ export default function renderTextTemplate(template, data, secondaryData, placeh
 		idx = matchIdx + matchLen;
 	}
 
-	out += template.substr(idx);
+	out += template.substring(idx);
 
 	return out;
 }
@@ -118,30 +121,37 @@ function modifyTag(data, vars, inst) {
 	for (let i = 0, l = modifyOrder.length; i < l; i++) {
 		const k = modifyOrder[i];
 
-		if (vars.hasOwnProperty(k)) {
+		if (hasOwn(vars, k)) {
 			switch (k) {
 				case "wrap":
 					data = createElemStr(vars.wrap, data, config);
 					break;
+
 				case "prefix-wrap":
 					vars.prefix = createElemStr(vars["prefix-wrap"], vars.prefix, config);
 					break;
+
 				case "postfix-wrap":
 					vars.postfix = createElemStr(vars["postfix-wrap"], vars.prefix, config);
 					break;
+
 				case "wrap-before":
 					data = createElemStr(vars["wrap-before"], data, config);
 					break;
+
 				case "round":
 					data = isNaN(data) ? data : Number(data).toFixed(parseStr(vars.round));
 					break;
+
 				case "prefix":
 					data = vars.prefix + "" + data;
 					break;
+
 				case "postfix":
 					data = data + "" + vars.prefix;
 					break;
-				case "style":
+
+				case "style": {
 					const styles = vars.style.trim().split(/\s*;\s*/),
 						stylesObj = {};
 
@@ -155,6 +165,7 @@ function modifyTag(data, vars, inst) {
 					inject(config, {
 						style: stylesObj
 					});
+				}
 			}
 		}
 	}

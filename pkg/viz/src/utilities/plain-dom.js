@@ -1,4 +1,5 @@
 import {
+	hasOwn,
 	inject,
 	trimStr
 } from "@qtxr/utils";
@@ -6,7 +7,7 @@ import {
 import { node } from "../utils";
 
 const stringIdentFullRegex = /^"(?:[^\\"]*(?:\\.)?)*"|'(?:[^\\']*(?:\\.)?)*'$/g,
-	attrRegex = /\[(?:[^"'\[\]\\]*(?:'[^'\\]*(?:\\.[^'\\]*)*'|"[^"\\]*(?:\\.[^"\\]*)*")?|\\.)*\]/,
+	attrRegex = /\[(?:[^"'[\]\\]*(?:'[^'\\]*(?:\\.[^'\\]*)*'|"[^"\\]*(?:\\.[^"\\]*)*")?|\\.)*\]/,
 	attrPropRegex = /((?:[^\\=]*(?:\\.)?)*)=/,
 	nameRegex = /^([a-z-]+):\s*/i,
 	tagRegex = /^[a-z-]+/i,
@@ -86,7 +87,7 @@ function createElemStr(str, inner, extraAttr) {
 
 	if (extraAttr) {
 		for (let k in extraAttr) {
-			if (extraAttr.hasOwnProperty(k) && allowedExtraAttrs.hasOwnProperty(k)) {
+			if (hasOwn(extraAttr, k) && hasOwn(allowedExtraAttrs, k)) {
 				let attrObj = {};
 				attrObj[k] = extraAttr[k];
 				inject(data.attr, attrObj);
@@ -98,14 +99,14 @@ function createElemStr(str, inner, extraAttr) {
 		tag += " class=\"" + data.class.join(" ") + "\"";
 
 	for (let k in data.attr) {
-		if (data.attr.hasOwnProperty(k)) {
+		if (hasOwn(data.attr, k)) {
 			const dak = data.attr[k];
 			let attrVal = data.attr[k];
 
 			if (k == "style") {
 				let styles = [];
 				for (let k2 in dak) {
-					if (dak.hasOwnProperty(k2))
+					if (hasOwn(dak, k2))
 						styles.push(k2 + ": " + dak[k2]);
 				}
 
@@ -118,7 +119,7 @@ function createElemStr(str, inner, extraAttr) {
 
 	tag += ">";
 
-	if (VOID_TAGS.hasOwnProperty(data.tag))
+	if (hasOwn(VOID_TAGS, data.tag))
 		return tag;
 
 	return tag + (typeof inner == "function" ? inner() : inner) + "</" + data.tag + ">";
@@ -139,9 +140,11 @@ function extractAttrs(str) {
 		// If the data in capture group #1 is falsy, it means it's only matched a
 		// single = character, which makes the property invalid.
 		if (propEx && propEx[1]) {
-			let rest = attr.substr(propEx[0].length).trim();
+			let rest = attr.substring(propEx[0].length).trim();
 			// Also trim away quotes if the attribute value looks like a string
-			rest = stringIdentFullRegex.test(rest) ? trimStr(rest, 1, 1) : rest;
+			rest = stringIdentFullRegex.test(rest) ?
+				trimStr(rest, 1, 1) :
+				rest;
 			attrs[propEx[1]] = rest;
 		} else if (attr)	// expect boolean attribute otherwise
 			attrs[attr] = true;
