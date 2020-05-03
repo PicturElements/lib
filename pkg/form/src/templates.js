@@ -2,7 +2,8 @@ import { basicInterpolate } from "@qtxr/utils";
 
 // When adding templates, remember this:
 // https://stackoverflow.com/questions/21177489/selectionstart-selectionend-on-input-type-number-no-longer-allowed-in-chrome
-// If not absolutely necessary, use text, search, password, tel, or url types - or else checkWord will not work properly
+// If not absolutely necessary, use text, search, password, tel, or url types or else checkWord
+// will not work properly
 
 const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/i,
 	dateRegex = /^(\d{1,2})\s*\/\s*(\d{2})$/,
@@ -24,9 +25,7 @@ const templates = {
 		type: "tel",
 		value: "",
 		checkKey: "natural",
-		checkWord(str) {
-			return str.length <= 4;
-		},
+		checkWord: str => str.length <= 4,
 		validate({ value }) {
 			if (!/^\d{3,4}$/.test(value))
 				return "CVV numbers are between 3 and 4 digits in length";
@@ -35,7 +34,11 @@ const templates = {
 	"cc-date": {
 		type: "tel",
 		value: "",
-		checkKey: /[\d/\s]/,
+		checkKey: {
+			check: /[\d/\s]/,
+			allowNonPrintable: true,
+			allowBindings: true
+		},
 		validate({ value }) {
 			const ex = dateRegex.exec(value);
 
@@ -70,10 +73,12 @@ const templates = {
 	"cc-number": {
 		type: "tel",
 		value: "",
-		checkKey: /[\d\s]/,
-		checkWord(str) {
-			return str.replace(/\s/g, "").length <= 19;
+		checkKey: {
+			check: /[\d\s]/,
+			allowNonPrintable: true,
+			allowBindings: true
 		},
+		checkWord: str => str.replace(/\s/g, "").length <= 19,
 		validate({ value }) {
 			value = value.replace(/\s/g, "");
 
@@ -82,9 +87,7 @@ const templates = {
 			else if (!luhn(value))
 				return "This is not a valid card number";
 		},
-		extract({ value }) {
-			return value.replace(/\s/g, "");
-		}
+		extract: ({ value }) => value.replace(/\s/g, "")
 	},
 	checkbox: {
 		type: "checkbox",
@@ -143,7 +146,11 @@ const templates = {
 	email: {
 		type: "email",
 		value: "",
-		checkKey: /[^\s]/,
+		checkKey: {
+			check: /[^\s]/,
+			allowNonPrintable: true,
+			allowBindings: true
+		},
 		validate: mkRegexValidator(emailRegex, "Invalid email address")
 	},
 	firstName: {
@@ -158,8 +165,15 @@ const templates = {
 	int: {
 		type: "tel",
 		value: "",
-		checkKey: /[0-9-]/,
-		checkWord: /^-?[0-9]*$/
+		checkKey: {
+			check: /[0-9-]/,
+			allowNonPrintable: true,
+			allowBindings: true
+		},
+		checkWord: {
+			validate: /^-?[0-9]*$/,
+			allowBindings: true
+		}
 	},
 	lastName: {
 		value: "",
@@ -202,8 +216,15 @@ const templates = {
 	number: {
 		type: "tel",
 		value: "",
-		checkKey: /[0-9.,-]/,
-		checkWord: /^-?[0-9]*(\.[0-9]*)?$/
+		checkKey: {
+			check: /[0-9.,-]/,
+			allowNonPrintable: true,
+			allowBindings: true
+		},
+		checkWord: {
+			validate: /^-?[0-9]*(\.[0-9]*)?$/,
+			allowBindings: true
+		}
 	},
 	password: {
 		type: "password",
@@ -229,7 +250,11 @@ const templates = {
 	},
 	phone: {
 		value: "",
-		checkKey: /[0-9+\s-+]/,
+		checkKey: {
+			check: /[0-9+\s-+]/,
+			allowNonPrintable: true,
+			allowBindings: true
+		},
 		validate: mkRegexValidator(/^[0-9+\s-]+$/, "Please specify a valid phone number")
 	},
 	radio: {
@@ -243,9 +268,7 @@ const templates = {
 	state: {
 		value: "",
 		checkKey: "word",
-		checkWord(str) {
-			return str.length <= 2;
-		},
+		checkWord: str => str.length <= 2,
 		validate: mkRangeValidator(2, 2, "Please specify a state in XX form", "Please specify a state in XX form"),
 	},
 	text: {
@@ -296,12 +319,23 @@ const templates = {
 	uint: {
 		type: "tel",
 		value: "",
-		checkKey: /[0-9]/,
-		checkWord: /^[0-9]+$/
+		checkKey: {
+			check: /[0-9]/,
+			allowNonPrintable: true,
+			allowBindings: true
+		},
+		checkWord: {
+			validate: /^[0-9]+$/,
+			allowBindings: true
+		}
 	},
 	url: {
 		value: "",
-		checkKey: /[^\s]/,
+		checkKey: {
+			check: /[^\s]/,
+			allowNonPrintable: true,
+			allowBindings: true
+		},
 		validate: mkRegexValidator(/^(?:https?:\/\/)\w+(?:[.:][\w-]+)+(?:\/[\w-]*)*(?:[#?].*)?$/, "Please specify a valid URL")
 	},
 	zip: {

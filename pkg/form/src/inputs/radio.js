@@ -22,7 +22,8 @@ export default class Radio extends Input {
 
 		return this.resolveOptionSelection({
 			value,
-			resolve: runtime => resolveVal(this.options, runtime, true)
+			resolve: runtime => resolveVal(this.options, runtime, true),
+			passThroughValue: true
 		});
 	}
 }

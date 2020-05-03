@@ -145,6 +145,11 @@ export default class Input extends Hookable {
 	}
 
 	finishInit() {
+		this.finishSetup();
+		this.initValue();
+	}
+
+	finishSetup() {
 		inject(this, this._options, {
 			schema: injectSchema(initOptionsSchema, this._schema, "override|cloneTarget"),
 			strictSchema: true,
@@ -166,11 +171,15 @@ export default class Input extends Hookable {
 		this.hookAll(rootHooks);
 		this.hookAll(this._options.hooks);
 		this.default = this._options.value;
+	}
+
+	initValue() {
 		this.setValue(this._options.value);
 		this.instantiated = true;
 	}
 
 	[CHECK](evt) {
+		console.log(evt);
 		if (!isValidKey(evt, this.handlers.checkKey))
 			evt.preventDefault();
 		else if (!isValidWord(evt, this.handlers.checkWord))
@@ -526,6 +535,7 @@ export default class Input extends Hookable {
 		const {
 			value,
 			resolve,
+			resolveOptionValue = null,
 			accessor = null,
 			passThroughValue = false
 		} = resolveOpts;
@@ -552,10 +562,14 @@ export default class Input extends Hookable {
 				return value;
 
 			for (let i = 0, l = opts.length; i < l; i++) {
+				const optionValue = typeof resolveOptionValue == "function" ?
+					resolveOptionValue(opts[i], i, opts) :
+					opts[i];
+
 				if (injectAccessor) {
-					if (get(opts[i], injectAccessor) == value)
+					if (get(optionValue, injectAccessor) == value)
 						return opts[i];
-				} else if (this.compare(value, opts[i]))
+				} else if (this.compare(value, optionValue))
 					return opts[i];
 			}
 
@@ -566,7 +580,6 @@ export default class Input extends Hookable {
 
 		if (value != null || this.autoSet) {
 			const options = resolve(this.mkRuntime());
-			this.pendingOptions = options;
 
 			if (isThenable(options))
 				return options.then(opts => dispatch(opts));
@@ -575,6 +588,17 @@ export default class Input extends Hookable {
 		}
 
 		return passThroughValue ? value : null;
+	}
+
+	inferAccessor() {
+		const accessor = typeof this.handlers.inject == "string" ?
+			this.handlers.inject :
+			this.handlers.extract;
+	
+		if (typeof accessor == "string")
+			return accessor;
+	
+		return null;
 	}
 
 	// Aliases for public handlers
@@ -599,7 +623,7 @@ export default class Input extends Hookable {
 	}
 
 	set compare(handler) {
-		this.handlers.compare = mkComparator(handler);
+		this.handlers.compare = mkComparator(this, handler);
 	}
 
 	get hash() {
@@ -607,7 +631,7 @@ export default class Input extends Hookable {
 	}
 
 	set hash(handler) {
-		this.handlers.hash = mkHasher(handler);
+		this.handlers.hash = mkHasher(this, handler);
 	}
 
 	get if() {
@@ -825,7 +849,7 @@ function mkChecker(checker, checkerKey) {
 	return null;
 }
 
-function mkComparator(precursor) {
+function mkComparator(input, precursor) {
 	return (a, b) => {
 		const aNullish = a == null,
 			bNullish = b == null;
@@ -849,33 +873,45 @@ function mkComparator(precursor) {
 
 		switch (typeof precursor) {
 			case "string":
-				return get(a, precursor) == get(b, precursor);
+				return get(a, precursor) === get(b, precursor);
 
 			case "function":
 				return precursor(a, b);
 
-			default:
+			default: {
+				const accessor = input.inferAccessor();
+				if (accessor != null)
+					return get(a, accessor) === get(b, accessor);
+
 				return equals(a, b);
+			}
 		}
 	};
 }
 
-function mkHasher(precursor) {
-	switch (typeof precursor) {
-		case "function":
-			return precursor;
+function mkHasher(input, precursor) {
+	return value => {
+		switch (typeof precursor) {
+			case "function":
+				return precursor(value);
 
-		case "string":
-			return value => hash(get(value, precursor));
+			case "string":
+				return hash(get(value, precursor));
 
-		case "boolean":
-			return precursor ?
-				value => hash(value) :
-				null;
+			case "boolean":
+				return precursor ?
+					hash(value) :
+					null;
 
-		default:
-			return null;
-	}
+			default: {
+				const accessor = input.inferAccessor();
+				if (accessor != null)
+					return hash(get(value, accessor));
+
+				return null;
+			}
+		}
+	};
 }
 
 function resolveValue(value) {

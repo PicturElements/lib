@@ -1,5 +1,4 @@
 import {
-	hasOwn,
 	inject,
 	isObject,
 	resolveVal
@@ -99,7 +98,7 @@ export default function resolveDials(dials = DEFAULT_DIALS) {
 
 	const resolve = dial => {
 		if (typeof dial == "string") {
-			if (!hasOwn(DIALS, dial))
+			if (!DIALS.hasOwnProperty(dial))
 				throw new Error(`Cannot resolve dial: '${dial}' is not a known dial template`);
 
 			dial = DIALS[dial];
@@ -111,7 +110,7 @@ export default function resolveDials(dials = DEFAULT_DIALS) {
 		if (!dial.name || typeof dial.name != "string")
 			throw new TypeError("Cannot resolve dial: no valid name provided");
 
-		if (hasOwn(nameMap, dial.name))
+		if (nameMap.hasOwnProperty(dial.name))
 			throw new Error(`Cannot resolve dial: dial by name '${dial.name}' already defined`);
 		nameMap[dial.name] = true;
 
@@ -120,7 +119,7 @@ export default function resolveDials(dials = DEFAULT_DIALS) {
 			return;
 		}
 
-		if (hasOwn(DIALS, dial.name))
+		if (DIALS.hasOwnProperty(dial.name))
 			dial = inject(dial, DIALS[dial.name], "cloneTarget");
 
 		outDials.push(dial);
@@ -133,7 +132,7 @@ export default function resolveDials(dials = DEFAULT_DIALS) {
 		for (let i = 0, l = DIAL_ORDER.length; i < l; i++) {
 			const name = DIAL_ORDER[i];
 
-			if (!hasOwn(dials, name))
+			if (!dials.hasOwnProperty(name))
 				continue;
 
 			if (isObject(dials[name])) {

@@ -1,6 +1,5 @@
 import {
 	round,
-	hasOwn,
 	reassign,
 	isObject
 } from "@qtxr/utils";
@@ -171,7 +170,7 @@ function parseCoordinate(str) {
 		if (prefixId && postfixId)
 			coordinateRegex.lastIndex--;
 
-		if (!hasOwn(latLngMap, direction))
+		if (!latLngMap.hasOwnProperty(direction))
 			continue;
 
 		const [
@@ -203,6 +202,8 @@ function parseCoordinate(str) {
 
 	return coordData;
 }
+
+window.parseCoordinate = parseCoordinate;
 
 function constructCoordinateStr(coordData) {
 	const constr = d => {

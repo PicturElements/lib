@@ -15,8 +15,8 @@ export default class Date extends Input {
 			dayLabels: "Array|function",
 			monthLabels: "Array|function",
 			rangeSeparator: "string",
-			minDate: "Date|string|number",
-			maxDate: "Date|string|number"
+			minDate: "Date|string|number|function",
+			maxDate: "Date|string|number|function"
 		});
 
 		Object.assign(this, resolveCards(this.cards));

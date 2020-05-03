@@ -486,10 +486,6 @@ export default class Form extends Hookable {
 		});
 	}
 
-	set(values) {
-		this.setValues(values, true);
-	}
-
 	validate() {
 		return this.forEach(inp => inp.validate().valid);
 	}
@@ -795,8 +791,7 @@ export default class Form extends Hookable {
 alias(Form.prototype, {
 	extractOne: "pluck",
 	hook: "on",
-	unhook: "off",
-	get: "extract"
+	unhook: "off"
 });
 
 Form.templates = composePresets(templates);
