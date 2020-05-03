@@ -3,6 +3,7 @@ import {
 	get,
 	clone,
 	inject,
+	hasOwn,
 	isObject,
 	serialize,
 	isPrimitive,
@@ -236,8 +237,8 @@ export default class DataCell extends Hookable {
 
 		// Remove "$" from root level processor keys
 		for (const k in processors) {
-			if (processors.hasOwnProperty(k) && k[0] == "$") {
-				processors[k.substr(1)] = processors[k];
+			if (hasOwn(processors, k) && k[0] == "$") {
+				processors[k.substring(1)] = processors[k];
 				delete processors[k];
 			}
 		}
@@ -688,14 +689,14 @@ export default class DataCell extends Hookable {
 				// By default, watchers dispatch a fetch
 				if (typeof watch == "string")
 					watcher.dispatchers[watch] = "fetch";
-				else if (isObject(watch) && watch.hasOwnProperty("watch"))
+				else if (isObject(watch) && hasOwn(watch, "watch"))
 					watcher.dispatchers[watch.watch] = watch;
 				else
 					throw new TypeError(`Failed to make watcher object (at index ${i}): array watchers must contain a string specifying the watched property, or a dispatcher object with a 'watch' key`);
 			}
 		} else if (isObject(watchers)) {
 			for (const k in watchers) {
-				if (!watchers.hasOwnProperty(k))
+				if (!hasOwn(watchers, k))
 					continue;
 	
 				const watch = watchers[k];
@@ -794,10 +795,10 @@ function applyStateTransforms(cell, newState) {
 	}
 
 	function applyTransform(key, transformSession) {
-		if (!newState.hasOwnProperty(key) || newState[key] == state[key])
+		if (!hasOwn(newState, key) || newState[key] == state[key])
 			return;
 
-		if (!cell.stateTransforms.hasOwnProperty(key))
+		if (!hasOwn(cell.stateTransforms, key))
 			return;
 
 		affected[key] = true;
@@ -816,10 +817,10 @@ function applyStateTransforms(cell, newState) {
 			newState;
 
 		for (const k in newState) {
-			if (!newState.hasOwnProperty(k) || k == key)
+			if (!hasOwn(newState, k) || k == key)
 				continue;
 
-			if (affected.hasOwnProperty(k)) {
+			if (hasOwn(affected, k)) {
 				if (transformSession.transformed[k])
 					console.error(`Attempted to transform '${k}' again, after already being transformed. Origin at '${transformSession.source}', coming from '${key}'`);
 				
@@ -840,7 +841,7 @@ function mergeStateAndDispatchChanges(cell, newState) {
 	let changed = false;
 
 	for (const k in newState) {
-		if (!newState.hasOwnProperty(k) || state[k] == newState[k])
+		if (!hasOwn(newState, k) || state[k] == newState[k])
 			continue;
 
 		if (!changed) {
@@ -870,13 +871,13 @@ function dispatchChanges(cell, changes) {
 	for (let i = 0, l = changes.length; i < l; i++) {
 		const change = changes[i];
 
-		if (!dispatchers.hasOwnProperty(change.property) && !dispatchers.hasOwnProperty("any"))
+		if (!hasOwn(dispatchers, change.property) && !hasOwn(dispatchers, "any"))
 			continue;
 
 		let dispatcher = resolveDispatcher(dispatchers[change.property] || dispatchers.any);
 
 		if (typeof dispatcher == "function") {
-			if (dispatcher.hasOwnProperty(batchKey))
+			if (hasOwn(dispatcher, batchKey))
 				tasks[dispatcher[batchKey]].changes.push(change);
 			else {
 				dispatcher[batchKey] = tasks.length;
@@ -898,7 +899,7 @@ function dispatchChanges(cell, changes) {
 		switch (typeof dispatcher) {
 			case "string":
 				if (dispatcher[0] == ".")
-					return resolveDispatcher(dispatchers[dispatcher.substr(1)]);
+					return resolveDispatcher(dispatchers[dispatcher.substring(1)]);
 				
 				return cell.watchTaskDispatchers[dispatcher];
 
