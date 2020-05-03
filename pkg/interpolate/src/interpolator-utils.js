@@ -1,10 +1,11 @@
 import {
-	isObject,
+	round,
 	clone,
-	regexReduce,
+	hasOwn,
+	isObject,
 	mergesort,
 	concatMut,
-	round
+	regexReduce
 } from "@qtxr/utils";
 import { Ease } from "@qtxr/anim";
 import interpolatorData from "./interpolator-data";
@@ -55,7 +56,7 @@ function convertKeyframeObject(keyframes, options) {
 	const keyframeProcessors = [];
 
 	for (const k in keyframes) {
-		if (!keyframes.hasOwnProperty(k))
+		if (!hasOwn(keyframes, k))
 			continue;
 
 		if (singularKeyframeSelectorRegex.test(k)) {
@@ -106,12 +107,14 @@ function parseSingularKeyframeSelector(keyframe, selector) {
 		case "from":
 			position = 0;
 			break;
+
 		case "to":
 			position = 1;
 			break;
+
 		// Percentage (x%)
 		default:
-			position = Number(selector.substr(0, selector.length - 1)) / 100;
+			position = Number(selector.substring(0, selector.length - 1)) / 100;
 	}
 
 	if (isNaN(position))
@@ -311,7 +314,7 @@ function interpolate(data, data2, at, runtime) {
 		const out = {};
 
 		for (const k in data) {
-			if (!data.hasOwnProperty(k))
+			if (!hasOwn(data, k))
 				continue;
 
 			out[k] = interpolate(data[k], data2[k], at, runtime);
