@@ -360,9 +360,9 @@ function parse(format, currentStack) {
 		const { capture } = getCapturingData(ex);
 
 		if (usePtrBoundary)
-			node.literal = format.substr(node.index, ptr - node.index);
+			node.literal = format.substring(node.index, ptr);
 		else
-			node.literal = format.substr(node.index, ex.index + capture.length - node.index);
+			node.literal = format.substring(node.index, ex.index + capture.length);
 
 		structStack.pop();
 		struct = node.parent;
@@ -387,7 +387,7 @@ function parse(format, currentStack) {
 		ex = nextEx;
 
 		if (ex.index > ptr) {
-			push(format.substr(ptr, ex.index - ptr), ptr);
+			push(format.substring(ptr, ex.index), ptr);
 			ptr = ex.index;
 		}
 
@@ -686,7 +686,7 @@ function parse(format, currentStack) {
 	}
 
 	if (ptr < format.length)
-		push(format.substr(ptr, format.length - ptr), ptr);
+		push(format.substring(ptr, format.length), ptr);
 
 	runAutoPop("literal", mkLiteral(""));
 
@@ -960,14 +960,14 @@ function pASTResolveGrammars(nodes, parseMeta = {}) {
 			if (idx == 0)
 				newNodes[newNodes.length - 1] = newNode;
 			else {
-				lastNode.value = nodeVal.substr(0, idx);
+				lastNode.value = nodeVal.substring(0, idx);
 				lastNode.literal = lastNode.value;
 				newNodes.push(newNode);
 			}
 
 			if (idx + match.length < nodeVal.length) {
 				newNodes.push(mkLiteral(
-					nodeVal.substr(idx + match.length),
+					nodeVal.substring(idx + match.length),
 					nde.index + idx + match.length
 				));
 			} else
@@ -1625,7 +1625,7 @@ function resolveRefTrace(store, nodeOrPath, meta, args = [], resolver = resolveF
 
 	if (typeof path == "string") {
 		steps = stepRegex.exec(path)[0].length;
-		path = splitPath(path.substr(steps));
+		path = splitPath(path.substring(steps));
 	}
 
 	if (store && store[isTraceObj]) {

@@ -4,7 +4,7 @@ const ietfRegex = /^([a-z]{2,3})(?:[_-]([a-z]{3}))?(?:[_-]([a-z]{4}))?(?:[_-]([a
 		{ tag: "extlang" },
 		{
 			tag: "script",
-			convert: str => str[0].toUpperCase() + str.substr(1)
+			convert: str => str[0].toUpperCase() + str.substring(1)
 		},
 		{
 			tag: "region",

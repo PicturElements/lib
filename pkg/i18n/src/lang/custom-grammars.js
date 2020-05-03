@@ -66,7 +66,9 @@ function getDateFormatterUnitValue(dateOrValue, cls) {
 function padDateFormatter(num, formatter) {
 	const pad = formatter.pad;
 	num = String(num);
-	num = Number(num.substr(Math.max(num.length - (pad.hard + pad.soft), 0)));
+	num = Number(num.substring(
+		Math.max(num.length - (pad.hard + pad.soft), 0)
+	));
 	return padStart(num, pad.hard, "0");
 }
 

@@ -68,7 +68,7 @@ const langStdLib = {
 		if (typeof str != "string")
 			return str;
 
-		return str[0].toUpperCase() + str.substr(1).toLowerCase();
+		return str[0].toUpperCase() + str.substring(1).toLowerCase();
 	},
 	d(a, ...args) {
 		return new Date(...args);

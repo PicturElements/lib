@@ -133,7 +133,7 @@ class I18NManager extends Hookable {
 							const baseUrl = resolveBaseUrl(this.config.baseUrl),
 								fullPath = URL.join(baseUrl, path),
 								relativePath = fullPath.indexOf(baseUrl) == 0 ?
-									fullPath.substr(baseUrl.length) :
+									fullPath.substring(baseUrl.length) :
 									fullPath,
 								ex = /[\\/.]+([a-z0-9-]+)/i.exec(relativePath);
 
