@@ -2,6 +2,7 @@ import {
 	hasOwn,
 	parseStr,
 	isObject,
+	spliceStr,
 	findClosest
 } from "@qtxr/utils";
 
@@ -177,12 +178,12 @@ class SearchParams {
 				if (this._isInvalidType(value))
 					value = kvPair[2];
 
-				this.add(kvPair[1], value);
+				this.set(kvPair[1], value);
 			}
 		} else if (isObject(input)) {
 			for (const k in input) {
 				if (hasOwn(input, k))
-					this.add(k, input[k]);
+					this.set(k, input[k]);
 			}
 		}
 
@@ -532,7 +533,7 @@ function stringotomy(regex, str, capture = 0) {
 
 	return {
 		extracted: ex[capture] || "",
-		rest: str.substr(0, ex.index) + str.substr(ex.index + ex[0].length)
+		rest: spliceStr(str, ex.index, ex.index + ex[0].length)
 	};
 }
 
