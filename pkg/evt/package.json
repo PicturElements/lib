@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/evt",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Event handling, grouping, and guarding library",
   "main": "index.js",
   "scripts": {
@@ -33,7 +33,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 4,
+    "pushes": 5,
     "expose": {
       "scripts": [
         "connect/feed.js"

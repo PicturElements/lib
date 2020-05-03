@@ -4,12 +4,14 @@ const evtValidators = {
 	natural: {
 		check: /\d/,
 		validate: /^\d+$/,
-		allowNonPrintable: true
+		allowNonPrintable: true,
+		allowBindings: true
 	},
 	int: {
 		check: /[\d-]/,
 		validate: /^-?\d+$/,
-		allowNonPrintable: true
+		allowNonPrintable: true,
+		allowBindings: true
 	},
 	float: {
 		check: /[\d-.]/,
@@ -17,7 +19,8 @@ const evtValidators = {
 			return str.length && this.validateReg.test(str);
 		},
 		validateReg: /^-?\d*(?:\.\d*)?$/,
-		allowNonPrintable: true
+		allowNonPrintable: true,
+		allowBindings: true
 	},
 	singleLine: {
 		check(key) {
@@ -28,7 +31,9 @@ const evtValidators = {
 		}
 	},
 	word: {
-		check: /[a-z]/
+		check: /[a-z]/,
+		allowNonPrintable: true,
+		allowBindings: true
 	}
 };
 

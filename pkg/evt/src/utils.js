@@ -21,17 +21,28 @@ const VALID_TYPES = {
 };
 
 function isValidKey(evt, type) {
-	if (!evt.key || !type || (!hasOwn(evtValidators, type) && type.constructor != Object))
+	const partition = typeof type == "string" ?
+		evtValidators[type] :
+		type;
+
+	if (!isObject(type) || !evt.key)
 		return true;
 
-	return checkKey(evt, evt.key.toLowerCase(), evtValidators[type] || type);
+	return checkKey(evt, evt.key.toLowerCase(), partition);
 }
 
 function isValidWord(evt, type) {
 	const target = evt.target,
-		val = target.value || "";
+		val = target.value || "",
+		key = evt.key,
+		partition = typeof type == "string" ?
+			evtValidators[type] :
+			type;
 
-	if (!evt.key || evt.key.length != 1 || !type || (!hasOwn(evtValidators, type) && !isObject(type)))
+	if (!isObject(partition) || !key || key.length != 1)
+		return true;
+
+	if (partition.allowBindings !== false && hasModifier(evt))
 		return true;
 
 	if (!("selectionStart" in target)) {
@@ -40,7 +51,7 @@ function isValidWord(evt, type) {
 	}
 
 	if (target.type && !hasOwn(VALID_TYPES, target.type))
-		console.warn(`Cannot get selection bounds for input with type '${target.type}' and so cannot accurately determine the value string. Please consider changing the input type to either text, search, password, tel, or url.`);
+		console.warn(`Cannot get selection bounds for input with type '${target.type}' and so cannot accurately determine the value string. Please consider changing the input type to either text, search, password, tel, or url`);
 
 	const testStr = spliceStr(
 		val,
@@ -48,7 +59,7 @@ function isValidWord(evt, type) {
 		target.selectionEnd,
 		evt.key
 	);
-	return validateStr(testStr, evtValidators[type] || type);
+	return validateStr(testStr, partition);
 }
 
 function checkKey(evt, key, validatorPartition) {
@@ -57,10 +68,10 @@ function checkKey(evt, key, validatorPartition) {
 	if (typeof checker == "function")
 		return validatorPartition.check(key);
 
-	const validKey = key.length > 1 && validatorPartition.allowNonPrintable !== false,
-		validBinding = validatorPartition.allowBindings !== false && hasModifierKey(evt);
+	const validNonPrintable = key.length > 1 && validatorPartition.allowNonPrintable !== false,
+		validBinding = validatorPartition.allowBindings !== false && hasModifier(evt);
 
-	if (validKey || validBinding)
+	if (validNonPrintable || validBinding)
 		return true;
 
 	if (checker instanceof RegExp)
@@ -99,7 +110,7 @@ function getCoords(evt, element = null) {
 	};
 }
 
-function hasModifierKey(evt) {
+function hasModifier(evt) {
 	return Boolean(evt && (evt.ctrlKey || evt.altKey || evt.shiftKey || evt.metaKey));
 }
 
@@ -112,6 +123,11 @@ function runPattern(evt, args) {
 
 	if (!("selectionStart" in evt.target)) {
 		console.warn("Cannot run pattern: event target must be an input with a selectionStart property");
+		return result;
+	}
+
+	if (evt.target.type && !hasOwn(VALID_TYPES, evt.target.type)) {
+		console.warn(`Cannot get selection bounds for input with type '${evt.target.type}' and so cannot accurately determine the value string. Please consider changing the input type to either text, search, password, tel, or url`);
 		return result;
 	}
 
@@ -169,7 +185,7 @@ function runPatternKeydown(evt, args) {
 			break;
 
 		default:
-			if (key.length > 1 || hasModifierKey(evt))
+			if (key.length > 1 || hasModifier(evt))
 				return null;
 	}
 
@@ -186,6 +202,6 @@ export {
 	isValidKey,
 	isValidWord,
 	getCoords,
-	hasModifierKey,
+	hasModifier,
 	runPattern
 };
