@@ -36,6 +36,9 @@ const RAW_COLORS = "aliceblue|f0f8ff|antiquewhite|faebd7|aqua|0ff|aquamarine|7ff
 		["cmyk", "cmyk", "rgb"]
 	];
 
+const oHOP = Object.prototype.hasOwnProperty,
+	hasOwn = (o, k) => oHOP.call(o, k);
+
 export default class Color {
 	constructor(src, space, immutable) {
 		this._rgba = [0, 0, 0, 0];
@@ -105,7 +108,7 @@ export default class Color {
 			if (!isNum(v))
 				return;
 
-			if (!COMPONENT_KEYS.hasOwnProperty(k))
+			if (!hasOwn(COMPONENT_KEYS, k))
 				return;
 
 			switch (op) {
@@ -166,17 +169,17 @@ export default class Color {
 			}
 		} else if (transforms && typeof transforms == "object") {
 			for (const k in transforms) {
-				if (!transforms.hasOwnProperty(k))
+				if (!hasOwn(transforms, k))
 					continue;
 
 				let key = k,
 					value = transforms[k],
 					op = operation;
 
-				if (!COMPONENT_KEYS.hasOwnProperty(k)) {
+				if (!hasOwn(COMPONENT_KEYS, k)) {
 					const split = k.split("@");
 
-					if (!COMPONENT_KEYS.hasOwnProperty(split[1]))
+					if (!hasOwn(COMPONENT_KEYS, split[1]))
 						continue;
 
 					op = split[0];
@@ -286,7 +289,7 @@ export default class Color {
 
 		src = src.trim().toLowerCase();
 
-		if (COL_NAMES.hasOwnProperty(src))
+		if (hasOwn(COL_NAMES, src))
 			src = COL_NAMES[src];
 
 		if (Color.cache[src])
@@ -362,7 +365,7 @@ export default class Color {
 			if (isShorthand)
 				rgba[i] = hexToDecimal(hex[i]) * 17;
 			else
-				rgba[i] = hexToDecimal(hex.substr(i * 2, 2));
+				rgba[i] = hexToDecimal(hex.substring(i * 2, (i + 1) * 2));
 		}
 
 		rgba[3] /= 255;
@@ -538,7 +541,7 @@ export default class Color {
 		if (space == "auto") {
 			const hash = c.join("-");
 
-			if (COL_NAME_HASHES.hasOwnProperty(hash))
+			if (hasOwn(COL_NAME_HASHES, hash))
 				return COL_NAME_HASHES[hash];
 
 			space = c[3] == 1 ? "rgb" : "rgba";

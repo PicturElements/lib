@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/color",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Color parsing, transforms, and utilities",
   "main": "index.js",
   "scripts": {
@@ -30,7 +30,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 7,
+    "pushes": 8,
     "expose": {
       "scripts": [
         "connect/feed.js"
