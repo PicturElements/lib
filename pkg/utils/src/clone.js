@@ -43,7 +43,7 @@ export default function clone(obj, options) {
 				return v;
 
 			if (options.circular) {
-				const item = REF_MAP.get(o);
+				const item = REF_MAP.get(v);
 
 				if (item)
 					return item;
