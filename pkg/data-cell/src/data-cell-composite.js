@@ -110,12 +110,12 @@ export default class DataCellComposite extends DataCell {
 		return this;
 	}
 
-	setData(data, runtime) {
+	setData(data) {
 		const set = (inputData, cellData) => {
 			forEach(inputData, (d, k) => {
 				if (cellData[k] instanceof DataCell) {
 					if (cellData[k].passive)
-						cellData[k].setData(cellData[k].process("data")(runtime || {}, d));
+						cellData[k].setData(cellData[k].process("data")(d));
 				} else {
 					cellData[k] = d;
 
@@ -148,6 +148,30 @@ export default class DataCellComposite extends DataCell {
 		return propagateState(this, "active-child", ...states);
 	}
 
+	propagateHooks(partitionName, ...args) {
+		return propagateHooks(this, null, partitionName, ...args);
+	}
+
+	propagateHooksPassive(partitionName, ...args) {
+		return propagateHooks(this, "passive", partitionName, ...args);
+	}
+
+	propagateHooksActive(partitionName, ...args) {
+		return propagateHooks(this, "active", partitionName, ...args);
+	}
+
+	propagateHooksPassiveChild(partitionName, ...args) {
+		return propagateHooks(this, "passive-child", partitionName, ...args);
+	}
+
+	propagateHooksActiveChild(partitionName, ...args) {
+		return propagateHooks(this, "active-child", partitionName, ...args);
+	}
+
+	propagate(mode, callback) {
+		propagate(this, mode, callback);
+	}
+
 	async fetch(...args) {
 		const fetches = [
 			super.fetch(...args)
@@ -160,7 +184,11 @@ export default class DataCellComposite extends DataCell {
 				if (cell.state.loading)
 					continue;
 
-				if (!cell.passive) {
+				if (cell.passive) {
+					cell.setState("loading");
+					cell.callHooks("loading");
+					cell.args.runtime = this.args.runtime;
+				} else {
 					fetches.push(
 						cell.fetch(...args)
 					);
@@ -182,14 +210,21 @@ export default class DataCellComposite extends DataCell {
 			});
 		}
 
-		if (response.success)
+		if (response.success) {
 			this.propagateStatePassive("loaded");
-		else
-			this.propagateStatePassive("error");
+			this.propagateHooksPassive("success", response);
+		} else {
+			this.propagateStatePassive("error", {
+				errorMsg: response.errorMsg
+			});
+			this.propagateHooksPassive("fail", response);
+		}
 
-		propagateState(this, c => c.passive && c != response.runtime.initiator, {
-			fetches: this.state.fetches
-		});
+		propagateState(
+			this,
+			c => c.passive && c != response.runtime.initiator,
+			{ fetches: this.state.fetches }
+		);
 
 		return response;
 	}
@@ -229,31 +264,31 @@ function resolveCell(cellOrConfig, parentCell, path) {
 				if (!parent)
 					return null;
 
-				const parentResponse = await parent.with({
-					initiator: cell
-				})
-				.fetch(...args);
+				const parentResponse = await parent
+					.with({ initiator: cell })
+					.fetch(...args);
 
 				return wrapParentResponse(cell, parentResponse, cell.path);
 			};
 		}
 
 		const inheritedConfig = inject(
-				config,
-				parentCell.inheritableConfig.config
-			),
-			inheritedInitConfig = inject(
-				{
-					defaultState: {
-						fullyLoaded: false,
-						pendingChildrenCount: 0
-					},
-					partitionClassifier: {
-						path: "instance"
-					}
+			config,
+			parentCell.inheritableConfig.config
+		);
+
+		const inheritedInitConfig = inject(
+			{
+				defaultState: {
+					fullyLoaded: false,
+					pendingChildrenCount: 0
 				},
-				parentCell.inheritableConfig.initConfig
-			);
+				partitionClassifier: {
+					path: "instance"
+				}
+			},
+			parentCell.inheritableConfig.initConfig
+		);
 
 		cell = DataCell.new(inheritedConfig, inheritedInitConfig);
 		cell.passive = !characteristics.hasHandler;
@@ -324,29 +359,41 @@ function handleHooks(context) {
 	}
 }
 
-function propagateState(cell, mode, ...states) {
-	const propagate = c => {
+function propagate(cell, mode, callback) {
+	const prop = c => {
 		if (!mode || (mode == "passive" && c.passive))
-			c.setState(...states);
+			callback(c, cell);
 		else if (mode == "active" && !c.passive)
-			c.setState(...states);
+			callback(c, cell);
 		else if (c != cell && mode == "passive-child" && c.passive) {
-			c.setState(...states);
+			callback(c, cell);
 			return;
 		} else if (c != cell && mode == "active-child" && !c.passive) {
-			c.setState(...states);
+			callback(c, cell);
 			return;
-		} else if (typeof mode == "function" && mode(c, cell, states))
-			c.setState(...states);
+		} else if (typeof mode == "function" && mode(c, cell))
+			callback(c, cell);
 
 		if (!Array.isArray(c.children))
 			return;
 
 		for (let i = 0, l = c.children.length; i < l; i++)
-			propagate(c.children[i]);
+			prop(c.children[i]);
 	};
 
-	propagate(cell);
+	prop(cell);
+}
+
+function propagateState(cell, mode, ...states) {
+	propagate(cell, mode, c => {
+		c.setState(...states);
+	});
+}
+
+function propagateHooks(cell, mode, partitionName, ...args) {
+	propagate(cell, mode, c => {
+		c.callHooks(partitionName, ...args);
+	});
 }
 
 function bubbleUp(cell, callback) {
