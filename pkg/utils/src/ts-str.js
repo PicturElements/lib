@@ -11,13 +11,13 @@ function genFuncParamsStr(funcName, signature, expanded) {
 	return `${funcName}(${params.join(", ")})`;
 }
 
-function genParamStr(paramObj) {
-	let paramStr = paramObj.name;
+function genParamStr(param) {
+	let paramStr = param.name;
 
-	if (!paramObj.required)
+	if (!param.required)
 		paramStr += "?";
 
-	paramStr += `: ${genTypeStr(paramObj.type)}`;
+	paramStr += `: ${genTypeStr(param.type)}`;
 
 	return paramStr;
 }

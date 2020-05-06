@@ -11,6 +11,7 @@ import {
 	createOptionsObject
 } from "./options";
 import getFunctionName from "./get-function-name";
+import hasOwn from "./has-own";
 
 // Resolves arguments using a simple "lacuna" algorithm:
 // It steps through the parameter signature array and tries to match the next
@@ -35,7 +36,7 @@ import getFunctionName from "./get-function-name";
 // In this case, resolveArgs would resolve the first number, fail to match the first string,
 // resovlve the second number, and finally resolve the first string in the arguments
 // The second argument string would become a rest argument
-// { rest: [str2], num1: num1, num2: num2, str1: str1, str2: -- }
+// { num1: num1, num2: num2, str1: str1, str2: --, rest: [str2] }
 //
 // resolveArgs options:
 // allowSingleSource
@@ -52,11 +53,12 @@ import getFunctionName from "./get-function-name";
 // Rest arguments are appended to the end of the array
 //
 // Signature parameter options:
-// name
-// required
-// default
-// coalesce
-// resolve
+// name: string
+// required: boolean
+// default: any
+// coalesce: boolean
+// resolve: function
+// alias / aliases: string | string[]
 //
 // name:
 // Parameter name
@@ -68,13 +70,19 @@ import getFunctionName from "./get-function-name";
 // Default value used if an argument doesn't match. Defaults to undefined
 //
 // coalesce:
-// If truthy, arguments will be added to an array as long as the type matcher matches.
+// If truthy, arguments will be added to an array as long as the type matcher matches
 // The array will be used as the named argument. Default values are still supported, but
 // are added to the array instead of the outbound arguments
 //
 // resolve:
 // Method that resolves failing arguments. The resulting value from this is run through
 // type matching
+//
+// alias / aliases
+// An alias or set of aliases to be used to retrieve argument data in allowSingleSource
+// mode if no data for the parameter name is found. Note that the argument will be named
+// after the parameter name, and not the input key
+// 'alias' / 'aliases' can be used interchangeably, but 'aliases' receives precedence
 
 export default function resolveArgs(args, signature, options) {
 	options = createOptionsObject(options, optionsTemplates);
@@ -102,9 +110,13 @@ export default function resolveArgs(args, signature, options) {
 
 	for (let i = 0; i < sLen; i++) {
 		const sgn = signature[i],
-			arg = useSingleSource ? args[0][sgn.name] : args[argPtr],
+			arg = useSingleSource ?
+				resolveArg(args[0], sgn) :
+				args[argPtr],
 			def = sgn.default,
-			key = options.returnArgList ? i : sgn.name;
+			key = options.returnArgList ?
+				i :
+				sgn.name;
 
 		if (sgn.coalesce && argPtr >= args.length) {
 			argsOut[key] = argsOut[key] || [];
@@ -148,8 +160,8 @@ export default function resolveArgs(args, signature, options) {
 			argsOut[key] = isObj(def) ? clone(def) : def;
 
 			if (sgn.required) {
-				const err = new Error(`Failed to resolve arguments: '${sgn.name}' is a required parameter\n\n${genFuncParamsStr("fn", signature, true)}\n`);
-				// Remove this function from the default stack trace printout in the console
+				const err = new Error(`(resolveArgs) Failed to resolve arguments: '${sgn.name}' is a required parameter\n\n${genFuncParamsStr("fn", signature, true)}\n`);
+				// Remove this function from the default stack trace printout in the console (Chromium only)
 				err.stack = err.stack.replace(/^[\t ]*at [^\n]+\n/m, "");
 				throw err;
 			}
@@ -188,6 +200,25 @@ resolveArgs.wrap = (func, signature, options) => {
 
 	return wrapped;
 };
+
+function resolveArg(source, sgn) {
+	if (hasOwn(source, sgn.name))
+		return source[sgn.name];
+
+	const al = sgn.aliases || sgn.alias;
+
+	if (typeof al == "string" && hasOwn(source, al))
+		return source[al];
+
+	if (Array.isArray(al)) {
+		for (let i = 0, l = al.length; i < l; i++) {
+			if (typeof al[i] == "string" && hasOwn(source, al[i]))
+				return source[al[i]];
+		}
+	}
+
+	return null;
+}
 
 const optionsTemplates = composeOptionsTemplates({
 	allowSingleSource: true,
