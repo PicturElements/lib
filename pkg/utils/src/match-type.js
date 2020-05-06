@@ -35,7 +35,10 @@ export default function matchType(val, type, options, forceFalseDefault = false)
 		if (hasOwn(typesCache, type))
 			type = typesCache[type];
 		else
-			type = resolveType(type);
+			type = mkTypeChecker(type);
+
+		if (typeof type == "function")
+			return Boolean(type(val));
 	}
 
 	if (typeof type == "string")
@@ -51,7 +54,7 @@ export default function matchType(val, type, options, forceFalseDefault = false)
 		}
 
 		return Boolean(type(val));
-	} else if (type && type.constructor == Array) {
+	} else if (Array.isArray(type)) {
 		for (let i = type.length - 1; i >= 0; i--) {
 			if (matchType(val, type[i], options, true))
 				return true;
@@ -68,16 +71,29 @@ export default function matchType(val, type, options, forceFalseDefault = false)
 		true;
 }
 
-function resolveType(signature) {
-	const typeIds = signature.trim().split(/\s*\|\s*/),
-		globalScope = getGlobalScope();
-	let types = [];
+function mkTypeChecker(signature) {
+	const typeIds = signature
+			.trim()
+			.split(/\s*\|\s*/),
+		globalScope = getGlobalScope(),
+		expensiveTerms = [],
+		expensiveParams = [],
+		expensiveArgs = [],
+		terms = [],
+		params = [],
+		args = [];
 
 	for (let i = 0, l = typeIds.length; i < l; i++) {
-		const typeId = typeIds[i];
+		const typeId = typeIds[i],
+			paramName = getParamName(i);
 
 		if (hasOwn(typesCache, typeId)) {
-			types.push(typesCache[typeId]);
+			if (typeof typesCache[typeId] == "function") {
+				expensiveTerms.push(`${paramName}(_val)`);
+				expensiveParams.push(paramName);
+				expensiveArgs.push(typesCache[typeId]);
+			} else
+				terms.push(`typeof _val == "${typeId}"`);
 			continue;
 		}
 
@@ -86,14 +102,31 @@ function resolveType(signature) {
 		if (!type || !isConstructor(type) || !isNativeFunction(type))
 			throw new Error(`Failed to find a valid typeof value, cached type, or global constructor by ID '${typeId}' (in type signature '${signature})'`);
 
-		types.push(type);
+		terms.push(`(_val != null && _val.constructor == ${paramName})`);
+		params.push(paramName);
+		args.push(type);
 	}
 
-	if (types.length < 2)
-		types = types[0];
+	const body = `return ${terms.concat(expensiveTerms).join(" || ")};`,
+		checker = Function(...params, ...expensiveParams, "_val", body).bind(null, ...args, ...expensiveArgs);
 
-	typesCache[signature] = types;
-	return types;
+	typesCache[signature] = checker;
+	return checker;
+}
+
+function getParamName(idx) {
+	let name = "";
+
+	while (true) {
+		name = String.fromCharCode(97 + idx % 26) + name;
+
+		if (idx < 26)
+			break;
+
+		idx = Math.floor(idx / 26) - 1;
+	}
+
+	return name;
 }
 
 const optionsTemplates = composeOptionsTemplates({

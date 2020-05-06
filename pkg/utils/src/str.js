@@ -170,8 +170,8 @@ const distanceOptionsTemplates = composeOptionsTemplates({
 	}
 });
 
-// Damerau–Levenshtein distance, with modifications based by
-// Apache Commons Lang implementation as found here:
+// Damerau–Levenshtein distance, with modifications based on
+// the Apache Commons Lang implementation as found here:
 // https://stackoverflow.com/a/35069964
 function distance(a = "", b = "", options = {}) {
 	if (a == b)
