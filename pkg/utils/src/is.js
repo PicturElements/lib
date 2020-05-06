@@ -4,6 +4,7 @@ import {
 } from "./internal/constants";
 import hasOwn from "./has-own";
 import getFunctionName from "./get-function-name";
+import type from "./lazy/type";
 
 const docAll = typeof document == "undefined" ? [] : document.all;
 
@@ -44,8 +45,56 @@ function isConstructor(val) {
 	return val !== null && val !== undefined && val.prototype != null && val.prototype.constructor == val;
 }
 
+// Basic and highly speculative measure of whether a supplied value
+// is a constructor. Because normal functions are technically constructible,
+// this function attempts to apply some heuristics to input, so functions
+// must not be defined using arrow notation, should not return anything,
+// and the constructor must begin with a capital letter
+const handler = { construct: _ => ({}) },
+	nonConstructibleRegex = /^(?:\([^)]*\)|[\w\s]+)=>|return[^\n;]+;[\s\n]*}/,
+	constructibleRegex = /^\s*class/;
+
+function isProbableConstructor(val) {
+	// Remove any definite false values
+	if (!isConstructor(val) || isNonConstructible(val))
+		return false;
+
+	// Definitely true if the provided function is native
+	if (isNativeConstructor(val))
+		return true;
+
+	if (typeof Proxy != "undefined") {
+		try {
+			new (new Proxy(val, handler))();
+		} catch {
+			// Definitely not constructible if there's no [[Construct]] internal method
+			return false;
+		}
+	}
+
+	const constrStr = val.toString();
+
+	// Test for functions that are definitely constructible
+	if (constructibleRegex.test(constrStr))
+		return true;
+
+	// If the function is defined using fat arrow notation
+	// or returns anything, it's most likely not a constructor
+	if (nonConstructibleRegex.test(constrStr))
+		return false;
+
+	return isUpperCase(getFunctionName(val)[0]);
+}
+
 function isNativeConstructor(val) {
+	if (type.getNativeCode(val))
+		return true;
+
 	return isConstructor(val) && isNativeFunction(val) && isUpperCase(getFunctionName(val)[0]);
+}
+
+function isNonConstructible(val) {
+	return typeof Symbol != "undefined" && val == Symbol;
 }
 
 function isPrimitive(val) {
@@ -208,6 +257,7 @@ export {
 	isObject,
 	isInstance,
 	isConstructor,
+	isProbableConstructor,
 	isNativeConstructor,
 	isPrimitive,
 	isValidObjectKey,

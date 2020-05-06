@@ -1,7 +1,7 @@
 import {
 	isConstructor,
 	isNativeFunction,
-	isNativeConstructor
+	isProbableConstructor
 } from "./is";
 import { getGlobalScope } from "./env";
 import {
@@ -44,7 +44,7 @@ export default function matchType(val, type, options, forceFalseDefault = false)
 	if (typeof type == "string")
 		return typeof val == type;
 	else if (typeof type == "function") {
-		if (isNativeConstructor(type)) {
+		if (isProbableConstructor(type)) {
 			if (options.strictConstructor !== false)
 				return val != null && val.constructor == type;
 			
@@ -53,7 +53,17 @@ export default function matchType(val, type, options, forceFalseDefault = false)
 				val != null && val.constructor == type;
 		}
 
-		return Boolean(type(val));
+		// Catch rare cases where the type is a constructor
+		try {
+			return Boolean(type(val));
+		} catch {
+			if (options.strictConstructor !== false)
+				return val != null && val.constructor == type;
+			
+			return typeof val == "object" ?
+				val instanceof type :
+				val != null && val.constructor == type;
+		}
 	} else if (Array.isArray(type)) {
 		for (let i = type.length - 1; i >= 0; i--) {
 			if (matchType(val, type[i], options, true))
