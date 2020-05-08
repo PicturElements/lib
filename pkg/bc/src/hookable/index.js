@@ -1,14 +1,18 @@
 import {
+	hasOwn,
 	isObject,
 	filterMut,
 	resolveArgs,
 	queryFilterMut,
 	composeOptionsTemplates
 } from "@qtxr/utils";
+import {
+	Manage,
+	Options
+} from "../common";
 import { Keys } from "@qtxr/ds";
+import DeferredPromise from "../deferred-promise";
 import Hook from "./hook";
-import DeferredPromise from "./deferred-promise";
-import { addOptionsPartition } from "./common/options";
 
 // TODO: in next major version, rename nickname to identifier
 
@@ -18,20 +22,20 @@ const reservedFields = {
 };
 
 const hookParams = [
-	{ name: "partitionName", type: "string", required: true },
+	{ name: "partitionName", alias: "name", type: "string", required: true },
 	{ name: "handler", type: "function", required: true },
-	{ name: "nickname", type: ["string", "symbol"], default: null },
-	{ name: "namespace", type: ["string", "symbol"], default: null },
+	{ name: "nickname", alias: "identifier", type: "string|symbol", default: null },
+	{ name: "namespace", type: "string|symbol", default: null },
 	{ name: "ttl", type: "number", default: Infinity },
 	{ name: "guard", type: "function", default: null },
 	{ name: "argTemplate", type: "string", default: null }
 ];
 
 const hookNSParams = [
-	{ name: "namespace", type: ["string", "symbol"], required: true },
-	{ name: "partitionName", type: "string", required: true },
+	{ name: "namespace", type: "string|symbol", required: true },
+	{ name: "partitionName", alias: "name", type: "string", required: true },
 	{ name: "handler", type: "function", required: true },
-	{ name: "nickname", type: ["string", "symbol"], default: null },
+	{ name: "nickname", alias: "identifier", type: "string|symbol", default: null },
 	{ name: "ttl", type: "number", default: Infinity },
 	{ name: "guard", type: "function", default: null },
 	{ name: "argTemplate", type: "string", default: null }
@@ -39,36 +43,33 @@ const hookNSParams = [
 
 const unhookParams = [
 	{ name: "instance", type: Hook, default: null },
-	{ name: "partitionName", type: "string", default: null},
+	{ name: "partitionName", alias: "name", type: "string", default: null},
 	{ name: "handler", type: "function", default: null },
-	{ name: "nickname", type: ["string", "symbol"], default: null },
-	{ name: "namespace", type: ["string", "symbol"], default: null },
+	{ name: "nickname", alias: "identifier", type: "string|symbol", default: null },
+	{ name: "namespace", type: "string|symbol", default: null },
 	{ name: "ttl", type: "number", default: null },
 	{ name: "guard", type: "function", default: null },
 	{ name: "argTemplate", type: "string", default: null }
 ];
 
 const unhookNSParams = [
-	{ name: "namespace", type: ["string", "symbol"], required: true },
+	{ name: "namespace", type: "string|symbol", required: true },
 	{ name: "instance", type: Hook, default: null },
-	{ name: "partitionName", type: "string", default: null },
+	{ name: "partitionName", alias: "name", type: "string", default: null },
 	{ name: "handler", type: "function", default: null },
-	{ name: "nickname", type: ["string", "symbol"], default: null },
+	{ name: "nickname", alias: "identifier", type: "string|symbol", default: null },
 	{ name: "ttl", type: "number", default: null },
 	{ name: "guard", type: "function", default: null },
 	{ name: "argTemplate", type: "string", default: null }
 ];
 
-const optionsTemplates = composeOptionsTemplates({
-	noOwnerArg: true
-});
-
 export default class Hookable extends DeferredPromise {
 	constructor(options) {
-		super();
+		super(options);
+		Manage.instantiate(Hookable, this, options);
+	}
 
-		addOptionsPartition(this, options, "hookable", optionsTemplates);
-
+	[Manage.CONSTRUCTOR]() {
 		Object.defineProperty(this, "hooks", {
 			value: {
 				last: null,
@@ -109,7 +110,7 @@ export default class Hookable extends DeferredPromise {
 				dispatch(forcedName || hooks[i].name, hooks[i]);
 		} else if (isObject(hooks)) {
 			for (const k in hooks) {
-				if (!hooks.hasOwnProperty(k))
+				if (!hasOwn(hooks, k))
 					continue;
 				
 				if (Array.isArray(hooks[k]))
@@ -162,7 +163,7 @@ export default class Hookable extends DeferredPromise {
 
 	clearHooks() {
 		for (const k in this.hooks) {
-			if (this.hooks.hasOwnProperty(k) && !reservedFields.hasOwnProperty(k)) {
+			if (hasOwn(this.hooks, k) && !hasOwn(reservedFields, k)) {
 				delete this.hooks[k];
 				this.hooks.keys.delete(k);
 			}
@@ -189,7 +190,7 @@ export default class Hookable extends DeferredPromise {
 			return;
 
 		for (const k in this.hooks) {
-			if (!this.hooks.hasOwnProperty(k) || reservedFields.hasOwnProperty(k))
+			if (!hasOwn(this.hooks, k) || hasOwn(reservedFields, k))
 				continue;
 
 			callback(this.hooks[k], k, this.hooks);
@@ -197,7 +198,7 @@ export default class Hookable extends DeferredPromise {
 	}
 
 	getHookPartition(partitionName) {
-		if (!this.hooks.hasOwnProperty(partitionName) || reservedFields.hasOwnProperty(partitionName))
+		if (!hasOwn(this.hooks, partitionName) || hasOwn(reservedFields, partitionName))
 			return null;
 
 		return this.hooks[partitionName];
@@ -219,13 +220,19 @@ function addHook(inst, paramMap, args) {
 	const data = resolveArgs(args, paramMap, "allowSingleSource"),
 		partitionName = data.partitionName;
 
-	if (reservedFields.hasOwnProperty(partitionName))
+	if (hasOwn(reservedFields, partitionName))
 		return console.warn(`Cannot set hooks at '${partitionName}' because it's a reserved field`);
 
-	const hooks = inst.hooks.hasOwnProperty(partitionName) ? inst.hooks[partitionName] : [];
+	const hooks = hasOwn(inst.hooks, partitionName) ?
+		inst.hooks[partitionName] :
+		[];
 	inst.hooks[partitionName] = hooks;
 
-	const hook = new Hook(inst, data);
+	const hook = new Hook(
+		inst,
+		data,
+		Options.mkResolver(Hookable, inst)
+	);
 	inst.hooks.keys.add(partitionName);
 	inst.hooks.last = hook;
 	hooks.push(hook);
@@ -263,7 +270,7 @@ function removeHook(inst, paramMap, args) {
 	function filterPartition(partition, key) {
 		queryFilterMut(partition, data, "invert", {
 			noNullish: true,
-			guard: parsedKey => !ignoredQueryKeys.hasOwnProperty(parsedKey.key)
+			guard: parsedKey => !hasOwn(ignoredQueryKeys, parsedKey.key)
 		});
 
 		if (!partition.length) {
@@ -272,6 +279,17 @@ function removeHook(inst, paramMap, args) {
 		}
 	}
 }
+
+Manage.declare(Hookable, {
+	name: "Hookable",
+	namespace: "hookable",
+	extends: DeferredPromise,
+	proto: ["hook", "hookNS", "hookAll", "unhook", "unhookNS", "callHooks", "clearHooks", "clearHooksNS", "forEachHookPartition", "getHookPartition"],
+	static: ["create", "promised"],
+	optionsTemplates: composeOptionsTemplates({
+		noOwnerArg: true
+	})
+});
 
 export {
 	PromisedHookable

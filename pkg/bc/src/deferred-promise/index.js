@@ -1,8 +1,10 @@
 import {
 	sym,
 	hasOwn,
-	isObject
+	isObject,
+	setSymbol
 } from "@qtxr/utils";
+import { Manage } from "../common";
 
 const PromiseImpl = typeof Promise == "undefined" ?
 	class PromisePlaceholder {
@@ -35,18 +37,23 @@ const PromiseImpl = typeof Promise == "undefined" ?
 	} :
 	Promise;
 
-const promiseRuntimeSym = sym("promise runtime");
+const PROMISE_RUNTIME = sym("promise runtime");
 
 export default class DeferredPromise {
-	constructor(executor) {
-		this[promiseRuntimeSym] = {
-			status: "pending",
-			promise: null,
-			resolve: null,
-			reject: null
-		};
+	constructor(options) {
+		Manage.instantiate(DeferredPromise, this, options);
+	}
 
-		const runtime = this[promiseRuntimeSym];
+	[Manage.CONSTRUCTOR](opt) {
+		const executor = opt("executor"),
+			runtime = {
+				status: "pending",
+				promise: null,
+				resolve: null,
+				reject: null
+			};
+
+		setSymbol(this, PROMISE_RUNTIME, runtime);
 		
 		runtime.promise = new PromiseImpl((resolve, reject) => {
 			runtime.resolve = resolve;
@@ -68,19 +75,19 @@ export default class DeferredPromise {
 	}
 
 	then(onFulfilled, onRejected) {
-		return this[promiseRuntimeSym].promise.then(onFulfilled, onRejected);
+		return this[PROMISE_RUNTIME].promise.then(onFulfilled, onRejected);
 	}
 
 	catch(onRejected) {
-		return this[promiseRuntimeSym].promise.catch(onRejected);
+		return this[PROMISE_RUNTIME].promise.catch(onRejected);
 	}
 
 	finally(onFinally) {
-		return this[promiseRuntimeSym].promise.finally(onFinally);
+		return this[PROMISE_RUNTIME].promise.finally(onFinally);
 	}
 
 	dispatchPromise(actionOrConf, confOrPayload) {
-		const runtime = this[promiseRuntimeSym];
+		const runtime = this[PROMISE_RUNTIME];
 		let conf = actionOrConf;
 
 		if (typeof actionOrConf == "string") {
@@ -142,6 +149,13 @@ export default class DeferredPromise {
 	}
 
 	static race(iterable) {
-		return PromiseImpl.allSettled(iterable);
+		return PromiseImpl.race(iterable);
 	}
 }
+
+Manage.declare(DeferredPromise, {
+	name: "DeferredPromise",
+	namespace: "deferredPromise",
+	proto: ["then", "catch", "finally", "dispatchPromise"],
+	static: ["resolve", "reject", "all", "allSettled", "race"]
+});

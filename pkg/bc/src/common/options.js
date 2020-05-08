@@ -1,30 +1,42 @@
 import {
-	get,
 	sym,
+	get,
 	hasOwn,
 	isObject,
+	setSymbol,
 	createOptionsObject
 } from "@qtxr/utils";
+import { META } from "./symbols";
 
-const OPTIONS_PARTITION_SYM = sym("options partition");
+const OPTIONS = sym("options");
 
-function addOptionsPartition(cls, options, key, optionsTemplates) {
-	if (isObject(options) && hasOwn(options, key)) {
-		if (isObject(optionsTemplates))
-			cls[OPTIONS_PARTITION_SYM] = createOptionsObject(options[key], optionsTemplates);
-		else if (isObject(options[key]))
-			cls[OPTIONS_PARTITION_SYM] = options[key];
-		else
-			cls[OPTIONS_PARTITION_SYM] = {};
-	} else
-		cls[OPTIONS_PARTITION_SYM] = {};
-}
+const Options = {
+	addPartition(constr, inst, options, templates = null) {
+		const meta = constr[META],
+			ns = meta.namespace;
 
-function opt(cls, accessor) {
-	return get(cls[OPTIONS_PARTITION_SYM], accessor);
-}
+		const root = inst[OPTIONS] || {};
+		if (!hasOwn(inst, OPTIONS))
+			setSymbol(inst, OPTIONS, root);
 
-export {
-	addOptionsPartition,
-	opt
+		if (isObject(options) && hasOwn(options, ns)) {
+			if (isObject(templates))
+				root[ns] = createOptionsObject(options[ns], templates);
+			else if (isObject(options[ns]))
+				root[ns] = options[ns];
+			else
+				root[ns] = {};
+		} else
+			root[ns] = {};
+	},
+	resolve(constr, inst, accessor = "", def = null) {
+		const ns = constr[META].namespace;
+		return get(inst[OPTIONS][ns], accessor, def);
+	},
+	mkResolver(constr, inst) {
+		const ns = constr[META].namespace;
+		return (accessor = "", def = null) => get(inst[OPTIONS][ns], accessor, def);
+	}
 };
+
+export default Options;

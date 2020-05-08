@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/bc",
-  "version": "1.4.3",
+  "version": "1.5.0",
   "description": "Base classes that provide basic and standard functionality to any class that extends them",
   "main": "index.js",
   "scripts": {
@@ -24,8 +24,8 @@
   },
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/bc#readme",
   "dependencies": {
-    "@qtxr/ds": "^1.0.1",
-    "@qtxr/utils": "^1.36.1"
+    "@qtxr/ds": "^1.2.2",
+    "@qtxr/utils": "^1.50.2"
   },
   "devDependencies": {},
   "files": [
@@ -33,7 +33,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 17,
+    "pushes": 18,
     "expose": {
       "scripts": [
         "connect/feed.js"
