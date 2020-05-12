@@ -23,8 +23,6 @@ const CCP = {
 const CC_PATTERNS = {
 	normalize: " ",
 	resolve: (a, p, s) => {
-		console.log(s);
-
 		const trimmed = s.replace(/\s+/g, ""),
 			len = trimmed.length;
 
