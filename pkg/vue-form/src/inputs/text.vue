@@ -5,7 +5,8 @@
 			:value="input.value"
 			:type="res(input.type)"
 			@keydown="check"
-			@input="trigger")
+			@input="trigger"
+			@paste="handlePattern")
 		.validation-msg(:class="validationMsg ? 'active' : null") {{ validationMsg }}
 </template>
 
@@ -22,6 +23,7 @@
 					this.input.trigger(evt.target.value);
 			},
 			check(evt) {
+				this.handlePattern(evt);
 				this.input.check(evt, evt.target.value);
 			}
 		},

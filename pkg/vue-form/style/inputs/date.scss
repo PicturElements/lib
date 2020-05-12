@@ -76,5 +76,12 @@ $date-params: (
 				color: $error-color;
 			}
 		}
+
+		&.mobi {
+			.drop-dropdown {
+				padding-top: 20px;
+				padding-bottom: 20px;
+			}
+		}
 	}
 }

@@ -98,7 +98,8 @@ $options-params: (
 			display: flex;
 			justify-content: center;
 			align-items: center;
-			height: 60px;
+			flex-grow: 1;
+			min-height: $height * 2;
 			font-size: 95%;
 		}
 

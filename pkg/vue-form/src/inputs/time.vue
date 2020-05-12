@@ -1,7 +1,7 @@
 <template lang="pug">
 	Drop.input-wrapper.time.inp-time(
+		v-bind="propPassthrough"
 		:class="classes"
-		:disabled="dis"
 		:adaptive="true"
 		:scrollTarget="{ node: '.drop-dropdown-scroll', tolerance: 100 }"
 		@collapse="collapse"

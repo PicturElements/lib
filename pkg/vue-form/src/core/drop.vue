@@ -39,6 +39,7 @@
 		requestFrame
 	} from "@qtxr/utils";
 	import EVT from "@qtxr/evt";
+	import utilMixin from "../util-mixin";
 
 	const WEIGHTED_HANDLER_ARGS = [
 		{
@@ -59,6 +60,7 @@
 
 	export default {
 		name: "Drop",
+		mixins: [utilMixin],
 		data() {
 			return {
 				expanded: false,
@@ -302,7 +304,7 @@
 				}
 			},
 			updateDropdown() {
-				if (!this.expanded || !this.$refs.dropdown) {
+				if (!this.expanded || !this.$refs.dropdown || this.isMobile()) {
 					this.dropdownStyle = null;
 					this.updateLoopInitialized = false;
 					return;
@@ -469,7 +471,10 @@
 			}
 		},
 		props: {
+			input: null,
+			readonly: Boolean,
 			disabled: Boolean,
+			meta: Object,
 			adaptive: Boolean,
 			flushDropdown: Boolean,
 			flushWidth: Boolean,

@@ -1,7 +1,7 @@
 <template lang="pug">
 	Drop.input-wrapper.date.inp-date(
+		v-bind="propPassthrough"
 		:class="classes"
-		:disabled="dis"
 		:adaptive="true"
 		:scrollTargets="['.year-scroll', { node: '.drop-dropdown-scroll', tolerance: 10 }]"
 		@collapse="collapse"

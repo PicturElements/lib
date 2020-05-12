@@ -1,5 +1,6 @@
 <template lang="pug">
 	Drop.input-wrapper.date-time.inp-date-time(
+		v-bind="propPassthrough"
 		:class="classes"
 		:disabled="dis"
 		:adaptive="true"

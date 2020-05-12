@@ -210,17 +210,17 @@
 		name: "InputWrapper",
 		mixins: [utilMixin],
 		data() {
-			if (this.cell && this.cell.isInputCell) {
-				return {
-					c: this.cell
-				};
-			} else {
-				return {
-					c: {
-						input: this.input || this.cell
-					}
+			const data = {};
+
+			if (this.cell && this.cell.isInputCell)
+				data.c = this.cell;
+			else {
+				data.c = {
+					input: this.input || this.cell
 				};
 			}
+
+			return data;
 		},
 		methods: {
 			is(name) {

@@ -1,6 +1,14 @@
-$drop-params: ();
+$drop-params: (
+	// Specific
+	"transition-in",
+	"transition-out"
+);
 
-@mixin drop {
+@mixin drop(
+	// Specific
+	$transition-in: 400ms cubic-bezier(0, 0.55, 0.55, 1),
+	$transition-out: 400ms cubic-bezier(0, 0.55, 0.55, 1)
+) {
 	.drop-wrapper {
 		.mobi-focus,
 		.focus-probe {
@@ -31,8 +39,10 @@ $drop-params: ();
 				left: 0;
 				pointer-events: none;
 				z-index: -100000;
+			}
 
-				* {
+			&:not(.mobi) {
+				.drop-dropdown * {
 					visibility: hidden;
 				}
 			}
@@ -110,6 +120,30 @@ $drop-params: ();
 	}
 
 	.drop-wrapper.mobi {
+		.collapse-target {
+			opacity: 0;
+			transition: opacity $transition-out;
+			z-index: 9999999;
+		}
+
+		.drop-dropdown {
+			position: fixed;
+			visibility: visible;
+			left: 0;
+			top: auto;
+			bottom: 0;
+			width: 100%;
+			min-height: 25%;
+			max-height: 75%;
+			margin: 0;
+			border-left: none;
+			border-right: none;
+			border-bottom: none;
+			transform: translateY(100%);
+			transition: transform $transition-out;
+			z-index: 10000000;
+		}
+
 		&.open {
 			.collapse-target {
 				position: fixed;
@@ -119,11 +153,15 @@ $drop-params: ();
 				height: 100%;
 				background: inherit;
 				opacity: 0.8;
-				z-index: 10000000;
 			}
 
 			* {
 				-webkit-tap-highlight-color: transparent;
+			}
+
+			.drop-dropdown {
+				transition: transform $transition-in;
+				transform: none;
 			}
 		}
 
@@ -133,6 +171,14 @@ $drop-params: ();
 
 		.focus-probe {
 			display: none;
+		}
+
+		.drop-expando-box {
+			z-index: 1000;
+
+			&:before {
+				display: none;
+			}
 		}
 	}
 }

@@ -16,6 +16,15 @@ export default {
 				mobi: this.isMobile()
 			}, this.validationState, ...classes);
 		},
+		prp(...propObjects) {
+			const outProps = {};
+
+			for (let i = 0, l = propObjects.length; i < l; i++) {
+				const props = propObjects[i];
+				if (isObject(props))
+					Object.assign(outProps, props);
+			}
+		},
 		mkRuntime(...sources) {
 			const input = this.input,
 				form = input && input.form;
@@ -78,6 +87,25 @@ export default {
 			}
 
 			return names;
+		},
+		handlePattern(evt) {
+			const handler = this.input.handlers.patterns || this.input.handlers.pattern;
+			if (!handler)
+				return;
+
+			const res = handler(evt),
+				target = evt.target;
+
+			if (!res.prevent)
+				return;
+
+			target.value = res.output;
+			target.selectionStart = res.start;
+			target.selectionEnd = res.end;
+			evt.preventDefault();
+
+			if (!this.inert)
+				this.input.trigger(res.output);
 		}
 	},
 	computed: {
@@ -119,6 +147,14 @@ export default {
 				autocomplete: this.ac,
 				name: this.input.name,
 				placeholder: this.res(this.input.placeholder || this.placeholder)
+			};
+		},
+		propPassthrough() {
+			return {
+				input: this.input,
+				disabled: this.dis,
+				readonly: this.ro,
+				meta: this.meta
 			};
 		}
 	}

@@ -363,7 +363,7 @@
 				} else if (scrollRealEstate - scrollTop < threshold) {
 					const rows = this.genYearRows({
 						offset: this.yearRows[this.yearRows.length - 1][0].value,
-						paddingStart: 1,
+						paddingStart: -1,
 						paddingEnd: shift
 					});
 
