@@ -51,7 +51,7 @@ export default function splitArgStr(str, argSeparator = ",") {
 			const ex = stickyExec(argSeparator, str, i);
 
 			if (ex && ex.index == i) {
-				args.push(arg.trim());
+				args.push(arg);
 				arg = "";
 				i += ex[0].length - 1;
 				continue;
@@ -63,13 +63,15 @@ export default function splitArgStr(str, argSeparator = ",") {
 				arg += str[i + 1] || "";
 				i++;
 				continue;
+
 			case argSeparator:
 				if (!quote && !structStackDepth) {
-					args.push(arg.trim());
+					args.push(arg);
 					arg = "";
 					continue;
 				}
 				break;
+
 			case "\"":
 			case "'":
 			case "`":
@@ -78,11 +80,23 @@ export default function splitArgStr(str, argSeparator = ",") {
 				else
 					quote = char;
 				break;
+
+			case " ":
+			case "\n":
+			case "\r":
+			case "\t":
+			case "\f":
+			case "\v":
+				if (quote || structStackDepth > 0)
+					arg += char;
+				continue;
+
 			case "[":
 			case "{":
 				if (!quote)
 					structStackDepth++;
 				break;
+
 			case "]":
 			case "}":
 				if (!quote)
@@ -95,7 +109,7 @@ export default function splitArgStr(str, argSeparator = ",") {
 	}
 
 	if (arg || (useRegexArgSep && lastChar == argSeparator))
-		args.push(arg.trim());
+		args.push(arg);
 	
 	return args;
 }

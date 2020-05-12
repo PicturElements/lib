@@ -60,10 +60,11 @@ function compilePatternMatcher(pattern) {
 
 				outPattern.push({
 					type: "block",
+					value,
 					growFlags,
+					length: value.length,
 					expansive: !growFlags || growFlags.indexOf(">") > -1,
 					contractive: !growFlags || growFlags.indexOf("<") > -1,
-					value,
 					stickyRegex: compileStickyCompatibleRegex(cleanRegex(value)),
 					globalRegex: new RegExp(cleanRegex(value), "g")
 				});
@@ -87,10 +88,11 @@ function compilePatternMatcher(pattern) {
 				case "string": {
 					outPattern.push({
 						type: "block",
+						value: precursor,
 						growFlags: "",
+						length: precursor.length,
 						expansive: true,
 						contractive: true,
-						value: precursor,
 						stickyRegex: compileStickyCompatibleRegex(cleanRegex(precursor)),
 						globalRegex: new RegExp(cleanRegex(precursor), "g")
 					});
@@ -111,7 +113,8 @@ function compilePatternMatcherGroup(configOrPatterns) {
 	const group = {
 		lazy: true,
 		patterns: [],
-		resolve: null
+		resolve: null,
+		normalize: null
 	};
 
 	if (Array.isArray(configOrPatterns))
@@ -120,7 +123,8 @@ function compilePatternMatcherGroup(configOrPatterns) {
 		Object.assign(group, configOrPatterns);
 
 	const patterns = group.patterns,
-		outPatterns = [];
+		outPatterns = [],
+		rawPatterns = [];
 
 	for (let i = 0, l = patterns.length; i < l; i++) {
 		let outPattern;
@@ -139,9 +143,11 @@ function compilePatternMatcherGroup(configOrPatterns) {
 
 		outPattern.pattern = compilePatternMatcher(outPattern.pattern);
 		outPatterns.push(outPattern);
+		rawPatterns.push(outPattern.pattern);
 	}
-	
+
 	group.patterns = outPatterns;
+	group.rawPatterns = rawPatterns;
 	group.isPatternGroup = true;
 	return group;
 }
@@ -172,8 +178,10 @@ function resolvePatternLazy(application, patternOrGroup, str) {
 	const group = patternOrGroup,
 		patterns = group.patterns;
 
-	if (typeof group.resolve == "function")
-		return group.resolve(application, patterns, str) || [];
+	if (typeof group.resolve == "function") {
+		const resolved = group.resolve(application, group.rawPatterns, str) || [];
+		return resolved.isPattern ? resolved : compilePatternMatcher(resolved);
+	}
 
 	for (let i = 0, l = patterns.length; i < l; i++) {
 		if (qualifyPatternCell(application, patterns[i], str))
@@ -243,30 +251,44 @@ function applyPattern(args = {}) {
 		eOffset: 0,
 		output: null
 	};
+	let resolved;
 
 	if (patterns) {
 		const group = compilePatternMatcherGroup(patterns);
+		let raw;
+
+		if (group.lazy && group.normalize) {
+			resolved = normalize(application, group.normalize);
+			raw = splice(application, resolved.raw, resolved.sOffset, resolved.eOffset).raw;
+			resolved.raw = raw;
+		} else
+			raw = splice(application, source).raw;
 
 		if (group.lazy) {
 			pattern = resolvePatternLazy(
 				application,
 				group,
-				spliceStr(source, start, end, insertion)
+				raw
 			);
-		} else
+		} else {
 			pattern = resolvePattern(application, group);
-	} else
+			resolved = resolveRaw(application, pattern);
+		}
+	} else {
 		pattern = compilePatternMatcher(pattern);
+		resolved = resolveRaw(application, pattern);
+	}
 
 	const {
 		raw,
 		sOffset,
 		eOffset
-	} = resolveRaw(application, pattern);
+	} = resolved;
 
 	let output = "",
 		idx = 0,
 		ptr = start - sOffset + insertion.length,
+		padding = insertion.length,
 		activeBlock = null;
 
 	const applyBlock = _ => {
@@ -274,8 +296,10 @@ function applyPattern(args = {}) {
 			return;
 
 		output += activeBlock.value;
-		if (idx <= start - sOffset)
-			ptr += activeBlock.value.length;
+		if (idx < start - sOffset + padding) {
+			ptr += activeBlock.length;
+			padding += activeBlock.length;
+		}
 
 		activeBlock = null;
 	};
@@ -302,8 +326,8 @@ function applyPattern(args = {}) {
 			activeBlock = cell;
 	}
 
-	application.start = ptr;
-	application.end = ptr;
+	application.start = Math.min(ptr, output.length);
+	application.end = application.start;
 	application.raw = raw;
 	application.output = output;
 	application.sOffset = sOffset;
@@ -313,32 +337,12 @@ function applyPattern(args = {}) {
 
 function resolveRaw(application, pattern) {
 	const {
-		start,
-		end,
-		source,
-		insertion,
-		deletion
-	} = application;
-
-	let {
 		raw,
 		sOffset,
 		eOffset
 	} = resolveRawCore(application, pattern);
 
-	sOffset += deletion;
-	raw = spliceStr(
-		raw,
-		fitNum(start - sOffset, 0, source.length),
-		fitNum(end - eOffset, 0, source.length),
-		insertion
-	);
-
-	return {
-		raw,
-		sOffset,
-		eOffset
-	};
+	return splice(application, raw, sOffset, eOffset);
 }
 
 function resolveRawCore(application, pattern) {
@@ -362,29 +366,9 @@ function resolveRawCore(application, pattern) {
 
 	// Backtrack and extract the raw, unexpanded string
 	if (typeof resolveRawStr == "function") {
-		const resolved = resolveRawStr(application);
-
-		if (Array.isArray(resolved)) {
-			return {
-				raw: resolved[0],
-				sOffset: resolved[1],
-				eOffset: typeof resolved[2] == "number" ?
-					resolved[2] :
-					resolved[1]
-			};
-		} 
-		
-		if (isObject(resolved)) {
-			return {
-				raw: resolved.raw,
-				sOffset: resolved.sOffset,
-				eOffset: typeof resolved.eOffset == "number" ?
-					resolved.eOffset :
-					resolved.sOffset
-			};
-		}
-		
-		console.warn("resolveRawStr must return [raw, startOffset [, endOffset]] or { raw, startOffset [, endOffset] }");
+		const resolved = resolveRawFunctional(application, resolveRawStr);
+		if (resolved)
+			return resolved;
 	} else {
 		let idx = 0;
 		raw = "";
@@ -421,6 +405,112 @@ function resolveRawCore(application, pattern) {
 		raw,
 		sOffset,
 		eOffset
+	};
+}
+
+function resolveRawFunctional(application, resolver) {
+	const resolved = resolver(application);
+
+	if (Array.isArray(resolved)) {
+		return {
+			raw: resolved[0],
+			sOffset: resolved[1],
+			eOffset: typeof resolved[2] == "number" ?
+				resolved[2] :
+				resolved[1]
+		};
+	} 
+	
+	if (isObject(resolved)) {
+		return {
+			raw: resolved.raw,
+			sOffset: resolved.sOffset,
+			eOffset: typeof resolved.eOffset == "number" ?
+				resolved.eOffset :
+				resolved.sOffset
+		};
+	}
+	
+	console.warn("resolveRawStr must return [raw, startOffset [, endOffset]] or { raw, startOffset [, endOffset] }");
+	return null;
+}
+
+function splice(application, str, sOffset = 0, eOffset = 0) {
+	const {
+		start,
+		end,
+		source,
+		insertion,
+		deletion
+	} = application;
+
+	sOffset += deletion;
+	str = spliceStr(
+		str,
+		fitNum(start - sOffset, 0, source.length),
+		fitNum(end - eOffset, 0, source.length),
+		insertion
+	);
+
+	return {
+		raw: str,
+		sOffset,
+		eOffset
+	};
+}
+
+function normalize(application, normalizer) {
+	const {
+		start,
+		end,
+		source
+	} = application;
+
+	if (typeof normalizer == "string")
+		normalizer = new RegExp(normalizer, "g");
+	else if (typeof normalizer == "function")
+		return resolveRawFunctional(application, normalizer) || defResolveResponse(source);
+
+	if (!(normalizer instanceof RegExp))
+		return defResolveResponse(source);
+
+	let raw = "",
+		sOffset = 0,
+		eOffset = 0;
+
+	// Remove characters from the anchor point, though until
+	// the extent point and update offsets accordingly
+	const updateOffsets = (anchor, extent) => {
+		sOffset += Math.min(Math.max(start - anchor, 0), extent - anchor);
+		eOffset += Math.min(Math.max(end - anchor, 0), extent - anchor);
+	};
+
+	let idx = 0;
+
+	while (true) {
+		const ex = normalizer.exec(source);
+		if (!ex || (idx && !normalizer.global)) {
+			raw += source.substr(idx, source.length);
+			break;
+		}
+
+		raw += source.substring(idx, ex.index);
+		updateOffsets(ex.index, ex.index + ex[0].length);
+		idx = ex.index + ex[0].length;
+	}
+
+	return {
+		raw,
+		sOffset,
+		eOffset
+	};
+}
+
+function defResolveResponse(source) {
+	return {
+		raw: source,
+		sOffset: 0,
+		eOffset: 0
 	};
 }
 
