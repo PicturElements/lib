@@ -10,11 +10,14 @@ import {
 	hasOwn,
 	inject,
 	isThenable,
-	injectSchema
+	injectSchema,
+	compilePatternMatcher,
+	compilePatternMatcherGroup
 } from "@qtxr/utils";
 import {
 	isValidKey,
-	isValidWord
+	isValidWord,
+	runPattern
 } from "@qtxr/evt";
 import { Hookable } from "@qtxr/bc";
 import {
@@ -62,6 +65,8 @@ const initOptionsSchema = {
 	show: "boolean|function",
 	disabled: "boolean|function",
 	readonly: "boolean|function",
+	pattern: "string|Array",
+	patterns: "Array|Object",
 
 	propagate: "any"
 };
@@ -133,6 +138,8 @@ export default class Input extends Hookable {
 		this.show = null;
 		this.disabled = false;
 		this.readonly = false;
+		this.pattern = null;
+		this.patterns = null;
 
 		// Propagation data
 		this.propagate = null;
@@ -179,7 +186,6 @@ export default class Input extends Hookable {
 	}
 
 	[CHECK](evt) {
-		console.log(evt);
 		if (!isValidKey(evt, this.handlers.checkKey))
 			evt.preventDefault();
 		else if (!isValidWord(evt, this.handlers.checkWord))
@@ -650,6 +656,22 @@ export default class Input extends Hookable {
 		this.handlers.show = handler;
 	}
 
+	get pattern() {
+		return this.handlers.pattern;
+	}
+
+	set pattern(pattern) {
+		this.handlers.pattern = mkPatternMatcher(pattern, "pattern", compilePatternMatcher);
+	}
+
+	get patterns() {
+		return this.handlers.patterns;
+	}
+
+	set patterns(pattern) {
+		this.handlers.patterns = mkPatternMatcher(pattern, "patterns", compilePatternMatcherGroup);
+	}
+
 	// Aliases for private handlers
 	get trigger() {
 		return this[TRIGGER];
@@ -863,7 +885,7 @@ function mkComparator(input, precursor) {
 
 		// Eliminate bugs arising from failed NaN comparisons
 		const aNaN = typeof a == "number" && isNaN(a),
-			bNaN = typeof b == "number" && isNaN(b)
+			bNaN = typeof b == "number" && isNaN(b);
 
 		if (aNaN && bNaN)
 			return true;
@@ -911,6 +933,18 @@ function mkHasher(input, precursor) {
 				return null;
 			}
 		}
+	};
+}
+
+function mkPatternMatcher(pattern, type, compiler) {
+	if (!pattern)
+		return null;
+
+	const p = compiler(pattern);
+	return (evt, args) => {
+		return runPattern(evt, Object.assign({
+			[type]: p
+		}, args));
 	};
 }
 

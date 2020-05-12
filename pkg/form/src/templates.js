@@ -9,6 +9,59 @@ const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@
 	dateRegex = /^(\d{1,2})\s*\/\s*(\d{2})$/,
 	nameRegex = /[^\d,./\\"=@#$%^&*(){}[\]!?|~<>;]/;
 
+// https://baymard.com/checkout-usability/credit-card-patterns
+const CCP = {
+	"6-13": "/\\d{1,6}/ /\\d{1,13}/",
+	"4-4-5": "/\\d{1,4}/ /\\d{1,4}/ /\\d{1,5}/",
+	"4-5-6": "/\\d{1,4}/ /\\d{1,5}/ /\\d{1,6}/",
+	"4-6-4": "/\\d{1,4}/ /\\d{1,6}/ /\\d{1,4}/",
+	"4-6-5": "/\\d{1,4}/ /\\d{1,6}/ /\\d{1,5}/",
+	"4-4-4-4": "/\\d{1,4}/ /\\d{1,4}/ /\\d{1,4}/ /\\d{1,4}/",
+	"4-4-4-4-3": "/\\d{1,4}/ /\\d{1,4}/ /\\d{1,4}/ /\\d{1,4}/ /\\d{1,3}/"
+};
+
+const CC_PATTERNS = {
+	normalize: " ",
+	resolve: (a, p, s) => {
+		console.log(s);
+
+		const trimmed = s.replace(/\s+/g, ""),
+			len = trimmed.length;
+
+		// UATP
+		if (trimmed[0] == "1")
+			return CCP["4-5-6"];
+
+		const i2 = Number(trimmed.substring(0, 2));
+
+		// China UnionPay
+		if (i2 == 62)
+			return len > 16 ? CCP["6-13"] : CCP["4-4-4-4"];
+
+		const i3 = Number(trimmed.substring(0, 3));
+
+		// Diners Club
+		if (i2 == 36 || i2 == 38 || i2 == 39 || (i3 >= 300 && i3 <= 305) || i3 == 309)
+			return CCP["4-6-4"];
+
+		// American Express
+		if (i2 == 34 || i2 == 37)
+			return CCP["4-6-5"];
+
+		const i6 = Number(trimmed.substring(0, 6));
+
+		// Maestro
+		if ((i6 >= 500000 && i6 < 510000) || (i6 >= 560000 && i6 < 590000) || (i6 >= 600000 && i6 < 700000)) {
+			if (len > 16) return CCP["4-4-4-4-3"];
+			if (len > 15) return CCP["4-4-4-4"];
+			if (len > 13) return CCP["4-6-5"];
+			return CCP["4-4-5"];
+		}
+
+		return CCP["4-4-4-4"];
+	}
+};
+
 const templates = {
 	address: {
 		value: "",
@@ -78,6 +131,7 @@ const templates = {
 			allowNonPrintable: true,
 			allowBindings: true
 		},
+		patterns: CC_PATTERNS,
 		checkWord: str => str.replace(/\s/g, "").length <= 19,
 		validate({ value }) {
 			value = value.replace(/\s/g, "");
