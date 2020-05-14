@@ -321,14 +321,14 @@
 					brTopRight = parseFloat(style.borderTopRightRadius),
 					brBottomLeft = parseFloat(style.borderBottomLeftRadius),
 					brBottomRight = parseFloat(style.borderBottomRightRadius),
-					bottomAvailable = window.innerHeight - (ebcr.top + ebcr.height) - this.margin,
-					topAvailable = ebcr.top - this.margin,
+					bottomAvailable = window.innerHeight - (ebcr.top + ebcr.height) - this.gap,
+					topAvailable = ebcr.top - this.gap,
 					placeBottom = bottomAvailable > (topAvailable * this.bias) || dbcr.height < bottomAvailable - 100,
 					maxHeight = placeBottom ? bottomAvailable : topAvailable,
-					flushLeft = ebcr.left + dbcr.width < window.innerWidth - this.margin,
+					flushLeft = ebcr.left + dbcr.width < window.innerWidth - this.gap,
 					leftShift = flushLeft ?
 						(this.flushDropdown ? bLeft : 0) :
-						ebcr.left - (window.innerWidth - this.margin - dbcr.width),
+						ebcr.left - (window.innerWidth - this.gap - dbcr.width),
 					left = ebcr.left - leftShift,
 					rightShift = dbcr.width - ebcr.width - leftShift;
 
@@ -478,7 +478,7 @@
 			adaptive: Boolean,
 			flushDropdown: Boolean,
 			flushWidth: Boolean,
-			margin: {
+			gap: {
 				type: Number,
 				default: 30
 			},

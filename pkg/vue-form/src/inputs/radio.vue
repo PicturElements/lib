@@ -69,8 +69,6 @@
 				else if (idx == -1 && this.input.value !== null)
 					this.trigger()
 
-				// console.log("INDEX", this.input.value, options, idx);
-
 				this.activeIndex = idx;
 				this.activeOption = options[idx] || {};
 				this.options = options;

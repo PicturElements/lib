@@ -1,5 +1,5 @@
 <template lang="pug">
-	.options-wrapper
+	.options-wrapper.inner
 		template(v-if="context.state.error")
 			slot(name="error" v-bind="bnd")
 				.error {{ context.state.errorMsg || "Failed to load" }}
