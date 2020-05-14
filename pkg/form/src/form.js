@@ -309,7 +309,7 @@ export default class Form extends Hookable {
 				this.extractOne(runtime.input, targ, true);
 			});
 
-			this.setValues(src, true);
+			this.setValues(src, true, true);
 		};
 
 		if (async)
@@ -335,16 +335,17 @@ export default class Form extends Hookable {
 			}
 		};
 
-		if (Array.isArray(targets))
-			targets.forEach(send);
-		else if (targets && typeof targets == "object") {
+		if (Array.isArray(targets)) {
+			for (let i = 0, l = targets.length; i < l; i++)
+				send(targets[i]);
+		} else if (targets && typeof targets == "object") {
 			for (const k in targets)
 				send(k);
 		} else if (typeof targets == "string")
 			send(targets);
 	}
 
-	setValues(values, noTrigger = false) {
+	setValues(values, noTrigger = false, forAll = true) {
 		this.updateInitialized = true;
 
 		this.forEach(inp => {
@@ -367,7 +368,7 @@ export default class Form extends Hookable {
 
 			if (!noTrigger)
 				inp[TRIGGER](inp.value);
-		});
+		}, forAll);
 
 		this.callHooks("updated", this.inputs);
 		this.updateInitialized = false;
