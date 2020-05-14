@@ -21,8 +21,7 @@ import type from "./lazy/type";
 // They do this if the content at the provided cursor matches all previous
 // expressions and blocks
 // Contractive blocks collapse and remove themselves as soon as they are able
-// They do this when the content at the provided cursor is removed and
-// formatting can be removed
+// They do this when the content at the provided cursor is removed
 
 const PATTERN_MATCHER_REGEX = /\/((?:[^\\/[]|\[(?:[^\\\]]|\\.)|\\.)+)\/|(<?>?)((?:[^\\/]|\\.)+)/g,
 	PATTERN_CACHE = {};
