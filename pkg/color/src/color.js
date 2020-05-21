@@ -257,6 +257,31 @@ export default class Color {
 		], weight);
 	}
 
+	contrast(src) {
+		const col = src instanceof Color ? src : new Color(src),
+			aLum = this.luminance,
+			bLum = col.luminance;
+
+		return aLum > bLum ?
+			(aLum + 0.05) / (bLum + 0.05) :
+			(bLum + 0.05) / (aLum + 0.05);
+	}
+
+	compare(src) {
+		const reference = src instanceof Color ? src : new Color(src),
+			contrast = this.contrast(reference);
+
+		return {
+			source: this,
+			reference,
+			contrast,
+			aa: contrast >= 4.5,
+			aaLarge: contrast >= 3,
+			aaa: contrast >= 4.5,
+			aaaLarge: contrast >= 7
+		};
+	}
+
 	// %%%%%%%%%% COLOR PARSING %%%%%%%%%%
 	static parse(src) {
 		return new Color(src);
@@ -534,7 +559,7 @@ export default class Color {
 		];
 	}
 
-	// %%%%%%%%%% UTILS AND ADVANCED %%%%%%%%%%
+	// %%%%%%%%%% UTILS AND ADVANCED FEATURES %%%%%%%%%%
 	static stringify(src, space = "rgba") {
 		const c = getRGBA(src, true);
 
@@ -589,6 +614,22 @@ export default class Color {
 		return true;
 	}
 
+	static contrast(src, src2) {
+		if (src instanceof Color)
+			return src.contrast(src2);
+
+		const col = new Color(src);
+		return col.contrast(src2);
+	}
+
+	static compare(src, src2) {
+		if (src instanceof Color)
+			return src.compare(src2);
+
+		const col = new Color(src);
+		return col.compare(src2);
+	}
+
 	static gradient(...stops) {
 		return new Gradient(...stops);
 	}
@@ -602,6 +643,8 @@ export default class Color {
 	}
 
 	// %%%%%%%%%% COMPUTED PROPERTIES %%%%%%%%%%
+	// https://planetcalc.com/7779
+	// https://www.w3.org/TR/WCAG20/#relativeluminancedef
 	get luminance() {
 		const [r, g, b] = this._rgba;
 		return (toLinear(r) * 0.2126) + (toLinear(g) * 0.7152) + (toLinear(b) * 0.0722);
@@ -1177,6 +1220,7 @@ function interpolate(a, b, weight) {
 }
 
 // https://planetcalc.com/7779
+// https://www.w3.org/TR/WCAG20/#relativeluminancedef
 function toLinear(component) {
 	const n = component / 255;
 
