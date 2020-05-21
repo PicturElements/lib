@@ -5,7 +5,7 @@ import repeat from "./repeat";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
-} from "./options";
+} from "./internal/options";
 
 function padStart(str, length = 2, padChar = " ") {
 	str = String(str);

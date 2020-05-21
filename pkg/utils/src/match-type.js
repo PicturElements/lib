@@ -4,11 +4,11 @@ import {
 	isProbableConstructor
 } from "./is";
 import { getGlobalScope } from "./env";
+import hasOwn from "./has-own";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
-} from "./options";
-import hasOwn from "./has-own";
+} from "./internal/options";
 
 const typesCache = {
 	// typeof keys

@@ -12,7 +12,7 @@ import {
 import {
 	composeOptionsTemplates,
 	createOptionsObject
-} from "./options";
+} from "./internal/options";
 
 const NS_LEN = DOM_NAMESPACES.length,
 	DEF_NS = "http://www.w3.org/1999/xhtml";

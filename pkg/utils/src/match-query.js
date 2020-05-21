@@ -5,13 +5,13 @@ import {
 	isObj,
 	isArrayLike
 } from "./is";
-import {
-	composeOptionsTemplates,
-	createOptionsObject
-} from "./options";
 import { coerceToObj } from "./coerce";
 import hasOwn from "./has-own";
 import mkAccessor from "./mk-accessor";
+import {
+	composeOptionsTemplates,
+	createOptionsObject
+} from "./internal/options";
 
 export default function matchQuery(value, query, options) {
 	options = createOptionsObject(options, optionsTemplates);

@@ -3,7 +3,7 @@ import filterMut from "./filter-mut";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
-} from "./options";
+} from "./internal/options";
 
 export default function queryFilterMut(list, q, filterOptions, queryOptions) {
 	const options = createOptionsObject(filterOptions, optionsTemplates);

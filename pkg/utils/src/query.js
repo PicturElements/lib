@@ -1,16 +1,16 @@
 import parsePropStr from "./parse-prop-str";
 import matchValue from "./match-value";
 import matchType from "./match-type";
+import matchQuery from "./match-query";
+import { keys as objKeys } from "./obj";
 import {
 	isArrayLike,
 	isObj
 } from "./is";
-import { keys as objKeys } from "./obj";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
-} from "./options";
-import matchQuery from "./match-query";
+} from "./internal/options";
 
 export default function query(list, q, options) {
 	options = createOptionsObject(options, optionsTemplates);

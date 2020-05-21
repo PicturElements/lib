@@ -2,11 +2,11 @@ import {
 	isNativeSimpleObject,
 	isArrayLike
 } from "./is";
+import hasOwn from "./has-own";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
-} from "./options";
-import hasOwn from "./has-own";
+} from "./internal/options";
 
 // Faster but slightly less feature rich clone function
 export default function cloneFast(obj, options) {

@@ -9,9 +9,9 @@ import hasOwn from "./has-own";
 import matchQuery from "./match-query";
 import { QNDSet } from "./internal/poly";
 import {
-	composeMergerTemplates,
-	mergeObject
-} from "./internal/merge-obj";
+	composeOptionsTemplates,
+	createOptionsObject
+} from "./internal/options";
 
 /*
 	OPTIONS = {
@@ -29,7 +29,7 @@ import {
 const REF_SET = new QNDSet();
 
 export default function inject(target, extender, options) {
-	options = mergeObject(options, optionsTemplates, null, "option");
+	options = createOptionsObject(options, optionsTemplates);
 	
 	if (options.clone || options.cloneTarget)
 		target = clone(target, options);
@@ -164,7 +164,7 @@ export default function inject(target, extender, options) {
 	);
 }
 
-const optionsTemplates = composeMergerTemplates({
+const optionsTemplates = composeOptionsTemplates({
 	clone: true,
 	cloneTarget: true,
 	cloneExtender: true,

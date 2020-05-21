@@ -1,4 +1,3 @@
-import { isObject } from "../is";
 import { getEnvType } from "../env";
 import hasOwn from "../has-own";
 
@@ -168,6 +167,16 @@ function merge(
 	}
 
 	return Object.freeze(template);
+}
+
+// Copy of the isObject utility in src/is, duplicated
+// to remove circular dependency problems
+function isObject(val) {
+	if (!val)
+		return false;
+
+	const proto = Object.getPrototypeOf(val);
+	return proto == null || proto == Object.prototype;
 }
 
 export {

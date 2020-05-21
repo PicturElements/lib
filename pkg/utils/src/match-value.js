@@ -2,7 +2,7 @@ import equals from "./equals";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
-} from "./options";
+} from "./internal/options";
 
 export default function matchValue(val, matcher, options) {
 	options = createOptionsObject(options, optionsTemplates);

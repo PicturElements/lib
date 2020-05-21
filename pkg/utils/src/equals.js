@@ -1,10 +1,10 @@
 import hasOwn from "./has-own";
 import { keys } from "./obj";
+import { QNDSet } from "./internal/poly";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
-} from "./options";
-import { QNDSet } from "./internal/poly";
+} from "./internal/options";
 
 let eqRuntime = {
 	inexSet: null,

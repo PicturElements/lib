@@ -3,7 +3,7 @@ import hasOwn from "./has-own";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
-} from "./options";
+} from "./internal/options";
 
 // Gets data from object. If the autoBuild flag is truthy, it will
 // automatically add an object or array to extend the data

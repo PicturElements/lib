@@ -8,12 +8,12 @@ import {
 	isSetLike,
 	isMapLike
 } from "./lazy/is";
+import { keys } from "./obj";
+import hasOwn from "./has-own";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
-} from "./options";
-import { keys } from "./obj";
-import hasOwn from "./has-own";
+} from "./internal/options";
 
 // Polymorphic forEach
 // It efficiently handles the following:

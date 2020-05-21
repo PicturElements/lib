@@ -3,13 +3,13 @@ import {
 	isArrResolvable,
 	isNativeSimpleObject
 } from "./is";
-import {
-	composeOptionsTemplates,
-	createOptionsObject
-} from "./options";
 import map from "./map";
 import hasOwn from "./has-own";
 import { QNDMap } from "./internal/poly";
+import {
+	composeOptionsTemplates,
+	createOptionsObject
+} from "./internal/options";
 
 const REF_MAP = new QNDMap();
 

@@ -1,10 +1,10 @@
-import {
-	createOptionsObject,
-	composeOptionsTemplates
-} from "./options";
 import { escape } from "./str-replace";
 import { cleanRegex } from "./regex";
 import hasOwn from "./has-own";
+import {
+	createOptionsObject,
+	composeOptionsTemplates
+} from "./internal/options";
 
 const globRegex = /\\([^\\/])|(\?|\*\*|\*)|\[(!)?([^\\/]*?)\]|([$^()[\]/\\{}.*+?|])/g,
 	globCache = {},

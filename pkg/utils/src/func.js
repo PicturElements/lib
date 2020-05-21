@@ -1,6 +1,7 @@
 import forEachDeep from "./for-each-deep";
 import { resolveVal } from "./resolve-val";
 import { sym } from "./sym";
+import { getGlobalScope } from "./env";
 
 function call(func, ...args) {
 	if (typeof func == "function")
@@ -87,8 +88,8 @@ function isValidObjectKey(key) {
 function resolveFunc(resolverOrTarget, keyOrResolver, key = null) {
 	if (typeof resolverOrTarget == "function" && isValidObjectKey(keyOrResolver)) {
 		let func = function() {
-			if (this == window)
-				return console.error("Cannot resolve function: refusing to resolve on window as not to pollute the global scope");
+			if (this == getGlobalScope())
+				return console.error("Cannot resolve function: refusing to resolve on global scope");
 			if (isPrimitive(this))
 				return console.error("Cannot resolve function: cannot resolve on primitive value", this);
 			if (this[keyOrResolver] != func)

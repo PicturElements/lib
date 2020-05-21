@@ -1,7 +1,7 @@
 import {
 	composeOptionsTemplates,
 	createOptionsObject
-} from "./options";
+} from "./internal/options";
 import hasOwn from "./has-own";
 
 // Returns an index around which the comparator proximity is minimal

@@ -6,12 +6,12 @@ import {
 	isObject,
 	isArrayLike
 } from "./is";
+import getFunctionName from "./get-function-name";
+import hasOwn from "./has-own";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
-} from "./options";
-import getFunctionName from "./get-function-name";
-import hasOwn from "./has-own";
+} from "./internal/options";
 
 // Resolves arguments using a simple "lacuna" algorithm:
 // It steps through the parameter signature array and tries to match the next
@@ -123,7 +123,7 @@ export default function resolveArgs(args, signature, options) {
 			break;
 		}
 		
-		if (matchType(arg, sgn.type)) {
+		if (arg != null && matchType(arg, sgn.type)) {
 			if (sgn.coalesce) {
 				argsOut[key] = argsOut[key] || [];
 				argsOut[key].push(arg);

@@ -17,8 +17,10 @@ function getGlobalScope() {
 		case "node":
 		case "shell":
 			return global;
+
 		case "worker":
 			return self;
+
 		case "window":
 			return window;
 	}
