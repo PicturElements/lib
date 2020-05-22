@@ -1,6 +1,7 @@
 import {
 	get,
 	alias,
+	hasOwn,
 	forEach,
 	isObject,
 	splitPath,
@@ -54,7 +55,7 @@ export default class StructuredMap extends Array {
 	}
 
 	_resolvePartition(key, value, children = []) {
-		if (this.lookup.hasOwnProperty(key)) {
+		if (hasOwn(this.lookup, key)) {
 			this.lookup[key].value = value;
 			return this.lookup[key];
 		}
@@ -138,7 +139,7 @@ export default class StructuredMap extends Array {
 		for (let i = 0, l = path.length; i < l; i++) {
 			const key = path[i];
 
-			if (!map.lookup.hasOwnProperty(key))
+			if (!hasOwn(map.lookup, key))
 				return null;
 
 			partition = map.lookup[key];
@@ -155,7 +156,7 @@ export default class StructuredMap extends Array {
 		for (let i = 0, l = path.length; i < l; i++) {
 			const key = path[i];
 
-			if (!map.lookup.hasOwnProperty(key))
+			if (!hasOwn(map.lookup, key))
 				return false;
 
 			map = map.lookup[key].children;

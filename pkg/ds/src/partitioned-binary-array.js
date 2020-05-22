@@ -1,10 +1,14 @@
 import {
 	alias,
+	forEach,
+	isIterable,
 	resolveArgs,
 	findClosest,
 	binarySearch
 } from "@qtxr/utils";
 import { getHash } from "./internal/utils";
+import { SYM_ITER_KEY } from "@qtxr/utils/internal";
+import StatelessIterator from "./internal/stateless-iterator";
 
 // A partitioned binary array (PBA) is a specialized data structure that
 // employs binary search to insert/find/delete items in logarithmic time.
@@ -15,14 +19,14 @@ import { getHash } from "./internal/utils";
 //
 // Search action:
 // 1.	A binary search is done on partitions in the root level array. This is done by comparing
-// 		the first elements of each partition to the reference value. The index of the partition
+//		the first elements of each partition to the reference value. The index of the partition
 //		with the head value closest to the refrence value is saved.
 // 2.	If the index ends up being out of bounds, false is returned
 // 3.	Else, a second binary search is done on the partition's elements. The two binary searches
 //		are not significantly slower than a single on a shallow array
 // Addition action:
 // 1.	A binary search is done on partitions in the root level array. This is done by comparing
-// 		the first elements of each partition. It returns the index of the partition whose head has
+//		the first elements of each partition. It returns the index of the partition whose head has
 //		a value closest to the inserted value.
 // 2.	If a the partition is full, a new partition is spliced into the root array with the value
 //		as its only element.
@@ -40,6 +44,7 @@ import { getHash } from "./internal/utils";
 // Sequential input
 
 const pbaConstructorParams = [
+	{ name: "iterable", type: v => typeof v != "string" && isIterable(v), default: [] },
 	{ name: "hash", type: "string|function", default: null },
 	{ name: "comparator", type: "function", default: null },
 	{ name: "partitionSize", type: "number", default: 600 }
@@ -48,6 +53,7 @@ const pbaConstructorParams = [
 export default class PartitionedBinaryArray extends Array {
 	constructor(...args) {
 		const {
+			iterable,
 			hash,
 			comparator,
 			partitionSize
@@ -58,6 +64,8 @@ export default class PartitionedBinaryArray extends Array {
 		this.comparator = comparator;
 		this.partitionSize = partitionSize;
 		this.size = 0;
+
+		forEach(iterable, val => this.add(val));
 	}
 
 	has(val) {
@@ -144,20 +152,31 @@ export default class PartitionedBinaryArray extends Array {
 
 		return true;
 	}
+
+	getIterator(dispatcher) {
+		return mkIterator(this, dispatcher);
+	}
+
+	entries() {
+		return mkIterator(this);
+	}
 }
 
-alias(PartitionedBinaryArray.prototype, "add", "set");
+alias(PartitionedBinaryArray.prototype, {
+	add: "set",
+	entries: [SYM_ITER_KEY, "keys", "values"]
+});
 
-function rootBinarySearch(pba, hash) {
-	if (!pba.length)
+function rootBinarySearch(inst, hash) {
+	if (!inst.length)
 		return -1;
 
-	const comparator = typeof pba.comparator == "function" ?
-		typeof pba.comparator :
+	const comparator = typeof inst.comparator == "function" ?
+		typeof inst.comparator :
 		null;
 
-	return binarySearch(pba, v => {
-		const h = getHash(pba, v[0]);
+	return binarySearch(inst, v => {
+		const h = getHash(inst, v[0]);
 
 		if (comparator)
 			return comparator(h, hash);
@@ -172,13 +191,13 @@ function rootBinarySearch(pba, hash) {
 	});
 }
 
-function partitionBinarySearch(pba, partition, hash) {
-	const comparator = typeof pba.comparator == "function" ?
-		typeof pba.comparator :
+function partitionBinarySearch(inst, partition, hash) {
+	const comparator = typeof inst.comparator == "function" ?
+		typeof inst.comparator :
 		null;
 
 	return findClosest(partition, v => {
-		const h = getHash(pba, v);
+		const h = getHash(inst, v);
 
 		if (comparator)
 			return comparator(h, hash);
@@ -191,4 +210,111 @@ function partitionBinarySearch(pba, partition, hash) {
 
 		return 1;
 	}, "lower");
+}
+
+function equals(a, b) {
+	if (a == b)
+		return b;
+
+	if (typeof a != "number")
+		return false;
+
+	return isNaN(a) && isNaN(b);
+}
+
+function mkIterator(inst, dispatcher) {
+	const state = {
+		partitionIndex: 0,
+		index: 0,
+		partition: null,
+		nextVal: null,
+		nextValHash: null,
+		prevVal: null,
+		prevValHash: null
+	};
+
+	const getLikelyPartitionIndex = _ => {
+		const idx = rootBinarySearch(inst, state.nextValHash);
+		if (idx > -1)
+			return idx;
+
+		if (!state.partitionIndex && !state.index)
+			return -1;
+
+		return rootBinarySearch(inst, state.prevValHash);
+	};
+
+	const getLikelyItemIndex = partition => {
+		let idx = partitionBinarySearch(inst, partition, state.nextValHash);
+		if (idx > -1)
+			return idx;
+
+		if (state.index >= partition.length)
+			return partition.length;
+
+		if (!state.partitionIndex && !state.index)
+			return 0;
+
+		idx = partitionBinarySearch(inst, partition, state.prevValHash);
+		return idx == -1 ?
+			partition.length :
+			idx + 1;
+	};
+
+	return new StatelessIterator(
+		inst,
+		_ => {
+			if (!inst.length)
+				return StatelessIterator.EXIT;
+
+			if (!state.partitionIndex && !state.index) {
+				state.partition = inst[0];
+				state.nextVal = inst[0][0];
+				state.nextValHash = getHash(inst, state.nextVal);
+			}
+
+			// Find the appropriate partition
+			let partition = inst[state.partitionIndex];
+			if (!partition || partition != state.partition) {
+				const idx = getLikelyPartitionIndex();
+				partition = inst[idx];
+				state.partition = partition;
+				state.partitionIndex = idx;
+
+				if (!partition)
+					return StatelessIterator.EXIT;
+			}
+
+			// Find the next 
+			let index = state.index;
+			if (index >= partition.length || !equals(partition[index], state.nextVal))
+				index = getLikelyItemIndex(partition);
+
+			if (index >= partition.length) {
+				partition = inst[state.partitionIndex + 1];
+				index = 0;
+				state.partition = partition;
+				state.partitionIndex++;
+				state.index = index;
+
+				if (!partition)
+					return StatelessIterator.EXIT;
+			}
+
+			if (index >= partition.length)
+				return StatelessIterator.EXIT;
+
+			const value = partition[index];
+			state.nextVal = partition[index + 1];
+			state.nextValHash = getHash(inst, state.nextVal);
+			state.prevVal = value;
+			state.prevValHash = getHash(inst, value);
+			state.index++;
+
+			if (typeof dispatcher == "function")
+				return dispatcher(value);
+
+			return value;
+		}
+	);
 }

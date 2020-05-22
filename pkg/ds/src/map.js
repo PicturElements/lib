@@ -1,6 +1,5 @@
 import {
 	sym,
-	alias,
 	forEach,
 	isArrayLike
 } from "@qtxr/utils";

@@ -5,7 +5,7 @@ import {
 	isArrayLike
 } from "@qtxr/utils";
 import { SYM_ITER_KEY } from "@qtxr/utils/internal";
-import Iterator from "./internal/iterator";
+import StatelessIterator from "./internal/stateless-iterator";
 
 let id = 0;
 
@@ -260,58 +260,34 @@ function assertValidKey(key) {
 }
 
 function mkIterator(inst, dispatcher) {
-	let n,
-		v;
+	let next = inst.head,
+		node = null;
 
-	return new Iterator(
+	return new StatelessIterator(
 		inst,
-		inst.head,
-		iterator => {
-			n = iterator.nextIdentifier;
+		_ => {
+			if (next == null)
+				next = inst.head;
+			else if (typeof next == "number")
+				next = inst.find((_, k) => k > next);
+			else if (!next.linked)
+				next = inst.find((_, k) => k > next.id);
 
-			if (n == null)
-				n = inst.head;
-			else if (typeof n == "number")
-				n = inst.find((_, k) => k > n);
-			else if (!n.linked)
-				n = inst.find((_, k) => k > n.id);
+			if (!next)
+				return StatelessIterator.EXIT;
 
-			if (!n)
-				return null;
+			node = next;
+			next = node.next || node.id + 1;
 
 			switch (dispatcher) {
-				case "key":
-					v = n.key;
-					break;
-
-				case "value":
-					v = n.value;
-					break;
-
-				case "entry":
-					v = [n.key, n.value];
-					break;
-
-				case "kv-key":
-					v = n.value[0];
-					break;
-
-				case "kv-value":
-					v = n.value[1];
-					break;
-
-				case "kv-entry":
-					v = [n.value[0], n.value[1]];
-					break;
-
-				default:
-					v = dispatcher(n);
+				case "key": return node.key;
+				case "value": return node.value;
+				case "entry": return [node.key, node.value];
+				case "kv-key": return node.value[0];
+				case "kv-value": return node.value[1];
+				case "kv-entry": return [node.value[0], node.value[1]];
+				default: return dispatcher(node);
 			}
-
-			return {
-				value: v,
-				nextIdentifier: n.next || n.id + 1
-			};
 		}
 	);
 }

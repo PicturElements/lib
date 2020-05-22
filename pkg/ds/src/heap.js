@@ -1,4 +1,5 @@
 import {
+	hasOwn,
 	getHash,
 	typeHash
 } from "./utils";
@@ -14,7 +15,7 @@ export default class Heap extends Array {
 
 	has(val) {
 		const typedHash = typeHash(getHash(this, val));
-		return this.hashLookup.hasOwnProperty(typedHash);
+		return hasOwn(this.hashLookup, typedHash);
 	}
 
 	insert(val) {
@@ -72,7 +73,7 @@ export default class Heap extends Array {
 
 		typedHash = typedHash || typeHash(getHash(this, this[idx]));
 
-		if (!this.hashLookup.hasOwnProperty(typedHash))
+		if (!hasOwn(this.hashLookup, typedHash))
 			return null;
 
 		this.hashLookup[typedHash]--;

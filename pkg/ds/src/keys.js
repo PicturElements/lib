@@ -1,5 +1,6 @@
 import {
 	alias,
+	hasOwn,
 	compileGlob,
 	binarySearch
 } from "@qtxr/utils";
@@ -84,11 +85,11 @@ export default class Keys {
 			return null;
 
 		// Super basic loop unrolling
-		if (this.partitions.plaintext.lookup.hasOwnProperty(key))
+		if (hasOwn(this.partitions.plaintext.lookup, key))
 			return "plaintext";
-		if (this.partitions.glob.lookup.hasOwnProperty(key))
+		if (hasOwn(this.partitions.glob.lookup, key))
 			return "glob";
-		if (this.partitions.any.lookup.hasOwnProperty(key))
+		if (hasOwn(this.partitions.any.lookup, key))
 			return "any";
 
 		return null;
@@ -98,7 +99,7 @@ export default class Keys {
 		if (typeof key != "string")
 			return false;
 
-		if (this.partitions.plaintext.lookup.hasOwnProperty(key))
+		if (hasOwn(this.partitions.plaintext.lookup, key))
 			callback(key, "plaintext");
 		
 		const globs = this.partitions.glob.keys;
