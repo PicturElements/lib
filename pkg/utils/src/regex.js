@@ -1,5 +1,7 @@
 import supports from "./internal/supports";
 import hasOwn from "./has-own";
+import parseRegex from "./parse-regex";
+import mkCharacterSet from "./mk-character-set";
 
 const FLAGS = [],
 	FLAGS_MAP = {};
@@ -64,7 +66,7 @@ function injectRegexFlags(rxOrSource, flags = "", instantiate = false) {
 	return rxOrSource;
 }
 
-const getRegexFlags = !supports.regex.flags ?
+const getRegexFlags = supports.regex.flags ?
 	rx => rx.flags :
 	rx => {
 		const stringified = rx.toString();
@@ -75,7 +77,7 @@ const getRegexFlags = !supports.regex.flags ?
 		}
 	};
 
-const getRegexSource = !supports.regex.source ?
+const getRegexSource = supports.regex.source ?
 	rx => rx.source :
 	rx => {
 		const stringified = rx.toString();
@@ -158,6 +160,105 @@ function matchAll(str, regex, captureOrCapturePriority = 0) {
 	}
 }
 
+const T = parseRegex.TOKENS;
+function getRegexMetrics(source) {
+	const metrics = {
+		matchStart: false,
+		matchEnd: false,
+		peek: null,
+		ast: null
+	};
+	const sets = {
+		positive: "",
+		negative: ""
+	};
+
+	const extendSet = extension => {
+		let key = "positive";
+		if (extension[0] == "^") {
+			key = "negative";
+			extension = extension.substring(1);
+		}
+
+		if (extension[extension.length - 1] == "-")
+			extension = extension.substring(0, extension.length - 1) + "\\-";
+
+		if (extension[0] == "-")
+			extension = "\\" + extension;
+
+		sets[key] += extension;
+	};
+
+	const traverse = node => {
+		switch (node.type) {
+			case T.START_ASSERTION:
+				metrics.matchStart = true;
+				break;
+
+			case T.END_ASSERTION:
+				metrics.matchEnd = true;
+				break;
+
+			case T.SET:
+				extendSet(node.value);
+				if (!node.quantify || node.quantify.min > 0)
+					return false;
+				break;
+
+			case T.LITERAL:
+				extendSet(node.value[0]);
+				break;
+
+			case T.GROUP:
+			case T.NON_CAPTURING_GROUP:
+			case T.POSITIVE_LOOKAHEAD:
+			case T.NEGATIVE_LOOKAHEAD: {
+				let optionalChildrenCount = 0;
+
+				for (let i = 0, l = node.children.length; i < l; i++) {
+					const res = traverse(node.children[i]);
+
+					if (res === true)
+						optionalChildrenCount++;
+					if (res === false)
+						break;
+				}
+
+				if (node.quantify && node.quantify.min == 0)
+					return true;
+
+				return optionalChildrenCount == node.children.length;
+			}
+		}
+
+		if (!node.children)
+			return;
+
+		for (let i = 0, l = node.children.length; i < l; i++) {
+			if (traverse(node.children[i]) === false)
+				return;
+		}
+	};
+
+	const ast = parseRegex(source);
+	metrics.ast = ast;
+	traverse(ast);
+
+	if (sets.positive && sets.negative) {
+		const pos = mkCharacterSet(sets.positive),
+			neg = mkCharacterSet("^" + sets.negative);
+
+		metrics.peek = v => pos(v) || neg(v);
+	} else if (sets.positive)
+		metrics.peek = mkCharacterSet(sets.positive);
+	else if (sets.negative)
+		metrics.peek = mkCharacterSet("^" + sets.negative);
+	else
+		metrics.peek = _ => false;
+
+	return metrics;
+}
+
 export {
 	compileRegex,
 	cleanRegex,
@@ -167,5 +268,6 @@ export {
 	getRegexSource,
 	stickyExec,
 	stickyTest,
-	matchAll
+	matchAll,
+	getRegexMetrics
 };
