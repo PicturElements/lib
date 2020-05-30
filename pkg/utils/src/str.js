@@ -321,6 +321,58 @@ function nullish(candidate) {
 	return candidate;
 }
 
+// Adapted from
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/fromCodePoint#Polyfill
+const fromCodePoint = String.fromCodePoint ?
+	String.fromCodePoint.bind(String) :
+	(...points) => {
+		const units = [];
+		let out = "";
+
+		for (let i = 0, l = points.length; i < l; i++) {
+			let point = Number(points[i]);
+
+			if (point >= 0x10ffff || point >>> 0 != point)
+				throw RangeError("Invalid code point: " + point);
+
+			if (point < 0xffff)
+				units.push(point);
+			else {
+				point -= 0x10000;
+				units.push(
+					(point >> 10) + 0xd800,
+					(point % 0x400) + 0xdc00
+				);
+			}
+
+			if (units.length >= 0x3fff) {
+				out += String.fromCharCode(...units);
+				units.length = 0;
+			}
+		}
+
+		return out + String.fromCharCode(...units);
+	};
+
+const codePointAt = String.prototype.codePointAt ?
+	(str, idx) => String(str).codePointAt(idx) :
+	(str, idx = 0) => {
+		str = String(str);
+
+		if (idx < 0 || idx >= str.length)
+			return NaN;
+
+		const high = str.charCodeAt(idx);
+		if (high >= 0xd800 && high <= 0xdbff && idx < str.length - 1) {
+			const low = str.charCodeAt(idx + 1);
+
+			if (low >= 0xdc00 && low <= 0xdfff)
+				return ((high - 0xd800) << 10) + (low - 0xdc00) + 0x10000;
+		}
+
+		return high;
+	};
+
 export {
 	repeat,
 	padStart,
@@ -329,5 +381,7 @@ export {
 	trimStr,
 	splitClean,
 	compileTaggedTemplate,
-	distance
+	distance,
+	fromCodePoint,
+	codePointAt
 };

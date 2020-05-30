@@ -219,6 +219,22 @@ function isWhitespace(char) {
 	return code > 8 && code < 14 || code == 32;
 }
 
+function isDigit(char) {
+	if (typeof char != "string" || char.length != 1)
+		return false;
+
+	const code = char.charCodeAt(0);
+	return code >= 48 && code <= 57;
+}
+
+function isHexDigit(char) {
+	if (typeof char != "string" || char.length != 1)
+		return false;
+
+	const code = char.charCodeAt(0);
+	return (code >= 48 && code <= 57) || (code >= 97 && code <= 102) || (code >= 65 && code <= 70);
+}
+
 function isLowerCase(char) {
 	return char.toLowerCase() == char;
 }
@@ -268,6 +284,8 @@ export {
 	isEnv,
 	isNativeFunction,
 	isWhitespace,
+	isDigit,
+	isHexDigit,
 	isLowerCase,
 	isUpperCase,
 	isThenable,

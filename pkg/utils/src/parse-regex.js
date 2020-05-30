@@ -1,16 +1,21 @@
 import hasOwn from "./has-own";
-import { getRegexSource } from "./regex";
+import {
+	getRegexSource,
+	joinRegexFlags
+} from "./regex";
 import parseEscapeSequence from "./parse-escape-sequence";
+import lookup from "./lookup";
 
 const T = {
 	PROGRAM: "program",
 	LITERAL: "literal",
 	SET: "set",
 	BACKREF: "backref",
+	ANY: "any",
 	WORD_BOUNDARY: "word_boundary",
 	NON_WORD_BOUNDARY: "non_word_boundary",
 	ALTERNATION: "alternation",
-	ALTERANATION_TERM: "alternation_term",
+	ALTERNATION_TERM: "alternation_term",
 	GROUP: "group",
 	NON_CAPTURING_GROUP: "non_capturing_group",
 	POSITIVE_LOOKAHEAD: "positive_lookahead",
@@ -38,10 +43,22 @@ const GROUP_SIGNATURES = {
 	"?<!": T.NEGATIVE_LOOKBEHIND
 };
 
-export default function parseRegex(source) {
-	source = source instanceof RegExp ?
-		getRegexSource(source) :
-		source;
+export default function parseRegex(source, flags = "") {
+	if (source instanceof RegExp) {
+		flags = joinRegexFlags(source, flags);
+		source = getRegexSource(source);
+	}
+
+	if (typeof source != "string")
+		source = "";
+	if (typeof flags != "string")
+		flags = "";
+
+	const err = msg => {
+		const e = SyntaxError(`\n\nparser@${ptr + 1}\n${msg}%end%`);
+		e.stack = e.stack.split("%end%")[0];
+		throw e;
+	};
 
 	const mkToken = (type, data = null) => {
 		const base = {
@@ -81,7 +98,7 @@ export default function parseRegex(source) {
 	const popToken = _ => {
 		const token = stack.pop();
 		if (!token)
-			throw new Error("Fell out of token stack");
+			err("Fell out of token stack");
 
 		const children = token.children,
 			lastChild = children && children.length && children[children.length - 1];
@@ -111,8 +128,17 @@ export default function parseRegex(source) {
 			return SPECIAL_TOKENS[nextChar];
 		}
 
-		const parsed = parseEscapeSequence(source, ptr);
+		if (nextChar == "u" && flagLookup.has("u") && source[ptr + 2] != "{")
+			err("Meaningless sequence '\\u'");
+
+		// Remaining escape sequences
+		const parsed = parseEscapeSequence(source, ptr, {
+			codepoint: flagLookup.has("u")
+		});
 		ptr += parsed.length;
+
+		if (parsed.error)
+			err(parsed.error);
 
 		if (!picky || (parsed.type != "none" && parsed.type != "raw"))
 			return parsed.character;
@@ -131,10 +157,10 @@ export default function parseRegex(source) {
 
 	const addQuantifier = (min, max, lazy) => {
 		if (!isQuantifiable(currentToken))
-			throw new Error("Token is not quantifiable");
+			err("Token is not quantifiable");
 
 		if (currentToken.quantify)
-			throw new Error("Nothing to repeat");
+			err("Nothing to repeat");
 
 		if (currentToken.type == T.LITERAL && currentToken.value.length > 1) {
 			const val = currentToken.value,
@@ -158,9 +184,15 @@ export default function parseRegex(source) {
 	};
 
 	const len = source.length,
-		groups = [];
+		groups = [],
+		flagLookup = lookup(flags, "");
 	let ptr = 0,
-		program = mkToken(T.PROGRAM, []),
+		program = mkToken(T.PROGRAM, {
+			children: [],
+			source,
+			flags,
+			flagLookup
+		}),
 		parentToken = program,
 		currentToken = program,
 		stack = [program];
@@ -175,6 +207,10 @@ export default function parseRegex(source) {
 		}
 
 		switch (char) {
+			case "\\":
+				consumeNextLiteralChar();
+				break;
+
 			case "(": {
 				let groupSignature = source.substring(ptr + 1, ptr + 3),
 					tokenType;
@@ -194,21 +230,26 @@ export default function parseRegex(source) {
 				}
 
 				const group = pushToken(mkToken(tokenType, []));
+				group.isGroup = true;
 				if (tokenType != T.NON_CAPTURING_GROUP)
 					groups.push(group);
 				ptr += groupSignature.length + 1;
 				break;
 			}
 
-			case ")":
-				if (parentToken.type == T.ALTERANATION_TERM) {
+			case ")": {
+				if (parentToken.type == T.ALTERNATION_TERM) {
 					popToken();
 					popToken();
 				}
 
-				popToken();
+				const token = popToken();
+				if (!token.isGroup)
+					err("Unmatched parenthesis");
+
 				ptr++;
 				break;
+			}
 
 			case "[":
 				pushToken(mkToken(T.SET, ""));
@@ -216,25 +257,28 @@ export default function parseRegex(source) {
 				break;
 
 			case "]":
-				popToken();
-				ptr++;
+				if (currentToken.type == T.SET) {
+					popToken();
+					ptr++;
+				} else
+					consumeNextLiteralChar();
 				break;
 
 			case "|":
-				if (parentToken.type != T.ALTERANATION_TERM) {
+				if (parentToken.type != T.ALTERNATION_TERM) {
 					const children = parentToken.children,
 						start = parentToken.start;
 					parentToken.children = [];
 					pushToken(mkToken(T.ALTERNATION, []));
-					pushToken(mkToken(T.ALTERANATION_TERM, {
+					pushToken(mkToken(T.ALTERNATION_TERM, {
 						children,
 						start
 					}));
 					popToken();
-					pushToken(mkToken(T.ALTERANATION_TERM, []));
+					pushToken(mkToken(T.ALTERNATION_TERM, []));
 				} else {
 					popToken();
-					pushToken(mkToken(T.ALTERANATION_TERM, []));
+					pushToken(mkToken(T.ALTERNATION_TERM, []));
 				}
 				ptr++;
 				break;
@@ -259,13 +303,20 @@ export default function parseRegex(source) {
 				let min = 0,
 					max = 0,
 					dec = 0,
-					count = 0;
+					count = 0,
+					consumed = 0,
+					visited = 0;
 
 				for (let i = ptr + 1; i < len; i++) {
 					const c = source[i],
 						cc = c.charCodeAt(0) - 48;
 
+					visited++;
+
 					if (c == "}") {
+						if (!count && !consumed)
+							break;
+
 						if (!count) {
 							min = dec;
 							max = dec;
@@ -273,33 +324,44 @@ export default function parseRegex(source) {
 							max = dec;
 
 						if (min > max)
-							throw new Error("Quantifier range out of order");
+							err("Quantifier range out of order");
 
 						const diff = i - ptr + 1;
 						addQuantifier(min, max, source[i + 1] == "?");
 						ptr += diff;
+						visited = 0;
 						break;
 					}
 
 					if (c == "," && !count) {
+						if (!consumed)
+							break;
+
 						min = dec;
 						max = Infinity;
 						dec = 0;
+						consumed = 0;
 						count++;
 						continue;
 					}
 						
-					if (cc < 0 || cc > 9) {
-						consumeNextLiteralChar();
+					if (cc < 0 || cc > 9)
 						break;
-					}
 
 					dec = dec * 10 + cc;
+					consumed++;
 				}
+
+				if (flagLookup.has("u"))
+					err("Unescaped '{' not valid with unicode flag enabled unless in valid range quantifier");
+
+				for (let i = 0; i < visited; i++)
+					consumeNextLiteralChar();
+
 				break;
 			}
 
-			// Assertions
+			// Assertions, special characters
 			case "^":
 				appendToken(mkToken(T.START_ASSERTION));
 				ptr++;
@@ -307,6 +369,11 @@ export default function parseRegex(source) {
 
 			case "$":
 				appendToken(mkToken(T.END_ASSERTION));
+				ptr++;
+				break;
+
+			case ".":
+				appendToken(mkToken(T.ANY));
 				ptr++;
 				break;
 
@@ -354,8 +421,41 @@ export default function parseRegex(source) {
 		}
 	}
 
-	while (stack.length)
-		popToken();
+	ptr--;
+
+	while (stack.length) {
+		const token = popToken();
+
+		switch (token.type) {
+			case T.GROUP:
+				err("Unterminated group");
+				break;
+
+			case T.NON_CAPTURING_GROUP:
+				err("Unterminated non-capturing group");
+				break;
+
+			case T.POSITIVE_LOOKAHEAD:
+				err("Unterminated positive lookahead");
+				break;
+
+			case T.NEGATIVE_LOOKAHEAD:
+				err("Unterminated negative lookahead");
+				break;
+
+			case T.POSITIVE_LOOKBEHIND:
+				err("Unterminated positive lookbehind");
+				break;
+
+			case T.NEGATIVE_LOOKBEHIND:
+				err("Unterminated negative lookbehind");
+				break;
+
+			case T.SET:
+				err("Unterminated character set");
+				break;
+		}
+	}
 
 	return program;
 }
@@ -373,6 +473,7 @@ function isQuantifiable(token) {
 		case T.NEGATIVE_LOOKAHEAD:
 		case T.POSITIVE_LOOKBEHIND:
 		case T.NEGATIVE_LOOKBEHIND:
+		case T.ANY:
 			return true;
 	}
 

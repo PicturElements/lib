@@ -2,7 +2,7 @@ import { SYM_ITER_KEY } from "./internal/constants";
 import VolatileMap from "./internal/volatile-map";
 import {
 	isArrayLike,
-	isDirectInstanceof,
+	isObject,
 } from "./is";
 import {
 	isSetLike,
@@ -20,6 +20,7 @@ import {
 // 1. iteration over array-likes
 // 2. iteration over own object keys (with support for symbol polyfill; see sym())
 // 3. iteration over iterables (with support for polyfilled iterables; see Map, Set)
+// 4. iteration over strings, with correct handling of surrogate pairs
 // Array-likes that implement the iteration prototcol are iterated over using a standard
 // for loop by default. Use the iterable flag to prefer iterators 
 //
@@ -98,7 +99,7 @@ import {
 
 const CACHE_STORE = new VolatileMap();
 
-export default function forEach(obj, callback, options) {
+export default function forEach(src, callback, options) {
 	if (!jmpObj.callDepth) {
 		jmpObj.aborted = false;
 		// Resetting this should only be needed when
@@ -106,7 +107,7 @@ export default function forEach(obj, callback, options) {
 		jmpObj.active = false;
 	}
 
-	if (obj === null || obj === undefined || typeof callback != "function" || jmpObj.active)
+	if (src === null || src === undefined || typeof callback != "function" || jmpObj.active)
 		return forEach;
 
 	options = createOptionsObject(options || forEach._options, optionsTemplates);
@@ -121,28 +122,64 @@ export default function forEach(obj, callback, options) {
 		cacheKeys
 	} = options;
 
-	if (!iterable && isArrayLike(obj)) {
-		if (reverse) {
-			for (let i = obj.length - 1; i >= 0; i--) {
-				if (invokeCallback(callback, obj, i, false, sparse)) {
+	if (!iterable && isArrayLike(src)) {
+		if (typeof src == "string") {
+			if (reverse) {
+				for (let i = src.length - 1; i >= 0; i--) {
+					let char = src[i];
+
+					if (i > 0) {
+						const cc = src.charCodeAt(i - 1);
+
+						if (cc >= 0xd800 && cc <= 0xdbff) {
+							char = src[i - 1] + char;
+							i--;
+						}
+					}
+
+					if (invokeCallbackChar(callback, src, i, char)) {
+						if (shouldContinue(options))
+							continue;
+						return brk(options);
+					}
+				}
+			} else {
+				for (let i = 0; i < src.length; i++) {
+					const idx = i,
+						cc = src.charCodeAt(i);
+					let char = src[i];
+
+					if (cc >= 0xd800 && cc <= 0xdbff)
+						char += src[++i];
+
+					if (invokeCallbackChar(callback, src, idx, char)) {
+						if (shouldContinue(options))
+							continue;
+						return brk(options);
+					}
+				}
+			}
+		} else if (reverse) {
+			for (let i = src.length - 1; i >= 0; i--) {
+				if (invokeCallback(callback, src, i, false, sparse)) {
 					if (shouldContinue(options))
 						continue;
 					return brk(options);
 				}
 			}
 		} else {
-			for (let i = 0; i < obj.length; i++) {
-				if (invokeCallback(callback, obj, i, false, sparse)) {
+			for (let i = 0; i < src.length; i++) {
+				if (invokeCallback(callback, src, i, false, sparse)) {
 					if (shouldContinue(options))
 						continue;
 					return brk(options);
 				}
 			}
 		}
-	} else if (typeof obj[SYM_ITER_KEY] == "function") {
-		const iterator = obj[SYM_ITER_KEY](),
-			setLike = options.isSetLike || isSetLike(obj),
-			mapLike = options.isMapLike || isMapLike(obj),
+	} else if (typeof src[SYM_ITER_KEY] == "function") {
+		const iterator = src[SYM_ITER_KEY](),
+			setLike = options.isSetLike || isSetLike(src),
+			mapLike = options.isMapLike || isMapLike(src),
 			stack = [];
 		let item = null,
 			idx = -1;
@@ -166,7 +203,7 @@ export default function forEach(obj, callback, options) {
 
 			if (reverse)
 				stack.push(vk);
-			else if (invokeCallbackVK(callback, obj, vk)) {
+			else if (invokeCallbackVK(callback, src, vk)) {
 				if (shouldContinue(options))
 					continue;
 				return brk(options);
@@ -176,13 +213,13 @@ export default function forEach(obj, callback, options) {
 		// options.reverse
 		let i = stack.length;
 		while (i--) {
-			if (invokeCallbackVK(callback, obj, stack[i])) {
+			if (invokeCallbackVK(callback, src, stack[i])) {
 				if (shouldContinue(options))
 					continue;
 				return brk(options);
 			}
 		}
-	} else if (isDirectInstanceof(obj, Object)) {
+	} else if (isObject(src, Object)) {
 		// In V8, the speed difference/memory usage
 		// between Object.keys/for and for-in are
 		// negligible, but in SpiderMonkey the former is
@@ -190,20 +227,20 @@ export default function forEach(obj, callback, options) {
 		let ks;
 
 		if (typeof cacheKeys == "number") {
-			const value = CACHE_STORE.get(obj);
+			const value = CACHE_STORE.get(src);
 
 			if (value)
 				ks = value;
 			else {
-				ks = keys(obj);
-				CACHE_STORE.set(obj, ks, cacheKeys);
+				ks = keys(src);
+				CACHE_STORE.set(src, ks, cacheKeys);
 			}
 		} else
-			ks = keys(obj);
+			ks = keys(src);
 
 		if (reverse) {
 			for (let i = ks.length - 1; i >= 0; i--) {
-				if (invokeCallback(callback, obj, ks[i], symbols, !symbols)) {
+				if (invokeCallback(callback, src, ks[i], symbols, !symbols)) {
 					if (shouldContinue(options))
 						continue;
 					return brk(options);
@@ -211,7 +248,7 @@ export default function forEach(obj, callback, options) {
 			}
 		} else {
 			for (let i = 0, l = ks.length; i < l; i++) {
-				if (invokeCallback(callback, obj, ks[i], symbols, !symbols)) {
+				if (invokeCallback(callback, src, ks[i], symbols, !symbols)) {
 					if (shouldContinue(options))
 						continue;
 					return brk(options);
@@ -221,12 +258,12 @@ export default function forEach(obj, callback, options) {
 	}
 
 	if (symbols && typeof Symbol != "undefined") {
-		const syms = Object.getOwnPropertySymbols(obj);
+		const syms = Object.getOwnPropertySymbols(src);
 
 		for (let i = 0, l = syms.length; i < l; i++) {
 			const sym = syms[i];
 
-			if (callback(obj[sym], sym, obj) == jmpT) {
+			if (callback(src[sym], sym, src) == jmpT) {
 				if (shouldContinue(options))
 					continue;
 				return brk(options);
@@ -344,16 +381,21 @@ Object.defineProperties(forEach, {
 	}
 });
 
-function invokeCallback(callback, obj, k, symbols, checkExistence) {
-	if (checkExistence && !hasOwn(obj, k, symbols))
+function invokeCallback(callback, src, k, symbols, checkExistence) {
+	if (checkExistence && !hasOwn(src, k, symbols))
 		return false;
 
-	callback(obj[k], k, obj);
+	callback(src[k], k, src);
 	return jmpObj.active;
 }
 
-function invokeCallbackVK(callback, obj, vk) {
-	callback(vk[0], vk[1], obj);
+function invokeCallbackVK(callback, src, vk) {
+	callback(vk[0], vk[1], src);
+	return jmpObj.active;
+}
+
+function invokeCallbackChar(callback, src, k, char) {
+	callback(char, k, src);
 	return jmpObj.active;
 }
 
