@@ -82,7 +82,7 @@ function mergePresets(data, presets, config = {}) {
 		return out;
 	};
 
-	return merge(clone(data));
+	return merge(clone(data, config));
 }
 
 export {
