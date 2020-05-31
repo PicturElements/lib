@@ -1,6 +1,5 @@
 import {
 	get,
-	inject,
 	hasOwn,
 	isObject,
 	joinClass
@@ -52,7 +51,7 @@ export default {
 
 					runtime[key] = get(runtime, path);
 				} else if (isObject(src))
-					inject(runtime, src, "override");
+					Object.assign(runtime, src);
 			}
 
 			return runtime;

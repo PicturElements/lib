@@ -52,22 +52,6 @@
 					slot(
 						:name="name"
 						v-bind="d")
-				//- .options(ref="options")
-					template(v-if="!options.length")
-						slot(name="no-search-results" v-bind="bnd")
-							.no-search-results No results found
-					.dropdown-option(
-						v-else
-						v-for="(option, idx) in options"
-						:class="{ selected: option == activeOption, 'selected-option': idx == optionPtr }"
-						@mousedown="focus"
-						@click="trigger(option, idx)"
-						@mousemove="setOptionPtr(idx)"
-						ref="option")
-						.dropdown-option-inner
-							slot(v-bind="bindOption(option.value)") {{ getLabel(option.value) }}
-				//- .loading-overlay(v-if="loading")
-					slot(name="loading-icon" v-bind="bnd")
 </template>
 
 <script>
@@ -95,7 +79,6 @@
 			lastQuery: null,
 			allOptions: null,
 			options: [],
-			activeOption: null,
 			optionPtr: -1,
 			lastOptionPtr: -1,
 			bufferedOptionPtr: -1,
@@ -114,10 +97,8 @@
 				this.input.optionsContext.search(this.query, refresh);
 			},
 			trigger(option) {
-				if (!this.inert) {
+				if (!this.inert)
 					this.input.trigger(option.value);
-					this.activeOption = option;
-				}
 
 				this.dropAssets.collapse(2);
 			},
@@ -184,13 +165,13 @@
 					return this.input.noRefresh;
 
 				return typeof this.input.searchFetch != "function" && typeof this.input.options != "function";
-			}
-		},
-		watch: {
-			"input.value"() {
-				const activeOption = this.input.optionsContext.selection[0];
-				if (activeOption)
-					this.activeOption = activeOption;
+			},
+			activeOption() {
+				const sel = this.input.optionsContext.selection;
+				if (!sel.length)
+					return null;
+
+				return sel[0];
 			}
 		},
 		props: {
@@ -203,10 +184,5 @@
 			Drop,
 			Options
 		},
-		mounted() {
-			const activeOption = this.input.optionsContext.selection[0];
-			if (activeOption)
-				this.activeOption = activeOption;
-		}
 	};
 </script>

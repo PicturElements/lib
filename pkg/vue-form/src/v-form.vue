@@ -45,9 +45,13 @@
 	export default {
 		name: "VForm",
 		data() {
-			const rows = this.rows,
-				settings = this.settings || rows || {},
+			let rows = this.rows;
+			const settings = this.settings || rows || {},
 				form = this.form || new Form(settings.preset || settings.hooks, settings.opt);
+			
+			rows = !rows && form.inputsStruct && form.inputsStruct.length ?
+				form.inputsStruct :
+				rows;
 
 			if (rows) {
 				return {

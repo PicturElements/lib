@@ -20,7 +20,14 @@ export default {
 	beforeMount() {
 		this.input.hook("update", ({ input }) => {
 			this.validationState = input.validationState;
-			this.validationMsg = input.validationMsg || input.validationMsg;
+			this.validationMsg = input.validationMsg;
+		}, INPUT_HOOK_SYM);
+
+		this.input.hook("refresh", ({ input }) => {
+			if (input.changed) {
+				this.validationState = input.validationState;
+				this.validationMsg = input.validationMsg;
+			}
 		}, INPUT_HOOK_SYM);
 	},
 	beforeDestroy() {

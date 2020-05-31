@@ -49,7 +49,8 @@
 		:gap="c.gap"
 		:flushWidth="c.flushWidth")
 		template(v-slot="d")
-			slot(name="dropdown-option" v-bind="d")
+			slot(:name="`${name}-option`" v-bind="d")
+				slot(name="dropdown-option" v-bind="d")
 		template(#active-option="d")
 			slot(:name="`${name}-active-option`" v-bind="d")
 				slot(name="dropdown-active-option" v-bind="d")
