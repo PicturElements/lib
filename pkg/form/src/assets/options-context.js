@@ -193,7 +193,7 @@ export default class OptionsContext extends Hookable {
 
 		if (cached) {
 			options = cached.options;
-			hashedOptions = cached.hashedOptions
+			hashedOptions = cached.hashedOptions;
 			length = cached.length;
 
 			if (useDynamicCache && this.state.lastQuery != null && query != this.state.lastQuery)
@@ -241,13 +241,14 @@ export default class OptionsContext extends Hookable {
 
 				option.visible = true;
 				option.hash = this.config.hash(option.value);
+				option.owner = this;
 
 				if (option.hash)
 					hashed[option.hash] = option;
 				processedOptions.push(option);
 
 				if (option.type == "leaf") {
-					option.selected = this.hasSelectedOption(option);
+					option.selected = this.updateOption(option);
 					option.select = _ => this.selectOption(option);
 					option.deselect = _ => this.deselectOption(option);
 				} else {
@@ -306,6 +307,25 @@ export default class OptionsContext extends Hookable {
 			}
 		}
 
+		const selection = this.root.selection;
+		for (let i = 0, l = selection.length; i < l; i++) {
+			const opt = selection[i];
+			let found = false;
+
+			if (opt.owner != this)
+				continue;
+
+			for (let i = 0, l = options.length; i < l; i++) {
+				if (this.compareOptions(options[i], opt)) {
+					found = true;
+					break;
+				}
+			}
+
+			if (!found)
+				this.deselectOption(opt);
+		}
+
 		this.state.lastQuery = query;
 		this.state.loading = false;
 		this.state.fetches++;
@@ -338,7 +358,8 @@ export default class OptionsContext extends Hookable {
 			this.input.mkRuntime({
 				partitionName,
 				context: this,
-				options: this.root.options
+				options: this.root.options,
+				selection: this.root.selection
 			}),
 			...args
 		);
@@ -418,6 +439,18 @@ export default class OptionsContext extends Hookable {
 		return true;
 	}
 
+	updateOption(option) {
+		const idx = this.getSelectedOptionIndex(option);
+		if (idx == -1)
+			return false;
+
+		if (option.hash != null)
+			this.root.hashedSelection[option.hash] = option;
+		
+		this.root.selection[idx] = option;
+		return true;
+	}
+
 	getSelection() {
 		const root = this.root,
 			selection = [];
@@ -426,6 +459,13 @@ export default class OptionsContext extends Hookable {
 			selection.push(root.selection[i].value);
 
 		return selection;
+	}
+
+	clear() {
+		const root = this.root;
+
+		for (let i = root.selection.length - 1; i >= 0; i--)
+			this.deselectOption(root.selection[i]);
 	}
 }
 

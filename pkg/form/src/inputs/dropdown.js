@@ -1,5 +1,8 @@
-import { resolveVal } from "@qtxr/utils";
-import Input, { INJECT } from "./input";
+import Input, {
+	INJECT,
+	REFRESH,
+	DISPATCH_VALUE
+} from "./input";
 import OptionsContext from "../assets/options-context";
 
 export default class Dropdown extends Input {
@@ -42,6 +45,10 @@ export default class Dropdown extends Input {
 		}, {
 			maxSelected: 1
 		});
+		this.optionsContext.hook("fetched", ({ selection }) => {
+			if (!selection.length)
+				this.setValue(null);
+		});
 		super.initValue();
 	}
 
@@ -61,5 +68,16 @@ export default class Dropdown extends Input {
 		return option ?
 			option.value :
 			value;
+	}
+
+	[REFRESH]() {
+		super[REFRESH]();
+		this.optionsContext.search(this.optionsContext.state.query, true);
+	}
+
+	[DISPATCH_VALUE](value, oldValue) {
+		super[DISPATCH_VALUE](value, oldValue);
+		if (value === null)
+			this.optionsContext.clear();
 	}
 }

@@ -31,6 +31,7 @@ const CHECK = sym("check"),
 	VALIDATE = sym("validate"),
 	SELF_VALIDATE = sym("selfValidate"),
 	UPDATE = sym("update"),
+	REFRESH = sym("refresh"),
 	INJECT = sym("inject"),
 	MERGE_INJECT = sym("mergeInject"),
 	OVERRIDE_INJECT = sym("overrideInject"),
@@ -53,14 +54,15 @@ const initOptionsSchema = {
 
 	checkKey: "Object|string|function|RegExp",
 	checkWord: "Object|string|function|RegExp",
+	compare: "function|string",
+	hash: "function|string|boolean",
 	validate: "function",
 	process: "function",
 	trigger: "function",
 	update: "function",
+	refresh: "function",
 	inject: "function",
 	extract: "function|string",
-	compare: "function|string",
-	hash: "function|string|boolean",
 	if: "boolean|function",
 	show: "boolean|function",
 	disabled: "boolean|function",
@@ -126,14 +128,15 @@ export default class Input extends Hookable {
 		this.handlers = {};
 		this.checkKey = null;
 		this.checkWord = null;
+		this.compare = null;
+		this.hash = null;
 		this.validate = null;
 		this.process = null;
 		this.trigger = null;
 		this.update = null;
+		this.refresh = null;
 		this.inject = null;
 		this.extract = null;
-		this.compare = null;
-		this.hash = null;
 		this.if = null;
 		this.show = null;
 		this.disabled = false;
@@ -284,6 +287,15 @@ export default class Input extends Hookable {
 		this.callFormHooks("update");
 		this.callFormHooks(`update:${this.name}`);
 		this.callHooks("update");
+	}
+
+	[REFRESH]() {
+		if (typeof this.handlers.refresh == "function")
+			this.handlers.refresh(this.mkRuntime());
+
+		this.callFormHooks("refresh");
+		this.callFormHooks(`refresh:${this.name}`);
+		this.callHooks("refresh");
 	}
 
 	[INJECT](value) {
@@ -729,6 +741,14 @@ export default class Input extends Hookable {
 		this.handlers.extract = handler;
 	}
 
+	get refresh() {
+		return this[REFRESH];
+	}
+
+	set refresh(handler) {
+		this.handlers.refresh = handler;
+	}
+
 	// Dynamic state
 	get exists() {
 		if (typeof this.handlers.if == "boolean")
@@ -962,6 +982,7 @@ export {
 	VALIDATE,
 	SELF_VALIDATE,
 	UPDATE,
+	REFRESH,
 	INJECT,
 	MERGE_INJECT,
 	OVERRIDE_INJECT,

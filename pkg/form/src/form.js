@@ -114,6 +114,7 @@ export default class Form extends Hookable {
 
 		// State
 		this.invalidInputs = new KeyedLinkedList();
+		this.invalidNonRequiredInputs = new KeyedLinkedList();
 		this.changes = new KeyedLinkedList();
 		this.meta = masterPreset.meta;
 
@@ -502,17 +503,26 @@ export default class Form extends Hookable {
 		
 		valid = typeof valid == "boolean" ?
 			valid :
-			inp.valid;
+			(inp.valid || !inp.required);
 
-		const size = this.invalidInputs.size;
+		const netSize = this.invalidInputs.size - this.invalidNonRequiredInputs.size;
 
 		if (valid)
 			this.invalidInputs.delete(inp.name);
 		else
 			this.invalidInputs.push(inp.name, inp);
 
-		if (!size ^ !this.invalidInputs.size)
-			this.callHooks("validstatechange", !this.invalidInputs.size, this.invalidInputs);
+		if (!inp.required) {
+			if (valid)
+				this.invalidNonRequiredInputs.delete(inp.name);
+			else
+				this.invalidNonRequiredInputs.push(inp.name, inp);
+		}
+
+		const newNetSize = this.invalidInputs.size - this.invalidNonRequiredInputs.size;
+
+		if (!netSize ^ !newNetSize)
+			this.callHooks("validstatechange", !newNetSize, this.invalidInputs);
 	}
 
 	updateChanged(inputOrName, changed = null) {
@@ -558,7 +568,7 @@ export default class Form extends Hookable {
 
 				runtime[key] = get(runtime, path);
 			} else if (isObject(src))
-				inject(runtime, src, "override");
+				Object.assign(runtime, src);
 		}
 
 		return runtime;
@@ -595,7 +605,7 @@ export default class Form extends Hookable {
 	}
 
 	get valid() {
-		return !this.invalidInputs.size;
+		return !(this.invalidInputs.size - this.invalidNonRequiredInputs.size);
 	}
 
 	static trigger(inp, ...args) {
@@ -621,7 +631,8 @@ export default class Form extends Hookable {
 
 		return mergePresets(options, Form.templates, {
 			defaultKey: "default",
-			keys: ["template", "templates", "default", "defaults"]
+			keys: ["template", "templates", "default", "defaults"],
+			circular: true
 		});
 	}
 
