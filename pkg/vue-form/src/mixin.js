@@ -24,7 +24,7 @@ export default {
 		}, INPUT_HOOK_SYM);
 
 		this.input.hook("refresh", ({ input }) => {
-			if (input.changed) {
+			if (input.changed || !input.required) {
 				this.validationState = input.validationState;
 				this.validationMsg = input.validationMsg;
 			}

@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/vue-form",
-  "version": "3.1.3",
+  "version": "3.1.4",
   "description": "Powerful Vue forms based on @qtxr/form",
   "main": "index.js",
   "scripts": {
@@ -35,7 +35,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 135,
+    "pushes": 136,
     "expose": {
       "scripts": [
         "connect/feed.js"
