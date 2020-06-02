@@ -219,7 +219,7 @@ export default function forEach(src, callback, options) {
 				return brk(options);
 			}
 		}
-	} else if (isObject(src, Object)) {
+	} else if (isObject(src)) {
 		// In V8, the speed difference/memory usage
 		// between Object.keys/for and for-in are
 		// negligible, but in SpiderMonkey the former is
@@ -278,13 +278,11 @@ export default function forEach(src, callback, options) {
 }
 
 forEach._options = null;
-forEach.isBreak = false;
-forEach.isContinue = false;
 
 forEach.l = lbl => {
-	forEach._options = {
+	forEach._options = Object.assign({}, forEach._options, {
 		label: lbl
-	};
+	});
 
 	return forEach;
 };
@@ -324,8 +322,6 @@ const jmpT = forEach._JMP_TOKEN;
 
 jmpT.done = forEach.done;
 jmpT.exit = forEach.exit;
-jmpT.isBreak = true;
-jmpT.isContinue = false;
 
 forEach._JMP_OBJ = {
 	depth: Infinity,
