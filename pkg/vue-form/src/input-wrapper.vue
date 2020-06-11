@@ -130,17 +130,24 @@
 
 	Multi(
 		v-else-if="is('multi')"
-		v-bind="props")
+		v-bind="props"
+		:gap="c.gap"
+		:flushWidth="c.flushWidth")
+		template(v-slot="d")
+			slot(:name="`${name}-option`" v-bind="d")
+				slot(name="multi-option" v-bind="d")
 		template(
-			v-if="$scopedSlots['selection-item'] || $scopedSlots[`${name}-selection-item`]"
-			#selection-item="d")
-			slot(:name="`${name}-selection-item`" v-bind="d")
-				slot(name="selection-item" v-bind="d")
-		template(#selection-item-value="d")
-			slot(:name="`${name}-selection-item-value`" v-bind="d")
-				slot(:name="`${name}-item-value`" v-bind="d")
-					slot(name="selection-item-value" v-bind="d")
-						slot(name="multi-item-value" v-bind="d")
+			v-if="$scopedSlots['selection-option'] || $scopedSlots[`${name}-selection-option`]"
+			#selection-option="d")
+			slot(:name="`${name}-selection-option`" v-bind="d")
+				slot(name="selection-option" v-bind="d")
+		template(
+			v-if="$scopedSlots['selection-option-value'] || $scopedSlots['multi-option-value'] || $scopedSlots[`${name}-option-value`] || $scopedSlots[`${name}-selection-option-valu`]"
+			#selection-option-value="d")
+			slot(:name="`${name}-selection-option-value`" v-bind="d")
+				slot(:name="`${name}-option-value`" v-bind="d")
+					slot(name="selection-option-value" v-bind="d")
+						slot(name="multi-option-value" v-bind="d")
 		template(
 			v-if="$scopedSlots['search-result'] || $scopedSlots[`${name}-search-result`]"
 			#search-result="d")
@@ -148,16 +155,22 @@
 				slot(name="search-result" v-bind="d")
 		template(#search-result-value="d")
 			slot(:name="`${name}-search-result-value`" v-bind="d")
-				slot(:name="`${name}-item-value`" v-bind="d")
-					slot(name="search-result-value" v-bind="d")
-						slot(name="multi-item-value" v-bind="d")
+				slot(:name="`${name}-option-value`" v-bind="d")
+					slot(name="search-option-value" v-bind="d")
+						slot(name="multi-option-value" v-bind="d")
 		template(#no-search-results="d")
 			slot(:name="`${name}-no-search-results`" v-bind="d")
 				slot(name="no-search-results" v-bind="d")
 		template(#loading-icon="d")
 			slot(:name="`${name}-loading-icon`" v-bind="d")
 				slot(name="loading-icon" v-bind="d")
-	
+		template(
+			v-for="name in slotNames(/-option$/)"
+			#[name]="d")
+			slot(
+				:name="name"
+				v-bind="d")
+
 	Radio(
 		v-else-if="is('radio')"
 		v-bind="props")

@@ -24,6 +24,8 @@ $date-params: (
 	$highlight-complement: white
 ) {
 	.inp-date {
+		background: $background;
+
 		.drop-expando-box {
 			display: flex;
 			justify-content: center;

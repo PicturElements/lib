@@ -16,13 +16,14 @@
 					.option-inner
 						span.placeholder(v-if="activeOption == null")
 							| {{ res(input.placeholder || placeholder) }}
-						slot(v-else
-							name="active-option"
-							v-bind="bindOption(activeOption, true)")
+						slot(
+							v-else
+							:name="getOptionSlotName(input.optionsContext)"
+							v-bind="bindOption(activeOption)")
 							slot(
-								:name="getOptionSlotName(input.optionsContext)"
-								v-bind="bindOption(activeOption, true)")
-								slot(v-bind="bindOption(activeOption, true)")
+								name="active-option"
+								v-bind="bindOption(activeOption)")
+								slot(v-bind="bindOption(activeOption)")
 									| {{ getLabel(activeOption) }}
 					slot(name="icon" v-bind="bnd")
 						.dropdown-icon.default-icon.chevron(:class="{ flip: expanded }")
@@ -37,7 +38,7 @@
 					ref="searchInput")
 				button.search-refresh(
 					v-if="!noRefresh"
-					:class="{ go: input.noAutoSearch && query !== lastQuery }"
+					:class="{ go: input.noAutoSearch && query !== input.optionsContext.state.lastQuery }"
 					:disabled="searchDisabled"
 					@click="search(true)"
 					tabindex="-1"
@@ -72,18 +73,10 @@
 		name: "Dropdown",
 		mixins: [mixin],
 		data: _ => ({
-			loading: false,
-			deferTimeout: null,
-			searchDisabled: false,
 			query: "",
-			lastQuery: null,
-			allOptions: null,
-			options: [],
-			optionPtr: -1,
-			lastOptionPtr: -1,
-			bufferedOptionPtr: -1,
 			expanded: false,
-			dropAssets: null
+			dropAssets: null,
+			deferTimeout: null
 		}),
 		methods: {
 			expand() {
@@ -172,6 +165,9 @@
 					return null;
 
 				return sel[0];
+			},
+			searchDisabled() {
+				return this.input.optionsContext.state.loading;
 			}
 		},
 		props: {
@@ -183,6 +179,6 @@
 		components: {
 			Drop,
 			Options
-		},
+		}
 	};
 </script>

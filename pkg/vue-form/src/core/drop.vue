@@ -335,8 +335,8 @@
 				const stl = {
 					position: "fixed",
 					width: this.flushWidth ? `${ebcr.width}px` : null,
-					top: placeBottom ? `${ebcr.top + ebcr.height - bTop * (this.flushDropdown ? 2 : 1)}px` : null,
-					bottom: placeBottom ? null : `${window.innerHeight - ebcr.top - bBottom * (this.flushDropdown ? 2 : 1)}px`,
+					top: placeBottom ? `${ebcr.top + ebcr.height}px` : null,
+					bottom: placeBottom ? null : `${window.innerHeight - ebcr.top}px`,
 					left: `${left - Math.min(rightShift, 0)}px`,
 					minWidth: `${ebcr.width}px`,
 					maxHeight: `${maxHeight}px`

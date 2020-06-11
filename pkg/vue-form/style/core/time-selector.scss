@@ -226,4 +226,51 @@ $time-selector-params: (
 			}
 		}
 	}
+
+	.mobi .time-selector {
+		$mobile-scale-multiplier: 1.5;
+
+		.dial {
+			width: 200px;
+			height: 200px;
+			font-size: 120%;
+
+			&.result-dial {
+				.result-hand {
+					height: 2px * $mobile-scale-multiplier;
+					border-radius: 2px * $mobile-scale-multiplier;
+				}
+			}
+
+			.dial-selector-hand {
+				height: 2px * $mobile-scale-multiplier;
+				border-radius: 2px * $mobile-scale-multiplier;
+
+				.dial-selector-blob {
+					width: $blob-radius * 2 * $mobile-scale-multiplier;
+					height: $blob-radius * 2 * $mobile-scale-multiplier;
+				}
+			}
+
+			.dial-delimitation-bounds {
+				top: $delimitation-padding * $mobile-scale-multiplier;
+				bottom: $delimitation-padding * $mobile-scale-multiplier;
+				left: $delimitation-padding * $mobile-scale-multiplier;
+				right: $delimitation-padding * $mobile-scale-multiplier;
+
+				&.tight {
+					top: $tight-delimitation-padding * $mobile-scale-multiplier;
+					bottom: $tight-delimitation-padding * $mobile-scale-multiplier;
+					left: $tight-delimitation-padding * $mobile-scale-multiplier;
+					right: $tight-delimitation-padding * $mobile-scale-multiplier;
+				}
+			}
+		}
+
+		.short-action-button {
+			width: $blob-radius * 2.2 * $mobile-scale-multiplier;
+			height: $blob-radius * 2.2 * $mobile-scale-multiplier;
+			font-size: 120%;
+		}
+	}
 }

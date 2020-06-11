@@ -24,6 +24,8 @@ $time-params: (
 	$highlight-complement: white
 ) {
 	.inp-time {
+		background: $background;
+
 		.drop-expando-box {
 			display: flex;
 			justify-content: center;
@@ -86,6 +88,14 @@ $time-params: (
 				background: $error-background;
 				border: $error-border;
 				color: $error-color;
+			}
+		}
+
+		// Mobile styling
+		&.mobi {
+			.drop-dropdown-scroll {
+				justify-content: center;
+				padding: 10px 0;
 			}
 		}
 	}

@@ -4,15 +4,14 @@ $dropdown-params: (
 	// Basic
 	"height",
 	"border-radius",
+	"error-color",
 	"background",
 	"error-background",
 	"border",
 	"error-border",
 	// Specific
-	"padding",
-	"mobile-padding",
-	"separator-border",
-	"hover-background"
+	"mobile-gap",
+	"separator-border"
 );
 
 @mixin dropdown(
@@ -61,20 +60,6 @@ $dropdown-params: (
 		&.place-top .drop-dropdown {
 			flex-direction: column-reverse;
 		}
-
-		&:not(.open) .dropdown-list {
-			visibility: hidden;
-			position: fixed;
-			top: 0;
-			left: 0;
-		}
-	
-		&.open {
-			.dropdown-list {
-				visibility: visible;
-				z-index: 10000000;
-			}
-		}
 	
 		&.error {
 			&:not(.open) {
@@ -105,6 +90,7 @@ $dropdown-params: (
 			border: inherit;
 			background: inherit;
 			border-radius: $border-radius;
+			z-index: 10000002;
 
 			.options-wrapper {
 				position: relative;
@@ -112,10 +98,6 @@ $dropdown-params: (
 				flex-direction: column;
 				flex-grow: 1;
 			}
-		}
-
-		.intermediate-padding {
-			height: 80px;
 		}
 
 		// Mobile styling

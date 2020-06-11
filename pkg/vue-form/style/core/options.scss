@@ -118,6 +118,10 @@ $options-params: (
 		}
 	}
 
+	.intermediate-padding {
+		height: 80px;
+	}
+
 	.mobi .options-wrapper.inner {
 		.option {
 			height: $mobile-height;

@@ -40,15 +40,15 @@
 								v-bind="d")
 				.option(
 					v-else
-					:class="{ selected: option.selected, 'selected-option': false }"
-					@click="select(option)")
+					:class="{ selected: option.selected }"
+					@click="dispatch(option)")
 					.option-inner
 						slot(
 							:name="getOptionSlotName(context)"
 							v-bind="bindOption(option)")
 							slot(v-bind="bindOption(option)") {{ getLabel(option) }}
 		.loading-overlay(v-if="context.state.loading")
-			slot(name="loading-icon" v-bind="bnd")
+			slot(name="loading-icon" v-bind="bnd") lol
 </template>
 
 <script>
@@ -58,8 +58,21 @@
 		name: "Options",
 		mixins: [utilMixin],
 		methods: {
+			dispatch(option) {
+				if (this.behavior.toggleOption) {
+					if (option.selected)
+						this.deselect(option);
+					else
+						this.select(option);
+				} else
+					this.select(option);
+			},
 			select(option) {
 				option.select();
+				this.emitTrigger(option);
+			},
+			deselect(option) {
+				option.deselect();
 				this.emitTrigger(option);
 			},
 			toggleExpand(option) {
@@ -90,7 +103,8 @@
 				return this.bind({
 					fullOption: option,
 					option: option.value,
-					selected: option.selected
+					selected: option.selected,
+					dispatch: this.dispatch
 				});
 			},
 			emitTrigger(option) {
@@ -106,6 +120,10 @@
 			depth: {
 				type: Number,
 				default: 0
+			},
+			behavior: {
+				type: Object,
+				default: _ => ({})
 			}
 		}
 	};

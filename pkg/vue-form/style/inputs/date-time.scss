@@ -24,6 +24,8 @@ $date-time-params: (
 	$separator-border: 1px solid whitesmoke
 ) {
 	.inp-date-time {
+		background: $background;
+
 		.drop-expando-box {
 			display: flex;
 			justify-content: center;
@@ -106,10 +108,12 @@ $date-time-params: (
 				padding-bottom: 10px;
 
 				.time-sel {
-					margin: 10px 0 0;
-					padding: 10px 0 0;
+					width: 100%;
+					justify-content: center;
+					margin: 20px 0 0;
+					padding: 20px 0 10px;
 					border-left: none;
-					border-top: 1px solid $separator-border;
+					border-top: $separator-border;
 				}
 			}
 		}
