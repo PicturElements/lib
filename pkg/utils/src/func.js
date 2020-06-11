@@ -14,7 +14,6 @@ function apply(thisVal, func, ...args) {
 }
 
 const fixedBindKey = sym("fixedBind key");
-
 function bind(func, ...args) {
 	if (typeof func == "function")
 		return func[fixedBindKey] ? func : func.bind(...args);

@@ -9,6 +9,10 @@ export default function parseEscapeSequenceStr(str, options = {}) {
 
 		if (char == "\\") {
 			const parsed = parseEscapeSequence(str, i, options);
+
+			if (parsed.error)
+				throw new SyntaxError(parsed.error);
+
 			out += parsed.character;
 			i += parsed.length - 1;
 		} else

@@ -16,6 +16,7 @@ export * from "./src/options";
 export * from "./src/pattern";
 export * from "./src/presets";
 export * from "./src/process";
+export * from "./src/promise";
 export * from "./src/range";
 export * from "./src/regex-reduce";
 export * from "./src/regex";
