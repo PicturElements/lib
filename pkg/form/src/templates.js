@@ -280,7 +280,7 @@ const templates = {
 		type: "password",
 		value: "",
 		validate({ value }) {
-			if (value.length < 8)
+			if (!value || value.length < 8)
 				return "Password too short. Minimum: 8 characters";
 		},
 		propagate: "password2"
@@ -292,7 +292,7 @@ const templates = {
 			if (!input.modified)
 				return;
 
-			if (value.length < 8)
+			if (!value || value.length < 8)
 				return "Password too short. Minimum: 8 characters";
 			if (inputs.password.value != value)
 				return "These passwords don't match";
@@ -330,7 +330,7 @@ const templates = {
 		value: "",
 		maxLength: 10000,
 		validate({ value, input }) {
-			if (!value.length)
+			if (!value || !value.length)
 				return "Please enter a value";
 
 			if (value.length > input.maxLength)

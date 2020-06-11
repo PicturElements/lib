@@ -1,6 +1,7 @@
 import { Hookable } from "@qtxr/bc";
 import {
 	get,
+	hash,
 	hasOwn,
 	inject,
 	matchQuery,
@@ -9,6 +10,7 @@ import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "@qtxr/utils";
+import Input from "../inputs/input";
 
 // OptionsContext
 // OptionsContext abstracts data flow when searching/manipulating options in dropdowns, etc
@@ -70,11 +72,9 @@ const BASE_CONFIG_SCHEMA = {
 		inherit: "boolean",
 		expanded: "boolean"
 	},
-	OPTION_CONFIG_SCHEMA = Object.assign({
-		value: v => v != null
-	}, BASE_CONFIG_SCHEMA),
 	FULL_CONFIG_SCHEMA = Object.assign({
-		name: "string"
+		name: "string",
+		noSearch: "boolean|function"
 	}, BASE_CONFIG_SCHEMA);
 
 const configTemplates = composeOptionsTemplates({
@@ -115,8 +115,7 @@ export default class OptionsContext extends Hookable {
 			this.config.search = input.inferAccessor();
 		if (this.config.hash === undefined)
 			this.config.hash = input.handlers.hash;
-		if (typeof this.config.hash != "function")
-			this.config.hash = _ => null;
+		this.config.hash = Input.mkHasher(input, this.config.hash);
 		
 		this.root = parent ?
 			parent.root :
@@ -182,7 +181,9 @@ export default class OptionsContext extends Hookable {
 			useSearchFetch = typeof this.config.searchFetch == "function",
 			useDynamicCache = useSearchFetch,
 			useFunctionalSearch = typeof this.config.search == "function",
-			performSearch = Boolean(useFunctionalSearch && !useSearchFetch),
+			useAccessorSearch = typeof this.config.search == "string",
+			useRawSearch = !useSearchFetch && !useFunctionalSearch && !useAccessorSearch && !this.input.res(this.config.noSearch),
+			performSearch = Boolean(useFunctionalSearch && !useSearchFetch) || useAccessorSearch || useRawSearch,
 			cached = this.config.cache === false || refresh ?
 				null :
 				useDynamicCache ? this.cache.dynamic[query] : this.cache.static;
@@ -273,13 +274,18 @@ export default class OptionsContext extends Hookable {
 				if (useFunctionalSearch) {
 					runtime.option = option.value;
 					option.visible = Boolean(this.config.search(runtime));
-				} else if (typeof this.config.search == "string") {
+				} else if (useAccessorSearch) {
 					const testVal = get(option.value, this.config.search);
 
 					if (!isPrimitive(testVal))
 						console.warn("Search value is not primitive", testVal);
 
 					option.visible = queryRegex.test(String(testVal));
+				} else {
+					if (!isPrimitive(option.value))
+						console.warn("Search value is not primitive", option.value);
+
+					option.visible = queryRegex.test(String(option.value));
 				}
 
 				if (option.visible)
@@ -307,23 +313,28 @@ export default class OptionsContext extends Hookable {
 			}
 		}
 
-		const selection = this.root.selection;
-		for (let i = 0, l = selection.length; i < l; i++) {
-			const opt = selection[i];
-			let found = false;
+		// Unless search is done via searchFetch (meaning that all options are
+		// fetched anew for every search, meaning that keeping track of selections
+		// is unviable), validate selection
+		if (!useSearchFetch) {
+			const selection = this.root.selection;
+			for (let i = 0, l = selection.length; i < l; i++) {
+				const opt = selection[i];
+				let found = false;
 
-			if (opt.owner != this)
-				continue;
+				if (opt.owner != this)
+					continue;
 
-			for (let i = 0, l = options.length; i < l; i++) {
-				if (this.compareOptions(options[i], opt)) {
-					found = true;
-					break;
+				for (let i = 0, l = options.length; i < l; i++) {
+					if (this.compareOptions(options[i], opt)) {
+						found = true;
+						break;
+					}
 				}
-			}
 
-			if (!found)
-				this.deselectOption(opt);
+				if (!found)
+					this.deselectOption(opt);
+			}
 		}
 
 		this.state.lastQuery = query;
@@ -372,7 +383,10 @@ export default class OptionsContext extends Hookable {
 		if (option.hash != null)
 			return option.hash == option2.hash;
 
-		return this.input.compare(option, option2);
+		const comparison = this.input.compare(option.value, option2.value);
+		if (typeof comparison == "number")
+			return !comparison;
+		return Boolean(comparison);
 	}
 
 	getSelectedOptionIndex(option, getExistence = false) {
@@ -400,6 +414,8 @@ export default class OptionsContext extends Hookable {
 	selectOption(option) {
 		if (!option)
 			return false;
+		if (option.selected)
+			return true;
 
 		const root = this.root;
 		option.selected = true;
@@ -420,6 +436,8 @@ export default class OptionsContext extends Hookable {
 	deselectOption(option) {
 		if (!option)
 			return false;
+		if (!option.selected)
+			return true;
 
 		const root = this.root;
 		option.selected = false;
@@ -470,7 +488,7 @@ export default class OptionsContext extends Hookable {
 }
 
 function isOptionConfig(candidate) {
-	return matchQuery(candidate, OPTION_CONFIG_SCHEMA, "typed|lazy");
+	return matchQuery(candidate, BASE_CONFIG_SCHEMA, "typed|lazy");
 }
 
 function isContextConfig(candidate) {

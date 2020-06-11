@@ -2,6 +2,7 @@ import Input, {
 	INJECT,
 	EXTRACT,
 	SELF_VALIDATE,
+	TRIGGER_VALIDATE,
 	DISPATCH_VALUE,
 	DISPATCH_CHANGE,
 	DISPATCH_CHANGED,
@@ -45,6 +46,14 @@ export default class List extends Input {
 		form.hook("changestatechange", _ => this[DISPATCH_VALUE](this.value, this.value));
 		form.hook("change", _ => this[DISPATCH_CHANGE](this.value, this.value));
 		return form;
+	}
+
+	[TRIGGER_VALIDATE]() {
+		const rows = this.value;
+		for (let i = 0, l = rows.length; i < l; i++)
+			rows[i].triggerValidate();
+
+		return super[TRIGGER_VALIDATE]();
 	}
 
 	[INJECT](data) {

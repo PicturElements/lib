@@ -4,12 +4,14 @@ import {
 	isObj,
 	isObject,
 	hash,
+	then,
 	alias,
 	clone,
 	equals,
 	hasOwn,
 	inject,
-	isThenable,
+	distance,
+	isPrimitive,
 	injectSchema,
 	compilePatternMatcher,
 	compilePatternMatcherGroup
@@ -30,6 +32,7 @@ const CHECK = sym("check"),
 	SELF_TRIGGER = sym("selfTrigger"),
 	VALIDATE = sym("validate"),
 	SELF_VALIDATE = sym("selfValidate"),
+	TRIGGER_VALIDATE = sym("triggerValidate"),
 	UPDATE = sym("update"),
 	REFRESH = sym("refresh"),
 	INJECT = sym("inject"),
@@ -45,16 +48,17 @@ const CHECK = sym("check"),
 
 const ROOT_HOOK_REGEX = /^(?:@|on)(.+)$/;
 
-const initOptionsSchema = {
+const INIT_OPTIONS_SCHEMA = {
 	name: "string",
 	path: "string",
 	required: "boolean",
 	type: "string",
 	format: "string",
+	bare: "boolean",
 
 	checkKey: "Object|string|function|RegExp",
 	checkWord: "Object|string|function|RegExp",
-	compare: "function|string",
+	compare: "function|string|number|Array",
 	hash: "function|string|boolean",
 	validate: "function",
 	process: "function",
@@ -110,6 +114,9 @@ export default class Input extends Hookable {
 		this.dynamicValue = {
 			id: dynValId++,
 			value: null,
+			pendingValue: null,
+			resolves: 0,
+			resolving: false,
 			formalizer: this.constructor.formalizer,
 			cache: null,
 			cacheValid: false,
@@ -133,6 +140,7 @@ export default class Input extends Hookable {
 		this.validate = null;
 		this.process = null;
 		this.trigger = null;
+		this.triggerValidate = null;
 		this.update = null;
 		this.refresh = null;
 		this.inject = null;
@@ -161,7 +169,7 @@ export default class Input extends Hookable {
 
 	finishSetup() {
 		inject(this, this._options, {
-			schema: injectSchema(initOptionsSchema, this._schema, "override|cloneTarget"),
+			schema: injectSchema(INIT_OPTIONS_SCHEMA, this._schema, "override|cloneTarget"),
 			strictSchema: true,
 			override: true
 		});
@@ -222,15 +230,10 @@ export default class Input extends Hookable {
 		} else
 			newVal = this.updateValue(value);
 
-		if (isThenable(newVal)) {
-			return newVal.then(val => {
-				dispatch(oldVal, val);
-				return val;
-			});
-		}
-
-		dispatch(oldVal, newVal);
-		return newVal;
+		return then(newVal, val => {
+			dispatch(oldVal, val);
+			return val;
+		});
 	}
 
 	[SELF_TRIGGER](value) {
@@ -280,6 +283,15 @@ export default class Input extends Hookable {
 		}
 	}
 
+	[TRIGGER_VALIDATE]() {
+		if (typeof this.handlers.triggerValidate == "function")
+			this.handlers.triggerValidate(this.mkRuntime());
+
+		this[SELF_VALIDATE]();
+		this[UPDATE]();
+		return this.valid;
+	}
+
 	[UPDATE]() {
 		if (typeof this.handlers.update == "function")
 			this.handlers.update(this.mkRuntime());
@@ -299,8 +311,11 @@ export default class Input extends Hookable {
 	}
 
 	[INJECT](value) {
-		if (typeof this.handlers.inject == "function")
-			return this.handlers.inject(value);
+		if (typeof this.handlers.inject == "function") {
+			return this.handlers.inject(this.mkRuntime({
+				value
+			}));
+		}
 
 		return value;
 	}
@@ -414,7 +429,7 @@ export default class Input extends Hookable {
 		if (withMeta) {
 			return {
 				source: "native",
-				value: value
+				value
 			};
 		}
 		
@@ -425,11 +440,11 @@ export default class Input extends Hookable {
 		const newValue = resolveValue(value);
 		this.dynamicValue.value = value;
 
-		if (newValue !== null && this.changeData.value === null)
+		if (newValue === null || this.changeData.value === null)
 			this.changeData.value = newValue;
 
-		if (this.instantiated && !this.compare(oldValue, newValue)) {
-			const changed = !this.compare(this.changeData.value, newValue);
+		if (this.instantiated && !cmp(this, oldValue, newValue)) {
+			const changed = !cmp(this, this.changeData.value, newValue);
 			this[DISPATCH_CHANGE](newValue, oldValue);
 			this[DISPATCH_CHANGESTATECHANGE](changed, newValue, oldValue);
 			this.modified = true;
@@ -474,31 +489,21 @@ export default class Input extends Hookable {
 	setValue(value) {
 		const oldValue = resolveValue(this.dynamicValue.value),
 			newValue = this[OVERRIDE_INJECT](value);
-		
-		if (isThenable(newValue)) {
-			return newValue.then(val => {
-				this[DISPATCH_VALUE](val, oldValue);
-				return val;
-			});
-		}
 
-		this[DISPATCH_VALUE](newValue, oldValue);
-		return value;
+		return then(newValue, val => {
+			this[DISPATCH_VALUE](val, oldValue);
+			return val;
+		});
 	}
 
 	updateValue(value) {
 		const oldValue = resolveValue(this.dynamicValue.value),
 			newValue = this[MERGE_INJECT](value);
 
-		if (isThenable(newValue)) {
-			return newValue.then(val => {
-				this[DISPATCH_VALUE](val, oldValue);
-				return val;
-			});
-		}
-
-		this[DISPATCH_VALUE](newValue, oldValue);
-		return value;
+		return then(newValue, val => {
+			this[DISPATCH_VALUE](val, oldValue);
+			return val;
+		});
 	}
 
 	mkRuntime(...sources) {
@@ -512,6 +517,13 @@ export default class Input extends Hookable {
 		return this.mkRuntime({
 			value
 		});
+	}
+
+	res(value, ...args) {
+		if (typeof value == "function")
+			return value(this.mkRuntime(), ...args);
+
+		return value;
 	}
 
 	callHooks(partitionName, ...args) {
@@ -555,9 +567,11 @@ export default class Input extends Hookable {
 			resolve,
 			resolveOptionValue = null,
 			accessor = null,
-			passThroughValue = false
+			passThroughValue = false,
+			singular = true
 		} = resolveOpts;
 
+		const selection = [];
 		let injectAccessor;
 
 		switch (typeof accessor) {
@@ -570,14 +584,31 @@ export default class Input extends Hookable {
 				break;
 
 			default:
-				injectAccessor = typeof this.handlers.inject == "string" ?
-					this.handlers.inject :
-					this.handlers.extract;
+				injectAccessor = this.inferAccessor();
 		}
 
-		const dispatch = opts => {
-			if (!Array.isArray(opts) || !opts.length)
-				return value;
+		const send = (data, success = true, inferred = false) => {
+			if (!success || inferred)
+				this.setPendingValue(value);
+
+			if (singular) {
+				return {
+					success,
+					inferred,
+					option: data
+				};
+			}
+
+			return {
+				success,
+				inferred,
+				selection: data
+			};
+		};
+
+		const getIdx = (val, opts) => {
+			let min = Infinity,
+				idx = -1;
 
 			for (let i = 0, l = opts.length; i < l; i++) {
 				const optionValue = typeof resolveOptionValue == "function" ?
@@ -586,26 +617,67 @@ export default class Input extends Hookable {
 
 				if (injectAccessor) {
 					if (get(optionValue, injectAccessor) == value)
-						return opts[i];
-				} else if (this.compare(value, optionValue))
-					return opts[i];
+						return i;
+				} else {
+					const comparison = this.compare(val, optionValue, true);
+					if (comparison === true)
+						return i;
+
+					if (typeof comparison == "number" && comparison < min) {
+						min = comparison;
+						idx = i;
+					}
+				}
 			}
 
-			return this.autoSet ?
-				opts[0] :
-				(passThroughValue ? value : null);
+			return idx;
 		};
 
-		if (value != null || this.autoSet) {
+		const dispatch = opts => {
+			this.dynamicValue.resolving = false;
+			this.dynamicValue.resolves++;
+			this.clearPendingValue();
+			if (!Array.isArray(opts))
+				opts = [];
+
+			if (singular) {
+				const idx = getIdx(value, opts);
+				if (idx > -1)
+					return send(opts[idx]);
+
+				if (this.autoSet && opts.length)
+					return send(opts[0], true, true);
+
+				if (passThroughValue)
+					return send(value, false);
+				return send(null, false);
+			}
+
+			const sel = Array.isArray(value) ?
+				value :
+				[];
+
+			for (let i = 0, l = sel.length; i < l; i++) {
+				const idx = getIdx(sel[i], opts);
+				if (idx > -1)
+					selection.push(opts[i]);
+			}
+
+			return send(selection);
+		};
+
+		if (value != null || this.autoSet || this.dynamicValue.resolves) {
+			this.dynamicValue.resolving = true;
 			const options = resolve(this.mkRuntime());
-
-			if (isThenable(options))
-				return options.then(opts => dispatch(opts));
-
-			return dispatch(options);
+			return then(options, dispatch);
 		}
 
-		return passThroughValue ? value : null;
+		if (passThroughValue)
+			return send(value, false);
+
+		if (singular)
+			return send(null, false);
+		return send(selection, false);
 	}
 
 	inferAccessor() {
@@ -619,13 +691,33 @@ export default class Input extends Hookable {
 		return null;
 	}
 
+	setPendingValue(value) {
+		this.dynamicValue.pendingValue = value;
+	}
+
+	clearPendingValue() {
+		this.dynamicValue.pendingValue = null;
+	}
+
+	resolvePendingValue(callback) {
+		const val = this.dynamicValue.pendingValue;
+
+		this.clearPendingValue();
+		const changed = this.changed;
+
+		return then(callback(val), val => {
+			this.changed = changed;
+			return val;
+		});
+	}
+
 	// Aliases for public handlers
 	get checkKey() {
 		return this.handlers.checkKey;
 	}
 
 	set checkKey(handler) {
-		this.handlers.checkKey = mkChecker(handler, "check");
+		this.handlers.checkKey = Input.mkChecker(handler, "check");
 	}
 
 	get checkWord() {
@@ -633,7 +725,7 @@ export default class Input extends Hookable {
 	}
 
 	set checkWord(handler) {
-		this.handlers.checkWord = mkChecker(handler, "validate");
+		this.handlers.checkWord = Input.mkChecker(handler, "validate");
 	}
 
 	get compare() {
@@ -641,7 +733,7 @@ export default class Input extends Hookable {
 	}
 
 	set compare(handler) {
-		this.handlers.compare = mkComparator(this, handler);
+		this.handlers.compare = Input.mkComparator(this, handler);
 	}
 
 	get hash() {
@@ -649,7 +741,23 @@ export default class Input extends Hookable {
 	}
 
 	set hash(handler) {
-		this.handlers.hash = mkHasher(this, handler);
+		this.handlers.hash = Input.mkHasher(this, handler);
+	}
+
+	get pattern() {
+		return this.handlers.pattern;
+	}
+
+	set pattern(pattern) {
+		this.handlers.pattern = Input.mkPatternMatcher(pattern, "pattern", compilePatternMatcher);
+	}
+
+	get patterns() {
+		return this.handlers.patterns;
+	}
+
+	set patterns(pattern) {
+		this.handlers.patterns = Input.mkPatternMatcher(pattern, "patterns", compilePatternMatcherGroup);
 	}
 
 	get if() {
@@ -668,22 +776,6 @@ export default class Input extends Hookable {
 		this.handlers.show = handler;
 	}
 
-	get pattern() {
-		return this.handlers.pattern;
-	}
-
-	set pattern(pattern) {
-		this.handlers.pattern = mkPatternMatcher(pattern, "pattern", compilePatternMatcher);
-	}
-
-	get patterns() {
-		return this.handlers.patterns;
-	}
-
-	set patterns(pattern) {
-		this.handlers.patterns = mkPatternMatcher(pattern, "patterns", compilePatternMatcherGroup);
-	}
-
 	// Aliases for private handlers
 	get trigger() {
 		return this[TRIGGER];
@@ -691,6 +783,14 @@ export default class Input extends Hookable {
 
 	set trigger(handler) {
 		this.handlers.trigger = handler;
+	}
+
+	get triggerValidate() {
+		return this[TRIGGER_VALIDATE];
+	}
+
+	set triggerValidate(handler) {
+		this.handlers.triggerValidate = handler;
 	}
 
 	get process() {
@@ -870,103 +970,171 @@ export default class Input extends Hookable {
 		this.formalizer = new Formalizer();
 		return this.formalizer;
 	}
+
+	// Object|string|function|RegExp
+	static mkChecker(checker, checkerKey) {
+		if (isObject(checker))
+			return checker;
+		else if (typeof checker == "string")
+			return checker;
+		else if (typeof checker == "function" || checker instanceof RegExp) {
+			return {
+				[checkerKey]: checker
+			};
+		}
+	
+		return null;
+	}
+
+	// function|string|number|Array
+	static mkComparator(input, precursor) {
+		let acc = typeof precursor == "string" ?
+			precursor :
+			null;
+	
+		if (Array.isArray(precursor)) {
+			const arr = precursor;
+	
+			for (let i = 0, l = arr.length; i < l; i++) {
+				if (typeof arr[i] == "string")
+					acc = arr[i];
+				else
+					precursor = arr[i];
+			}
+		}
+	
+		return (a, b, smartResolve = false) => {
+			const aNullish = a == null,
+				bNullish = b == null;
+	
+			if (a === b && aNullish && bNullish)
+				return true;
+	
+			// Eliminate bugs arising from null value access
+			if (aNullish != bNullish)
+				return false;
+	
+			// Eliminate bugs arising from failed NaN comparisons
+			const aNaN = typeof a == "number" && isNaN(a),
+				bNaN = typeof b == "number" && isNaN(b);
+	
+			if (aNaN && bNaN)
+				return true;
+	
+			if (aNaN != bNaN)
+				return false;
+	
+			switch (typeof precursor) {
+				case "string": {
+					const [a2, b2] = resolveCmp(a, b, acc, smartResolve);
+					return a2 === b2;
+				}
+	
+				case "function":
+					if (acc != null) {
+						return precursor(
+							...resolveCmp(a, b, acc, smartResolve)
+						);
+					}
+	
+					return precursor(a, b);
+	
+				case "number": {
+					const accessor = acc == null ?
+						input.inferAccessor() :
+						acc;
+
+					const [a2, b2] = resolveCmp(a, b, accessor, smartResolve);
+	
+					if (equals(a2, b2, "circular"))
+						return 0;
+	
+					const ta = typeof a2,
+						tb = typeof b2;
+	
+					if (ta != tb)
+						return Infinity;
+	
+					let score = Infinity;
+	
+					switch (ta) {
+						case "string":
+							score = distance(a2, b2, {
+								maxDistance: precursor
+							});
+							break;
+	
+						case "number":
+							score = Math.abs(b2 - a2);
+							break;
+					}
+	
+					if (isNaN(score) || score > precursor)
+						return Infinity;
+	
+					return score;
+				}
+	
+				default: {
+					const accessor = acc == null ?
+						input.inferAccessor() :
+						acc;
+
+					if (accessor != null) {
+						const [a2, b2] = resolveCmp(a, b, accessor, smartResolve);
+						return a2 === b2;
+					}
+	
+					return equals(a, b, "circular");
+				}
+			}
+		};
+	}
+
+	// function|string|boolean
+	static mkHasher(input, precursor) {
+		switch (typeof precursor) {
+			case "function":
+				return value => precursor(value);
+	
+			case "string":
+				return value => hash(get(value, precursor));
+	
+			case "boolean":
+				return precursor ?
+					value => hash(value) :
+					_ => null;
+	
+			default:
+				return value => {
+					const accessor = input.inferAccessor();
+					if (accessor != null)
+						return hash(get(value, accessor));
+	
+					return null;
+				};
+		}
+	}
+
+	// string|Array (type = "pattern")
+	// Array|Object (type = "patterns")
+	static mkPatternMatcher(pattern, type, compiler) {
+		if (!pattern)
+			return null;
+	
+		const p = compiler(pattern);
+		return (evt, args) => {
+			return runPattern(evt, Object.assign({
+				[type]: p
+			}, args));
+		};
+	}
 }
 
 alias(Input.prototype, {
 	hook: "on",
 	unhook: "off"
 });
-
-function mkChecker(checker, checkerKey) {
-	if (isObject(checker))
-		return checker;
-	else if (typeof checker == "string")
-		return checker;
-	else if (typeof checker == "function" || checker instanceof RegExp) {
-		return {
-			[checkerKey]: checker
-		};
-	}
-
-	return null;
-}
-
-function mkComparator(input, precursor) {
-	return (a, b) => {
-		const aNullish = a == null,
-			bNullish = b == null;
-
-		if (a === b && aNullish && bNullish)
-			return true;
-
-		// Eliminate bugs arising from null value access
-		if (aNullish != bNullish)
-			return false;
-
-		// Eliminate bugs arising from failed NaN comparisons
-		const aNaN = typeof a == "number" && isNaN(a),
-			bNaN = typeof b == "number" && isNaN(b);
-
-		if (aNaN && bNaN)
-			return true;
-
-		if (aNaN != bNaN)
-			return false;
-
-		switch (typeof precursor) {
-			case "string":
-				return get(a, precursor) === get(b, precursor);
-
-			case "function":
-				return precursor(a, b);
-
-			default: {
-				const accessor = input.inferAccessor();
-				if (accessor != null)
-					return get(a, accessor) === get(b, accessor);
-
-				return equals(a, b);
-			}
-		}
-	};
-}
-
-function mkHasher(input, precursor) {
-	return value => {
-		switch (typeof precursor) {
-			case "function":
-				return precursor(value);
-
-			case "string":
-				return hash(get(value, precursor));
-
-			case "boolean":
-				return precursor ?
-					hash(value) :
-					null;
-
-			default: {
-				const accessor = input.inferAccessor();
-				if (accessor != null)
-					return hash(get(value, accessor));
-
-				return null;
-			}
-		}
-	};
-}
-
-function mkPatternMatcher(pattern, type, compiler) {
-	if (!pattern)
-		return null;
-
-	const p = compiler(pattern);
-	return (evt, args) => {
-		return runPattern(evt, Object.assign({
-			[type]: p
-		}, args));
-	};
-}
 
 function resolveValue(value) {
 	if (value instanceof FormalizerCell)
@@ -975,12 +1143,34 @@ function resolveValue(value) {
 	return value;
 }
 
+function cmp(input, a, b, smartResolve = false) {
+	const comparison = input.compare(a, b, smartResolve);
+	if (typeof comparison == "number")
+		return !comparison;
+
+	return Boolean(comparison);
+}
+
+function resolveCmp(a, b, accessor, smartResolve = false) {
+	if (!accessor)
+		return [a, b];
+
+	if (!smartResolve || typeof a == typeof b)
+		return [get(a, accessor), get(b, accessor)];
+
+	return [
+		isPrimitive(a) ? a : get(a, accessor),
+		isPrimitive(b) ? b : get(b, accessor)
+	];
+}
+
 export {
 	CHECK,
 	TRIGGER,
 	SELF_TRIGGER,
 	VALIDATE,
 	SELF_VALIDATE,
+	TRIGGER_VALIDATE,
 	UPDATE,
 	REFRESH,
 	INJECT,

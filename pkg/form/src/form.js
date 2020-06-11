@@ -23,6 +23,7 @@ import { Hookable } from "@qtxr/bc";
 import { KeyedLinkedList } from "@qtxr/ds"; 
 
 import templates from "./templates";
+import InputGroupProxy from "./input-group-proxy";
 
 // Inputs
 import {
@@ -33,6 +34,7 @@ import Input, {
 	CHECK,
 	TRIGGER,
 	SELF_TRIGGER,
+	TRIGGER_VALIDATE,
 	EXTRACT
 } from "./inputs/input";
 import FormRows from "./form-rows";
@@ -167,7 +169,7 @@ export default class Form extends Hookable {
 
 		if (hasField) { 
 			if (!Array.isArray(this.inputs[name]))
-				this.inputs[name] = [this.inputs[name]];
+				this.inputs[name] = new InputGroupProxy(this.inputs[name]);
 
 			this.inputs[name].push(inp);
 		} else
@@ -311,6 +313,7 @@ export default class Form extends Hookable {
 			});
 
 			this.setValues(src, true, true);
+			this.changed = false;
 		};
 
 		if (async)
@@ -432,7 +435,7 @@ export default class Form extends Hookable {
 
 	forEach(callback, forAll = false) {
 		if (typeof callback != "function")
-			return;
+			return false;
 
 		const dispatch = (inp, key) => {
 			if (!forAll && !inp.exists)
@@ -477,6 +480,13 @@ export default class Form extends Hookable {
 		this.updateInitialized = false;
 	}
 
+	triggerValidate() {
+		this.forEach(inp => {
+			inp[TRIGGER_VALIDATE](inp.value);
+		});
+		return this.valid;
+	}
+
 	val(accessor, format = null) {
 		const path = splitPath(accessor),
 			val = hasOwn(this.inputs, path[0]) ?
@@ -490,6 +500,10 @@ export default class Form extends Hookable {
 
 	validate() {
 		return this.forEach(inp => inp.validate().valid);
+	}
+
+	refresh(forAll = false) {
+		this.forEach(inp => inp.refresh(), forAll);
 	}
 
 	// Semi-private methods
@@ -572,6 +586,13 @@ export default class Form extends Hookable {
 		}
 
 		return runtime;
+	}
+
+	res(value, ...args) {
+		if (typeof value == "function")
+			return value(this.mkRuntime(), ...args);
+
+		return value;
 	}
 
 	callHooks(partitionName, ...args) {

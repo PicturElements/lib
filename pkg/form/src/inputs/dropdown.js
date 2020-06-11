@@ -14,7 +14,7 @@ export default class Dropdown extends Input {
 			cacheOptions: "boolean",
 			flags: "string",
 			searchOnExpand: "boolean",
-			noSearch: "boolean",
+			noSearch: "boolean|function",
 			noAutoSearch: "boolean",
 			noRefresh: "boolean",
 			defer: "number",
@@ -24,8 +24,6 @@ export default class Dropdown extends Input {
 			cache: "boolean",
 			inherit: "boolean"
 		});
-		this.pendingOptions = null;
-		this.selectedIndex = -1;
 		this.optionsContext = null;
 		this.finishInit();
 	}
@@ -41,13 +39,10 @@ export default class Dropdown extends Input {
 			nest: this.nest,
 			hash: val => this.hash(val),
 			cache: this.cache,
-			inherit: this.inherit
+			inherit: this.inherit,
+			noSearch: this.noSearch
 		}, {
 			maxSelected: 1
-		});
-		this.optionsContext.hook("fetched", ({ selection }) => {
-			if (!selection.length)
-				this.setValue(null);
 		});
 		super.initValue();
 	}
@@ -56,23 +51,36 @@ export default class Dropdown extends Input {
 		if (typeof this.handlers.inject == "function")
 			return super[INJECT](value);
 
-		const option = await this.resolveOptionSelection({
+		const res = await this.resolveOptionSelection({
 			value,
-			resolve: _ => this.optionsContext.search(""),
+			resolve: _ => this.optionsContext.search(this.optionsContext.state.query),
 			resolveOptionValue: opt => opt.value
 		});
 
-		if (option && option != value)
-			this.optionsContext.selectOption(option);
+		if (res.option) {
+			this.optionsContext.selectOption(res.option);
+			return res.option.value;
+		}
 
-		return option ?
-			option.value :
-			value;
+		this.setPendingValue(value);
+		return value;
 	}
 
 	[REFRESH]() {
 		super[REFRESH]();
-		this.optionsContext.search(this.optionsContext.state.query, true);
+
+		this.resolvePendingValue(async resolved => {
+			const res = await this.resolveOptionSelection({
+				value: resolved,
+				resolve: _ => this.optionsContext.search(this.optionsContext.state.query, true),
+				resolveOptionValue: opt => opt.value
+			});
+
+			if (res.success)
+				this.setValue(res.option.value);
+			else
+				this.setValue(null);
+		});
 	}
 
 	[DISPATCH_VALUE](value, oldValue) {
