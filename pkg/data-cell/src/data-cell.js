@@ -208,6 +208,43 @@ export default class DataCell extends Hookable {
 			}
 		});
 
+		this.data = null;
+
+		this.state = inject({
+			loaded: false,
+			loading: false,
+			error: false,
+			errorMsg: "",
+			fetches: 0
+		}, initConfig.defaultState, "override");
+
+		// Processor / handler arguments. This object contains references
+		// and runtime data that is passed as the first argument to processors,
+		// handlers, callbacks, and hooks. This object may be mutated at any point,
+		// but that is primarily reserved for internal / plugin use
+		// The mechanism provided by DataCell for this is extendArguments
+		this.args = {
+			cell: this,
+			state: this.state,
+			config,
+			runtime: {}
+		};
+
+		// The base runtime. External code may inject data here for global access
+		// Third party code may also mutate this
+		// The mechanism provided by DataCell for this is extendBaseRuntime
+		this.baseRuntime = {
+			cell: this
+		};
+		// The default runtime given at initialization,
+		// extends baseRuntime
+		this.defaultRuntime = config.runtime;
+		// Pending runtime. This value is meant to be mutated during program
+		// execution, extends both baseRuntime and defaultRuntime, and is ultimately
+		// used throughout the fetch cycle
+		// The mechanism provided by DataCell for this is with/use
+		this.pendingRuntime = null;
+
 		config = mergePresets(config, DataCell.presets, {
 			defaultKey: "default",
 			keys: ["preset", "presets"],
@@ -215,6 +252,14 @@ export default class DataCell extends Hookable {
 				PASSIVE_IGNORE :
 				null
 		});
+
+		for (const k in config) {
+			if (!hasOwn(config, k))
+				continue;
+				
+			for (let i = 0, l = DataCell.loaders.length; i < l; i++)
+				DataCell.loaders[i](this, k, config[k], config);
+		}
 
 		const classifier = inject(
 			DEFAULT_PARTITION_CLASSIFIER,
@@ -243,15 +288,8 @@ export default class DataCell extends Hookable {
 			}
 		}
 
-		this.state = inject({
-			loaded: false,
-			loading: false,
-			error: false,
-			errorMsg: "",
-			fetches: 0
-		}, initConfig.defaultState, "override");
-
-		this.data = null;
+		this.args.config = newConfig;
+		this.defaultRuntime = newConfig.runtime;
 
 		this.xhrManager = newConfig.xhrManager || new XHRManager();
 		this.xhrPreset = [inject(xhrPreset, newConfig.xhrPreset)];
@@ -279,25 +317,9 @@ export default class DataCell extends Hookable {
 
 		this.watcher = this.mkWatcherObject(newConfig.watch);
 
-		// The base runtime. External code may inject data
-		// here. Third party code may mutate this
-		this.baseRuntime = {
-			cell: this
-		};
-		// The default runtime given at initialization
-		this.defaultRuntime = newConfig.runtime;
-		// Pending runtime. This value is meant to be
-		// mutated during program execution
-		this.pendingRuntime = null;
-
-		// Processor / handler arguments. This object contains references
-		// and runtime data that is passed as the first argument to processors,
-		// handlers, callbacks, and hooks. This object may be mutated at any point,
-		// but that is primarily reserved for internal use
-		this.args = {
-			cell: this,
-			runtime: {}
-		};
+		// Temporary fetcher modifiers
+		// Reset when fetching has started
+		this.fetcherModifiers = null;
 
 		// Save partitioned data for external reference
 		this.processors = processors;
@@ -345,18 +367,11 @@ export default class DataCell extends Hookable {
 			this.fetch();
 	}
 
-	callHooks(partitionName, ...args) {
-		return super.callHooks(partitionName, this.args, ...args);
-	}
-
-	setData(data) {
-		this.data = data;
-		this.callHooks("setData", data);
-	}
-
+	// Pre-fetch utilities
 	with(...runtimes) {
 		this.pendingRuntime = this.pendingRuntime || clone(
-			resolveVal(this.defaultRuntime, this, {})
+			resolveVal(this.defaultRuntime, this, {}),
+			"circular"
 		) || {};
 
 		this.args.runtime = this.pendingRuntime;
@@ -367,7 +382,7 @@ export default class DataCell extends Hookable {
 				this.args
 			);
 
-			inject(this.pendingRuntime, runtime, "override");
+			inject(this.pendingRuntime, runtime, "override|circular");
 		}
 
 		return this;
@@ -377,71 +392,112 @@ export default class DataCell extends Hookable {
 		return this.with(...runtimes);
 	}
 
+	throttle(throttle) {
+		if (typeof throttle != "number") {
+			console.log("Cannot set fetcher modifier: throttle value must be a number");
+			return this;
+		}
+
+		this.fetcherModifiers = this.fetcherModifiers || {};
+		delete this.fetcherModifiers.defer;
+		this.fetcherModifiers.throttle = throttle;
+		return this;
+	}
+
+	defer(defer) {
+		if (typeof defer != "boolean") {
+			console.log("Cannot set fetcher modifier: defer value must be a boolean");
+			return this;
+		}
+
+		this.fetcherModifiers = this.fetcherModifiers || {};
+		delete this.fetcherModifiers.throttle;
+		this.fetcherModifiers.defer = defer;
+		return this;
+	}
+
+	// Fetching, querying
 	fetch(...args) {
 		return this._fetch({}, ...args);
 	}
 
 	_fetch(runtime, ...args) {
+		const fetcher = this.fetcher;
+		let throttle = fetcher.throttle,
+			defer = fetcher.defer;
+
+		if (this.fetcherModifiers) {
+			const fm = this.fetcherModifiers;
+			this.fetcherModifiers = null;
+
+			if (fm.throttle != null) {
+				throttle = fm.throttle;
+				defer = null;
+			} else if (fm.defer) {
+				throttle = null;
+				defer = fm.defer;
+			}
+		}
+
 		if (this.state.loading) {
 			return new Promise(resolve => {
 				this.hook("fetched", (a, response) => resolve(response), 1);
 			});
 		}
 
-		const fetcher = this.fetcher,
-			doFetch = async _ => {
-				this.args.runtime = runtime;
-				this.setState("loading");
-				this.callHooks("loading");
+		const doFetch = async _ => {
+			this.args.runtime = runtime;
+			this.setState("loading");
+			this.callHooks("loading");
 
-				this.baseRuntime.state = this.state;
+			this.baseRuntime.state = this.state;
 
-				if (this.defaultRuntime)
-					runtime = inject(this.defaultRuntime, runtime, "cloneTarget");
-				if (this.pendingRuntime)
-					runtime = inject(this.pendingRuntime, runtime);
-	
-				runtime = inject(runtime, this.baseRuntime);
-	
-				this.args.runtime = runtime;
-				runtime = this.process("runtime")(runtime) || runtime;
-				this.args.runtime = runtime;
-				this.pendingRuntime = null;
-	
-				const response = await fetcher.fetch(this.args, ...args);
+			if (this.defaultRuntime)
+				runtime = inject(this.defaultRuntime, runtime, "cloneTarget|circular");
+			if (this.pendingRuntime)
+				runtime = inject(this.pendingRuntime, runtime, "circular");
 
-				if (!response.isDataCellResponse) {
-					this.setState("loaded");
-					let data = this.process("data")(response);
-					this.setData(data);
-					this.callHooks("success", response);
-				} else if (response.success) {
-					this.setState("loaded");
-					response.processedData = this.process("data")(response.payload);
-					response.runtime = runtime;
-					this.setData(response.processedData);
-					this.callHooks("success", response);
-				} else {
-					this.setState("error", {
-						errorMsg: response.errorMsg
-					});
-					response.processedData = null;
-					response.runtime = runtime;
-					this.callHooks("fail", response);
-				}
-	
-				this.setState({
-					fetches: this.state.fetches + 1
+			runtime = inject(runtime, this.baseRuntime, "circular");
+
+			this.args.runtime = runtime;
+			runtime = this.process("runtime")(runtime) || runtime;
+			this.args.runtime = runtime;
+			this.pendingRuntime = null;
+
+			const response = await fetcher.fetch(this.args, ...args);
+
+			if (!response.isDataCellResponse) {
+				this.setState("loaded");
+				let data = this.process("data")(response);
+				this.setData(data);
+				this.callHooks("success", response);
+			} else if (response.success) {
+				this.setState("loaded");
+				response.processedData = this.process("data")(response.payload);
+				response.runtime = runtime;
+				this.setData(response.processedData);
+				this.callHooks("success", response);
+			} else {
+				this.setState("error", {
+					errorMsg: response.errorMsg
 				});
-				
-				fetcher.enqueuedResolvers = [];
-				fetcher.deferredFetch = null;
-				fetcher.throttledFetch = null;
-				this.callHooks("fetched", response);
-				return response;
-			};
+				response.processedData = null;
+				response.runtime = runtime;
+				this.callHooks("fail", response);
+			}
 
-		if (typeof fetcher.throttle == "number") {
+			this.setState({
+				fetches: this.state.fetches + 1
+			});
+			
+			fetcher.enqueuedResolvers = [];
+			fetcher.deferredFetch = null;
+			fetcher.throttledFetch = null;
+			this.callHooks("fetched", response);
+			return response;
+		};
+
+		if (typeof throttle == "number") {
 			const erLength = fetcher.enqueuedResolvers.length,
 				throttledResponse = new Promise(resolve => {
 					fetcher.enqueuedResolvers.push(resolve);
@@ -454,7 +510,7 @@ export default class DataCell extends Hookable {
 
 				for (let i = 0, l = er.length; i < l; i++)
 					er[i](response);
-			}, fetcher.throttle);
+			}, throttle);
 
 			if (erLength >= this.fetcher.maxThrottles)
 				console.warn(`Maximum concurrent throttled fetches reached: ${this.fetcher.maxThrottles}`);
@@ -462,7 +518,7 @@ export default class DataCell extends Hookable {
 				fetcher.deferredFetch = doFetch;
 
 			return throttledResponse;
-		} else if (fetcher.defer) {
+		} else if (defer) {
 			const erLength = fetcher.enqueuedResolvers.length,
 				deferredResponse = new Promise(resolve => {
 					fetcher.enqueuedResolvers.push(resolve);
@@ -519,6 +575,7 @@ export default class DataCell extends Hookable {
 		return get(this.data, accessor, null);
 	}
 
+	// State management
 	setState(...states) {
 		let newState = Object.assign({}, this.state);
 
@@ -534,49 +591,8 @@ export default class DataCell extends Hookable {
 		newState = applyStateTransforms(this, newState);
 		return mergeStateAndDispatchChanges(this, newState);
 	}
-	
-	getFetcherMethod(fetcher) {
-		if (!isObject(fetcher))
-			return null;
 
-		if (typeof fetcher.method == "string")
-			return fetcher.method;
-		if (fetcher.method == null)
-			return DEFAULT_METHOD;
-
-		return null;
-	}
-
-	getFetcherCharacteristics(fetcher) {
-		const method = this.getFetcherMethod(fetcher),
-			characteristics = {
-				method,
-				hasHandler: true,
-				error: null
-			};
-
-		if (!method) {
-			characteristics.hasHandler = false;
-			characteristics.error = "invalid fetch method";
-		} else switch (method) {
-			case "get":
-			case "post":
-				break;
-			
-			case "custom":
-				characteristics.hasHandler = typeof (fetcher.fetch || fetcher.handler) == "function";
-				if (!characteristics.hasHandler)
-					characteristics.error = "no fetcher defined";
-				break;
-
-			default:
-				characteristics.hasHandler = false;
-				characteristics.error = `invalid fetch method '${method}'`;
-		}
-
-		return characteristics;
-	}
-
+	// Factories
 	mkFetcherObject(config) {
 		const fetcher = {
 			method: null,
@@ -712,6 +728,7 @@ export default class DataCell extends Hookable {
 		return watcher;
 	}
 
+	// Response factories
 	mkSuccessResponse(payload, config) {
 		return Object.assign({
 			cell: this,
@@ -734,6 +751,39 @@ export default class DataCell extends Hookable {
 		}, config);
 	}
 
+	// Resolver utilities
+	resolve(val, ...args) {
+		if (typeof val == "function")
+			return this.invoke(val, ...args);
+
+		return val;
+	}
+
+	invoke(func, ...args) {
+		return func(this.args, ...args);
+	}
+
+	// Semi-private setter methods
+	setData(data) {
+		this.data = data;
+		this.callHooks("setData", data);
+	}
+
+	extendBaseRuntime(keyOrRuntime, asset) {
+		if (typeof keyOrRuntime == "string")
+			this.baseRuntime[keyOrRuntime] = asset;
+		else if (isObject(keyOrRuntime))
+			Object.assign(this.baseRuntime, keyOrRuntime);
+	}
+
+	extendArguments(keyOrRuntime, asset) {
+		if (typeof keyOrRuntime == "string")
+			this.args[keyOrRuntime] = asset;
+		else if (isObject(keyOrRuntime))
+			Object.assign(this.args, keyOrRuntime);
+	}
+
+	// General getter methods
 	getKey(item) {
 		if (!item)
 			return null;
@@ -752,7 +802,56 @@ export default class DataCell extends Hookable {
 	getCells() {
 		return [this];
 	}
+	
+	// Advanced getter methods
+	getFetcherMethod(fetcher) {
+		if (!isObject(fetcher))
+			return null;
 
+		if (typeof fetcher.method == "string")
+			return fetcher.method;
+		if (fetcher.method == null)
+			return DEFAULT_METHOD;
+
+		return null;
+	}
+
+	getFetcherCharacteristics(fetcher) {
+		const method = this.getFetcherMethod(fetcher),
+			characteristics = {
+				method,
+				hasHandler: true,
+				error: null
+			};
+
+		if (!method) {
+			characteristics.hasHandler = false;
+			characteristics.error = "invalid fetch method";
+		} else switch (method) {
+			case "get":
+			case "post":
+				break;
+			
+			case "custom":
+				characteristics.hasHandler = typeof (fetcher.fetch || fetcher.handler) == "function";
+				if (!characteristics.hasHandler)
+					characteristics.error = "no fetcher defined";
+				break;
+
+			default:
+				characteristics.hasHandler = false;
+				characteristics.error = `invalid fetch method '${method}'`;
+		}
+
+		return characteristics;
+	}
+
+	// Interface methods
+	callHooks(partitionName, ...args) {
+		return super.callHooks(partitionName, this.args, ...args);
+	}
+
+	// Static methods
 	static definePreset(nameOrPreset, preset) {
 		let name = nameOrPreset;
 	
@@ -771,6 +870,69 @@ export default class DataCell extends Hookable {
 		);
 	}
 
+	static defineLoader(keys, callback) {
+		let matchesKey,
+			keyOnly = false;
+
+		if (typeof keys == "string") {
+			matchesKey = k => k == keys;
+			keyOnly = true;
+		} else if (Array.isArray(keys))
+			matchesKey = (k, v) => k == keys[0] && matchType(v, keys[1]);
+		else if (isObject(keys)) {
+			const ks = [];
+			for (const k in keys) {
+				if (hasOwn(keys, k))
+					ks.push([k, keys[k]]);
+			}
+
+			matchesKey = (k, v) => {
+				if (!hasOwn(keys, k))
+					return false;
+
+				for (let i = 0, l = ks.length; i < l; i++) {
+					if (k != ks[i][0])
+						continue;
+
+					if (matchType(v, ks[i][1]))
+						return true;
+				}
+
+				return false;
+			};
+		}
+
+		if (!matchesKey)
+			throw new Error("Cannot define loader: invalid key matcher");
+		if (typeof callback != "function")
+			throw new Error("Cannot define loader: invalid callback");
+
+		const resolver = (cell, key, value, config) => {
+			if (!matchesKey(key, value))
+				return false;
+
+			const resolved = cell.resolve(value);
+
+			if (!keyOnly && !matchesKey(key, resolved))
+				return false;
+
+			const mounted = callback(Object.assign({}, cell.args, {
+				key,
+				config,
+				value: resolved,
+				rawFalue: value
+			}));
+
+			if (mounted != null)
+				config[key] = mounted;
+
+			return true;
+		};
+
+		DataCell.loaders.push(resolver);
+		return resolver;
+	}
+
 	static resolveConfig(config) {
 		return mergePresets(config, DataCell.presets, {
 			keys: ["preset", "presets"],
@@ -782,19 +944,14 @@ export default class DataCell extends Hookable {
 }
 
 DataCell.presets = composePresets({});
+DataCell.loaders = [];
 
+// State
 function applyStateTransforms(cell, newState) {
 	const state = cell.state,
 		affected = {};
 
-	for (const k in newState) {
-		applyTransform(k, {
-			source: k,
-			transformed: {}
-		});
-	}
-
-	function applyTransform(key, transformSession) {
+	const applyTransform = (key, transformSession) => {
 		if (!hasOwn(newState, key) || newState[key] == state[key])
 			return;
 
@@ -830,6 +987,13 @@ function applyStateTransforms(cell, newState) {
 				applyTransform(k, transformSession);
 			}
 		}
+	};
+
+	for (const k in newState) {
+		applyTransform(k, {
+			source: k,
+			transformed: {}
+		});
 	}
 
 	return newState;
@@ -868,6 +1032,25 @@ function dispatchChanges(cell, changes) {
 		batchKey = sym("task batch"),
 		tasks = [];
 
+	const resolveDispatcher = dispatcher => {
+		switch (typeof dispatcher) {
+			case "string":
+				if (dispatcher[0] == ".")
+					return resolveDispatcher(dispatchers[dispatcher.substring(1)]);
+				
+				return cell.watchTaskDispatchers[dispatcher];
+
+			case "function":
+				return dispatcher;
+
+			case "object":
+				if (dispatcher == null)
+					return null;
+
+				return dispatcher.dispatch;
+		}
+	};
+
 	for (let i = 0, l = changes.length; i < l; i++) {
 		const change = changes[i];
 
@@ -894,27 +1077,9 @@ function dispatchChanges(cell, changes) {
 		delete tasks[i].dispatch[batchKey];
 		tasks[i].dispatch(cell.args, tasks[i].changes);
 	}
-
-	function resolveDispatcher(dispatcher) {
-		switch (typeof dispatcher) {
-			case "string":
-				if (dispatcher[0] == ".")
-					return resolveDispatcher(dispatchers[dispatcher.substring(1)]);
-				
-				return cell.watchTaskDispatchers[dispatcher];
-
-			case "function":
-				return dispatcher;
-
-			case "object":
-				if (dispatcher == null)
-					return null;
-
-				return dispatcher.dispatch;
-		} 
-	}
 }
 
+// Fetch
 function fetchRequest(a, method = "get", url = null, preset = null) {
 	method = method.toLowerCase();
 	
@@ -999,10 +1164,7 @@ async function fetchCustom(a, handler, ...args) {
 		const failResponse = cell.mkErrorResponse(validation);
 		return cell.process("fail")(failResponse);
 	} catch (e) {
-		let failResponse = cell.mkErrorResponse("Unknown Error", {
-			payload: null
-		});
-
+		let failResponse = cell.mkErrorResponse("Unknown Error");
 		failResponse = cell.process("fail")(failResponse);
 		const validation = validate(cell, failResponse, e.message);
 		failResponse.errorMsg = validation;
@@ -1010,6 +1172,7 @@ async function fetchCustom(a, handler, ...args) {
 	}
 }
 
+// Validate / notify
 function validate(cell, data, errorMsg) {
 	const validation = cell.process("validate")(data, errorMsg);
 	return typeof validation == "string" ? validation : null;
@@ -1041,6 +1204,7 @@ function getErrorMsg(cell, wrappedResponse, errorMsg) {
 	}
 }
 
+// Factories
 function mkInheritableConfig(config, initConfig) {
 	return {
 		config: inject({}, config, {

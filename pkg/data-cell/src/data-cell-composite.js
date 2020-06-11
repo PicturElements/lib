@@ -259,7 +259,7 @@ function resolveCell(cellOrConfig, parentCell, path) {
 			characteristics = parentCell.getFetcherCharacteristics(config);
 
 		if (!characteristics.hasHandler) {
-			config.fetch = async (cell, runtime, ...args) => {
+			config.fetch = async ({ cell }, ...args) => {
 				const parent = getActiveParent(cell);
 				if (!parent)
 					return null;
