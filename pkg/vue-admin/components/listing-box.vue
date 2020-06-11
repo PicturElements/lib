@@ -148,7 +148,7 @@
 				if (!this.cell)
 					return null;
 
-				const cellRows = this.cell.form && get(this.cell.form.inputsStruct, accessor);
+				const cellRows = this.frm && get(this.frm.inputsStruct, accessor);
 				if (cellRows)
 					return true;
 
@@ -226,8 +226,8 @@
 				if (this.form instanceof Form)
 					return this.form;
 
-				if (this.cell && this.cell.form  instanceof Form)
-					return this.cell.form;
+				if (this.cell && this.cell.args.form instanceof Form)
+					return this.cell.args.form;
 
 				return null;
 			}

@@ -15,7 +15,7 @@
 						VForm.f-grow(
 							:form="compactTableForm"
 							:rows="compactTableRows")
-							template(#dropdown-option="column") {{ res(column.title) }}
+							template(#dropdown-option="{ option }") {{ res(option.title) }}
 						button.compact-sort-order.ml10(
 							:class="`sort-${sortState.order}`"
 							@click="compactSetSort")
@@ -66,7 +66,7 @@
 		data() {
 			const compactTableForm = new Form();
 
-			compactTableForm.hook("change:sortColumn", (form, inp, from, to) => {
+			compactTableForm.hook("change:sortColumn", (a, to, from) => {
 				this.setSort(to, to[colIndexSym]);
 			});
 
@@ -93,7 +93,8 @@
 
 							return options;
 						},
-						autoSet: true
+						autoSet: true,
+						noSearch: true
 					})
 				],
 				sortState: {

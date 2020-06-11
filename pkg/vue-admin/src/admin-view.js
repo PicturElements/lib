@@ -1,5 +1,6 @@
 import {
 	isObj,
+	hasOwn,
 	partition
 } from "@qtxr/utils";
 import DataCell from "@qtxr/data-cell";
@@ -25,14 +26,14 @@ export default class AdminView {
 	connect(wrapper) {
 		wrapper.addData("view", this);
 
-		const configs = this.component.dataCells || {},
+		const cellConfigs = this.component.dataCells || {},
 			outCells = {};
 
-		for (const k in configs) {
-			if (!configs.hasOwnProperty(k))
+		for (const k in cellConfigs) {
+			if (!hasOwn(cellConfigs, k))
 				continue;
 
-			const config = DataCell.resolveConfig(configs[k]);
+			const config = DataCell.resolveConfig(cellConfigs[k]);
 
 			if (config.persistent) {
 				const cell = DataCell.new(config);
@@ -84,26 +85,25 @@ function connectDataCells(cell, args) {
 }
 
 function connectDataCell(args) {
-	args.cell.baseRuntime.vm = args.vm;
-	args.cell.baseRuntime.admin = args.admin;
-	connectForm(args);
+	args.cell.extendBaseRuntime({
+		vm: args.vm,
+		admin: args.admin
+	});
+
+	args.cell.extendArguments({
+		admin: args.admin
+	});
 }
 
-function connectForm(args) {
-	const { cell } = args;
-	let rows;
-
-	if (typeof cell.config.formRows == "function") {
-		rows = cell.config.formRows(Object.assign({
-			Form
-		}, args));
-	}
-
+DataCell.defineLoader({
+	formRows: "function|Object|Array"
+}, ({ cell, value: rows }) => {
 	if (isObj(rows)) {
 		const form = new Form();
-		cell.form = form;
+		cell.extendArguments("form", form);
+		cell.extendBaseRuntime("form", form);
 		form.connectRows(rows);
 		form.setValues(cell.state);
-		form.hook("update", f => cell.setState(f.extract()));
+		form.hook("update", a => cell.setState(a.form.extract()));
 	}
-}
+});
