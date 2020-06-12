@@ -46,6 +46,7 @@
 			Options(
 				:input="input"
 				:context="input.optionsContext"
+				:active="expanded"
 				@trigger="trigger")
 				template(
 					v-for="(_, name) in $scopedSlots"

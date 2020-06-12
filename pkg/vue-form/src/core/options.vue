@@ -31,6 +31,7 @@
 						:input="input"
 						:context="option.context"
 						:depth="depth + 1"
+						:behavior="behavior"
 						@trigger="emitTrigger")
 						template(
 							v-for="(_, name) in $scopedSlots"
@@ -52,11 +53,18 @@
 </template>
 
 <script>
+	import EVT from "@qtxr/evt";
 	import utilMixin from "../util-mixin";
 
 	export default {
 		name: "Options",
 		mixins: [utilMixin],
+		data() {
+			return {
+				globalKeyListener: null,
+				pointer: [-1]
+			};
+		},
 		methods: {
 			dispatch(option) {
 				if (this.behavior.toggleOption) {
@@ -104,7 +112,9 @@
 					fullOption: option,
 					option: option.value,
 					selected: option.selected,
-					dispatch: this.dispatch
+					select: _ => this.select(option),
+					deselect: _ => this.deselect(option),
+					dispatch: _ => this.dispatch(option)
 				});
 			},
 			emitTrigger(option) {
@@ -112,11 +122,18 @@
 			},
 			getOptionSlotName(context) {
 				return `${context.config.name}-option`;
+			},
+			incrementPointer() {
+				// console.log("INCREMENTING");
+			},
+			decrementPointer() {
+				// console.log("DECREMENTING");
 			}
 		},
 		props: {
 			input: null,
 			context: null,
+			active: Boolean,
 			depth: {
 				type: Number,
 				default: 0
@@ -125,6 +142,31 @@
 				type: Object,
 				default: _ => ({})
 			}
+		},
+		mounted() {
+			if (this.depth)
+				return;
+
+			this.globalKeyListener = evt => {
+				if (!this.active)
+					return;
+
+				switch (EVT.getKey(evt)) {
+					case "up":
+						this.decrementPointer();
+						break;
+
+					case "down":
+						this.incrementPointer();
+						break;
+				}
+			};
+
+			document.body.addEventListener("keydown", this.globalKeyListener);
+		},
+		beforeDestroy() {
+			if (!this.depth)
+				document.body.removeEventListener("keydown", this.globalKeyListener);
 		}
 	};
 </script>

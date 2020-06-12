@@ -527,7 +527,7 @@
 		},
 		beforeDestroy() {
 			document.body.removeEventListener("keydown", this.globalKeyListener);
-			window.removeEventListener("keydown", this.globalVisibilityListener);
+			window.removeEventListener("visibilitychange", this.globalVisibilityListener);
 		}
 	};
 </script>

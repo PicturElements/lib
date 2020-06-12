@@ -28,7 +28,7 @@
 								:name="getOptionSlotName(option.context)"
 								v-bind="bindOption(option)")
 								slot(v-bind="bindOption(option)") {{ getLabel(option) }}
-					.delete-selection-option(@click="option.deselect()") &times;
+					.delete-selection-option(@click="deselect(option)") &times;
 		template(#content)
 			.search-input-box(v-if="!input.noSearch")
 				input.search-input(
@@ -49,6 +49,7 @@
 				:input="input"
 				:context="input.optionsContext"
 				:behavior="{ toggleOption: true }"
+				:active="expanded"
 				@trigger="trigger")
 				template(
 					v-for="(_, name) in $scopedSlots"
@@ -86,7 +87,11 @@
 			search(refresh = false) {
 				this.input.optionsContext.search(this.query, refresh);
 			},
-			trigger(option) {
+			deselect(option) {
+				option.deselect();
+				this.trigger();
+			},
+			trigger() {
 				if (!this.inert)
 					this.input.trigger(this.input.optionsContext.selection);
 			},
