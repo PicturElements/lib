@@ -59,6 +59,8 @@ export default class Multi extends Input {
 			resolveOptionValue: opt => opt.value,
 			singular: false
 		});
+		
+		this.clearPendingValue();
 
 		for (let i = 0, l = res.selection.length; i < l; i++) {
 			this.optionsContext.selectOption(res.selection[i]);
@@ -92,9 +94,9 @@ export default class Multi extends Input {
 			});
 
 			if (res.success)
-				this.setValue(res.selection);
+				await this.setValue(res.selection);
 			else
-				this.setValue(null);
+				await this.setValue(null);
 		});
 	}
 }

@@ -58,6 +58,7 @@ export default class Dropdown extends Input {
 		});
 
 		if (res.option) {
+			this.clearPendingValue();
 			this.optionsContext.selectOption(res.option);
 			return res.option.value;
 		}
@@ -77,9 +78,9 @@ export default class Dropdown extends Input {
 			});
 
 			if (res.success)
-				this.setValue(res.option.value);
+				await this.setValue(res.option.value);
 			else
-				this.setValue(null);
+				await this.setValue(null);
 		});
 	}
 

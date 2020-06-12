@@ -723,10 +723,8 @@ export default class Input extends Hookable {
 	}
 
 	resolvePendingValue(callback) {
-		const val = this.dynamicValue.pendingValue;
-
-		this.clearPendingValue();
-		const changed = this.changed;
+		const val = this.dynamicValue.pendingValue,
+			changed = this.changed;
 
 		return then(callback(val), val => {
 			this.changed = changed;
