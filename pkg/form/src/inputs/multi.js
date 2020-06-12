@@ -55,7 +55,7 @@ export default class Multi extends Input {
 		const selection = [];
 		const res = await this.resolveOptionSelection({
 			value,
-			resolve: _ => this.optionsContext.search(this.optionsContext.state.query),
+			resolve: _ => this.optionsContext.search(this.optionsContext.state.query, false, true),
 			resolveOptionValue: opt => opt.value,
 			singular: false
 		});
@@ -65,7 +65,6 @@ export default class Multi extends Input {
 			selection.push(res.selection[i].value);
 		}
 
-		console.log(selection);
 		return selection;
 	}
 

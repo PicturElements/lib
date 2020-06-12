@@ -1,7 +1,6 @@
 import { Hookable } from "@qtxr/bc";
 import {
 	get,
-	hash,
 	hasOwn,
 	inject,
 	matchQuery,
@@ -150,8 +149,9 @@ export default class OptionsContext extends Hookable {
 		}
 	}
 
-	async search(query = null, refresh = false) {
+	async search(query = null, refresh = false, inquisitive = false) {
 		if (typeof query == "boolean") {
+			inquisitive = refresh;
 			refresh = query;
 			query = null;
 		}
@@ -178,6 +178,7 @@ export default class OptionsContext extends Hookable {
 				queryRegex,
 				fetched: false
 			}),
+			pendingSearches = [],
 			useSearchFetch = typeof this.config.searchFetch == "function",
 			useDynamicCache = useSearchFetch,
 			useFunctionalSearch = typeof this.config.search == "function",
@@ -218,7 +219,16 @@ export default class OptionsContext extends Hookable {
 
 		runtime.options = options;
 
-		if (!cached) {
+		if (cached && inquisitive) {
+			for (let i = 0, l = options.length; i < l; i++) {
+				if (options[i].type != "context")
+					continue;
+
+				pendingSearches.push(
+					options[i].context.search(refresh, inquisitive)
+				);
+			}
+		} else if (!cached) {
 			const processedOptions = [],
 				hashed = {};
 
@@ -233,8 +243,12 @@ export default class OptionsContext extends Hookable {
 				if (this.config.nest !== false && isContextConfig(option)) {
 					option.type = "context";
 					option.context = new OptionsContext(this.input, option, this.globalConfig, this);
-					if (option.context.config.expanded)
-						option.context.search();
+
+					if (option.context.config.expanded || inquisitive) {
+						pendingSearches.push(
+							option.context.search(refresh, inquisitive)
+						);
+					}
 				} else {
 					option.type = "leaf";
 					option.context = this;
@@ -336,6 +350,9 @@ export default class OptionsContext extends Hookable {
 					this.deselectOption(opt);
 			}
 		}
+
+		if (pendingSearches.length)
+			await Promise.all(pendingSearches);
 
 		this.state.lastQuery = query;
 		this.state.loading = false;

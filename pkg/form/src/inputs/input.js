@@ -606,31 +606,59 @@ export default class Input extends Hookable {
 			};
 		};
 
+		const compare = (val, opts, idx) => {
+			const optionValue = typeof resolveOptionValue == "function" ?
+				resolveOptionValue(opts[idx], idx, opts) :
+				opts[idx];
+
+			if (injectAccessor) {
+				if (get(optionValue, injectAccessor) == value)
+					return true;
+			} else {
+				const comparison = this.compare(val, optionValue, true);
+				if (comparison === true)
+					return true;
+
+				return comparison;
+			}
+		};
+
 		const getIdx = (val, opts) => {
 			let min = Infinity,
 				idx = -1;
 
 			for (let i = 0, l = opts.length; i < l; i++) {
-				const optionValue = typeof resolveOptionValue == "function" ?
-					resolveOptionValue(opts[i], i, opts) :
-					opts[i];
+				const comparison = compare(val, opts, i);
 
-				if (injectAccessor) {
-					if (get(optionValue, injectAccessor) == value)
-						return i;
-				} else {
-					const comparison = this.compare(val, optionValue, true);
-					if (comparison === true)
-						return i;
+				if (comparison === true)
+					return i;
 
-					if (typeof comparison == "number" && comparison < min) {
-						min = comparison;
-						idx = i;
-					}
+				if (typeof comparison == "number" && comparison < min) {
+					min = comparison;
+					idx = i;
 				}
 			}
 
 			return idx;
+		};
+
+		const collect = (val, opts) => {
+			for (let i = 0, l = opts.length; i < l; i++) {
+				const opt = opts[i];
+
+				if (opt && opt.type == "context" && opt.context) {
+					if (collect(val, opt.context.options))
+						return true;
+				} else {
+					const comparison = compare(val, opts, i);
+					if (comparison === true || comparison === 0) {
+						selection.push(opts[i]);
+						return true;
+					}
+				}
+			}
+
+			return false;
 		};
 
 		const dispatch = opts => {
@@ -653,14 +681,9 @@ export default class Input extends Hookable {
 				return send(null, false);
 			}
 
-			const sel = Array.isArray(value) ?
-				value :
-				[];
-
-			for (let i = 0, l = sel.length; i < l; i++) {
-				const idx = getIdx(sel[i], opts);
-				if (idx > -1)
-					selection.push(opts[i]);
+			if (Array.isArray(value)) {
+				for (let i = 0, l = value.length; i < l; i++)
+					collect(value[i], opts);
 			}
 
 			return send(selection);
