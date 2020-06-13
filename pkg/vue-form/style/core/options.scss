@@ -32,6 +32,7 @@ $options-params: (
 		}
 
 		.option {
+			position: relative;
 			display: flex;
 			align-items: center;
 			line-height: $height;
@@ -51,8 +52,22 @@ $options-params: (
 				}
 			}
 
+			&.pointer {
+				background: $hover-background;
+
+				&:before {
+					content: "";
+					position: absolute;
+					top: 50%;
+					left: 0;
+					margin-top: -($padding / 2);
+					border: ($padding / 2) solid transparent;
+					border-left-color: currentColor;
+					border-right-width: 0;
+				}
+			}
+
 			&.expando {
-				position: relative;
 				border: none;
 				outline: none;
 				background: $expando-background;

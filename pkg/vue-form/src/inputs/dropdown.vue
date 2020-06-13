@@ -41,13 +41,14 @@
 					:class="{ go: input.noAutoSearch && query !== input.optionsContext.state.lastQuery }"
 					:disabled="searchDisabled"
 					@click="search(true)"
-					tabindex="-1"
-					ref="searchRefresh")
+					tabindex="-1")
 			Options(
 				:input="input"
 				:context="input.optionsContext"
 				:active="expanded"
-				@trigger="trigger")
+				:updates="searches"
+				@trigger="trigger"
+				@pointermove="blurSearch")
 				template(
 					v-for="(_, name) in $scopedSlots"
 					#[name]="d")
@@ -77,7 +78,8 @@
 			query: "",
 			expanded: false,
 			dropAssets: null,
-			deferTimeout: null
+			deferTimeout: null,
+			searches: 0
 		}),
 		methods: {
 			expand() {
@@ -87,7 +89,15 @@
 			collapse() {
 				this.expanded = false;
 			},
+			blurSearch() {
+				const inp = this.$refs.searchInput;
+				if (inp) {
+					inp.blur();
+					this.dropAssets.focus();
+				}
+			},
 			search(refresh = false) {
+				this.searches++;
 				this.input.optionsContext.search(this.query, refresh);
 			},
 			trigger(option) {
