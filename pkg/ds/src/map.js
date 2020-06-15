@@ -8,7 +8,6 @@ import MapSetBase from "./map-set-base";
 export default class Map extends MapSetBase {
 	constructor(iterable) {
 		super(iterable);
-
 		this.key = sym("MapPrivateKey");
 
 		forEach(iterable, entry => {

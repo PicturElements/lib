@@ -50,7 +50,7 @@ export default class Keys {
 		const nextIdx = binarySearch(partition.keys, key) + 1;
 		partition.keys.splice(nextIdx, 0, key);
 		partition.lookup[key] = lookupValue;
-		
+
 		partition.length++;
 		this.length++;
 
@@ -101,7 +101,7 @@ export default class Keys {
 
 		if (hasOwn(this.partitions.plaintext.lookup, key))
 			callback(key, "plaintext");
-		
+
 		const globs = this.partitions.glob.keys;
 		for (let i = 0, l = globs.length; i < l; i++) {
 			const regex = this.partitions.glob.lookup[globs[i]];
@@ -121,7 +121,6 @@ export default class Keys {
 alias(Keys.prototype, "add", "set");
 
 const anyRegex = /^(?:\*)$/;
-
 function isAny(key) {
 	return anyRegex.test(key);
 }

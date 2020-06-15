@@ -10,12 +10,13 @@ import { getHash } from "./internal/utils";
 import { SYM_ITER_KEY } from "@qtxr/utils/internal";
 import StatelessIterator from "./internal/stateless-iterator";
 
-// A partitioned binary array (PBA) is a specialized data structure that
-// employs binary search to insert/find/delete items in logarithmic time.
-// While it's possible to do this with a shallow array, a PBA is a nested data structure.
-// This is because array operations are often linear, so frequent additions/deletions are
-// quite expensive. A PBA amortizes time by ordering data into fixed length partitons that act
-// as sortable items in the root array, while containing sorted data themselves.
+// A partitioned binary array (PBA) is a specialized data structure that employs binary search
+// to insert/find/delete items in logarithmic time. While it's possible to do this with a normal array,
+// a PBA is a nested data structure for a specific reason.
+// Because array operations are often linear, frequent additions/deletions are quite expensive.
+// A PBA amortizes time by ordering data into fixed length partitons that act as sortable items in the root array,
+// while containing sorted data themselves. As a result, array operations are made on smaller arrays, thereby
+// drastically increasing performance on even linear operations
 //
 // Search action:
 // 1.	A binary search is done on partitions in the root level array. This is done by comparing
@@ -285,7 +286,7 @@ function mkIterator(inst, dispatcher) {
 					return StatelessIterator.EXIT;
 			}
 
-			// Find the next 
+			// Find the next (likely) item
 			let index = state.index;
 			if (index >= partition.length || !equals(partition[index], state.nextVal))
 				index = getLikelyItemIndex(partition);

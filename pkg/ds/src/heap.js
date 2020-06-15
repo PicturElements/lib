@@ -41,7 +41,7 @@ export default class Heap extends Array {
 	add(val) {
 		return this.insert(val);
 	}
-	
+
 	extractRoot() {
 		return this.extractIdx(0);
 	}
@@ -49,7 +49,7 @@ export default class Heap extends Array {
 	extract(val) {
 		if (!this.length)
 			return null;
-		
+
 		const hash = getHash(this, val),
 			typedHash = typeHash(hash);
 
@@ -59,8 +59,8 @@ export default class Heap extends Array {
 
 			return null;
 		}
-		
-		
+
+
 	}
 
 	delete(val) {
@@ -100,7 +100,7 @@ function heapify(heap, idx) {
 	const l = left(idx),
 		r = right(idx),
 		isMinHeap = heap.type == "min";
-	
+
 	if (l < heap.length && ((getHash(heap, heap[l]) < getHash(heap, idx)) ^ isMinHeap)) {
 		swap(heap, l, idx);
 		heapify(heap, l);

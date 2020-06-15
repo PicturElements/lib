@@ -74,7 +74,7 @@ export default class Trie {
 			const node = this.getNode(key);
 			return node && node[VALUE];
 		}
-		
+
 		if (!this.ref[key])
 			return;
 
@@ -125,7 +125,7 @@ export default class Trie {
 			const node = this.getNode(key);
 			return Boolean(node && hasOwn(node, VALUE));
 		}
-		
+
 		return key != null && Boolean(this.ref[key]);
 	}
 
@@ -185,10 +185,9 @@ export default class Trie {
 		} : null;
 	}
 
-	// FIX
 	getNode(key = "") {
 		key = conformKey(key);
-		if (!key)
+		if (key == null)
 			return null;
 
 		const length = key.length,
@@ -206,7 +205,7 @@ export default class Trie {
 
 			if (!hasOwn(node, c))
 				return null;
-			
+
 			node = node[c];
 		}
 

@@ -37,7 +37,7 @@ export default class MapSetBase {
 	// Complexity: O(1)
 	add(key, value) {
 		const insertion = getInsertion(this, key);
-		
+
 		if (insertion) {
 			insertion[1] = value;
 			return this;
@@ -69,7 +69,7 @@ export default class MapSetBase {
 					this.maps.boolUndefNull.null = kv;
 					break;
 				}
-				
+
 				if (hasOwn(key, this.key)) {
 					this.maps.object[key[this.key]] = kv;
 					break;
@@ -160,7 +160,7 @@ export default class MapSetBase {
 		const has = Boolean(getMapName(this, key));
 		if (has)
 			return true;
-		
+
 		if (isObj(key) && !Object.isExtensible(key))
 			return Boolean(getInexInsertion(this, key));
 

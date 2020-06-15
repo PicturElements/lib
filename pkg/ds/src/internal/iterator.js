@@ -41,7 +41,7 @@ export default class Iterator {
 		if (next === null) {
 			this.nextIdentifier = undefined;
 			this.done = true;
-			
+
 			return {
 				value: undefined,
 				done: true

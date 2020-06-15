@@ -18,7 +18,7 @@ export default class StatelessIterator {
 		const next = this.fetch();
 		if (next === StatelessIterator.EXIT) {
 			this.done = true;
-			
+
 			return {
 				value: undefined,
 				done: true

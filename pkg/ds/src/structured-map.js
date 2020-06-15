@@ -15,7 +15,7 @@ export default class StructuredMap extends Array {
 		this.order = 0;
 		this.parent = parent;
 		this.keyGetters = [];
-		// Important: _direction will always be forwards on init
+		// Important: _direction will always be 1 (forwards) on init
 		this._direction = 1;
 
 		if (structure)
@@ -107,7 +107,7 @@ export default class StructuredMap extends Array {
 			const key = this.keyGetters[i](item);
 
 			if (typeof key != "string")
-				throw new TypeError(`Invalid path - extractor returned a non-string key`);
+				throw new TypeError(`Invalid path: extractor returned a non-string key`);
 
 			path.push(key);
 		}
