@@ -6,6 +6,7 @@ import {
 } from "@qtxr/utils";
 import { SYM_ITER_KEY } from "@qtxr/utils/internal";
 import StatelessIterator from "./internal/stateless-iterator";
+import { typeHash } from "./internal/utils";
 
 let id = 0;
 
@@ -35,6 +36,7 @@ export default class KeyedLinkedList {
 			return null;
 
 		reference = reference || null;
+		const typedKey = typeHash(key);
 		let previous = null,
 			next = null;
 
@@ -61,8 +63,9 @@ export default class KeyedLinkedList {
 		else
 			previous = this.tail;
 
-		const node = (this.enforceUnique && this.pluck(this.map[key])) || {
+		const node = (this.enforceUnique && this.pluck(this.map[typedKey])) || {
 			key,
+			typedKey,
 			owner: this
 		};
 
@@ -83,11 +86,11 @@ export default class KeyedLinkedList {
 			this.tail = node;
 
 		if (this.enforceUnique)
-			this.map[key] = node;
-		else if (!this.map[key])
-			this.map[key] = [node];
+			this.map[typedKey] = node;
+		else if (!this.map[typedKey])
+			this.map[typedKey] = [node];
 		else
-			this.map[key].push(node);
+			this.map[typedKey].push(node);
 
 		this.size++;
 		return node;
@@ -119,12 +122,12 @@ export default class KeyedLinkedList {
 
 		if (!noDelete) {
 			if (this.enforceUnique)
-				delete this.map[node.key];
+				delete this.map[node.typedKey];
 			else {
-				const partition = this.map[node.key];
+				const partition = this.map[node.typedKey];
 
 				if (partition.length == 1)
-					delete this.map[node.key];
+					delete this.map[node.typedKey];
 				else
 					partition.splice(partition.indexOf(node), 1);
 			}
@@ -156,27 +159,29 @@ export default class KeyedLinkedList {
 	}
 
 	has(key) {
-		return assertValidKey(key) && Boolean(this.map[key]);
+		return assertValidKey(key) && Boolean(this.map[typeHash(key)]);
 	}
 
 	get(key) {
-		return (assertValidKey(key) && this.map[key]) || (this.enforceUnique ? null : []);
+		return (assertValidKey(key) && this.map[typeHash(key)]) || (this.enforceUnique ? null : []);
 	}
 
 	delete(key) {
 		if (!assertValidKey(key) || !this.has(key))
 			return false;
 
+		const typedKey = typeHash(key);
+
 		if (this.enforceUnique)
-			this.pluck(this.map[key], true);
+			this.pluck(this.map[typedKey], true);
 		else {
-			const partition = this.map[key];
+			const partition = this.map[typedKey];
 
 			for (let i = 0, l = partition.length; i < l; i++)
 				this.pluck(partition[i], true);
 		}
 
-		delete this.map[key];
+		delete this.map[typedKey];
 		return true;
 	}
 
@@ -249,7 +254,10 @@ export default class KeyedLinkedList {
 	}
 }
 
-alias(KeyedLinkedList.prototype, "entries", SYM_ITER_KEY);
+alias(KeyedLinkedList.prototype, {
+	entries: SYM_ITER_KEY,
+	push: "set"
+});
 
 function assertValidKey(key) {
 	if (isPrimitive(key))

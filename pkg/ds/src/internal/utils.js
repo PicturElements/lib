@@ -25,6 +25,9 @@ function getHashHelper(ds, val) {
 }
 
 function typeHash(hash) {
+	if (typeof hash == "symbol")
+		return hash;
+
 	return typeof hash + ":" + hash;
 }
 

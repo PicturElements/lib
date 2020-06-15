@@ -1,122 +1,155 @@
-import { hasOwn } from "@qtxr/utils";
+import {
+	sym,
+	hasOwn,
+	isObject
+} from "@qtxr/utils";
+import KeyedLinkedList from "./keyed-linked-list";
+import { typeHash } from "./internal/utils";
+
+const PARENT = sym("parent"),
+	KEY = sym("key"),
+	CHILDREN = sym("children"),
+	VALUE = sym("value");
 
 export default class Trie {
 	constructor() {
-		this.root = {
-			childCount: 0,
-			parent: null,
-			keys: []
-		};
-
+		this.root = mkNode(null);
 		this.ref = Object.create(null);
 		this.size = 0;
 		this.nodeCount = 1;
-		this.sortKeys = true;
 	}
 
-	set(key, value) {
-		if (arguments.length == 1)
-			value = key;
+	set(...args) {
+		const key = conformKey(args[0]),
+			isArrayKey = Array.isArray(key),
+			value = args.length < 2 ? args[0] : args[1];
 
-		key = conformKey(key);
 		if (key == null)
 			return this;
 
-		if (this.ref[key]) {
-			this.ref[key].value = value;
+		if (!isArrayKey && this.ref[key]) {
+			this.ref[key][VALUE] = value;
 			return this;
 		}
 
 		const length = key.length;
-		let trieNode = this.root;
+		let node = this.root,
+			matched = false;
 
 		for (let i = 0; i < length; i++) {
-			const char = key[i];
-			let currNode = trieNode[char];
+			const c = isArrayKey ?
+				typeHash(key[i]) :
+				key[i];
+			let currNode = node[c];
 
-			if (!hasOwn(trieNode, char)) {
-				trieNode.childCount++;
+			if (!hasOwn(node, c)) {
 				this.nodeCount++;
+				currNode = mkNode(node);
+				node[CHILDREN].set(key[i], currNode);
+				node[c] = currNode;
+			} else if (i == length - 1 && hasOwn(currNode, VALUE))
+				matched = true;
 
-				trieNode[char] = currNode = {
-					childCount: 0,
-					parent: trieNode,
-					keys: []
-				};
-
-				insertSequentially(trieNode.keys, char, this.sortKeys);
+			if (i == length - 1) {
+				currNode[VALUE] = value;
+				currNode[KEY] = key;
 			}
 
-			if (i == length - 1)
-				currNode.value = value;
-
-			trieNode = currNode;
+			node = currNode;
 		}
 
-		this.size++;
-		this.ref[key] = trieNode;
+		if (!matched)
+			this.size++;
+		if (!isArrayKey)
+			this.ref[key] = node;
 		return this;
 	}
 
 	get(key) {
 		key = conformKey(key);
-		if (key == null || !this.ref[key])
+		if (key == null)
 			return;
 
-		return this.ref[key].value;
+		if (Array.isArray(key)) {
+			const node = this.getNode(key);
+			return node && node[VALUE];
+		}
+		
+		if (!this.ref[key])
+			return;
+
+		return this.ref[key][VALUE];
 	}
 
 	delete(key) {
 		key = conformKey(key);
-		if (key == null || !this.has(key))
+		if (key == null)
 			return false;
 
-		const length = key.length;
-		let trieNode = this.root;
+		const length = key.length,
+			isArrayKey = Array.isArray(key);
+		let node = this.root,
+			deleted = false;
+
+		if (!isArrayKey && !this.has(key))
+			return false;
 
 		for (let i = 0; i < length; i++) {
-			const char = key[i];
+			const c = isArrayKey ?
+				typeHash(key[i]) :
+				key[i];
 
-			if (!hasOwn(trieNode, char))
+			if (!hasOwn(node, c))
 				break;
 
-			trieNode = trieNode[char];
-			if (i == length - 1)
-				deleteBranch(this, trieNode, key);
+			node = node[c];
+			if (i == length - 1 && hasOwn(node, VALUE)) {
+				deleted = true;
+				deleteBranch(this, node, key);
+			}
 		}
 
-		this.ref[key] = false;
+		if (!deleted)
+			return false;
+
+		if (!isArrayKey)
+			this.ref[key] = false;
 		this.size--;
 		return true;
 	}
 
 	has(key) {
 		key = conformKey(key);
+
+		if (Array.isArray(key)) {
+			const node = this.getNode(key);
+			return Boolean(node && hasOwn(node, VALUE));
+		}
+		
 		return key != null && Boolean(this.ref[key]);
 	}
 
 	matchMin(next) {
-		if (typeof next == "string")
+		if (typeof next != "function")
 			next = mkDefNext(next);
 
-		let match = "",
-			node = this.root,
-			count = 0;
+		let node = this.root,
+			idx = 0;
 
 		while (true) {
-			const char = next(count++);
+			const c = next(idx++);
 
-			if (!hasOwn(node, char))
+			if (!hasOwn(node, c))
 				break;
 
-			match += char;
-			node = node[char];
+			node = node[c];
 
-			if (hasOwn(node, "value")) {
+			if (hasOwn(node, VALUE)) {
 				return {
-					key: match,
-					value: node.value,
-					node
+					key: node[KEY],
+					value: node[VALUE],
+					node,
+					depth: idx - 1
 				};
 			}
 		}
@@ -125,43 +158,52 @@ export default class Trie {
 	}
 
 	matchMax(next) {
-		if (typeof next == "string")
+		if (typeof next != "function")
 			next = mkDefNext(next);
 
-		let match = "",
-			lastMatch = null,
+		let lastMatch = null,
 			node = this.root,
-			count = 0;
+			idx = 0;
 
 		while (true) {
-			const char = next(count++);
+			const c = next(idx++);
 
-			if (!hasOwn(node, char))
+			if (!c || !hasOwn(node, c))
 				break;
 
-			match += char;
-			node = node[char];
+			node = node[c];
 
-			if (hasOwn(node, "value"))
-				lastMatch = match;
+			if (hasOwn(node, VALUE))
+				lastMatch = node;
 		}
 
 		return lastMatch ? {
-			key: lastMatch,
-			value: this.ref[lastMatch].value,
-			node: this.ref[lastMatch]
+			key: lastMatch[KEY],
+			value: lastMatch[VALUE],
+			node: lastMatch,
+			depth: idx - 1
 		} : null;
 	}
 
+	// FIX
 	getNode(key = "") {
-		if (this.ref[key])
+		key = conformKey(key);
+		if (!key)
+			return null;
+
+		const length = key.length,
+			isArrayKey = Array.isArray(key);
+
+		if (!isArrayKey && this.ref[key])
 			return this.ref[key];
 
-		let c = null,
-			idx = 0,
-			node = this.root;
+		let node = this.root;
 
-		while (c = key[idx++], c) {
+		for (let i = 0; i < length; i++) {
+			const c = isArrayKey ?
+				typeHash(key[i]) :
+				key[i];
+
 			if (!hasOwn(node, c))
 				return null;
 			
@@ -169,6 +211,24 @@ export default class Trie {
 		}
 
 		return node;
+	}
+
+	getNodeData(keyOrNode = "") {
+		const node = isObject(keyOrNode) ?
+			keyOrNode :
+			this.getNode(keyOrNode);
+
+		if (!node)
+			return null;
+
+		return {
+			key: node[KEY],
+			value: node[VALUE],
+			parent: node[PARENT],
+			children: node[CHILDREN],
+			childCount: node[CHILDREN].size,
+			hasValue: hasOwn(node, VALUE)
+		};
 	}
 
 	getMatchKeys(key = "") {
@@ -185,64 +245,94 @@ export default class Trie {
 
 	getMatches(key, type) {
 		key = conformKey(key);
-		const trieNode = this.getNode(key),
+		const node = this.getNode(key),
 			matches = [];
 
-		if (!trieNode)
+		if (!node)
 			return matches;
 
-		const collect = (node, str) => {
-			if (hasOwn(node, "value")) {
+		const collect = n => {
+			if (hasOwn(n, VALUE)) {
 				switch (type) {
 					case "key":
-						matches.push(str);
+						matches.push(n[KEY]);
 						break;
 
 					case "value":
-						matches.push(node.value);
+						matches.push(n[VALUE]);
 						break;
 
 					case "entry":
-						matches.push([str, node.value]);
+					default:
+						matches.push([n[KEY], n[VALUE]]);
 						break;
 				}
 			}
 
-			for (let i = 0; i < node.childCount; i++)
-				collect(node[node.keys[i]], str + node.keys[i]);
+			n[CHILDREN].forEach(n => collect(n));
 		};
 
-		collect(trieNode, key);
+		collect(node, key);
 		return matches;
 	}
 }
 
 function deleteBranch(trie, node, key) {
-	let charPtr = key.length;
+	const isArrayKey = Array.isArray(key);
+	let ptr = key.length;
 
-	delete node.value;
+	delete node[VALUE];
+	delete node[KEY];
 
-	while (!node.childCount && node.parent) {
-		const char = key[--charPtr];
-		node = node.parent;
-
-		node.childCount--;
+	while (!node[CHILDREN].size && node[PARENT]) {
+		const c = key[--ptr];
+		node = node[PARENT];
+		node[CHILDREN].delete(c);
 		trie.nodeCount--;
-		removeSequentially(node.keys, char, trie.sortKeys);
-		delete node[char];
 
-		if (hasOwn(node, "value"))
+		if (isArrayKey)
+			delete node[typeHash(c)];
+		else
+			delete node[c];
+
+		if (hasOwn(node, VALUE))
 			break;
 	}
 }
 
-function mkDefNext(str) {
+function mkNode(parent) {
+	return {
+		[PARENT]: parent,
+		[CHILDREN]: new KeyedLinkedList()
+	};
+}
+
+function mkDefNext(candidate) {
+	if (typeof candidate == "string")
+		return mkDefNextStr(candidate);
+
+	if (Array.isArray(candidate))
+		return mkDefNextArr(candidate);
+
+	return _ => null;
+}
+
+function mkDefNextStr(str) {
 	return idx => {
 		return str[idx];
 	};
 }
 
+function mkDefNextArr(arr) {
+	return idx => {
+		return typeHash(arr[idx]);
+	};
+}
+
 function conformKey(key) {
+	if (Array.isArray(key))
+		return key;
+
 	switch (typeof key) {
 		case "string":
 			return key;
@@ -253,44 +343,4 @@ function conformKey(key) {
 	}
 
 	return null;
-}
-
-function insertSequentially(keys, key, sortKeys) {
-	if (sortKeys)
-		keys.splice(sequentialBinaryIndex(keys, key), 0, key);
-	else
-		keys.push(key);
-}
-
-function removeSequentially(keys, key, sortKeys) {
-	if (sortKeys)
-		keys.splice(sequentialBinaryIndex(keys, key), 1);
-	else
-		keys.splice(keys.indexOf(key), 1);
-}
-
-// Custom binary search. It assumes the following:
-// - If searching for a key which is not in the array, it will
-//   return the position into which to insert the value
-// - If the key exists, it will return its exact location
-function sequentialBinaryIndex(keys, key) {
-	let start = 0,
-		end = keys.length - 1,
-		pivot,
-		keyAtPivot;
-
-	while (true) {
-		if (end < start)
-			return start;
-
-		pivot = Math.floor((start + end) / 2);
-		keyAtPivot = keys[pivot];
-
-		if (keyAtPivot == key)
-			return pivot;
-		if (keyAtPivot > key)
-			end = pivot - 1;
-		else
-			start = pivot + 1;
-	}
 }
