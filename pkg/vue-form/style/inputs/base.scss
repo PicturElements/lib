@@ -24,6 +24,19 @@ $base-params: (
 		}
 	}
 
+	.input-column {
+		+ .input-column:not(:empty) {
+			margin-left: $horizontal-gap;
+		}
+
+		> .input-column {
+			+ .input-column:not(:empty) {
+				margin-top: $vertical-gap;
+				margin-left: 0;
+			}
+		}
+	}
+
 	.input-box {
 		flex-grow: 1;
 

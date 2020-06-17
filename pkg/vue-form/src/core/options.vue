@@ -1,10 +1,10 @@
 <template lang="pug">
 	.options-wrapper.inner
 		template(v-if="context.state.error")
-			slot(name="error" v-bind="bnd")
+			slot(name="error" v-bind="bind({ query: context.state.query })")
 				.error {{ context.state.errorMsg || "Failed to load" }}
 		template(v-else-if="context.state.fetches && !context.length")
-			slot(name="empty" v-bind="bnd")
+			slot(name="empty" v-bind="bind({ query: context.state.query })")
 				.empty No results found
 		.intermediate-padding(v-else-if="!context.state.fetches && context.state.loading")
 		.options-scroller(
@@ -51,7 +51,7 @@
 							v-bind="bindOption(option)")
 							slot(v-bind="bindOption(option)") {{ getLabel(option) }}
 		.loading-overlay(v-if="context.state.loading")
-			slot(name="loading-icon" v-bind="bnd") lol
+			slot(name="loading-icon" v-bind="bnd")
 </template>
 
 <script>
