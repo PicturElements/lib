@@ -1,14 +1,18 @@
 import {
 	get,
 	set,
+	map,
 	splitPath,
 	isObj,
 	hasOwn,
+	keys,
 	alias,
 	equals,
 	inject,
+	mkPath,
 	forEach,
 	isObject,
+	joinClass,
 	partition,
 	resolveVal,
 	resolveArgs,
@@ -20,10 +24,14 @@ import {
 	createOptionsObject
 } from "@qtxr/utils";
 import { Hookable } from "@qtxr/bc";
-import { KeyedLinkedList } from "@qtxr/ds"; 
+import {
+	Trie,
+	KeyedLinkedList
+} from "@qtxr/ds";
 
 import templates from "./templates";
 import InputGroupProxy from "./input-group-proxy";
+import InputBlock from "./input-block";
 
 // Inputs
 import {
@@ -37,7 +45,6 @@ import Input, {
 	TRIGGER_VALIDATE,
 	EXTRACT
 } from "./inputs/input";
-import FormRows from "./form-rows";
 
 let id = 0;
 
@@ -82,11 +89,11 @@ export default class Form extends Hookable {
 			// a predefined preset
 			if (isPreset(item)) {
 				let preset = null;
-	
+
 				if (typeof item == "string") {
 					if (!hasOwn(Form.presets, item))
 						throw new Error(`Invalid preset '${item}'`);
-	
+
 					preset = Form.presets[item];
 				} else
 					preset = item;
@@ -111,6 +118,9 @@ export default class Form extends Hookable {
 		this.inputId = 0;
 		this.inputs = {};
 		this.inputsStruct = {};
+		this.inputsFromPaths = {};
+		this.inputNames = new Trie();
+		this.inputPaths = new Trie();
 		this.propagateMap = {};
 		this.updateInitialized = false;
 
@@ -126,7 +136,7 @@ export default class Form extends Hookable {
 			validateRequiredOnly: false,
 			// Don't allow inputs with duplicate names. If false,
 			// extracted inputs with the same name will be returned
-			// in an array, ergo with a minimum length of 2 
+			// in an array, ergo with a minimum length of 2
 			noDuplicateNames: true,
 			// Master switch for bare inputs. A bare input is an
 			// input with minimal vendor graphics (autocomplete
@@ -142,11 +152,17 @@ export default class Form extends Hookable {
 	}
 
 	connect(name, options) {
-		name = Form.resolveInputName(name) || Form.resolveInputName(options);
-		options = Form.normalizeOptions(options);
+		if (isObject(name) && !name.isResolvedInputName) {
+			options = name;
+			name = null;
+		}
 
-		if (!name || typeof name != "string")
-			throw new TypeError("Cannot connect: input name must be a truthy string");
+		const nData = Form.resolveInputName(name) || Form.resolveInputName(options);
+		name = nData && nData.name;
+		options = Form.resolveOptions(options);
+
+		if (!name)
+			throw new TypeError("Cannot connect: input name/config doesn't resolve a valid string name");
 
 		if (!options || typeof options != "object")
 			throw new TypeError("Cannot connect: input options must be an object");
@@ -167,101 +183,163 @@ export default class Form extends Hookable {
 
 		inp.id = this.inputId++;
 
-		if (hasField) { 
+		if (hasField) {
 			if (!Array.isArray(this.inputs[name]))
 				this.inputs[name] = new InputGroupProxy(this.inputs[name]);
 
 			this.inputs[name].push(inp);
 		} else
 			this.inputs[name] = inp;
-		
+
+		if (nData.fromPath) {
+			this.inputsFromPaths[name] = this.inputs[name];
+			this.inputPaths.set(splitPath(nData.raw), this.inputs[name]);
+		} else
+			this.inputNames.set(splitPath(name), this.inputs[name]);
+
 		return inp;
 	}
 
 	connectRows(rows, values = {}) {
 		const foundNames = {};
+
+		const hasBlocks = cells => {
+			for (let i = 0, l = cells.length; i < l; i++) {
+				if (Array.isArray(cells[i]))
+					return true;
+			}
 		
-		const connect = (row, depth) => {
-			if (!Array.isArray(row)) {
-				if (!depth && isObject(row) && Form.resolveInputName(row) == null) {
-					const partition = {};
-
-					for (const k in row) {
-						if (!hasOwn(row, k))
-							continue;
-
-						partition[k] = connect(row[k], 0);
-					}
-
-					return partition;
-				} else
-					row = [row];
-			}
-
-			const out = new FormRows();
-
-			if (depth > 1)
-				throw new RangeError("Cannot connect: row data nested past one level");
-
-			for (let i = 0, l = row.length; i < l; i++) {
-				const cell = row[i];
-
-				if (Array.isArray(cell)) {
-					out.push(connect(cell, depth + 1));
-					continue;
-				}
-
-				let cellProcessed = null;
-
-				if (typeof cell == "string") {
-					const nameOptions = splitClean(cell, /\s*:\s*/);
-
-					cellProcessed = {
-						name: nameOptions[1] || nameOptions[0],
-						opt: nameOptions[0]
-					};
-				} else {
-					cellProcessed = Object.assign({}, cell);
-
-					if (cellProcessed.opt)
-						Form.mod({}, cellProcessed.opt, cellProcessed);
-					else
-						cellProcessed.opt = cellProcessed;
-				}
-
-				if (cellProcessed.classes)
-					cellProcessed.class = cellProcessed.classes;
-				else {
-					cellProcessed.class = typeof cellProcessed.class == "string" ?
-						{ input: cellProcessed.class } :
-						cellProcessed.class || {};
-				}
-
-				const options = cellProcessed.opt,
-					name = Form.resolveInputName(cellProcessed.name) || Form.resolveInputName(options);
-				delete cellProcessed.opt;
-				
-				// Clear old inputs when necessary
-				if (!hasOwn(foundNames, name)) {
-					if (!this.options.noDuplicateNames)
-						delete this.inputs[name];
-
-					foundNames[name] = true;
-				} else if (this.options.noDuplicateNames)
-					throw new Error(`Cannot connect: duplicate inputs by name "${name}". To support multiple inputs with the same name, use the 'noDuplicateNames' option`);
-
-				if (values && hasOwn(values, name))
-					options.value = values[name];
-
-				cellProcessed.input = this.connect(name, options);
-				cellProcessed.isInputCell = true;
-				out.push(depth ? cellProcessed : [cellProcessed]);
-			}
-
-			return out;
+			return false;
 		};
 
-		this.inputsStruct = connect(rows, 0);
+		const getBlockType = (struct, parentStruct, depth = 0) => {
+			if (!depth || (depth == 1 && hasBlocks(struct)))
+				return "column";
+			
+			if (depth > 1) {
+				if (parentStruct)
+					return parentStruct.type == "row" ? "column" : "row";
+
+				return depth % 2 == 0 ? "column" : "row";
+			}
+
+			return "row";
+		};
+
+		const resolveBlockLayout = (struct, parentStruct, depth = 0) => {
+			if (!Array.isArray(struct))
+				return;
+
+			// Resolve inline cells
+			for (let i = 0; i < struct.length; i++) {
+				const block = struct[i],
+					blockIdx = i;
+				if (!depth || !(block instanceof InputBlock))
+					continue;
+
+				let buffer = [],
+					offset = 0,
+					buffering = false;
+
+				for (let j = 0, l = block.length; j < l; j++) {
+					const cell = block[j];
+					if (isObject(cell) && cell.inline) {
+						buffering = true;
+
+						if (buffer.length) {
+							i++;
+							struct.splice(i, 0, new InputBlock(...buffer));
+							buffer = [];
+						}
+
+						i++;
+						offset++;
+						struct.splice(i, 0, cell);
+					} else if (buffering) {
+						buffer.push(cell);
+						offset++;
+					}
+
+					block[j] = block[j + offset];
+				}
+
+				if (buffer.length) {
+					i++;
+					struct.splice(i, 0, new InputBlock(...buffer));
+				}
+
+				block.length -= offset;
+				if (!block.length)
+					struct.splice(blockIdx, 1);
+			}
+
+			struct.type = getBlockType(struct, parentStruct, depth);
+
+			for (let i = 0, l = struct.length; i < l; i++) {
+				if (struct[i].isInputBlock)
+					resolveBlockLayout(struct[i], struct, depth + 1);
+				else if (!depth)
+					struct[i] = new InputBlock(struct[i]);
+			}
+		};
+
+		const connect = (row, struct = null, depth = 0) => {
+			if (isObject(row) && hasOwn(row, "group"))
+				row = Form.resolveGroup(row);
+
+			// If no name can be inferred from an object,
+			// treat it as an object containing inputs
+			if (!depth && isObject(row) && Form.resolveInputName(row) == null) {
+				return map(row, c => {
+					const block = connect(c);
+					resolveBlockLayout(block);
+					return block;
+				});
+			}
+			
+			// Handle row data
+			if (Array.isArray(row)) {
+				const block = new InputBlock();
+				let newDepth = depth + 1;
+
+				if (!struct) {
+					struct = block;
+					newDepth = 0;
+				} else
+					struct.push(block);
+
+				for (let i = 0, l = row.length; i < l; i++)
+					connect(row[i], block, newDepth);
+
+				return struct;
+			}
+		
+			// Handle input options data
+			const options = Form.resolveInputOptions(row),
+				nData = Form.resolveInputName(options),
+				name = nData && nData.name;
+
+			// Clear old inputs when necessary
+			if (!hasOwn(foundNames, name)) {
+				if (!this.options.noDuplicateNames)
+					delete this.inputs[name];
+
+				foundNames[name] = true;
+			} else if (this.options.noDuplicateNames)
+				throw new Error(`Cannot connect: duplicate inputs by name "${name}". To support multiple inputs with the same name, use the 'noDuplicateNames' option`);
+
+			if (values && hasOwn(values, name))
+				options.value = values[name];
+
+			options.input = this.connect(nData, options);
+			options.isInputCell = true;
+
+			struct.push(options);
+			return struct;
+		};
+
+		this.inputsStruct = connect(rows);
+		resolveBlockLayout(this.inputsStruct, null, 0);
 		this.callHooks("connected", this.inputsStruct);
 		return this.inputsStruct;
 	}
@@ -320,11 +398,12 @@ export default class Form extends Hookable {
 			requestFrame(dispatch);
 		else
 			dispatch();
-		
+
 		return this;
 	}
 
 	disconnect(name) {
+		// Finish this off
 		if (hasOwn(this.inputs, name)) {
 			delete this.inputs[name];
 			this.keys.splice(this.keys.indexOf(name));
@@ -488,13 +567,22 @@ export default class Form extends Hookable {
 	}
 
 	val(accessor, format = null) {
-		const path = splitPath(accessor),
-			val = hasOwn(this.inputs, path[0]) ?
-				this.inputs[path[0]].val(format) :
-				null;
+		let path,
+			trie = this.inputNames;
 
-		return get(val, path, null, {
-			pathOffset: 1
+		if (accessor && accessor[0] == "@") {
+			path = splitPath(accessor.substring(1));
+			trie = this.inputPaths;
+		} else
+			path = splitPath(accessor);
+
+		const node = trie.matchMax(path);
+		if (!node)
+			return null;
+
+		const value = node.value.val(format);
+		return get(value, path, null, {
+			pathOffset: node.depth
 		});
 	}
 
@@ -514,7 +602,7 @@ export default class Form extends Hookable {
 
 		if (!inp)
 			return;
-		
+
 		valid = typeof valid == "boolean" ?
 			valid :
 			(inp.valid || !inp.required);
@@ -546,7 +634,7 @@ export default class Form extends Hookable {
 
 		if (!inp)
 			return;
-		
+
 		changed = typeof changed == "boolean" ?
 			changed :
 			inp.changed;
@@ -557,7 +645,7 @@ export default class Form extends Hookable {
 			this.changes.push(inp.name, inp);
 		else
 			this.changes.delete(inp.name);
-		
+
 		if (!size ^ !this.changes.size)
 			this.callHooks("changestatechange", Boolean(this.changes.size), this.changes);
 	}
@@ -637,7 +725,7 @@ export default class Form extends Hookable {
 		inp[CHECK](...args);
 	}
 
-	static normalizeOptions(options) {
+	static resolveOptions(options) {
 		if (typeof options == "function") {
 			return {
 				validate: options
@@ -647,35 +735,140 @@ export default class Form extends Hookable {
 		options = createOptionsObject(
 			options,
 			Form.templates,
-			`Form has no default input '${options}'`
+			`Form has no template by name '${options}'`
 		);
 
 		return mergePresets(options, Form.templates, {
 			defaultKey: "default",
-			keys: ["template", "templates", "default", "defaults"],
+			keys: ["template", "templates"],
 			circular: true
 		});
 	}
 
+	static resolveGroup(group) {
+		if (!isObject(group) || !hasOwn(group, "group"))
+			return null;
+
+		const groupOptions = this.resolveInputOptions(group),
+			groupOptionsKeys = keys(groupOptions);
+
+		const inject = (opts, depth = 0) => {
+			if (Array.isArray(opts)) {
+				const out = [];
+				for (let i = 0, l = opts.length; i < l; i++)
+					out.push(inject(opts[i], depth + 1));
+
+				return out;
+			}
+
+			const options = this.resolveInputOptions(opts);
+
+			for (let i = 0, l = groupOptionsKeys.length; i < l; i++) {
+				const key = groupOptionsKeys[i];
+
+				switch (key) {
+					case "class":
+						forEach(groupOptions.class, (c, k) => {
+							options.class[k] = joinClass(c, options.class[k]);
+						});
+						break;
+
+					case "path":
+						if (hasOwn(options, "path"))
+							options.path = mkPath(groupOptions.path, options.path);
+						else
+							options.path = groupOptions.path;
+						break;
+
+					case "group":
+						break;
+
+					case "inline":
+						if (!depth)
+							options.inline = groupOptions.inline;
+						break;
+
+					default:
+						if (!hasOwn(options, key))
+							options[key] = groupOptions[key];
+				}
+			}
+
+			return options;
+		};
+
+		if (Array.isArray(groupOptions.group)) {
+			const out = [];
+			for (let i = 0, l = groupOptions.group.length; i < l; i++)
+				out.push(inject(groupOptions.group[i], 0));
+
+			return out;
+		}
+
+		return inject(groupOptions.group, 0);
+	}
+
+	static resolveInputOptions(options) {
+		let resolved = null;
+
+		if (typeof options == "string") {
+			const nameOptions = splitClean(options, /\s*:\s*/);
+
+			if (nameOptions.length > 1) {
+				resolved = this.resolveOptions(nameOptions[0]);
+				resolved.name = nameOptions[1];
+			} else {
+				resolved = {
+					name: nameOptions[0]
+				};
+			}
+		} else
+			resolved = this.resolveOptions(options);
+
+		if (resolved.classes)
+			resolved.class = resolved.classes;
+		
+		resolved.class = typeof resolved.class == "string" ?
+			{ input: resolved.class } :
+			resolved.class || {};
+
+		return resolved;
+	}
+
 	static resolveInputName(nameOrConfig) {
+		const dispatch = (name, fromPath = false) => {
+			if (!name || typeof name != "string")
+				return null;
+
+			return {
+				name: fromPath ?
+					"@path@:" + name :
+					name,
+				raw: name,
+				fromPath,
+				isResolvedInputName: true
+			};
+		};
+
 		if (isObject(nameOrConfig)) {
-			if (typeof nameOrConfig.name == "string")
-				return nameOrConfig.name ? nameOrConfig.name : null;
-			
-			if (!hasOwn(nameOrConfig, "name") && typeof nameOrConfig.path == "string")
-				return "@path@:" + nameOrConfig.path;
+			if (nameOrConfig.isResolvedInputName)
+				return nameOrConfig;
+
+			if (hasOwn(nameOrConfig, "name"))
+				return dispatch(nameOrConfig.name);
+
+			if (typeof nameOrConfig.path == "string")
+				return dispatch(nameOrConfig.path, true);
 
 			return null;
 		}
-		
-		return (nameOrConfig && typeof nameOrConfig == "string") ?
-			nameOrConfig :
-			null;
+
+		return dispatch(nameOrConfig);
 	}
 
 	// Standard function to modify input options
 	static mod(options, ...mods) {
-		options = Form.normalizeOptions(options);
+		options = Form.resolveOptions(options);
 
 		for (let i = 0, l = mods.length; i < l; i++) {
 			const m = mods[i];
@@ -694,7 +887,7 @@ export default class Form extends Hookable {
 					break;
 
 				case "string":
-					Object.assign(options, Form.normalizeOptions(m));
+					Object.assign(options, Form.resolveOptions(m));
 					break;
 			}
 		}
@@ -720,6 +913,12 @@ export default class Form extends Hookable {
 		}
 
 		return out;
+	}
+
+	static group(...inputs) {
+		return {
+			group: inputs
+		};
 	}
 
 	static getInputType(optionsOrInput) {
@@ -841,32 +1040,16 @@ Form.presets = composePresets({
 	}
 });
 
-// value, input, inputs
+// parameters: runtime object
 Form.validators = {
-	notNull: val => val === null ? "Please select a value" : null
+	notNull: ({ value }) => value === null ? "Please select a value" : null
 };
+Form.processors = {};
+Form.triggers = {};
+Form.updaters = {};
+Form.extractors = {};
 
-// value, input, inputs
-Form.processors = {
-
-};
-
-// value, input, inputs
-Form.triggers = {
-
-};
-
-// input, inputs
-Form.updaters = {
-
-};
-
-// value, input, output, inputs
-Form.extractors = {
-
-};
-
-// value, reference value
+// parameters: value, reference value
 Form.comparators = {
 	deep: equals
 };

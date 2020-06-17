@@ -2,7 +2,7 @@ export * from "./src/inputs/input";
 export * from "./src/templates";
 
 export { default } from "./src/form";
-export { default as FormRows } from "./src/form-rows";
+export { default as InputBlock } from "./src/input-block";
 
 export { default as Checkbox } from "./src/inputs/checkbox";
 export { default as Coordinates } from "./src/inputs/coordinates";

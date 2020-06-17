@@ -41,6 +41,7 @@ const CHECK = sym("check"),
 	EXTRACT = sym("extract"),
 	SELF_EXTRACT = sym("selfExtract"),
 	DISPATCH_VALUE = sym("dispatchValue"),
+	DISPATCH_SET = sym("dispatchSet"),
 	DISPATCH_CHANGE = sym("dispatchChange"),
 	DISPATCH_CHANGESTATECHANGE = sym("dispatchChangestatechange"),
 	DISPATCH_CHANGED = sym("dispatchChanged"),
@@ -114,6 +115,7 @@ export default class Input extends Hookable {
 		this.dynamicValue = {
 			id: dynValId++,
 			value: null,
+			setting: false,
 			pendingValue: null,
 			resolves: 0,
 			resolving: false,
@@ -192,8 +194,10 @@ export default class Input extends Hookable {
 	}
 
 	initValue() {
-		this.setValue(this._options.value);
-		this.instantiated = true;
+		then(
+			this.setValue(this._options.value),
+			_ => this.instantiated = true
+		);
 	}
 
 	[CHECK](evt) {
@@ -360,62 +364,43 @@ export default class Input extends Hookable {
 	}
 
 	[EXTRACT](format = null, withMeta = false) {
-		return this[SELF_EXTRACT](this.value, format, withMeta);
-	}
+		const useHandler = typeof this.handlers.extract == "function" || typeof this.handlers.extract == "string";
+		let value = this.dynamicValue.value;
 
-	[SELF_EXTRACT](value, format = null, withMeta = false) {
-		const val = this.dynamicValue.value,
-			isFunctionalHandler = typeof this.handlers.extract == "function",
-			isGetterHandler = typeof this.handlers.extract == "string",
-			hasHandler = isFunctionalHandler || isGetterHandler;
-
-		if (!format && typeof this.format == "string")
-			format = this.format;
-
-		if (val instanceof FormalizerCell)
-			value = hasHandler ? val.data : val.transform(format);
-		else if (!this.dynamicValue.tracked || !isObj(val))
-			value = val;
-		else {
-			value = inject(null, val, {
+		if (value instanceof FormalizerCell)
+			value = useHandler ? value.data : value.transform(format);
+		else if (this.dynamicValue.tracked && isObj(value)) {
+			value = inject(null, value, {
 				inject: v => {
 					if (!(v instanceof FormalizerCell))
 						return v;
 
-					return hasHandler ?
+					return useHandler ?
 						v.data :
 						v.transform(format);
 				}
 			}, "circular");
 		}
 
-		if (isFunctionalHandler) {
-			let demuxed = false;
-			const demuxValue = {};
+		return this[SELF_EXTRACT](value, format, withMeta);
+	}
 
-			const extracted = this.handlers.extract(
-				this.mkRuntime({
-					value,
-					demux(dataOrKey, data) {
-						demuxed = true;
+	[SELF_EXTRACT](value, format = null, withMeta = false) {
+		if (!format && typeof this.format == "string")
+			format = this.format;
 
-						if (typeof dataOrKey == "string") {
-							demuxValue[dataOrKey] = data;
-							return demuxValue;
-						}
+		const useFunctionalHandler = typeof this.handlers.extract == "function",
+			useGetterHandler = typeof this.handlers.extract == "string";
 
-						if (!isObject(dataOrKey))
-							throw new TypeError("Cannot demultiplex: non-object data");
-
-						Object.assign(demuxValue, dataOrKey);
-						return demuxValue;
-					}
-				})
-			);
+		if (useFunctionalHandler) {
+			const runtime = this.mkExtractRuntime({
+					value
+				}),
+				extracted = this.handlers.extract(runtime);
 
 			if (withMeta) {
 				return {
-					source: demuxed ? "demux" : "extractor",
+					source: runtime.demuxed ? "demux" : "extractor",
 					value: extracted
 				};
 			}
@@ -423,7 +408,7 @@ export default class Input extends Hookable {
 			return extracted;
 		}
 		
-		if (isGetterHandler)
+		if (useGetterHandler)
 			value = get(value, this.handlers.extract);
 
 		if (withMeta) {
@@ -443,14 +428,24 @@ export default class Input extends Hookable {
 		if (newValue === null || this.changeData.value === null)
 			this.changeData.value = newValue;
 
-		if (this.instantiated && !cmp(this, oldValue, newValue)) {
-			const changed = !cmp(this, this.changeData.value, newValue);
-			this[DISPATCH_CHANGE](newValue, oldValue);
-			this[DISPATCH_CHANGESTATECHANGE](changed, newValue, oldValue);
-			this.modified = true;
+		if (!cmp(this, oldValue, newValue)) {
+			if (this.instantiated) {
+				const changed = !cmp(this, this.changeData.value, newValue);
+				this[DISPATCH_CHANGE](newValue, oldValue);
+				this[DISPATCH_CHANGESTATECHANGE](changed, newValue, oldValue);
+				this.modified = true;
+			}
+
+			this[DISPATCH_SET](newValue, oldValue);
 		}
 
 		this[SELF_VALIDATE]();
+	}
+	
+	[DISPATCH_SET](newValue, oldValue) {
+		this.callFormHooks("set", newValue, oldValue);
+		this.callFormHooks(`set:${this.name}`, newValue, oldValue);
+		this.callHooks("set", newValue, oldValue);
 	}
 
 	[DISPATCH_CHANGE](newValue, oldValue) {
@@ -487,11 +482,13 @@ export default class Input extends Hookable {
 
 	// Semi-private methods
 	setValue(value) {
+		this.dynamicValue.setting = true;
 		const oldValue = resolveValue(this.dynamicValue.value),
 			newValue = this[OVERRIDE_INJECT](value);
 
 		return then(newValue, val => {
 			this[DISPATCH_VALUE](val, oldValue);
+			this.dynamicValue.setting = false;
 			return val;
 		});
 	}
@@ -517,6 +514,29 @@ export default class Input extends Hookable {
 		return this.mkRuntime({
 			value
 		});
+	}
+
+	mkExtractRuntime(...sources) {
+		const runtime = this.mkRuntime(...sources, {
+			demuxed: false,
+			demuxValue: {},
+			demux(dataOrKey, data) {
+				runtime.demuxed = true;
+
+				if (typeof dataOrKey == "string") {
+					runtime.demuxValue[dataOrKey] = data;
+					return runtime.demuxValue;
+				}
+
+				if (!isObject(dataOrKey))
+					throw new TypeError("Cannot demultiplex: non-object data");
+
+				Object.assign(runtime.demuxValue, dataOrKey);
+				return runtime.demuxValue;
+			}
+		});
+		
+		return runtime;
 	}
 
 	res(value, ...args) {
@@ -1200,6 +1220,7 @@ export {
 	EXTRACT,
 	SELF_EXTRACT,
 	DISPATCH_VALUE,
+	DISPATCH_SET,
 	DISPATCH_CHANGE,
 	DISPATCH_CHANGESTATECHANGE,
 	DISPATCH_CHANGED,

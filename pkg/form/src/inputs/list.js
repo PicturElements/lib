@@ -1,6 +1,7 @@
 import Input, {
 	INJECT,
 	EXTRACT,
+	SELF_EXTRACT,
 	SELF_VALIDATE,
 	TRIGGER_VALIDATE,
 	DISPATCH_VALUE,
@@ -65,20 +66,20 @@ export default class List extends Input {
 		for (let i = 0, l = data.length; i < l; i++)
 			out.push(this.getRow(data[i]));
 
+		this[DISPATCH_CHANGE](this.value, this.value);
 		return out;
 	}
 
-	[EXTRACT]() {
+	[EXTRACT](format = null, withMeta = false) {
 		const value = this.value,
 			out = [];
 
-		if (!Array.isArray(value))
-			return out;
+		if (Array.isArray(value)) {
+			for (let i = 0, l = value.length; i < l; i++)
+				out.push(value[i].extract());
+		}
 
-		for (let i = 0, l = value.length; i < l; i++)
-			out.push(value[i].extract());
-
-		return out;
+		return this[SELF_EXTRACT](out, format, withMeta);
 	}
 
 	[DISPATCH_CHANGED](changed) {
