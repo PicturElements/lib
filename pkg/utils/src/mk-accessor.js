@@ -10,12 +10,12 @@ export default function mkAccessor(path) {
 	let accessor = "";
 
 	for (let i = 0, l = path.length; i < l; i++) {
-		if (path == "")
+		if (path[i] == "")
 			continue;
 
 		const component = String(path[i]);
 
-		if (!isNaN(path[i]))
+		if (!isNaN(component) && component != "Infinity" && component != "-Infinity")
 			accessor += `[${cleanPath(component)}]`;
 		else if (abnormalRegex.test(component))
 			accessor += `[${cleanPath(component)}]`;

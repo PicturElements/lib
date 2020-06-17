@@ -61,6 +61,7 @@ export { default as MemoGetter } from "./src/memo-getter";
 export { default as memoize } from "./src/memoize";
 export { default as mkAccessor } from "./src/mk-accessor";
 export { default as mkCharacterSet } from "./src/mk-character-set";
+export { default as mkPath } from "./src/mk-path";
 export { default as mkStdLib } from "./src/mk-std-lib";
 export { default as parseArgStr } from "./src/parse-arg-str";
 export { default as parseEntityStr } from "./src/parse-entity-str";
