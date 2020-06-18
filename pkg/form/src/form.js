@@ -234,7 +234,8 @@ export default class Form extends Hookable {
 			for (let i = 0; i < struct.length; i++) {
 				const block = struct[i],
 					blockIdx = i;
-				if (!depth || !(block instanceof InputBlock))
+
+				if (!depth || !block.isInputBlock)
 					continue;
 
 				let buffer = [],
