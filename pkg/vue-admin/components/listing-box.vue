@@ -4,7 +4,7 @@
 		:cell="cell"
 		:form="form"
 		:formRows="formRows")
-		
+
 		Listing(
 			:config="conf"
 			:cell="cell"
@@ -35,12 +35,12 @@
 			v-if="cell.state.fetches")
 			span.listing-count(v-if="isPagination && !conf.hideListingCount")
 				span.listing-count-num.listing-from {{ cell.state.offset }}
-				|  - 
+				|  -
 				span.listing-count-num.listing-to {{ Math.min(cell.state.offset + Math.min(cell.state.pageSize, cell.state.fetchedLength), cell.state.total) }}
 				span(v-if="cell.state.total < Infinity")
-					|  of 
+					|  of
 					span.listing-count-num.listing-total {{ cell.state.total }}
-			span.listing-count(v-else-if="isArray(cell.data)") {{ cell.data.length }}
+			span.listing-count(v-else-if="isArray(cell.data) && !conf.hideListingCount") {{ cell.data.length }}
 		template(#header-utils-pre="d")
 			slot(
 				name="header-utils-pre"
@@ -177,7 +177,7 @@
 					ceilPad = Math.ceil(padding),
 					fullPadding = padding * 2,
 					pages = [];
-				
+
 				let padLeft = page < pageCount / 2 ?
 						Math.min(floorPad, page) :
 						fullPadding - Math.min(pageCount - page, ceilPad),
@@ -219,7 +219,7 @@
 						});
 					}
 				}
-				
+
 				return pages;
 			},
 			frm() {

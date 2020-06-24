@@ -125,7 +125,7 @@
 					sortOrders = column.sortOrders || this.sortOrders;
 
 				if (idx == sortState.columnIdx)
-					sortState.orderPtr = (sortState.orderPtr + 1) % sortOrders.length; 
+					sortState.orderPtr = (sortState.orderPtr + 1) % sortOrders.length;
 				else {
 					sortState.column = column;
 					sortState.columnIdx = idx;
@@ -176,7 +176,7 @@
 
 							if (item == item2)
 								return 0;
-							
+
 							return item > item2 ? 1 : -1
 						};
 
@@ -207,7 +207,7 @@
 							indexerCache[indexer] = split;
 							[ xr, accessor ] = split;
 						}
-						
+
 						switch (xr) {
 							case "lexical":
 								return String(get(data, accessor)).toLowerCase();
@@ -231,7 +231,7 @@
 			cellData() {
 				if (this.conf.accessor)
 					return get(this.cell.data, this.conf.accessor);
-				
+
 				return this.cell.data;
 			}
 		},

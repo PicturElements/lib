@@ -46,6 +46,10 @@ $util-box-params: (
 			text-overflow: ellipsis;
 		}
 
+		.util-box-header-right {
+			margin-left: $outer-margin;
+		}
+
 		.util-box-title {
 			font-weight: bold;
 			letter-spacing: 0.02em;

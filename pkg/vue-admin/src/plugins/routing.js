@@ -1,5 +1,6 @@
 import {
 	get,
+	hasOwn,
 	resolveVal,
 	requestFrame
 } from "@qtxr/utils";
@@ -47,6 +48,9 @@ export default {
 		});
 		wrapper.addComputed("subroutes", function() {
 			return getSubroutes(this);
+		});
+		wrapper.addComputed("exactRoute", function() {
+			return this.$route.meta.id == this.ownRoute.meta.id;
 		});
 	}
 };
@@ -172,7 +176,7 @@ function updateBreadcrumbs(args) {
 
 function resolveParams(path, nextRoute) {
 	return path.replace(/:(\w+)/g, (match, key) => {
-		if (!nextRoute.params.hasOwnProperty(key))
+		if (!hasOwn(nextRoute.params, key))
 			return match;
 
 		return nextRoute.params[key];
@@ -195,7 +199,7 @@ function getOwnRoute(vm) {
 		const match = matched[i];
 
 		for (const k in match.instances) {
-			if (match.instances.hasOwnProperty(k) && match.instances[k] == vm)
+			if (hasOwn(match.instances, k) && match.instances[k] == vm)
 				return match.meta.route;
 		}
 	}
