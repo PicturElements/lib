@@ -1,6 +1,8 @@
 <template lang="pug">
 	.input-wrapper.list.inp-list(:class="cl({ 'has-focus': focusIdx > -1 })")
-		.list-row-add(@click="add(0, true)")
+		button.list-row-add(
+			:disabled="addIsDisabled(0)"
+			@click="add(0)")
 			.list-add-click-target
 			.list-row-add-icon
 		template(v-for="(form, idx) in input.value")
@@ -24,7 +26,7 @@
 									template(v-if="symbols.delete") {{ res(symbols.delete) }}
 									.row-action-symbol.default-row-action-icon.delete(v-else)
 							button.row-action.move.up(
-								v-if="idx > 0"
+								v-if="res(input.rearrangeable) !== false && idx > 0"
 								@click="moveUp(idx)")
 								slot(
 									name="up-icon"
@@ -32,7 +34,7 @@
 									template(v-if="symbols.up") {{ res(symbols.up) }}
 									.row-action-symbol.default-row-action-icon.up(v-else)
 							button.row-action.move.down(
-								v-if="idx < input.value.length - 1"
+								v-if="res(input.rearrangeable) !== false && idx < input.value.length - 1"
 								@click="moveDown(idx)")
 								slot(
 									name="down-icon"
@@ -42,7 +44,9 @@
 							slot(
 								name="actions-post"
 								v-bind="bindForm(form)")
-			.list-row-add(@click="add(idx + 1, false)")
+			button.list-row-add(
+				:disabled="addIsDisabled(idx + 1)"
+				@click="add(idx + 1)")
 				.list-add-click-target
 				.list-row-add-icon
 </template>
@@ -68,9 +72,12 @@
 				if (!this.inert)
 					this.input.trigger(this.input.value);
 			},
-			add(idx, prefixed) {
+			add(idx) {
+				if (this.addIsDisabled(idx))
+					return;
+
 				const row = this.input.getRow();
-					
+
 				if (typeof this.input.beforeadd != "function" || this.res(this.input.beforeadd, row, idx) !== false) {
 					this.input.value.splice(idx, 0, row);
 					this.setFocus(idx);
@@ -111,6 +118,15 @@
 					form,
 					rows: form.inputsStruct
 				});
+			},
+			addIsDisabled(idx) {
+				if (this.dis)
+					return true;
+
+				if (this.res(this.input.backwardEditable) !== false)
+					return false;
+
+				return idx != this.input.value.length;
 			}
 		},
 		props: {
