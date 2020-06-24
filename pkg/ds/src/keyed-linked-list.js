@@ -277,9 +277,9 @@ function mkIterator(inst, dispatcher) {
 			if (next == null)
 				next = inst.head;
 			else if (typeof next == "number")
-				next = inst.find((_, k) => k > next);
+				next = inst.find((v, k, kll, n) => n.id >= next);
 			else if (!next.linked)
-				next = inst.find((_, k) => k > next.id);
+				next = inst.find((v, k, kll, n) => n.id >= next.id);
 
 			if (!next)
 				return StatelessIterator.EXIT;

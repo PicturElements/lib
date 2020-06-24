@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/ds",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "Data structure implementations, and non-standard custom data structures",
   "main": "index.js",
   "scripts": {
@@ -32,7 +32,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 11,
+    "pushes": 12,
     "expose": {
       "scripts": [
         "connect/feed.js"
