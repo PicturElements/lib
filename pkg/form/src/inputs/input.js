@@ -1,6 +1,7 @@
 import {
 	sym,
 	get,
+	set,
 	isObj,
 	isObject,
 	hash,
@@ -110,7 +111,7 @@ export default class Input extends Hookable {
 			valid: false,
 			visible: null
 		};
-		
+
 		// Dynamic value state
 		this.dynamicValue = {
 			id: dynValId++,
@@ -214,11 +215,11 @@ export default class Input extends Hookable {
 		const dispatch = (o, n) => {
 			this[SELF_TRIGGER](n);
 			this.form.propagateMap = {};
-			
+
 			this.callFormHooks("trigger", n, o);
 			this.callFormHooks(`trigger:${this.name}`, n, o);
 			this.callHooks("sourceTrigger", n, o);
-	
+
 			if (!this.form.updateInitialized)
 				this.callFormHooks("updated");
 		};
@@ -251,7 +252,7 @@ export default class Input extends Hookable {
 
 	[VALIDATE]() {
 		let validationResult = null;
-		
+
 		if (typeof this.handlers.validate == "function")
 			validationResult = this.handlers.validate(this.mkRuntime());
 
@@ -398,16 +399,23 @@ export default class Input extends Hookable {
 				}),
 				extracted = this.handlers.extract(runtime);
 
-			if (withMeta) {
-				return {
-					source: runtime.demuxed ? "demux" : "extractor",
-					value: extracted
-				};
-			}
+			if (!withMeta)
+				return extracted;
 
-			return extracted;
+			const out = {
+				source: "extractor",
+				value: extracted
+			};
+
+			if (runtime.renamed) {
+				out.source = "rename";
+				out.accessor = runtime.renameAccessor;
+			} else if (runtime.demuxed)
+				out.source = "demux";
+
+			return out;
 		}
-		
+
 		if (useGetterHandler)
 			value = get(value, this.handlers.extract);
 
@@ -417,7 +425,7 @@ export default class Input extends Hookable {
 				value
 			};
 		}
-		
+
 		return value;
 	}
 
@@ -441,7 +449,7 @@ export default class Input extends Hookable {
 
 		this[SELF_VALIDATE]();
 	}
-	
+
 	[DISPATCH_SET](newValue, oldValue) {
 		this.callFormHooks("set", newValue, oldValue);
 		this.callFormHooks(`set:${this.name}`, newValue, oldValue);
@@ -520,22 +528,39 @@ export default class Input extends Hookable {
 		const runtime = this.mkRuntime(...sources, {
 			demuxed: false,
 			demuxValue: {},
-			demux(dataOrKey, data) {
+			renamed: false,
+			renameAccessor: null,
+			transformed: false,
+			demux(dataOrAccessor, data) {
 				runtime.demuxed = true;
+				runtime.transformed = true;
 
-				if (typeof dataOrKey == "string") {
-					runtime.demuxValue[dataOrKey] = data;
+				if (typeof dataOrAccessor == "string") {
+					set(runtime.demuxValue, dataOrAccessor, data);
+					[dataOrAccessor] = data;
 					return runtime.demuxValue;
 				}
 
-				if (!isObject(dataOrKey))
+				if (!isObject(dataOrAccessor))
 					throw new TypeError("Cannot demultiplex: non-object data");
 
-				Object.assign(runtime.demuxValue, dataOrKey);
+				Object.assign(runtime.demuxValue, dataOrAccessor);
 				return runtime.demuxValue;
+			},
+			rename(accessor, value) {
+				if (typeof accessor != "string")
+					throw new TypeError("Cannot rename: no accessor provided");
+				if (runtime.renamed)
+					throw new TypeError(`Cannot rename: already renamed (as ${runtime.renameAccessor})`);
+
+				runtime.renamed = true;
+				runtime.transformed = true;
+				runtime.renameAccessor = accessor;
+
+				return value;
 			}
 		});
-		
+
 		return runtime;
 	}
 
@@ -727,10 +752,10 @@ export default class Input extends Hookable {
 		const accessor = typeof this.handlers.inject == "string" ?
 			this.handlers.inject :
 			this.handlers.extract;
-	
+
 		if (typeof accessor == "string")
 			return accessor;
-	
+
 		return null;
 	}
 
@@ -753,6 +778,54 @@ export default class Input extends Hookable {
 	}
 
 	// Aliases for public handlers
+	get process() {
+		return this.handlers.process;
+	}
+
+	set process(handler) {
+		this.handlers.process = handler;
+	}
+
+	get check() {
+		return this[CHECK];
+	}
+
+	set check(handler) {
+		this.handlers.check = handler;
+	}
+
+	get validate() {
+		return this[VALIDATE];
+	}
+
+	set validate(handler) {
+		this.handlers.validate = handler;
+	}
+
+	get refresh() {
+		return this[REFRESH];
+	}
+
+	set refresh(handler) {
+		this.handlers.refresh = handler;
+	}
+
+	get inject() {
+		return this[OVERRIDE_INJECT];
+	}
+
+	set inject(handler) {
+		this.handlers.inject = handler;
+	}
+
+	get extract() {
+		return this[EXTRACT];
+	}
+
+	set extract(handler) {
+		this.handlers.extract = Input.mkExtractor(handler);
+	}
+
 	get checkKey() {
 		return this.handlers.checkKey;
 	}
@@ -817,7 +890,7 @@ export default class Input extends Hookable {
 		this.handlers.show = handler;
 	}
 
-	// Aliases for private handlers
+	// Aliases for semi-private handlers
 	get trigger() {
 		return this[TRIGGER];
 	}
@@ -834,60 +907,12 @@ export default class Input extends Hookable {
 		this.handlers.triggerValidate = handler;
 	}
 
-	get process() {
-		return this.handlers.process;
-	}
-
-	set process(handler) {
-		this.handlers.process = handler;
-	}
-
-	get check() {
-		return this[CHECK];
-	}
-
-	set check(handler) {
-		this.handlers.check = handler;
-	}
-
-	get validate() {
-		return this[VALIDATE];
-	}
-
-	set validate(handler) {
-		this.handlers.validate = handler;
-	}
-
 	get update() {
 		return this[UPDATE];
 	}
 
 	set update(handler) {
 		this.handlers.update = handler;
-	}
-
-	get inject() {
-		return this[OVERRIDE_INJECT];
-	}
-
-	set inject(handler) {
-		this.handlers.inject = handler;
-	}
-
-	get extract() {
-		return this[EXTRACT];
-	}
-
-	set extract(handler) {
-		this.handlers.extract = handler;
-	}
-
-	get refresh() {
-		return this[REFRESH];
-	}
-
-	set refresh(handler) {
-		this.handlers.refresh = handler;
 	}
 
 	// Dynamic state
@@ -973,7 +998,7 @@ export default class Input extends Hookable {
 				inject: v => (v instanceof FormalizerCell) ? v.data : v
 			}, "circular");
 		}
-	
+
 		this.dynamicValue.cache = cachedValue;
 		this.dynamicValue.cacheValid = true;
 		return cachedValue;
@@ -1012,6 +1037,35 @@ export default class Input extends Hookable {
 		return this.formalizer;
 	}
 
+	// string|function
+	static mkExtractor(extractor) {
+		switch (typeof extractor) {
+			case "string": {
+				const split = extractor.split(/(?:^|\s)(?:as|->)\s/);
+
+				if (split.length == 1)
+					return extractor.trim();
+				if (split.length > 2)
+					throw new SyntaxError("Invalid extractor: renaming pattern can can only map one accessor to another");
+
+				const accessor = split[0].trim(),
+					renameAccessor = split[1].trim();
+
+				if (!renameAccessor)
+					throw new SyntaxError("Invalid extractor: renaming pattern must map value to a non-empty accessor");
+
+				if (accessor)
+					return ({ value, rename }) => rename(renameAccessor, get(value, accessor));
+				return ({ value, rename }) => rename(renameAccessor, value);
+			}
+
+			case "function":
+				return extractor;
+		}
+
+		return null;
+	}
+
 	// Object|string|function|RegExp
 	static mkChecker(checker, checkerKey) {
 		if (isObject(checker))
@@ -1023,7 +1077,7 @@ export default class Input extends Hookable {
 				[checkerKey]: checker
 			};
 		}
-	
+
 		return null;
 	}
 
@@ -1032,10 +1086,10 @@ export default class Input extends Hookable {
 		let acc = typeof precursor == "string" ?
 			precursor :
 			null;
-	
+
 		if (Array.isArray(precursor)) {
 			const arr = precursor;
-	
+
 			for (let i = 0, l = arr.length; i < l; i++) {
 				if (typeof arr[i] == "string")
 					acc = arr[i];
@@ -1043,79 +1097,79 @@ export default class Input extends Hookable {
 					precursor = arr[i];
 			}
 		}
-	
+
 		return (a, b, smartResolve = false) => {
 			const aNullish = a == null,
 				bNullish = b == null;
-	
+
 			if (a === b && aNullish && bNullish)
 				return true;
-	
+
 			// Eliminate bugs arising from null value access
 			if (aNullish != bNullish)
 				return false;
-	
+
 			// Eliminate bugs arising from failed NaN comparisons
 			const aNaN = typeof a == "number" && isNaN(a),
 				bNaN = typeof b == "number" && isNaN(b);
-	
+
 			if (aNaN && bNaN)
 				return true;
-	
+
 			if (aNaN != bNaN)
 				return false;
-	
+
 			switch (typeof precursor) {
 				case "string": {
 					const [a2, b2] = resolveCmp(a, b, acc, smartResolve);
 					return a2 === b2;
 				}
-	
+
 				case "function":
 					if (acc != null) {
 						return precursor(
 							...resolveCmp(a, b, acc, smartResolve)
 						);
 					}
-	
+
 					return precursor(a, b);
-	
+
 				case "number": {
 					const accessor = acc == null ?
 						input.inferAccessor() :
 						acc;
 
 					const [a2, b2] = resolveCmp(a, b, accessor, smartResolve);
-	
+
 					if (equals(a2, b2, "circular"))
 						return 0;
-	
+
 					const ta = typeof a2,
 						tb = typeof b2;
-	
+
 					if (ta != tb)
 						return Infinity;
-	
+
 					let score = Infinity;
-	
+
 					switch (ta) {
 						case "string":
 							score = distance(a2, b2, {
 								maxDistance: precursor
 							});
 							break;
-	
+
 						case "number":
 							score = Math.abs(b2 - a2);
 							break;
 					}
-	
+
 					if (isNaN(score) || score > precursor)
 						return Infinity;
-	
+
 					return score;
 				}
-	
+
 				default: {
 					const accessor = acc == null ?
 						input.inferAccessor() :
@@ -1125,7 +1179,7 @@ export default class Input extends Hookable {
 						const [a2, b2] = resolveCmp(a, b, accessor, smartResolve);
 						return a2 === b2;
 					}
-	
+
 					return equals(a, b, "circular");
 				}
 			}
@@ -1137,21 +1191,21 @@ export default class Input extends Hookable {
 		switch (typeof precursor) {
 			case "function":
 				return value => precursor(value);
-	
+
 			case "string":
 				return value => hash(get(value, precursor));
-	
+
 			case "boolean":
 				return precursor ?
 					value => hash(value) :
 					_ => null;
-	
+
 			default:
 				return value => {
 					const accessor = input.inferAccessor();
 					if (accessor != null)
 						return hash(get(value, accessor));
-	
+
 					return null;
 				};
 		}
@@ -1162,7 +1216,7 @@ export default class Input extends Hookable {
 	static mkPatternMatcher(pattern, type, compiler) {
 		if (!pattern)
 			return null;
-	
+
 		const p = compiler(pattern);
 		return (evt, args) => {
 			return runPattern(evt, Object.assign({

@@ -5,6 +5,7 @@ import { default as DateInput } from "./date";
 import DateTime from "./date-time";
 import Dropdown from "./dropdown";
 import Formatted from "./formatted";
+import Hidden from "./hidden";
 import List from "./list";
 import Media from "./media";
 import Multi from "./multi";
@@ -23,6 +24,7 @@ const inputTypes = {
 	"date-time": "date-time",
 	dropdown: "dropdown",
 	formatted: "formatted",
+	hidden: "hidden",
 	list: "list",
 	media: "media",
 	multi: "multi",
@@ -41,6 +43,7 @@ const inputConstructors = {
 	"date-time": DateTime,
 	dropdown: Dropdown,
 	formatted: Formatted,
+	hidden: Hidden,
 	list: List,
 	media: Media,
 	multi: Multi,

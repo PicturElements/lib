@@ -1,6 +1,5 @@
 import Input, {
 	INJECT,
-	EXTRACT,
 	SELF_EXTRACT,
 	SELF_VALIDATE,
 	TRIGGER_VALIDATE,
@@ -18,6 +17,7 @@ export default class List extends Input {
 			formConfig: "string|Object|Array",
 			inheritFormConfig: "boolean",
 			rearrangeable: "boolean",
+			backwardEditable: "boolean",
 			beforeadd: "function",
 			beforemove: "function",
 			beforeremove: "function"
@@ -70,16 +70,15 @@ export default class List extends Input {
 		return out;
 	}
 
-	[EXTRACT](format = null, withMeta = false) {
-		const value = this.value,
-			out = [];
+	[SELF_EXTRACT](value, format = null, withMeta = false) {
+		const out = [];
 
 		if (Array.isArray(value)) {
 			for (let i = 0, l = value.length; i < l; i++)
 				out.push(value[i].extract());
 		}
 
-		return this[SELF_EXTRACT](out, format, withMeta);
+		return super[SELF_EXTRACT](out, format, withMeta);
 	}
 
 	[DISPATCH_CHANGED](changed) {

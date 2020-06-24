@@ -134,6 +134,26 @@ export default class OptionsContext extends Hookable {
 			static: null,
 			dynamic: {}
 		};
+		this.debounce = {
+			hash: null,
+			stagingPromise: null,
+			stagingResolve: null,
+			responses: {},
+			pending: {},
+			dispatch: response => {
+				const d = this.debounce,
+					res = d.stagingResolve;
+
+				d.hash = null;
+				d.stagingPromise = null;
+				d.stagingResolve = null;
+				d.responses = {};
+				d.pending = {};
+
+				this._dispatchSearchResponse(response);
+				res(response.options);
+			}
+		};
 		this.path = parent ?
 			parent.path.concat(this.config.name) :
 			[this.config.name];
@@ -149,7 +169,7 @@ export default class OptionsContext extends Hookable {
 		}
 	}
 
-	async search(query = null, refresh = false, inquisitive = false) {
+	search(query = null, refresh = false, inquisitive = false) {
 		if (typeof query == "boolean") {
 			inquisitive = refresh;
 			refresh = query;
@@ -159,6 +179,46 @@ export default class OptionsContext extends Hookable {
 		if (typeof query != "string")
 			query = this.parent ? this.parent.state.query : "";
 
+		const hash = this._getSearchHash(query, refresh, inquisitive),
+			d = this.debounce;
+
+		if (!d.hash) {
+			d.stagingPromise = new Promise(resolve => {
+				d.stagingResolve = resolve;
+			});
+		}
+
+		if (hasOwn(d.responses, hash))
+			d.dispatch(d.responses[hash]);
+		else if (!hasOwn(d.pending, hash)) {
+			d.hash = hash;
+			d.pending[hash] = true;
+			this._search(query, refresh, inquisitive)
+				.then(response => {
+					if (d.hash == hash)
+						d.dispatch(response);
+					else
+						d.responses[hash] = response;
+				});
+		}
+
+		return d.stagingPromise;
+	}
+
+	_getSearchHash(query = null, refresh = false, inquisitive = false) {
+		const rKey = refresh ? "r" : "x",
+			iKey = inquisitive ? "i" : "x",
+			defaultHash = `${rKey}${iKey}:${query}`,
+			strongHash = `r${iKey}:${query}`,
+			d = this.debounce;
+
+		if (hasOwn(d.pending, strongHash))
+			return strongHash;
+
+		return defaultHash;
+	}
+
+	async _search(query = null, refresh = false, inquisitive = false) {
 		this.state.query = query;
 		this.state.loading = true;
 		this.state.error = false;
@@ -180,14 +240,32 @@ export default class OptionsContext extends Hookable {
 			}),
 			pendingSearches = [],
 			useSearchFetch = typeof this.config.searchFetch == "function",
-			useDynamicCache = useSearchFetch,
 			useFunctionalSearch = typeof this.config.search == "function",
 			useAccessorSearch = typeof this.config.search == "string",
 			useRawSearch = !useSearchFetch && !useFunctionalSearch && !useAccessorSearch && !this.input.res(this.config.noSearch),
 			performSearch = Boolean(useFunctionalSearch && !useSearchFetch) || useAccessorSearch || useRawSearch,
+			useDynamicCache = useSearchFetch,
 			cached = this.config.cache === false || refresh ?
 				null :
-				useDynamicCache ? this.cache.dynamic[query] : this.cache.static;
+				useDynamicCache ? this.cache.dynamic[query] : this.cache.static,
+			response = {
+				success: true,
+				query,
+				cached,
+				refresh,
+				runtime,
+				queryRegex,
+				inquisitive,
+				useSearchFetch,
+				useFunctionalSearch,
+				useAccessorSearch,
+				useRawSearch,
+				performSearch,
+				useDynamicCache,
+				options: null,
+				hashedOptions: null,
+				length: 0
+			};
 
 		let options = this.config.options,
 			hashedOptions = null,
@@ -202,19 +280,13 @@ export default class OptionsContext extends Hookable {
 				this.collapseOptions(options);
 		} else if (useSearchFetch)
 			options = await this.config.searchFetch(runtime);
-		else if (typeof options == "function") {
+		else if (typeof options == "function")
 			options = await options(runtime);
-			this.state.fetches++;
-		}
 
 		if (!Array.isArray(options)) {
-			this.state.error = true;
-
-			if (typeof options == "string")
-				this.state.errorMsg = options;
-			
-			this.callHooks("error", this.state);
-			return null;
+			response.success = false;
+			response.options = options;
+			return response;
 		}
 
 		runtime.options = options;
@@ -279,6 +351,73 @@ export default class OptionsContext extends Hookable {
 
 		runtime.hashedOptions = hashedOptions;
 
+		if (pendingSearches.length)
+			await Promise.all(pendingSearches);
+
+		response.options = options;
+		response.hashedOptions = hashedOptions;
+		response.length = length;
+		return response;
+	}
+
+	_dispatchSearchResponse(response) {
+		const {
+			success,
+			query,
+			cached,
+			runtime,
+			queryRegex,
+			useSearchFetch,
+			useFunctionalSearch,
+			useAccessorSearch,
+			performSearch,
+			useDynamicCache,
+			options,
+			hashedOptions
+		} = response;
+		let { length } = response;
+
+		if (!success) {
+			this.state.error = true;
+
+			if (typeof options == "string")
+				this.state.errorMsg = options;
+			
+			this.callHooks("error", this.state);
+			return null;
+		}
+
+		if (this.config.cache !== false) {
+			if (useDynamicCache)
+				this.cache.dynamic[query] = response;
+			else
+				this.cache.static = response;
+		}
+
+		// Unless search is done via searchFetch (meaning that all options are
+		// fetched anew for every search, meaning that keeping track of selections
+		// is unviable), validate selection
+		if (!cached && !useSearchFetch) {
+			const selection = this.root.selection;
+			for (let i = 0, l = selection.length; i < l; i++) {
+				const opt = selection[i];
+				let found = false;
+
+				if (opt.owner != this)
+					continue;
+
+				for (let i = 0, l = options.length; i < l; i++) {
+					if (this.compareOptions(options[i], opt)) {
+						found = true;
+						break;
+					}
+				}
+
+				if (!found)
+					this.deselectOption(opt);
+			}
+		}
+
 		if (performSearch) {
 			length = 0;
 
@@ -311,54 +450,11 @@ export default class OptionsContext extends Hookable {
 		this.hashedOptions = hashedOptions;
 		this.length = length;
 
-		if (this.config.cache !== false) {
-			if (useDynamicCache) {
-				this.cache.dynamic[query] = {
-					options,
-					hashedOptions,
-					length
-				};
-			} else {
-				this.cache.static = {
-					options,
-					hashedOptions,
-					length
-				};
-			}
-		}
-
-		// Unless search is done via searchFetch (meaning that all options are
-		// fetched anew for every search, meaning that keeping track of selections
-		// is unviable), validate selection
-		if (!useSearchFetch) {
-			const selection = this.root.selection;
-			for (let i = 0, l = selection.length; i < l; i++) {
-				const opt = selection[i];
-				let found = false;
-
-				if (opt.owner != this)
-					continue;
-
-				for (let i = 0, l = options.length; i < l; i++) {
-					if (this.compareOptions(options[i], opt)) {
-						found = true;
-						break;
-					}
-				}
-
-				if (!found)
-					this.deselectOption(opt);
-			}
-		}
-
-		if (pendingSearches.length)
-			await Promise.all(pendingSearches);
-
 		this.state.lastQuery = query;
 		this.state.loading = false;
 		this.state.fetches++;
 		this.callHooks("fetched", this.state);
-		return options;
+		return response;
 	}
 
 	collapseOptions(opts = this.options) {

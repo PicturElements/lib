@@ -40,6 +40,7 @@ import {
 } from "./inputs";
 import Input, {
 	CHECK,
+	UPDATE,
 	TRIGGER,
 	SELF_TRIGGER,
 	TRIGGER_VALIDATE,
@@ -208,14 +209,14 @@ export default class Form extends Hookable {
 				if (Array.isArray(cells[i]))
 					return true;
 			}
-		
+
 			return false;
 		};
 
 		const getBlockType = (struct, parentStruct, depth = 0) => {
 			if (!depth || (depth == 1 && hasBlocks(struct)))
 				return "column";
-			
+
 			if (depth > 1) {
 				if (parentStruct)
 					return parentStruct.type == "row" ? "column" : "row";
@@ -277,9 +278,13 @@ export default class Form extends Hookable {
 			struct.type = getBlockType(struct, parentStruct, depth);
 
 			for (let i = 0, l = struct.length; i < l; i++) {
-				if (struct[i].isInputBlock)
+				if (struct[i].isInputBlock) {
 					resolveBlockLayout(struct[i], struct, depth + 1);
-				else if (!depth)
+					if (!struct[i].length) {
+						struct.splice(i, 1);
+						i++;
+					}
+				} else if (!depth)
 					struct[i] = new InputBlock(struct[i]);
 			}
 		};
@@ -297,7 +302,7 @@ export default class Form extends Hookable {
 					return block;
 				});
 			}
-			
+
 			// Handle row data
 			if (Array.isArray(row)) {
 				const block = new InputBlock();
@@ -314,7 +319,7 @@ export default class Form extends Hookable {
 
 				return struct;
 			}
-		
+
 			// Handle input options data
 			const options = Form.resolveInputOptions(row),
 				nData = Form.resolveInputName(options),
@@ -335,7 +340,8 @@ export default class Form extends Hookable {
 			options.input = this.connect(nData, options);
 			options.isInputCell = true;
 
-			struct.push(options);
+			if (options.type != "hidden")
+				struct.push(options);
 			return struct;
 		};
 
@@ -429,7 +435,7 @@ export default class Form extends Hookable {
 			send(targets);
 	}
 
-	setValues(values, noTrigger = false, forAll = true) {
+	setValues(values, noTrigger = true, forAll = true) {
 		this.updateInitialized = true;
 
 		this.forEach(inp => {
@@ -447,8 +453,10 @@ export default class Form extends Hookable {
 			if (!matched && !hasOwn(values, inp.name))
 				return;
 
-			if (value !== null)
+			if (value !== null) {
 				inp.setValue(value);
+				inp[UPDATE]();
+			}
 
 			if (!noTrigger)
 				inp[TRIGGER](inp.value);
@@ -474,7 +482,7 @@ export default class Form extends Hookable {
 		return target;
 	}
 
-	extractOne(inputOrName, target = null, replace = false, demux = false) {
+	extractOne(inputOrName, target = null, replace = false, withMeta = false) {
 		const inp = typeof inputOrName == "string" ?
 			this.inputs[inputOrName] :
 			inputOrName;
@@ -482,32 +490,44 @@ export default class Form extends Hookable {
 		if (!(inp instanceof Input))
 			return;
 
-		const extracted = inp[EXTRACT](null, demux);
-		let val = demux ? extracted.value : extracted,
-			source = demux ? extracted.source : "native";
+		const extracted = inp[EXTRACT](null, withMeta);
+		let val = withMeta ? extracted.value : extracted,
+			source = withMeta ? extracted.source : "native";
 
 		if (inp.nullable && val == null)
 			val = null;
 
-		if (target && val !== undefined) {
-			if (source == "demux") {
+		if (!target || val === undefined)
+			return extracted;
+
+		switch (source) {
+			case "demux":
 				for (const k in val) {
 					if (hasOwn(val, k))
 						set(target, k, val[k]);
 				}
-			} else if (typeof inp.path == "string")
-				set(target, inp.path, val);
-			else {
-				const name = inp.name;
+				break;
 
-				if (!replace && hasOwn(target, name)) {
-					if (!Array.isArray(target[name]))
-						target[name] = [target[name]];
+			case "rename":
+				set(target, extracted.accessor, val);
+				break;
 
-					target[name].push(val);
-				} else
-					target[name] = val;
-			}
+			case "extractor":
+			case "native":
+				if (typeof inp.path == "string")
+					set(target, inp.path, val);
+				else {
+					const name = inp.name;
+
+					if (!replace && hasOwn(target, name)) {
+						if (!Array.isArray(target[name]))
+							target[name] = [target[name]];
+
+						target[name].push(val);
+					} else
+						target[name] = val;
+				}
+				break;
 		}
 
 		return extracted;
@@ -828,7 +848,7 @@ export default class Form extends Hookable {
 
 		if (resolved.classes)
 			resolved.class = resolved.classes;
-		
+
 		resolved.class = typeof resolved.class == "string" ?
 			{ input: resolved.class } :
 			resolved.class || {};

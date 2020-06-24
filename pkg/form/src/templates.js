@@ -212,6 +212,10 @@ const templates = {
 		type: "formatted",
 		value: ""
 	},
+	hidden: {
+		type: "hidden",
+		value: ""
+	},
 	int: {
 		type: "tel",
 		value: "",
