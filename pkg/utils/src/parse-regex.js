@@ -60,22 +60,24 @@ export default function parseRegex(source, flags = "") {
 		throw e;
 	};
 
-	const mkToken = (type, data = null) => {
-		const base = {
-			type,
-			start: ptr,
-			end: null
-		};
+	const mkToken = type => ({
+		type,
+		start: ptr,
+		end: null
+	});
+
+	const mkTokenWithData = (type, data) => {
+		const token = mkToken(type);
 
 		if (Array.isArray(data)) {
-			base.children = data;
-			data = null;
+			token.children = data;
+			return token;
 		} else if (typeof data == "string") {
-			base.value = data;
-			data = null;
+			token.value = data;
+			return token;
 		}
 
-		return Object.assign(base, data);
+		return Object.assign(token, data);
 	};
 
 	const appendToken = token => {
@@ -155,7 +157,7 @@ export default function parseRegex(source, flags = "") {
 		}
 	};
 
-	const addQuantifier = (min, max, lazy) => {
+	const addQuantifier = (min, max, p = ptr) => {
 		if (!isQuantifiable(currentToken))
 			err("Token is not quantifiable");
 
@@ -168,9 +170,11 @@ export default function parseRegex(source, flags = "") {
 
 			currentToken.value = val.substring(0, val.length - 1);
 			ptr--;
-			appendToken(mkToken(T.LITERAL, char));
+			appendToken(mkTokenWithData(T.LITERAL, char));
 			ptr++;
 		}
+
+		const lazy = source[p + 1] == "?";
 
 		currentToken.end = ptr;
 		currentToken.quantify = {
@@ -187,7 +191,7 @@ export default function parseRegex(source, flags = "") {
 		groups = [],
 		flagLookup = lookup(flags, "");
 	let ptr = 0,
-		program = mkToken(T.PROGRAM, {
+		program = mkTokenWithData(T.PROGRAM, {
 			children: [],
 			source,
 			flags,
@@ -229,7 +233,7 @@ export default function parseRegex(source, flags = "") {
 					groupSignature = "";
 				}
 
-				const group = pushToken(mkToken(tokenType, []));
+				const group = pushToken(mkTokenWithData(tokenType, []));
 				group.isGroup = true;
 				if (tokenType != T.NON_CAPTURING_GROUP)
 					groups.push(group);
@@ -252,7 +256,7 @@ export default function parseRegex(source, flags = "") {
 			}
 
 			case "[":
-				pushToken(mkToken(T.SET, ""));
+				pushToken(mkTokenWithData(T.SET, ""));
 				ptr++;
 				break;
 
@@ -269,33 +273,33 @@ export default function parseRegex(source, flags = "") {
 					const children = parentToken.children,
 						start = parentToken.start;
 					parentToken.children = [];
-					pushToken(mkToken(T.ALTERNATION, []));
-					pushToken(mkToken(T.ALTERNATION_TERM, {
+					pushToken(mkTokenWithData(T.ALTERNATION, []));
+					pushToken(mkTokenWithData(T.ALTERNATION_TERM, {
 						children,
 						start
 					}));
 					popToken();
-					pushToken(mkToken(T.ALTERNATION_TERM, []));
+					pushToken(mkTokenWithData(T.ALTERNATION_TERM, []));
 				} else {
 					popToken();
-					pushToken(mkToken(T.ALTERNATION_TERM, []));
+					pushToken(mkTokenWithData(T.ALTERNATION_TERM, []));
 				}
 				ptr++;
 				break;
 
 			// Quantifiers
 			case "+":
-				addQuantifier(1, Infinity, source[ptr + 1] == "?");
+				addQuantifier(1, Infinity);
 				ptr++;
 				break;
 
 			case "*":
-				addQuantifier(0, Infinity, source[ptr + 1] == "?");
+				addQuantifier(0, Infinity);
 				ptr++;
 				break;
 
 			case "?":
-				addQuantifier(0, 1, source[ptr + 1] == "?");
+				addQuantifier(0, 1);
 				ptr++;
 				break;
 
@@ -327,7 +331,7 @@ export default function parseRegex(source, flags = "") {
 							err("Quantifier range out of order");
 
 						const diff = i - ptr + 1;
-						addQuantifier(min, max, source[i + 1] == "?");
+						addQuantifier(min, max, i);
 						ptr += diff;
 						visited = 0;
 						break;
@@ -406,7 +410,7 @@ export default function parseRegex(source, flags = "") {
 
 					if (refId && refId <= groups.length) {
 						appendToken(
-							mkToken(T.BACKREF, {
+							mkTokenWithData(T.BACKREF, {
 								id: refId,
 								group: groups[refId - 1]
 							})

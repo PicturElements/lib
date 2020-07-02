@@ -20,25 +20,43 @@ export default function getRegexMetrics(source, flags = "") {
 		}
 	};
 	const sets = {
-		positive: "",
-		negative: "",
-		globalNegative: null
+		peek: {
+			positive: "",
+			negative: "",
+			override: null
+		},
+		includes: {
+			positive: "",
+			negative: "",
+			override: null
+		}
 	};
 
-	const extendSet = (extension, literal) => {
+	const extendSets = (res, extension, mode = "set") => {
 		let key = "positive";
-		if (extension[0] == "^" && !literal) {
+		if (mode == "set" && extension[0] == "^") {
 			key = "negative";
 			extension = extension.substring(1);
-		}
+		} else if (mode == "override")
+			key = "override";
 
-		if (extension[extension.length - 1] == "-")
-			extension = extension.substring(0, extension.length - 1) + "\\-";
+		if (mode == "set") {
+			if (extension[extension.length - 1] == "-")
+				extension = extension.substring(0, extension.length - 1) + "\\-";
+		} else
+			extension = extension.replace(/-/g, "\\-");
 
 		if (extension[0] == "-" || extension[0] == "^")
 			extension = "\\" + extension;
 
-		sets[key] += extension;
+		if (mode == "literal" && res.peek) {
+			sets.peek[key] += extension[0] == "\\" ?
+				extension.substring(0, 2) :
+				extension[0];
+		} else if (res.peek)
+			sets.peek[key] = (sets.peek[key] || "") + extension;
+
+		sets.includes[key] = (sets.includes[key] || "") + extension;
 	};
 
 	const traverse = (n, r) => {
@@ -83,18 +101,19 @@ export default function getRegexMetrics(source, flags = "") {
 					break;
 
 				case T.SET:
-					if (res.peek)
-						extendSet(node.value);
+					extendSets(res, node.value);
 					break;
 
 				case T.LITERAL:
-					if (res.peek)
-						extendSet(node.value[0], true);
+					extendSets(res, node.value, "literal");
 					break;
 
 				case T.ANY:
-					if (res.peek)
-						sets.globalNegative = ast.flagLookup.has("s") ? "" : "\n\r";
+					extendSets(
+						res,
+						ast.flagLookup.has("s") ? "" : "\n\r",
+						"override"
+					);
 					break;
 
 				case T.ALTERNATION: {
@@ -181,31 +200,34 @@ export default function getRegexMetrics(source, flags = "") {
 			max: 0
 		});
 
-	const insensitive = ast.flagLookup.has("i"),
-		pos = sets.positive ? mkCharacterSet(sets.positive, insensitive) : null,
-		neg = sets.negative ? mkCharacterSet("^" + sets.negative, insensitive) : null,
-		gneg = sets.globalNegative ? mkCharacterSet("^" + sets.globalNegative, insensitive) : null;
-
-	// Verbose for third party clarity
-	if (gneg) {
-		if (pos && neg)
-			metrics.peek = v => gneg(v) || pos(v) || neg(v);
-		else if (pos)
-			metrics.peek = v => gneg(v) || pos(v);
-		else if (neg)
-			metrics.peek = v => gneg(v) || neg(v);
-		else
-			metrics.peek = gneg;
-	} else {
-		if (pos && neg)
-			metrics.peek = v => pos(v) || neg(v);
-		else
-			metrics.peek = pos || neg || (_ => false);
-	}
-
+	metrics.peek = mkCharSet(sets.peek, ast);
+	metrics.includes = mkCharSet(sets.includes, ast);
+	metrics.trivial = ast.children.length == 1 && ast.children[0].type == T.LITERAL && !ast.children[0].quantify;
 	metrics.ast = ast;
 	metrics.min = res.min;
 	metrics.max = res.max;
 	metrics.complexity = res.complexity;
 	return metrics;
+}
+
+function mkCharSet(set, ast) {
+	const insensitive = ast.flagLookup.has("i"),
+		pos = set.positive ? mkCharacterSet(set.positive, insensitive) : null,
+		neg = set.negative ? mkCharacterSet("^" + set.negative, insensitive) : null,
+		oneg = set.override != null ? mkCharacterSet("^" + set.override, insensitive) : null;
+
+	// Verbose for third party clarity
+	if (oneg) {
+		if (pos && neg)
+			return v => oneg(v) || pos(v) || neg(v);
+		if (pos)
+			return v => oneg(v) || pos(v);
+		if (neg)
+			return v => oneg(v) || neg(v);
+		return oneg;
+	} else {
+		if (pos && neg)
+			return v => pos(v) || neg(v);
+		return pos || neg || (_ => false);
+	}
 }

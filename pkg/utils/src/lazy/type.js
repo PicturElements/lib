@@ -2,6 +2,15 @@ import { resolveFunc } from "../func";
 import getConstructorName from "../get-constructor-name";
 
 const type = {
+	isArguments(value) {
+		if (!value || value.length == null)
+			return false;
+
+		if (!Object.getOwnPropertyDescriptor(value, "callee"))
+			return false;
+
+		return String(value) == "[object Arguments]";
+	},
 	getNativeCode: resolveFunc(_ => {
 		const PROMISE = typeof Promise != "undefined" ? Promise : null,
 			SET = typeof Set != "undefined" ? Set : null,
@@ -63,7 +72,7 @@ const type = {
 
 			const nc = type.getNativeCode(value.constructor);
 			if (nc == "object") {
-				return value.callee && String(value) == "[object Arguments]" ?
+				return type.isArguments(value) ?
 					"arguments" :
 					"object";
 			} else if (nc)
