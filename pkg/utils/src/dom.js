@@ -8,6 +8,7 @@ import parseEntityStr from "./parse-entity-str";
 import { nub } from "./arr";
 import {
 	isObject,
+	isPrimitive,
 	isEmptyString
 } from "./is";
 import { splitClean } from "./str";
@@ -71,9 +72,7 @@ function hasAncestorBySelector(elem, selectorOrElem, maxDepth = Infinity) {
 //		class: TokenList,
 //		data: TokenList,
 //		style: TokenList,
-//		events: {
-//			...handlers
-//		},
+//		events: TokenList,
 //		...attrs	// Any number of attributes
 // }
 //
@@ -89,6 +88,7 @@ function hasAncestorBySelector(elem, selectorOrElem, maxDepth = Infinity) {
 // }
 //
 // The lookup map is referentially bound to the list
+// and is used to set/update values
 
 function mkAttrRepresentationObj() {
 	return {
@@ -133,7 +133,7 @@ function mkTokenList() {
 	};
 }
 
-function appendToken(list, token) {
+function appendToken(list, token, clone = false) {
 	if (!token)
 		return null;
 
@@ -142,7 +142,7 @@ function appendToken(list, token) {
 			key: token,
 			value: token
 		};
-	} else {
+	} else if (clone) {
 		token = {
 			key: token.key,
 			value: token.value
@@ -166,93 +166,59 @@ function appendToken(list, token) {
 	return null;
 }
 
-// Style
-function parseStyle(style, allowFallthrough = false) {
-	switch (typeof style) {
-		case "string":
-			return parseStyleStr(style);
+function removeToken(list, keyOrToken) {
+	const key = typeof keyOrToken == "string" ?
+		keyOrToken :
+		keyOrToken && keyOrToken.key;
 
-		case "object":
-			if (Array.isArray(style))
-				return parseStyleArr(style);
-			else if (isObject(style)) {
-				if (style && style.isParsedStyle && allowFallthrough)
-					return style;
-				else if (Array.isArray(style.list))
-					return parseStyleArr(style.list);
-				else
-					return parseStyleObj(style);
-			}
+	if (typeof key != "string" || !hasOwn(list.lookup, key))
+		return false;
+
+	let offs = 0;
+
+	for (let i = 0, l = list.list.length; i < l; i++) {
+		if (!offs) {
+			if (list.list[i].key == key)
+				offs = 1;
+		} else {
+			list.list[i - offs] = list.list[i];
+			list.keys[i - offs] = list.keys[i];
+		}
 	}
 
-	return mkStyleList();
+	delete list.lookup[key];
+	delete list.map[key];
+	list.list.length--;
+	list.keys.length--;
+	return true;
+}
+
+// Style
+function parseStyle(style, allowFallthrough = false) {
+	if (allowFallthrough && style && style.isParsedStyle)
+		return style;
+
+	return joinStyle(style);
 }
 
 const styleRegex = /([a-z-]+)\s*:\s*([^;]+)\s*(?:;|$)/gi;
 
-function parseStyleStr(str) {
-	const parsed = mkStyleList();
-
+function parseStyleStr(list, str) {
 	if (typeof str != "string")
-		return parsed;
+		return list;
 
 	while (true) {
 		const ex = styleRegex.exec(str);
 		if (!ex)
 			break;
 
-		appendToken(parsed, {
+		appendToken(list, {
 			key: casing(ex[1]).to.kebab,
 			value: ex[2].trim()
 		});
 	}
 
-	return parsed;
-}
-
-function parseStyleArr(arr) {
-	const parsed = mkStyleList();
-
-	if (!Array.isArray(arr))
-		return parsed;
-
-	for (let i = 0, l = arr.length; i < l; i++)
-		appendToken(parsed, arr[i]);
-
-	return parsed;
-}
-
-function parseStyleObj(obj) {
-	const parsed = mkStyleList();
-
-	if (!isObject(obj))
-		return parsed;
-
-	for (const k in obj) {
-		if (!hasOwn(obj, k))
-			continue;
-
-		let value = obj[k];
-
-		if (value == null)
-			value = "";
-		else switch (typeof value) {
-			case "symbol":
-			case "function":
-				value = "";
-				break;
-			
-			default:
-				value = String(value);
-		}
-
-		appendToken(parsed, {
-			key: casing(k).to.kebab,
-			value: value.trim()
-		});
-	}
-
-	return parsed;
+	return list;
 }
 
 function joinStyle(...styles) {
@@ -283,21 +249,44 @@ function joinStl(styles, callArgs) {
 	return joinStlHelper(list, styles, callArgs);
 }
 
-function joinStlHelper(list, styles, callArgs) {
-	for (let i = 0, l = styles.length; i < l; i++) {
-		let styleData = styles[i];
+function joinStlHelper(list, style, callArgs) {
+	if (typeof style == "function") {
+		if (callArgs)
+			style = style(...callArgs);
+		else
+			style = style();
+	}
 
-		if (typeof styleData == "function") {
-			if (callArgs)
-				styleData = styleData.call(...callArgs, styles);
-			else
-				styleData = styleData(styles);
+	if (style && style.isParsedStyle) {
+		for (let i = 0, l = style.list.length; i < l; i++)
+			appendToken(list, style.list[i], true);
+	} else if (Array.isArray(style)) {
+		for (let i = 0, l = style.length; i < l; i++)
+			joinStlHelper(list, style[i], callArgs);
+	} else if (typeof style == "string")
+		parseStyleStr(list, style);
+	else if (isObject(style)) {
+		for (const k in style) {
+			if (!hasOwn(style, k))
+				continue;
+
+			let val = style[k];
+
+			if (typeof val == "function") {
+				if (callArgs)
+					val = val(...callArgs);
+				else
+					val = val();
+			}
+
+			if (typeof val != "string")
+				continue;
+
+			appendToken(list, {
+				key: casing(k).to.kebab,
+				value: val.trim()
+			});
 		}
-
-		styleData = parseStyle(styleData, true);
-
-		for (let j = 0, l2 = styleData.list.length; j < l2; j++)
-			appendToken(list, styleData.list[j]);
 	}
 
 	return list;
@@ -367,49 +356,57 @@ function joinCls(classes, callArgs, returnType = "object") {
 	}
 }
 
-function joinClsHelper(list, classes, callArgs) {
-	for (let i = 0, l = classes.length; i < l; i++) {
-		let clsData = classes[i];
-
-		if (typeof clsData == "function") {
-			if (callArgs)
-				clsData = clsData.call(...callArgs, classes);
-			else
-				clsData = clsData(classes);
-		}
-
-		if (typeof clsData == "string")
-			clsData = splitClean(clsData);
-
-		if (clsData && clsData.isParsedClass) {
-			for (let j = 0, l2 = clsData.list.length; j < l2; j++)
-				appendToken(list, clsData.list[j]);
-		} else if (Array.isArray(clsData)) {
-			for (let j = 0, l2 = clsData.length; j < l2; j++) {
-				if (Array.isArray(clsData[i])) {
-					joinClsHelper(list, clsData[i], callArgs);
-					continue;
-				}
-
-				appendToken(list, {
-					key: clsData[j],
-					value: true
-				});
-			}
-		} else if (isObject(clsData)) {
-			for (const k in clsData) {
-				if (!clsData[k] || !hasOwn(clsData, k))
-					continue;
-
-				appendToken(list, {
-					key: k,
-					value: clsData[k]
-				});
-			}
-		}
+function joinClsHelper(list, cls, callArgs) {
+	if (typeof cls == "function") {
+		if (callArgs)
+			cls = cls(...callArgs);
+		else
+			cls = cls();
 	}
 
-	return list;
+	if (cls && cls.isParsedClass) {
+		for (let i = 0, l = cls.list.length; i < l; i++)
+			appendToken(list, cls.list[i], true);
+	} else if (Array.isArray(cls)) {
+		for (let i = 0, l = cls.length; i < l; i++)
+			joinClsHelper(list, cls[i], callArgs);
+	} else if (typeof cls == "string") {
+		const split = splitClean(cls);
+
+		for (let i = 0, l = split.length; i < l; i++) {
+			appendToken(list, {
+				key: split[i],
+				value: true
+			});
+		}
+	} else if (isPrimitive(cls)) {
+		appendToken(list, {
+			key: String(cls),
+			value: true
+		});
+	} else if (isObject(cls)) {
+		for (const k in cls) {
+			if (!hasOwn(cls, k))
+				continue;
+
+			let val = cls[k];
+
+			if (typeof val == "function") {
+				if (callArgs)
+					val = val(...callArgs);
+				else
+					val = val();
+			}
+
+			if (!val)
+				continue;
+
+			appendToken(list, {
+				key: k,
+				value: true
+			});
+		}
+	}
 }
 
 // Datasets
@@ -436,7 +433,7 @@ function joinDatasetsHelper(list, data) {
 
 		if (d && d.isParsedDataset) {
 			for (let j = 0, l2 = d.list.length; j < l2; j++)
-				appendToken(list, d.list[j]);
+				appendToken(list, d.list[j], true);
 		} else if (Array.isArray(d))
 			joinDatasetsHelper(list, d);
 		else if (isObject(d)) {
@@ -479,7 +476,7 @@ function joinEventsHelper(list, events) {
 
 		if (evts && evts.isParsedEvents) {
 			for (let j = 0, l2 = evts.list.length; j < l2; j++)
-				appendToken(list, evts.list[j]);
+				appendToken(list, evts.list[j], true);
 		} else if (Array.isArray(evts))
 			joinDatasetsHelper(list, evts);
 		else if (isObject(evts)) {
@@ -523,7 +520,18 @@ function joinAttributes(...attrs) {
 					break;
 
 				default:
-					outAttrs[k] = src[k];
+					if (k.indexOf("data-") == 0) {
+						appendToken(outAttrs.data, {
+							key: casing(k).from.data.to.camel,
+							value: src[k]
+						});
+					} else if (k.indexOf("on") == 0) {
+						appendToken(outAttrs.events, {
+							key: k.substring(2),
+							value: src[k]
+						});
+					} else
+						outAttrs[k] = src[k];
 			}
 		}
 	}
@@ -951,8 +959,10 @@ function mkVNode(type, data) {
 	return node;
 }
 
+// Extend dynamic value with data
 const DV_EXTENDERS = {
 	default: (dv, data) => dv,
+	singleton: (dv, data) => dv.data = data,
 	ordered: (dv, data) => {
 		concatMut(dv.data, data);
 		return dv;
@@ -1002,8 +1012,10 @@ const DV_EXTENDERS = {
 	}
 };
 
+// Merge dynamic value with other dynamic value
 const DV_MERGERS = {
 	default: (dv, dv2) => dv,
+	singleton: (dv, dv2) => dv.data = dv2.data,
 	ordered: (dv, dv2) => {
 		concatMut(dv.data, dv2.data);
 		return dv;
@@ -1021,8 +1033,15 @@ const DV_MERGERS = {
 	}
 };
 
+// Extract data from dynamic value
 const DV_EXTRACTORS = {
 	default: dv => dv,
+	singleton: (dv, args) => {
+		if (typeof dv.data == "function")
+			return dv.data(...args);
+
+		return dv.data;
+	},
 	ordered: dv => dv.data,
 	partitioned: dv => dv.dynamic.concat(dv.static),
 	tokenlist: (dv, args) => {
@@ -1047,6 +1066,10 @@ function mkDynamicValue(dv) {
 	dv.isDynamicValue = true;
 
 	switch (dv.type) {
+		case "singleton":
+			dv.data = dv.data || null;
+			break;
+
 		case "ordered":
 			dv.data = dv.data || [];
 			break;
@@ -1111,7 +1134,8 @@ function setAttribute(node, key, value) {
 			node.static = false;
 			node.dynamicAttributes.push(key);
 			node.dynamicAttributesMap[key] = value;
-			extendDynamicValue(value, attr);
+			if (hasOwn(attrs, key))
+				extendDynamicValue(value, attr);
 			attrs[key] = value;
 		}
 	} else if (attr && attr.isDynamicValue)
@@ -1187,15 +1211,41 @@ function parseAttributes(node, meta = null) {
 			
 			default:
 				if (key.indexOf("data-") == 0) {
-					setAttribute(node, "data", {
-						[casing(key).from.data.to.camel]: value
-					});
+					const ref = resolveInlineRefs(value, meta, "singleton"),
+						k = casing(key).from.data.to.camel;
+
+					if (ref && ref.isDynamicValue) {
+						const value = ref.data;
+						let resolver;
+
+						if (typeof value == "function") {
+							resolver = (...args) => ({
+								[k]: value(...args)
+							});
+						} else {
+							resolver = _ => ({
+								[k]: value
+							});
+						}
+
+						setAttribute(node, "data", mkDynamicValue({
+							type: "tokenlist",
+							joiner: joinDatasets,
+							merger: extendDataset,
+							staticTokens: mkDatasetList(),
+							dynamicTokens: [resolver]
+						}));
+					} else {
+						setAttribute(node, "data", {
+							[k]: ref
+						});
+					}
 				} else if (key.indexOf("on") == 0) {
 					setAttribute(node, "events", {
 						[key.substring(2)]: resolveInlineRefs(value, meta, "event")
 					});
 				} else
-					setAttribute(node, key, resolveInlineRefs(value, meta));
+					setAttribute(node, key, resolveInlineRefs(value, meta, "singleton"));
 		}
 	}
 }
@@ -1282,6 +1332,15 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 				value: terms
 			});
 
+		case "singleton":
+			if (!hasDynamicTerms)
+				return useTerms ? terms[0] : out;
+
+			return mkDynamicValue({
+				type: "singleton",
+				data: terms[0]
+			});
+
 		case "class":
 			if (!hasDynamicTerms)
 				return joinClassAsTokenList(...terms);
@@ -1360,12 +1419,15 @@ function cleanAttributes(attrs) {
 }
 
 export {
+	// General
 	hasAncestor,
 	hasAncestorBySelector,
 	mkAttrRepresentationObj,
 	mkStyleList,
 	mkDatasetList,
 	mkTokenList,
+	appendToken,
+	removeToken,
 	// Style
 	parseStyle,
 	parseStyleStr,
