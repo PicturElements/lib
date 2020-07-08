@@ -1,28 +1,58 @@
 import filterMut from "./filter-mut";
-import parseStr from "./parse-str";
-import casing from "./casing";
 import {
 	isObj,
 	isTaggedTemplateArgs
 } from "./is";
 import { compileTaggedTemplate } from "./str";
 import {
-	cleanAttributes,
-	getTagProperties
+	mkVNode,
+	setAttribute,
+	parseAttributes,
+	resolveInlineRefs,
+	mkAttrRepresentationObj
 } from "./dom";
+import hasOwn from "./has-own";
+import {
+	composeOptionsTemplates,
+	createOptionsObject
+} from "./internal/options";
+
+const optionsTemplates = composeOptionsTemplates({
+	compile: true,
+	resolve: true,
+	lazyDynamic: true,
+	render: {
+		compile: true,
+		resolve: true
+	}
+});
 
 // Parses a subset of pug (no control flow)
-
 export default function parsePugStr(...args) {
 	if (isObj(args[0]) && !isTaggedTemplateArgs(args))
 		return args[0];
 
+	if (compileTaggedTemplate.options && compileTaggedTemplate.options.compile) {
+		compileTaggedTemplate.with({
+			ref: 16,
+			refPrefix: "ref_",
+			refSuffix: "",
+			refRegex: /ref_[a-zA-Z0-9]{16}/g,
+			resolveFunctions: true
+		});
+
+		const meta = compileTaggedTemplate(...args);
+		return parsePugCore(meta.compiled, meta);
+	}
+
 	return parsePugCore(
-		compileTaggedTemplate(...args)
+		compileTaggedTemplate(...args),
+		null
 	);
 }
 
 parsePugStr.with = options => {
+	options = createOptionsObject(options, optionsTemplates);
 	compileTaggedTemplate.with(options);
 	return parsePugStr;
 };
@@ -39,45 +69,35 @@ parsePugStr.with = options => {
 // /([\t ]*)(?:\|\s?(.+)|([^#.\s]+)?([\w.#-]+)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\6|[^"'`])+?)\))?)/g
 // /([\t ]*)(?:\|\s?(.+)|([^#.\s]+)?([\w.#-]+)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\6|[^"'`])*?)\))?[\t ]*(.*?)$)/gm
 // /([\t ]*)(?:\/\/-.+|\|\s?(.+)|([^#.\s*(]+)?([\w.#-]*)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\6|[^"'`])*?)\))?[\t ]?(.*?)$)/gm
-const nodeRegex = /([\t ]*)(?:\/\/-(.*(?:\n\1[\t ]+.+)*)|\|\s?(.+)|([^#.\s*(]+)?([\w.#-]*)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\7|[^"'`])*?)\))?[\t ]?(.*?)$)/gm,
-	classIDRegex = /([.#])([^.#]+)/g;
+const NODE_REGEX = /^([\t ]*)(?:\/\/-(.*(?:\n\1[\t ]+.+)*)|\|\s?(.+)|([^#.\s*(]+)?([\w.#-]*)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\7|[^"'`])*?)\))?[\t ]?(.*?)$)/gm,
+	CLASS_ID_REGEX = /([.#])([^.#]+)/g,
+	WELL_FORMED_INDENT_REGEX = /^(\s)\1*$/;
 
-// Capturing groups:
-// 1: key
-// 2: value
-// 3: string quote character
-const attributeSplitRegex = /([\w-.:]+)(?:\s*=\s*((["'`])(?:[^\\]|\\.)*?\3|[^"'`\s]+))?/g,
-	wellFormedIndentRegex = /^(\s)\1*$/;
-
-function parsePugCore(str) {
-	const nodes = parseNodes(str || "");
-
-	for (let i = 0, l = nodes.length; i < l; i++) {
-		const node = nodes[i];
-
-		switch (node.type) {
-			case "element":
-				parseClassesAndIDs(node);
-				parseAttributes(node);
-				cleanAttributes(node.attributes);
-				break;
-		}
-	}
-
-	createTrees(nodes);
-	return nodes;
+function parsePugCore(str, meta = null) {
+	return parseNodes(str || "", meta);
 }
 
-function parseNodes(str) {
-	const nodes = [];
+function parseNodes(str, meta = null) {
+	const root = [],
+		stack = [];
+	let lastNode = null,
+		parent = null,
+		target = root,
+		indent = -1,
+		indentChar = null,
+		line = 0;
+	
+	NODE_REGEX.lastIndex = 0;
 
 	while (true) {
-		const ex = nodeRegex.exec(str);
+		const ex = NODE_REGEX.exec(str);
 		if (!ex)
-			return nodes;
+			break;
+
+		line++;
 
 		if (!ex[0]) {
-			nodeRegex.lastIndex++;
+			NODE_REGEX.lastIndex++;
 			continue;
 		}
 
@@ -93,174 +113,147 @@ function parseNodes(str) {
 		else
 			type = "element";
 
-		const node = createNode(type, {
+		const indentStr = ex[1],
+			indentLen = indentStr.length,
+			mk = meta && meta.options.mkVNode || mkVNode;
+
+		const node = mk(type, {
 			raw: ex[0],
-			indent: ex[1],
-			tag: ex[4]
+			tag: resolveInlineRefs(ex[4], meta)
 		});
 
-		switch (type) {
-			case "comment":
-				Object.assign(node, {
-					content: ex[2]
-				});
-				break;
+		if (indentStr && !WELL_FORMED_INDENT_REGEX.test(indentStr))
+			throw new SyntaxError(`Malformed indent on line ${line}`);
 
-			case "text":
-				Object.assign(node, {
-					content: ex[3] || null
-				});
+		if (indentLen) {
+			if (indentChar && indentStr[0] != indentChar)
+				throw new SyntaxError(`Mixed indent on line ${line}`);
+
+			if (indentChar)
+				indentChar = indentStr[0];
+		}
+
+		if (indentLen > indent) {
+			parent = lastNode ?
+				lastNode :
+				null;
+			target = lastNode ?
+				lastNode.children :
+				root;
+			indent = indentLen;
+
+			stack.push({
+				parent,
+				target,
+				indent
+			});
+		} else if (indentLen < indent) {
+			while (stack.length && stack[stack.length - 1].indent > indentLen)
+				stack.pop();
+
+			if (!stack.length)
+				throw new Error(`Fell out of struct stack on line ${line}`);
+
+			({ parent, target, indent } = stack[stack.length - 1]);
+		}
+
+		switch (type) {
+			case "comment": {
+				const content = resolveInlineRefs(ex[2], meta);
+				node.content = content;
+				node.static = !content || !content.isDynamicValue;
 				break;
+			}
+
+			case "text": {
+				const content = resolveInlineRefs(ex[3] || null, meta);
+				node.content = content;
+				node.static = !content || !content.isDynamicValue;
+				break;
+			}
 
 			case "element": {
-				Object.assign(node, {
-					children: [],
-					attributes: {
-						class: [],
-						data: {}
-					},
-					tagData: ex[5] || null,
-					attrData: ex[6] || null
-				});
+				node.children = [];
+				node.attributes = mkAttrRepresentationObj();
+				node.static = true;
+				node.staticAttributes = [];
+				node.dynamicAttributes = [];
+				node.dynamicAttributesMap = {};
+				node.tagData = ex[5] || null;
+				node.attrData = ex[6] || null;
+
+				parseClassesAndIDs(node, meta);
+				parseAttributes(node, meta);
+
+				if (node.dynamicAttributes.length)
+					filterMut(node.staticAttributes, key => !hasOwn(node.dynamicAttributesMap, key));
 	
 				const elemContent = ex[8];
 
 				if (!elemContent)
 					break;
 
+				const content = resolveInlineRefs(elemContent, meta),
+					isStatic = !content || !content.isDynamicValue;
+
 				node.children.push(
-					createNode("text", {
-						content: elemContent,
-						raw: elemContent
+					mk("text", {
+						content,
+						static: isStatic,
+						raw: elemContent,
+						parent: node
 					})
 				);
+				node.static = node.static && isStatic;
 				break;
 			}
 		}
 
-		nodes.push(node);
-	}
-}
+		if (!node.static) {
+			for (let i = stack.length - 1; i > 0; i--) {
+				if (!stack[i].parent.static)
+					break;
 
-const defaultTags = {
-	comment: "#comment",
-	text: "#text",
-	element: "div"
-};
+				stack[i].parent.static = false;
+			}
+		}
 
-function createNode(type, data) {
-	const node = Object.assign({
-		type,
-		raw: "",
-		indent: "",
-		tag: null
-	}, data);
-
-	node.tag = node.tag || defaultTags[type];
-
-	if (type == "element") {
-		const props = getTagProperties(node.tag);
-		node.tag = props.tag;
-		node.namespace = props.namespace;
-		node.void = props.void;
+		lastNode = node;
+		node.parent = parent;
+		target.push(node);
 	}
 
-	return node;
+	return root;
 }
 
-function parseClassesAndIDs(node) {
+function parseClassesAndIDs(node, meta = null) {
 	if (!node.tagData)
 		return;
-
-	const attr = node.attributes;
 	
 	while (true) {
-		const ex = classIDRegex.exec(node.tagData);
+		const ex = CLASS_ID_REGEX.exec(node.tagData);
 		if (!ex)
 			break;
 
 		switch (ex[1]) {
 			case ".":
-				attr.class.push(ex[2]);
+				if (meta) {
+					setAttribute(
+						node,
+						"class",
+						resolveInlineRefs(ex[2], meta, "class")
+					);
+				} else
+					setAttribute(node, "class", ex[2]);
 				break;
 
 			case "#":
-				attr.id = ex[2];
-				break;
-		}
-	}
-}
-
-function parseAttributes(node) {
-	if (!node.attrData)
-		return;
-
-	const attr = node.attributes;
-	
-	while (true) {
-		const ex = attributeSplitRegex.exec(node.attrData);
-		if (!ex)
-			break;
-
-		const key = ex[1],
-			value = ex[2] === undefined ? true : parseStr(ex[2]);
-
-		switch (key) {
-			case "class":
-				attr.class = attr.class.concat(
-					String(value).split(/\s+/g)
+				setAttribute(
+					node,
+					"id",
+					resolveInlineRefs(ex[2], meta)
 				);
 				break;
-			
-			default:
-				if (key.indexOf("data-") == 0)
-					attr.data[casing(key).from.data.to.camel] = value;
-				else
-					attr[key] = value;
 		}
 	}
-}
-
-function createTrees(nodes) {
-	if (!nodes.length)
-		return nodes;
-
-	const nodeLen = nodes.length;
-	let indentChar = null;
-
-	function walk(parent, idx) {
-		const indent = nodes[idx].indent.length;
-		let lastNode = null;
-
-		for (idx; idx < nodeLen; idx++) {
-			const node = nodes[idx],
-				currIndent = node.indent.length;
-
-			if (node.indent && !wellFormedIndentRegex.test(node.indent))
-				throw new SyntaxError(`Malformed indent at '${node.raw}' (line ${idx})`);
-
-			if (currIndent) {
-				if (indentChar && node.indent[0] != indentChar)
-					throw new SyntaxError(`Mixed indent at '${node.raw}'`);
-
-				indentChar = indentChar || node.indent[0];
-			}
-
-			if (currIndent == indent && parent) {
-				parent.children.push(node);
-				nodes[idx] = null;
-			} else if(currIndent > indent && lastNode)
-				idx = walk(lastNode, idx, currIndent);
-			else if (currIndent < indent)
-				return idx - 1;
-
-			lastNode = node;
-		}
-
-		return nodeLen;
-	}
-
-	walk(null, 0);
-	filterMut(nodes, n => n !== null);
-	return nodes;
 }

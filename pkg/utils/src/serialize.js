@@ -137,12 +137,12 @@ export default function serialize(data, optionsOrIndentStr = {}) {
 		}
 	};
 
+	if (options.isCircular && !isCircular(data))
+		return repeat(indentStr, startIndent) + srz(null, uncirculate(data), startIndent);
+
 	// First try stringifying the data as-is. If that fails,
 	// try again but uncirculate the data before use
 	try {
-		if (options.isCircular && !isCircular(data))
-			return repeat(indentStr, startIndent) + srz(null, uncirculate(data), startIndent);
-
 		return repeat(indentStr, startIndent) + srz(null, data, startIndent);
 	} catch (e) {
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Cyclic_object_value

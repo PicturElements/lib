@@ -1,11 +1,16 @@
 import { getWrappedRange } from "./range";
-import { isTaggedTemplateArgs } from "./is";
+import {
+	isObject,
+	isTaggedTemplateArgs
+} from "./is";
 import serialize from "./serialize";
 import repeat from "./repeat";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./internal/options";
+import { BASE_62 } from "./internal/constants";
+import hasOwn from "./has-own";
 
 function padStart(str, length = 2, padChar = " ") {
 	str = String(str);
@@ -61,6 +66,16 @@ function splitClean(str, splitter, subTrim = true) {
 	return splitOut;
 }
 
+function uid(length = 10, alphabet = BASE_62) {
+	let out = "";
+	const len = alphabet.length;
+
+	while (length--)
+		out += alphabet[Math.floor(Math.random() * len)];
+
+	return out;
+}
+
 function getSerializeOptions() {
 	return {
 		quote: "",
@@ -72,7 +87,7 @@ const CACHED_SERIALIZE_OPTIONS = getSerializeOptions();
 
 function compileTaggedTemplateCore(args, options) {
 	if (isTaggedTemplateArgs(args)) {
-		const raw = args[0].raw ;
+		const raw = args[0].raw;
 		let out = "";
 
 		for (let i = 0, l = raw.length; i < l; i++) {
@@ -91,21 +106,81 @@ function compileTaggedTemplateCore(args, options) {
 	return "";
 }
 
+function compileTaggedTemplateFull(args, options) {
+	const out = {
+		compiled: "",
+		refs: {},
+		refKeys: [],
+		options
+	};
+
+	if (isTaggedTemplateArgs(args)) {
+		const raw = args[0].raw;
+
+		for (let i = 0, l = raw.length; i < l; i++) {
+			out.compiled += raw[i];
+
+			if (i == l - 1)
+				continue;
+
+			const refResult = typeof options.ref == "function" ?
+				options.ref(args[i + 1]) :
+				options.ref;
+
+			if (refResult === true || typeof refResult == "number") {
+				const key = (options.refPrefix || "ref:") +
+					uid(typeof refResult == "number" ? refResult : 10) +
+					(options.refSuffix || "");
+
+				out.refs[key] = args[i + 1];
+				out.refKeys.push(key);
+				out.compiled += key;
+			} else if (typeof refResult == "string") {
+				if (hasOwn(out.refs, refResult))
+					throw new Error(`Duplicate reference key '${refResult}'`);
+
+				out.refs[refResult] = args[i + 1];
+				out.refKeys.push(refResult);
+				out.compiled += refResult;
+			} else
+				out.compiled += serialize(args[i + 1], options);
+		}
+
+		return out;
+	}
+	
+	if (typeof args[0] == "string")
+		out.compiled = args[0];
+
+	return out;
+}
+
 function compileTaggedTemplate(...args) {
 	const options = compileTaggedTemplate.options;
 	compileTaggedTemplate.options = null;
 
+	const useFull = options && (hasOwn(options, "ref") || options.full || options.meta),
+		compiler = useFull ?
+			compileTaggedTemplateFull :
+			compileTaggedTemplateCore;
+
 	if (options)
-		return compileTaggedTemplateCore(args, options);
+		return compiler(args, options);
 	
-	return compileTaggedTemplateCore(args, CACHED_SERIALIZE_OPTIONS);
+	return compiler(args, CACHED_SERIALIZE_OPTIONS);
 }
 
 compileTaggedTemplate.options = null;
-compileTaggedTemplate.with = options => {
-	if (compileTaggedTemplate.options)
-		compileTaggedTemplate.options = Object.assign(compileTaggedTemplate.options, options);
-	else
+compileTaggedTemplate.with = (options, override = true) => {
+	if (!isObject(options))
+		return compileTaggedTemplate;
+
+	if (compileTaggedTemplate.options) {
+		if (override)
+			compileTaggedTemplate.options = Object.assign(compileTaggedTemplate.options, options);
+		else
+			compileTaggedTemplate.options = Object.assign({}, options, compileTaggedTemplate.options);
+	} else
 		compileTaggedTemplate.options = Object.assign(getSerializeOptions(), options);
 
 	return compileTaggedTemplate;
@@ -380,6 +455,7 @@ export {
 	spliceStr,
 	trimStr,
 	splitClean,
+	uid,
 	compileTaggedTemplate,
 	distance,
 	fromCodePoint,

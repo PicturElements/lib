@@ -12,26 +12,28 @@ function sym(prefix) {
 	return typeof Symbol == "undefined" ? `${POLYFILL_PREFIXES.symbol}${key}` : Symbol(key);
 }
 
-const setSymbol = typeof Symbol == "undefined" ? (obj, symbol, value = null) => {
-	if (!isSymbol(symbol))
-		return warnSymbolSet(symbol, obj);
+const setSymbol = typeof Symbol == "undefined" ?
+	(obj, symbol, value = null) => {
+		if (!isSymbol(symbol))
+			return warnSymbolSet(symbol, obj);
 
-	if (hasOwn(obj, symbol))
+		if (hasOwn(obj, symbol))
+			obj[symbol] = value;
+
+		Object.defineProperty(obj, symbol, {
+			enumerable: false,
+			writable: true,
+			value: value
+		});
+
+		return obj;
+	} :
+	(obj, symbol, value = null) => {
+		if (!isSymbol(symbol))
+			return warnSymbolSet(symbol, obj);
+
 		obj[symbol] = value;
-
-	Object.defineProperty(obj, symbol, {
-		enumerable: false,
-		writable: true,
-		value: value
-	});
-
-	return obj;
-} : (obj, symbol, value = null) => {
-	if (!isSymbol(symbol))
-		return warnSymbolSet(symbol, obj);
-
-	obj[symbol] = value;
-};
+	};
 
 function warnSymbolSet(failedSymbol, retVal) {
 	console.warn("Failed to use setSymbol: the supplied key is not a symbol", failedSymbol);

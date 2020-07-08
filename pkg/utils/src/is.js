@@ -243,6 +243,13 @@ function isUpperCase(char) {
 	return char.toUpperCase() == char;
 }
 
+function isEmptyString(str) {
+	if (typeof str != "string")
+		return false;
+
+	return !str.trim();
+}
+
 function isThenable(candidate) {
 	if (!candidate)
 		return false;
@@ -288,6 +295,7 @@ export {
 	isHexDigit,
 	isLowerCase,
 	isUpperCase,
+	isEmptyString,
 	isThenable,
 	isTaggedTemplateArgs,
 	isStandardPropertyDescriptor
