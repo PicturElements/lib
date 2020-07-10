@@ -111,6 +111,7 @@ function compileTaggedTemplateFull(args, options) {
 		compiled: "",
 		refs: {},
 		refKeys: [],
+		refIndices: {},
 		options
 	};
 
@@ -133,6 +134,7 @@ function compileTaggedTemplateFull(args, options) {
 					(options.refSuffix || "");
 
 				out.refs[key] = args[i + 1];
+				out.refIndices[key] = i;
 				out.refKeys.push(key);
 				out.compiled += key;
 			} else if (typeof refResult == "string") {
@@ -140,6 +142,7 @@ function compileTaggedTemplateFull(args, options) {
 					throw new Error(`Duplicate reference key '${refResult}'`);
 
 				out.refs[refResult] = args[i + 1];
+				out.refIndices[refResult] = i;
 				out.refKeys.push(refResult);
 				out.compiled += refResult;
 			} else

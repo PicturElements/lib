@@ -962,6 +962,7 @@ function mkVNode(type, data) {
 // Extend dynamic value with data
 const DV_EXTENDERS = {
 	default: (dv, data) => dv,
+	stringbuilder: (dv, data) => concatMut(dv.data, data),
 	singleton: (dv, data) => dv.data = data,
 	ordered: (dv, data) => {
 		concatMut(dv.data, data);
@@ -1015,6 +1016,7 @@ const DV_EXTENDERS = {
 // Merge dynamic value with other dynamic value
 const DV_MERGERS = {
 	default: (dv, dv2) => dv,
+	stringbuilder: (dv, dv2) => concatMut(dv.data, dv2.data),
 	singleton: (dv, dv2) => dv.data = dv2.data,
 	ordered: (dv, dv2) => {
 		concatMut(dv.data, dv2.data);
@@ -1036,6 +1038,19 @@ const DV_MERGERS = {
 // Extract data from dynamic value
 const DV_EXTRACTORS = {
 	default: dv => dv,
+	stringbuilder: (dv, args) => {
+		const d = dv.data;
+		let out = "";
+
+		for (let i = 0, l = d.length; i < l; i++) {
+			if (typeof d[i] == "function")
+				out += d[i](...args);
+			else
+				out += d[i];
+		}
+
+		return out;
+	},
 	singleton: (dv, args) => {
 		if (typeof dv.data == "function")
 			return dv.data(...args);
@@ -1070,6 +1085,7 @@ function mkDynamicValue(dv) {
 			dv.data = dv.data || null;
 			break;
 
+		case "stringbuilder":
 		case "ordered":
 			dv.data = dv.data || [];
 			break;
@@ -1266,8 +1282,26 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 		ptr = 0,
 		hasDynamicTerms = false;
 
-	const push = term => {
-		if (meta.options.compile) {
+	const push = (term, ref) => {
+		if (ref && meta.options.eagerDynamic) {
+			const argRef = {
+				ref,
+				value: term,
+				changed: false
+			};
+
+			meta.argRefs[meta.refIndices[ref]] = argRef;
+			term = (...args) => {
+				if (typeof argRef.value == "function")
+					return argRef.value(...args);
+				
+				return argRef.value;
+			};
+
+			terms.push(term);
+			dynamicTerms.push(term);
+			hasDynamicTerms = true;
+		} else if (meta.options.compile) {
 			if (meta.options.resolve || !isDynamicValueCandidate(term, meta)) {
 				pushTerm(terms, term);
 				pushTerm(staticTerms, term);
@@ -1307,7 +1341,7 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 		else if (!ex && ptr < str.length)
 			chunk = str.substring(ptr, str.length);
 
-		push(chunk);
+		push(chunk, null);
 
 		if (!ex)
 			break;
@@ -1315,9 +1349,9 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 		const match = ex[0];
 
 		if (!hasOwn(meta.refs, match))
-			push(match);
+			push(match, match);
 		else
-			push(meta.refs[match]);
+			push(meta.refs[match], match);
 
 		ptr = ex.index + match.length;
 	}
@@ -1329,6 +1363,15 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 
 			return mkDynamicValue({
 				type: "ordered",
+				value: terms
+			});
+
+		case "string":
+			if (!hasDynamicTerms)
+				return useTerms ? terms[0] : out;
+
+			return mkDynamicValue({
+				type: "stringbuilder",
 				value: terms
 			});
 

@@ -17,10 +17,13 @@ import {
 	createOptionsObject
 } from "./internal/options";
 
+let TEMPLATE_CACHE = null;
 const optionsTemplates = composeOptionsTemplates({
 	compile: true,
 	resolve: true,
 	lazyDynamic: true,
+	eagerDynamic: true,
+	lazy: true,
 	render: {
 		compile: true,
 		resolve: true
@@ -29,10 +32,14 @@ const optionsTemplates = composeOptionsTemplates({
 
 // Parses a subset of pug (no control flow)
 export default function parsePugStr(...args) {
-	if (isObj(args[0]) && !isTaggedTemplateArgs(args))
+	const isTagged = isTaggedTemplateArgs(args);
+
+	if (isObj(args[0]) && !isTagged)
 		return args[0];
 
-	if (compileTaggedTemplate.options && compileTaggedTemplate.options.compile) {
+	const options = compileTaggedTemplate.options;
+
+	if (options && options.compile) {
 		compileTaggedTemplate.with({
 			ref: 16,
 			refPrefix: "ref_",
@@ -40,6 +47,35 @@ export default function parsePugStr(...args) {
 			refRegex: /ref_[a-zA-Z0-9]{16}/g,
 			resolveFunctions: true
 		});
+
+		if (options.eagerDynamic || options.lazy) {
+			// This works because tagged template args are singletons
+			// defined at parse time, effectively producing a unique ID
+			// for every unique template
+			if (!TEMPLATE_CACHE && typeof Map != "undefined")
+				TEMPLATE_CACHE = new Map();
+			window.TEMPLATE_CACHE = TEMPLATE_CACHE;
+
+			if (options.lazy && isTagged && TEMPLATE_CACHE && TEMPLATE_CACHE.has(args[0])) {
+				const d = TEMPLATE_CACHE.get(args[0]);
+				for (let i = 0, l = d.argRefs.length; i < l; i++)
+					d.argRefs[i].value = args[i + 1];
+				return d;
+			}
+
+			const meta = compileTaggedTemplate(...args);
+			meta.argRefs = [];
+			const data = {
+				meta,
+				argRefs: meta.argRefs,
+				dom: parsePugCore(meta.compiled, meta)
+			};
+
+			if (TEMPLATE_CACHE && isTagged)
+				TEMPLATE_CACHE.set(args[0], data);
+
+			return data;
+		}
 
 		const meta = compileTaggedTemplate(...args);
 		return parsePugCore(meta.compiled, meta);
@@ -119,7 +155,7 @@ function parseNodes(str, meta = null) {
 
 		const node = mk(type, {
 			raw: ex[0],
-			tag: resolveInlineRefs(ex[4], meta)
+			tag: resolveInlineRefs(ex[4], meta, "string")
 		});
 
 		if (indentStr && !WELL_FORMED_INDENT_REGEX.test(indentStr))
@@ -193,7 +229,7 @@ function parseNodes(str, meta = null) {
 				if (!elemContent)
 					break;
 
-				const content = resolveInlineRefs(elemContent, meta),
+				const content = resolveInlineRefs(elemContent, meta, "string"),
 					isStatic = !content || !content.isDynamicValue;
 
 				node.children.push(
