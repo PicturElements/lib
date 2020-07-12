@@ -1,7 +1,8 @@
 import {
+	hasOwn,
+	getTime,
 	isObject,
 	resolveArgs,
-	getTime,
 	mkProcessor
 } from "@qtxr/utils";
 import { XHRManager } from "./xhr";
@@ -156,7 +157,7 @@ export default class AssetLoader {
 		const fetch = async p => {
 			p = this.process("path", processors, p)();
 
-			if (flatTreeMap.hasOwnProperty(p))
+			if (hasOwn(flatTreeMap, p))
 				return flatTreeMap[p];
 
 			const response = await this.fetch(p, settings, lazy, processors);
@@ -211,7 +212,7 @@ export default class AssetLoader {
 		const xhrSettings = this.process("xhrSettings", processors, path)(settings);
 
 		return new Promise(resolve => {
-			if (lazy && this.assetsMap.hasOwnProperty(path)) {
+			if (lazy && hasOwn(this.assetsMap, path)) {
 				return resolve(
 					mkResponseNodeSuccess(this.assetsMap[path], true)
 				);
@@ -225,7 +226,7 @@ export default class AssetLoader {
 					delete this.track.failed[path];
 					this.track.successful[path] = true;
 
-					if (!this.assetsMap.hasOwnProperty(path))
+					if (!hasOwn(this.assetsMap, path))
 						this.assets.push(path);
 					this.assetsMap[path] = d;
 
@@ -269,22 +270,22 @@ export default class AssetLoader {
 
 	isRequested(path, processors) {
 		path = this.process("path", processors, path)();
-		return this.track.requested.hasOwnProperty(path);
+		return hasOwn(this.track.requested, path);
 	}
 
 	isEnqueued(path, processors) {
 		path = this.process("path", processors, path)();
-		return this.track.enqueued.hasOwnProperty(path);
+		return hasOwn(this.track.enqueued, path);
 	}
 
 	isSuccessful(path, processors) {
 		path = this.process("path", processors, path)();
-		return this.track.successful.hasOwnProperty(path);
+		return hasOwn(this.track.successful, path);
 	}
 
 	isFailed(path, processors) {
 		path = this.process("path", processors, path)();
-		return this.track.failed.hasOwnProperty(path);
+		return hasOwn(this.track.failed, path);
 	}
 
 	isAny(path, ...args) {
@@ -308,7 +309,7 @@ export default class AssetLoader {
 	}
 
 	bufferAsync(queue, callback, args = []) {
-		if (!this.bufferQueues.hasOwnProperty(queue))
+		if (!hasOwn(this.bufferQueues, queue))
 			return console.warn(`${queue} is not a valid buffer partition name`);
 
 		return new Promise(resolve => {
@@ -323,14 +324,14 @@ export default class AssetLoader {
 	resumeAsync() {
 		const buffer = this.bufferQueues;
 		this.asyncBufferActive = false;
-		
+
 		if (buffer.prefetch.length) {
 			const item = buffer.prefetch.shift();
 
 			item.callback
 				.apply(this, item.args)
 				.then(item.resolve);
-				
+
 			return;
 		}
 
@@ -418,11 +419,11 @@ function testTracking(path, trackers, keys) {
 	for (let i = keys.length - 1; i >= 0; i--) {
 		const key = typeof keys[i] == "string" ? keys[i].toLowerCase() : null;
 
-		if (!trackers.hasOwnProperty(key))
+		if (!hasOwn(trackers, key))
 			continue;
 
-		result.push(trackers[key].hasOwnProperty(path));
-	} 
+		result.push(hasOwn(trackers[key], path));
+	}
 
 	return result;
 }

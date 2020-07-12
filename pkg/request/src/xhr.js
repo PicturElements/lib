@@ -1,6 +1,7 @@
 import {
 	clone,
 	casing,
+	hasOwn,
 	isObject,
 	matchType,
 	isPrimitive,
@@ -73,7 +74,7 @@ class XHRManager {
 			this.presets = clone(testator.presets);
 
 			for (const k in testator.macroKeys) {
-				if (!testator.macroKeys.hasOwnProperty(k))
+				if (!hasOwn(testator.macroKeys, k))
 					continue;
 
 				this[k] = testator[k];
@@ -90,7 +91,7 @@ class XHRManager {
 			return this;
 		}
 
-		if (noDuplicates && this.presets.hasOwnProperty(name)) {
+		if (noDuplicates && hasOwn(this.presets, name)) {
 			console.warn(`Cannot define preset: preset by name '${name}' is already in use`);
 			return this;
 		}
@@ -115,7 +116,7 @@ class XHRManager {
 			return this;
 		}
 
-		if (this.hasOwnProperty(key)) {
+		if (hasOwn(this, key)) {
 			console.warn(`Cannot define macro: this XHR manager already has a property with key '${key}'`);
 			return this;
 		}
@@ -131,7 +132,7 @@ class XHRManager {
 	}
 
 	deleteMacro(key) {
-		if (!this.macroKeys.hasOwnProperty(key)) {
+		if (!hasOwn(this.macroKeys, key)) {
 			console.warn(`Cannot delete macro: no macro by name '${key}' defined`);
 			return this;
 		}
@@ -221,7 +222,7 @@ class XHRManager {
 
 		method = method.toUpperCase();
 
-		if (!methods.hasOwnProperty(method))
+		if (!hasOwn(methods, method))
 			throw new Error(`Cannot make request: no supported method by type '${method}'`);
 
 		if (!testGuard(this))
@@ -254,7 +255,7 @@ class XHRManager {
 
 				xhr.send();
 				break;
-				
+
 			case methods.POST:
 			case methods.PUT:
 			case methods.PATCH:
@@ -262,7 +263,7 @@ class XHRManager {
 					setHeaders(xhr, preset);
 					payload = mergeData(preset.payload, data);
 				}
-				
+
 				xhr.send(encodeData(payload, preset));
 				break;
 		}
@@ -417,41 +418,41 @@ class XHRState extends Hookable {
 			console.warn(`Failed to add hook: ${type} is not a valid type`);
 			return this;
 		}
-	
+
 		let source = null,
 			target = null;
-	
+
 		const ex = sourceTargetRegex.exec(type);
 
 		if (!ex)
 			return this;
-	
+
 		if (!ex[1])
 			source = ex[2];
 		else {
 			source = ex[1];
 			target = ex[2];
 		}
-	
+
 		source = resolveType(source);
 		target = resolveType(target);
-		
+
 		if (target.name) {
 			return this.applyHook(source, hook, function(handler, xId, args) {
 				if (typeof handler == "function")
 					handler.apply(this, args);
-				
+
 				this.callHooks(target, xId, false, ...args);
 			});
 		}
-	
+
 		if (source.name) {
 			return this.applyHook(source, hook, function(handler, xId, args) {
 				if (typeof handler == "function")
 					handler.apply(this, args);
 			});
 		}
-	
+
 		return this;
 	}
 
@@ -459,7 +460,7 @@ class XHRState extends Hookable {
 		const hookDataPrecursor = typeof handlerOrHook == "function" ? {
 			handler: handlerOrHook
 		} : handlerOrHook;
-	
+
 		if (!isObject(hookDataPrecursor)) {
 			console.warn(`Failed to add hook '${name}': hook is not an object or function`);
 			return this;
@@ -472,7 +473,7 @@ class XHRState extends Hookable {
 				hookDataPrecursor
 			),
 			refXId = this.xId;
-	
+
 		super.hook({
 			partitionName: name,
 			handler(xs, type, xId, nativeCall, ...args) {
@@ -480,11 +481,11 @@ class XHRState extends Hookable {
 					dispatcher.call(this, hookData.handler, xId, [mkRuntime(xs, xId), ...args, xs]);
 				else
 					dispatcher.call(this, hookData.handler, xId, [...args, xs]);
-	
-				if (name != "any") 
+
+				if (name != "any")
 					xs.callHooks("any", xId, false, ...args);
-					
-				if (nativeCall && !xs.finished && finalizeable.hasOwnProperty(name)) {
+
+				if (nativeCall && !xs.finished && hasOwn(finalizeable, name)) {
 					xs.finished = true;
 					xs.callHooks("finally", xId, false, ...args);
 					// TODO: maybe implement hook flushing here
@@ -503,7 +504,7 @@ class XHRState extends Hookable {
 				return true;
 			}
 		});
-	
+
 		return this;
 	}
 
@@ -615,7 +616,7 @@ function resolveType(type) {
 
 	const ex = namespaceRegex.exec(type);
 
-	if (!ex || !namespaceAliases.hasOwnProperty(ex[1])) {
+	if (!ex || !hasOwn(namespaceAliases, ex[1])) {
 		return {
 			namespace: null,
 			name: type
@@ -656,7 +657,7 @@ function injectPreset(manager, acc, data) {
 		return acc;
 
 	for (const k in data) {
-		if (!data.hasOwnProperty(k))
+		if (!hasOwn(data, k))
 			continue;
 
 		const d = resolvePresetProp(manager, k, data[k], [
@@ -673,7 +674,7 @@ function injectPreset(manager, acc, data) {
 					inHeaders = d;
 
 				for (const k2 in inHeaders) {
-					if (!inHeaders.hasOwnProperty(k2))
+					if (!hasOwn(inHeaders, k2))
 						continue;
 
 					headers[casing(k2).to("pascalKebab")] = inHeaders[k2];
@@ -682,7 +683,7 @@ function injectPreset(manager, acc, data) {
 				acc[k] = mergeData(acc[k], headers);
 				break;
 			}
-				
+
 			default:
 				acc[k] = mergeData(acc[k], d);
 		}
@@ -711,7 +712,7 @@ function mergeData(acc, data) {
 }
 
 function resolvePresetProp(manager, key, value, args) {
-	if (!manager.presetSchema || !manager.presetSchema.hasOwnProperty(key) || value == null)
+	if (!manager.presetSchema || !hasOwn(manager.presetSchema, key) || value == null)
 		return value;
 
 	if (typeof value == "function" && !matchType(value, manager.presetSchema[key]))
@@ -744,9 +745,9 @@ function mkUrlParams(params) {
 	const paramsOut = [];
 
 	for (const k in params) {
-		if (!params.hasOwnProperty(k) || !isPrimitive(params[k]))
+		if (!hasOwn(params, k) || !isPrimitive(params[k]))
 			continue;
-		
+
 		paramsOut.push(`${k}=${params[k]}`);
 	}
 
@@ -757,7 +758,7 @@ function setHeaders(xhr, preset) {
 	const headers = preset.headers;
 
 	for (const k in headers) {
-		if (headers.hasOwnProperty(k))
+		if (hasOwn(headers, k))
 			xhr.setRequestHeader(k, headers[k]);
 	}
 }
@@ -774,18 +775,18 @@ function encodeData(data, preset) {
 		return data;
 
 	switch (getContentTypeEncode(preset)) {
-		case "form-encoded":
+		case "form-encoded": {
 			const dataArr = [];
 
 			if (typeof data != "object")
 				return String(data);
-			
+
 			for (const key in data) {
-				if (!data.hasOwnProperty(key))
+				if (!hasOwn(data, key))
 					continue;
 
 				let d = data[key];
-	
+
 				if (Array.isArray(d)) {
 					for (let i = 0; i < d.length; i++)
 						dataArr.push(key + "%5B%5D=" + encodeURIComponent(d[i]));
@@ -798,6 +799,7 @@ function encodeData(data, preset) {
 			}
 
 			return dataArr.join("&");
+		}
 
 		case "json":
 		default:
@@ -856,7 +858,7 @@ function injectStateDependencies(state, manager) {
 		return;
 
 	for (const k in hooks) {
-		if (!hooks.hasOwnProperty(k))
+		if (!hasOwn(hooks, k))
 			continue;
 
 		state.hook(k, hooks[k]);

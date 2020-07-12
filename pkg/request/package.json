@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/request",
-  "version": "3.8.3",
+  "version": "3.8.4",
   "description": "Collection of libraries for efficient, clean, and intuitive web requests",
   "main": "index.js",
   "scripts": {
@@ -25,9 +25,9 @@
   },
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/request#readme",
   "dependencies": {
-    "@qtxr/bc": "^1.4.3",
-    "@qtxr/url": "^1.2.2",
-    "@qtxr/utils": "^1.40.2"
+    "@qtxr/bc": "^1.5.1",
+    "@qtxr/url": "^1.2.5",
+    "@qtxr/utils": "^1.58.1"
   },
   "devDependencies": {},
   "files": [
@@ -35,7 +35,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 41,
+    "pushes": 42,
     "expose": {
       "scripts": [
         "connect/feed.js"
