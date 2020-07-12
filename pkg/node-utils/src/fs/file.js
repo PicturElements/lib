@@ -16,10 +16,10 @@ async function readFile(...paths) {
 
 async function readFileUTF(...paths) {
 	const descriptor = await findFileDescriptor(...paths);
-	
+
 	if (descriptor == -1)
 		return null;
-	
+
 	const data = await readFileHelper(descriptor, "utf8");
 	await closeFile(descriptor);
 	return data;

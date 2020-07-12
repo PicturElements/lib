@@ -32,11 +32,11 @@ function serialize(fieldsOrItem, optionsOrIndentStr = {}) {
 
 			case "boolean":
 				return String(item);
-				
+
 			case "object":
 				if (item == null)
 					return "null";
-				
+
 				if (Array.isArray(item)) {
 					const flat = !item.some(isObject);
 					if (flat)
@@ -53,7 +53,7 @@ function serialize(fieldsOrItem, optionsOrIndentStr = {}) {
 
 					return `[\n${out.join(",\n")}\n${indentStr.repeat(indent)}]`;
 				}
-				
+
 				if (isObject(item)) {
 					const out = [];
 
@@ -75,11 +75,11 @@ function serialize(fieldsOrItem, optionsOrIndentStr = {}) {
 				}
 
 				return "{}";
-				
+
 			case "function":
 				if (options.jsonCompatible)
 					return "{}";
-				
+
 				return item.toString().split(/\n|\r/).join(`\n${indentStr.repeat(indent)}`);
 		}
 	};

@@ -25,7 +25,7 @@ module.exports = function promisify(func, paramNamesOrParamMap, returnKeyOrRetur
 
 			if (namedArgs.err)
 				return resolve(null);
-			
+
 			resolve(namedArgs[returnKeyOrReturnIndex]);
 		} else
 			resolve(args[returnKeyOrReturnIndex || 0]);

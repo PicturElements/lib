@@ -24,7 +24,7 @@ function merge(target, source) {
 		}
 	}
 
-	return target;	
+	return target;
 }
 
 module.exports = {

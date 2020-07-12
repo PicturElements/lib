@@ -43,9 +43,9 @@ const lineSplitRegex = /\n|\r/;
 // if string and "mode" is "inline", the string will replace the matched string fully
 // if function, the supplied function will receive parsed data and returns a string, which
 // is handled like the string equivalent
-// 
+//
 // The above may also be supplied in an array. In that case, the procedure will be applied
-// in order, and will wrap around if more matches than 
+// in order, and will wrap around if more matches than
 //
 // mode: ("inline", "newline", default: "newline") - where to inject after matching
 // injectMode: (string, default: "replace") - how to inject in inline mode
@@ -83,7 +83,7 @@ async function fileInject(pth, config = {}) {
 
 // Similar to fileInject, but in this case the config is given in
 // an array, and lines are buffered between matches, saving expensive line
-// processing 
+// processing
 async function bufferedFileInject(pth, configs = []) {
 	const fileData = await readFileUTF(pth);
 	const lineData = getLineData(fileData.split(lineSplitRegex));
@@ -132,7 +132,7 @@ function match(lineData, config) {
 				matcherObj.lastIndex = currentMatcherObj.lastIndex;
 			}
 		}
-		
+
 		if (!matchSuccess || !config.globalLine) {
 			matcherObj.lastIndex = 0;
 			lineNo++;
@@ -247,12 +247,12 @@ function injectNewline(args) {
 		lineData,
 		annotate
 	} = args;
-	
+
 	const indent = resolveIndent(lineData, match, config);
 
 	// Bottom padding
 	addVerticalPadding(lineData, match.lineNo + 1, config, "bottom");
-				
+
 	if (injection.length == 1) {
 		spliceLine(
 			lineData,
@@ -277,7 +277,7 @@ function injectNewline(args) {
 				`${indent}${injection[i]}`
 			);
 		}
-		
+
 		// First line
 		if (config.annotate !== false) {
 			spliceLine(
@@ -435,14 +435,14 @@ function matchLine(matcherObj, line, lineNo, startIdx = 0) {
 				lineNo,
 				matcherObj
 			});
-			
+
 			switch (getMatchResultMode(result)) {
 				case "regex":
 					return dispatchMatch(result.index, result[0]);
 				case "object":
 					return dispatchMatch(result.index, result.match);
 			}
-			
+
 			break;
 		}
 	}
@@ -515,7 +515,7 @@ function getLineData(lines) {
 		lineData.indentComponentWidth = smallestIndent;
 		lineData.indent = " ";
 		lineData.indentType = "tabs";
-		
+
 		for (let i = lineData.lines.length - 1; i >= 0; i--)
 			lineData.lines[i].indentWidth /= smallestIndent;
 	}

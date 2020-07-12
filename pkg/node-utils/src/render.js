@@ -87,7 +87,7 @@ function vueRender(args) {
 
 	destTarget = path.join(root, destTarget, String(bufferCount++));
 	srcTarget = path.join(root, srcTarget);
-	
+
 	// Expand and clone file tree
 	struct = build(struct);
 
@@ -109,7 +109,7 @@ function vueRender(args) {
 	// the main render has been run. This is async because
 	// it interfaces directly with the middleware queue
 	api.render(_ => tearDown(destTarget, struct));
-	
+
 	return struct;
 }
 
@@ -182,7 +182,7 @@ function mount(destTarget, srcTarget, struct, args) {
 				continue;
 
 			const node = s[k];
-	
+
 			if (isLeafNode(node)) {
 				const destPath = path.join(pth, k);
 
@@ -293,7 +293,7 @@ async function tearDown(destTarget, struct) {
 				continue;
 
 			const node = s[k];
-	
+
 			if (isLeafNode(node))
 				await unlink(path.join(pth, k));
 			else
