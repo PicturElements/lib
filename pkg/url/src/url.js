@@ -297,7 +297,7 @@ export default class URL {
 		let href = this.origin;
 
 		href += this.pathname;
-		
+
 		if (data.searchParams.string)
 			href += data.searchParams.string;
 
@@ -366,7 +366,7 @@ export default class URL {
 	set port(port) {
 		if (typeof port == "number" && !isNaN(port) && isFinite(port))
 			port = String(port);
-		
+
 		URL_MAP.get(this).port = coerceStr(port);
 	}
 
@@ -445,7 +445,7 @@ export default class URL {
 		for (let i = 0, l = URL_PARSERS.length; i < l; i++) {
 			const parser = URL_PARSERS[i],
 				otomy = stringotomy(parser.regex, url, parser.capture);
-				
+
 			if (typeof parser.guard == "function" && !parser.guard(this, otomy))
 				this[parser.key] = "";
 			else {
@@ -468,7 +468,7 @@ export default class URL {
 			hash = "";
 		const searchParams = {};
 
-		// Validate / collect data 
+		// Validate / collect data
 		for (let i = 0, l = paths.length; i < l; i++) {
 			const url = coerceUrl(paths[i]);
 
@@ -484,7 +484,7 @@ export default class URL {
 
 			if (url.hash)
 				hash = url.hash;
-			
+
 			Object.assign(searchParams, url.query);
 		}
 
@@ -554,7 +554,7 @@ function parsePath(path) {
 
 		if (hasOwn(pathComponentClassifiers, component)) {
 			const classifier = pathComponentClassifiers[component];
-	
+
 			if (classifier)
 				pathOut.push(mkPathComponent(classifier, component));
 		} else
@@ -628,7 +628,7 @@ function coerceUrl(url) {
 function sendError(msg) {
 	if (URL.throw)
 		throw new Error(msg);
-	
+
 	console.error(msg);
 }
 
