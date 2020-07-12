@@ -1,5 +1,6 @@
 import {
 	inject,
+	hasOwn,
 	isObject,
 	resolveVal
 } from "@qtxr/utils";
@@ -57,7 +58,7 @@ export default function resolveCards(cards = DEFAULT_CARDS) {
 
 	const resolve = card => {
 		if (typeof card == "string") {
-			if (!DATE_CARDS.hasOwnProperty(card))
+			if (!hasOwn(DATE_CARDS, card))
 				throw new Error(`Cannot resolve card: '${card}' is not a known card template`);
 
 			card = DATE_CARDS[card];
@@ -69,11 +70,11 @@ export default function resolveCards(cards = DEFAULT_CARDS) {
 		if (!card.name || typeof card.name != "string")
 			throw new TypeError("Cannot resolve card: no valid name provided");
 
-		if (nameMap.hasOwnProperty(card.name))
+		if (hasOwn(nameMap, card.name))
 			throw new Error(`Cannot resolve card: card by name '${card.name}' already defined`);
 		nameMap[card.name] = true;
 
-		if (DATE_CARDS.hasOwnProperty(card.name))
+		if (hasOwn(DATE_CARDS, card.name))
 			card = inject(card, DATE_CARDS[card.name], "cloneTarget");
 
 		if (card.guideSize)
@@ -86,7 +87,7 @@ export default function resolveCards(cards = DEFAULT_CARDS) {
 		for (let i = 0, l = cards.length; i < l; i++)
 			resolve(cards[i]);
 	}
-	
+
 	if (!isObject(cards)) {
 		return {
 			cards: outCards,
@@ -97,7 +98,7 @@ export default function resolveCards(cards = DEFAULT_CARDS) {
 	for (let i = 0, l = CARD_ORDER.length; i < l; i++) {
 		const name = CARD_ORDER[i];
 
-		if (!cards.hasOwnProperty(name))
+		if (!hasOwn(cards, name))
 			continue;
 
 		if (isObject(cards[name])) {

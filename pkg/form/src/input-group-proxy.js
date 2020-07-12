@@ -57,7 +57,7 @@ export default class InputGroupProxy extends Array {
 	every(callback, forAll = this._all) {
 		return this.forEach((inp, idx) => Boolean(callback(inp, idx, this)), forAll);
 	}
-	
+
 	refresh() {
 		this.forEach(inp => inp.refresh());
 	}

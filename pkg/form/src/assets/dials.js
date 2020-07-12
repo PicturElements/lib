@@ -1,5 +1,6 @@
 import {
 	inject,
+	hasOwn,
 	isObject,
 	resolveVal
 } from "@qtxr/utils";
@@ -98,7 +99,7 @@ export default function resolveDials(dials = DEFAULT_DIALS) {
 
 	const resolve = dial => {
 		if (typeof dial == "string") {
-			if (!DIALS.hasOwnProperty(dial))
+			if (!hasOwn(DIALS, dial))
 				throw new Error(`Cannot resolve dial: '${dial}' is not a known dial template`);
 
 			dial = DIALS[dial];
@@ -110,7 +111,7 @@ export default function resolveDials(dials = DEFAULT_DIALS) {
 		if (!dial.name || typeof dial.name != "string")
 			throw new TypeError("Cannot resolve dial: no valid name provided");
 
-		if (nameMap.hasOwnProperty(dial.name))
+		if (hasOwn(nameMap, dial.name))
 			throw new Error(`Cannot resolve dial: dial by name '${dial.name}' already defined`);
 		nameMap[dial.name] = true;
 
@@ -119,7 +120,7 @@ export default function resolveDials(dials = DEFAULT_DIALS) {
 			return;
 		}
 
-		if (DIALS.hasOwnProperty(dial.name))
+		if (hasOwn(DIALS, dial.name))
 			dial = inject(dial, DIALS[dial.name], "cloneTarget");
 
 		outDials.push(dial);
@@ -132,7 +133,7 @@ export default function resolveDials(dials = DEFAULT_DIALS) {
 		for (let i = 0, l = DIAL_ORDER.length; i < l; i++) {
 			const name = DIAL_ORDER[i];
 
-			if (!dials.hasOwnProperty(name))
+			if (!hasOwn(dials, name))
 				continue;
 
 			if (isObject(dials[name])) {

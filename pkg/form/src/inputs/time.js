@@ -30,7 +30,7 @@ export default class Time extends Input {
 		} else {
 			if (Array.isArray(value))
 				return this.vt(value[0]);
-			
+
 			return this.vt(value);
 		}
 	}

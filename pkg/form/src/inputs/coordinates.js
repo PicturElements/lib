@@ -1,7 +1,8 @@
 import {
 	round,
-	reassign,
-	isObject
+	hasOwn,
+	isObject,
+	reassign
 } from "@qtxr/utils";
 import Input, { INJECT } from "./input";
 
@@ -15,7 +16,7 @@ export default class Coordinates extends Input {
 			noCoords: "boolean"
 		});
 	}
-	
+
 	[INJECT](value) {
 		value = typeof this.handlers.inject == "function" ?
 			super[INJECT](value) :
@@ -170,7 +171,7 @@ function parseCoordinate(str) {
 		if (prefixId && postfixId)
 			coordinateRegex.lastIndex--;
 
-		if (!latLngMap.hasOwnProperty(direction))
+		if (!hasOwn(latLngMap, direction))
 			continue;
 
 		const [
@@ -230,7 +231,7 @@ function constructCoordinateStr(coordData) {
 
 		if (seconds != null)
 			out += (round(seconds, Math.max(PRECISION - 3, 0)) + d.secondInfix);
-		
+
 		return out + d.postfixId;
 	};
 

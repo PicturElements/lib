@@ -35,7 +35,7 @@ export default class Date extends Input {
 		} else {
 			if (Array.isArray(value))
 				return this.vt(value[0]);
-			
+
 			return this.vt(value);
 		}
 	}
@@ -67,7 +67,7 @@ Date.formalize
 
 function getDateData(date) {
 	const isEmpty = date == null;
-	
+
 	date = date instanceof NativeDate ?
 		date :
 		(isEmpty ? new NativeDate() : new NativeDate(date));

@@ -60,7 +60,7 @@ export default class Formatted extends Input {
 }
 
 function getSelectionData(selection, root, previousData) {
-	const prevNodeMap = (previousData && previousData.vNodeMap) || {}, 
+	const prevNodeMap = (previousData && previousData.vNodeMap) || {},
 		nextNodeMap = {},
 		vDom = resolveVNode(root, prevNodeMap, nextNodeMap),
 		startTime = getTime();

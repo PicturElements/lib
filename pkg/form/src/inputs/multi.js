@@ -59,7 +59,7 @@ export default class Multi extends Input {
 			resolveOptionValue: opt => opt.value,
 			singular: false
 		});
-		
+
 		this.clearPendingValue();
 
 		for (let i = 0, l = res.selection.length; i < l; i++) {

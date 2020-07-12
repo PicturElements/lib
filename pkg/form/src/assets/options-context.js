@@ -40,7 +40,7 @@ import Input from "../inputs/input";
 // hash			function			Hasher function. Used to quickly identify options. This is used when the active
 //									option is being determined. Called with a singular runtime argument
 // cache		boolean				Static/dynamic cache for options. If searchFetch is used, the cache is considered
-//									dynamic, where options are cached according to 
+//									dynamic, where options are cached according to
 //									Cache search data by search query. This is overridden if search is refreshed
 //									By default, this is set to true
 // inherit		boolean				Whether to inherit parent config in child instances of OptionsContext
@@ -115,7 +115,7 @@ export default class OptionsContext extends Hookable {
 		if (this.config.hash === undefined)
 			this.config.hash = input.handlers.hash;
 		this.config.hash = Input.mkHasher(input, this.config.hash);
-		
+
 		this.root = parent ?
 			parent.root :
 			this;
@@ -157,7 +157,7 @@ export default class OptionsContext extends Hookable {
 		this.path = parent ?
 			parent.path.concat(this.config.name) :
 			[this.config.name];
-		
+
 		this.options = [];
 		this.hashedOptions = {};
 		this.length = 0;
@@ -382,7 +382,7 @@ export default class OptionsContext extends Hookable {
 
 			if (typeof options == "string")
 				this.state.errorMsg = options;
-			
+
 			this.callHooks("error", this.state);
 			return null;
 		}
@@ -577,7 +577,7 @@ export default class OptionsContext extends Hookable {
 
 		if (option.hash != null)
 			this.root.hashedSelection[option.hash] = option;
-		
+
 		this.root.selection[idx] = option;
 		return true;
 	}
