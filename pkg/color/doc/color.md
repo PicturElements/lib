@@ -484,7 +484,7 @@ c.transform([
 For single channel transforms, it's also possible to provide a single string as the transform:
 
 ```ts
-// Set the hue component to 0, signifying red 
+// Set the hue component to 0, signifying red
 c.transform("hue = 0")
 ```
 

@@ -197,7 +197,7 @@ export default class Color {
 
 		return c;
 	}
-	
+
 	t(...transforms) {
 		return this.transform(transforms);
 	}
@@ -1040,7 +1040,7 @@ function buildHex(rgba) {
 
 	if (alpha != 255)
 		out += decimalToHex(alpha, isShorthand);
-	
+
 	return out;
 }
 
@@ -1052,7 +1052,7 @@ function decimalToHex(dec, isShorthand) {
 
 	if (!isShorthand)
 		out += Math.floor(dec / 16).toString(16);
-	
+
 	return out + (dec % 16).toString(16);
 }
 
