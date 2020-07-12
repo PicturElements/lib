@@ -9,7 +9,7 @@ export default {
 	export: {
 		data(args) {
 			const data = args.storage.extract();
-			
+
 			forEach(data, (v, k) => {
 				args.out[k] = v(args.wrapper, args.vm, args);
 			});

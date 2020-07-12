@@ -15,23 +15,23 @@ export default {
 					error: false,
 					msg: ""
 				};
-		
+
 			for (const k in state) {
 				if (hasOwn(state, k) && !hasOwn(gotten.data, k))
 					gotten.data[k] = state[k];
 			}
 
 			usedPaths.push(path, true);
-		
+
 			if (used)
 				return;
-		
+
 			wrapper.addMethod("xhr", function(path) {
 				const vm = this;
-		
+
 				if (!usedPaths.has(path))
 					throw new Error(`Cannot access XHR partition at '${path}' because it's not registered`);
-		
+
 				const loadingState = get(vm.$data, path);
 
 				const xhrState = new XHRState()
@@ -44,14 +44,14 @@ export default {
 					.hook("static:fail", runtime => {
 						setLoadingState(runtime.loadingState, "error");
 					});
-			
+
 				const manager = new XHRManager({
 					flush: ["once"],
 					withRuntime: true,
 					state: xhrState,
 					inherits: defaultManager
 				});
-		
+
 				manager.attachRuntime({
 					vm,
 					loadingState,
@@ -60,26 +60,26 @@ export default {
 					},
 					resolveErrorMsg() {
 						const xhr = manager.settings.state.xhr;
-		
+
 						if (xhr.responseText)
 							this.setMsg(decodeData(xhr).message);
 						else
 							this.setMsg(`Network error (${xhr.status})`);
 					}
 				});
-		
+
 				return manager;
 			});
-		
+
 			wrapper.addMethod("setLoadingState", function(path, state) {
 				if (!usedPaths.has(path))
 					return;
 
 				const dp = get(this.$data, path);
-		
+
 				if (!isObject(dp))
 					return;
-		
+
 				setLoadingState(dp, state);
 			});
 		};

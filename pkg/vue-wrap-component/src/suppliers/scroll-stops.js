@@ -12,10 +12,10 @@ export default {
 				name,
 				options
 			} = resolveArgs(args, scrollStopsParams);
-		
+
 			// Prep data object for reactivity
 			wrapper.addData(name, null);
-		
+
 			wrapper.addHook((options.on || "beforeMount"), function() {
 				const elem = options.element;
 				options.elem = typeof elem == "function" ?
@@ -25,7 +25,7 @@ export default {
 				this.$data[name] = new ScrollStops(options);
 				this.$data[name].thisVal = this;
 			});
-		
+
 			wrapper.addHook((options.off || "beforeDestroy"), function() {
 				this.$data[name].destroy();
 			});

@@ -3,7 +3,7 @@ import { hasOwn } from "@qtxr/utils";
 export default {
 	use({ wrapper }, partitionName = "events") {
 		const data = wrapper.getInjectorPartition("data");
-		
+
 		if (!hasOwn(data, partitionName))
 			data[partitionName] = [];
 		else if (!Array.isArray(data[partitionName].constructor)) {
@@ -14,21 +14,21 @@ export default {
 		wrapper.addMethod("addEventListener", function(target, type, callback, options) {
 			if (typeof callback != "function")
 				return console.warn("Cannot add event listener: callback is not a function");
-	
+
 			const partition = this.$data[partitionName],
 				vm = this,
 				// Assumes that no event handler is called with more than the event as its args
 				interceptingCallback = function(evt) {
 					callback.call(this, evt, vm);
 				};
-	
+
 			partition.push({
 				target,
 				type,
 				callback: interceptingCallback,
 				options
 			});
-	
+
 			target.addEventListener(type, interceptingCallback, options);
 			return _ => callback.call(null, null, vm);
 		});

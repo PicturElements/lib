@@ -1,4 +1,4 @@
-import { forEach } from "@qtxr/utils"; 
+import { forEach } from "@qtxr/utils";
 
 export default {
 	use({ storage }, items) {

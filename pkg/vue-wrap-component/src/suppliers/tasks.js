@@ -9,14 +9,14 @@ export default {
 	use({ wrapper, used }) {
 		if (used)
 			return;
-	
+
 		taskHooks.forEach(hookName => {
 			wrapper.addHook(hookName, function() {
 				const tasks = this.$props.tasks;
 				runTasks(this, tasks, hookName);
 			});
 		});
-	
+
 		wrapper.addProp("tasks", null);
 	}
 };
@@ -24,7 +24,7 @@ export default {
 function runTasks(vm, tasks, hookName) {
 	if (!tasks)
 		return;
-	
+
 	if (typeof tasks == "function")
 		tasks(vm, hookName);
 	else if (Array.isArray(tasks)) {

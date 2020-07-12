@@ -7,7 +7,7 @@ export default {
 
 			if (used)
 				return;
-			
+
 			wrapper.addHook("beforeDestroy", _ => {
 				storage.forEach(d => d.clear());
 			});

@@ -40,7 +40,7 @@ const DEFAULT_EXPORTERS = {
 
 				if (!isObject(mixin))
 					throw new Error(`Cannot export mixin: mixin is not a vue component configuration object, component wrapper, or function that resolves to either`);
-			
+
 				mixins.push(mixin);
 			};
 
@@ -109,7 +109,7 @@ class ComponentWrapperManager {
 
 			return initializer;
 		}
-		
+
 		this.suppliers[name] = supplier;
 		return this;
 	}
@@ -247,7 +247,7 @@ class ComponentWrapper {
 
 		if (typeof keyOrInjector != "string")
 			return null;
-		
+
 		const injector = this.exporterInjectors.provide[0];
 		injector[keyOrInjector] = provision;
 		return provision;
@@ -370,7 +370,7 @@ class ComponentWrapper {
 			else
 				component[k] = exporter.export(args);
 		}
-	
+
 		return component;
 	}
 
@@ -395,7 +395,7 @@ ComponentWrapper.prototype.assert = {
 		const err = _ => {
 			throw new Error(`Cannot add property: found duplicate prop key '${key}'`);
 		};
-	
+
 		if (Array.isArray(props) && props.indexOf(key) != -1)
 			err();
 		else if (isObject(props) && hasOwn(props, key))
@@ -471,7 +471,7 @@ function nestHook(target, key, hook) {
 			origHook.apply(this, args);
 			hook.apply(this, args);
 		};
-	} else 
+	} else
 		target[key] = hook;
 }
 
