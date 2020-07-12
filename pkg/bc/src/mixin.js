@@ -98,7 +98,7 @@ function applyMixin(precedences) {
 			proto = outConstr;
 		}
 	}
-	
+
 	return outConstr;
 }
 

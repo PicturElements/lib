@@ -112,7 +112,7 @@ export default class Hookable extends DeferredPromise {
 			for (const k in hooks) {
 				if (!hasOwn(hooks, k))
 					continue;
-				
+
 				if (Array.isArray(hooks[k]))
 					this.hookAll(hooks[k], k);
 				else
@@ -140,11 +140,11 @@ export default class Hookable extends DeferredPromise {
 					key: partitionName,
 					keyType
 				};
-			
+
 			filterMut(hooks, hook => {
 				if (hook.spent)
 					return false;
-	
+
 				if (hook.proceed(args, contextArgs)) {
 					hook.handle(args, contextArgs);
 					return hook.decTTL() > 0;
@@ -181,7 +181,7 @@ export default class Hookable extends DeferredPromise {
 				this.hooks.keys.delete(key);
 			}
 		});
-		
+
 		return this;
 	}
 

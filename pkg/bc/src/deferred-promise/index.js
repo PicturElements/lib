@@ -54,7 +54,7 @@ export default class DeferredPromise {
 			};
 
 		setSymbol(this, PROMISE_RUNTIME, runtime);
-		
+
 		runtime.promise = new PromiseImpl((resolve, reject) => {
 			runtime.resolve = resolve;
 			runtime.reject = reject;
@@ -104,7 +104,7 @@ export default class DeferredPromise {
 			console.warn(`Cannot dispatch promise: promise is already ${runtime.status}`);
 			return this;
 		}
-		
+
 		if (conf.action == "reject" || conf.type == "reject") {
 			runtime.status = "rejected";
 

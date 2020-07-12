@@ -131,7 +131,7 @@ describe("instance methods", () => {
 			expect(_ => nh().hookNS("ns", fn, 2)).toThrow();
 		});
 	});
-	
+
 	describe("hookAll", () => {
 		const HOOKS_ARR = [
 			{
@@ -166,7 +166,7 @@ describe("instance methods", () => {
 		it("hooks with object", () => {
 			const inst = nh(),
 				defaultHooksLen = Object.keys(inst.hooks).length;
-			
+
 			inst.hookAll(HOOKS_OBJ);
 			expect(Object.keys(inst.hooks).length - defaultHooksLen).toBe(3);
 		});
@@ -184,7 +184,7 @@ describe("instance methods", () => {
 			expect(_ => nh().hookAll(null)).not.toThrow();
 		});
 	});
-	
+
 	describe("unhook", () => {
 		it("unhooks based on handler refer5ence and deletes partition when empty", () => {
 			const inst = nh()
@@ -271,7 +271,7 @@ describe("instance methods", () => {
 			]);
 		});
 	});
-	
+
 	describe("callHooks", () => {
 		it("calls all hooks with the same name with the correct arguments", () => {
 			const func = jest.fn((...args) => args.reduce((sum, v) => sum + v)),
@@ -288,7 +288,7 @@ describe("instance methods", () => {
 
 		it("correctly calls hooks with a set ttl the correct amount of times before discarding them", () => {
 			const fns = [jest.fn(), jest.fn(), jest.fn()];
-			
+
 			const inst = nh()
 				.hook("test", fns[0], 0)
 				.hook("test", fns[1], 1)
@@ -299,7 +299,7 @@ describe("instance methods", () => {
 
 			for (let i = 0; i < 3; i++)
 				expect(fns[i].mock.calls.length).toBe(i);
-			
+
 			expect(inst.hooks.test).toBe(undefined);
 		});
 
@@ -314,7 +314,7 @@ describe("instance methods", () => {
 			expect(sum).toBe(4);	// 1 + 3
 		});
 	});
-	
+
 	describe("clearHooks", () => {
 		it("clears all non-reserved hooks fields", () => {
 			const inst = nh(),
@@ -330,7 +330,7 @@ describe("instance methods", () => {
 			expect(Object.keys(inst.hooks).length - defaultHooksLen).toBe(0);
 		});
 	});
-	
+
 	describe("clearHooksNS", () => {
 		it("only removes namespaced hooks", () => {
 			const inst = nh(),
@@ -364,7 +364,7 @@ describe("instance methods", () => {
 		test("handlers and guards can be updated", () => {
 			const hook = nh().hook("test", fn, fn2).hooks.last,
 				testFn = _ => _;
-			
+
 			expect(hook.handler).toBe(fn);
 			expect(hook.guard).toBe(fn2);
 
