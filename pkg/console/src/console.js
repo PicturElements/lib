@@ -1,7 +1,10 @@
 import Interceptor from "./intercept";
 import { el } from "./utils";
 import panel from "./templates/panel";
-import { serialize } from "@qtxr/utils"; 
+import {
+	hasOwn,
+	serialize
+} from "@qtxr/utils";
 
 let wrapper = null;
 
@@ -26,7 +29,7 @@ export default class Console {
 	mount() {
 		if (!wrapper) {
 			const wrapperPrecursor = el`.panel-wrapper`;
-			
+
 			if ("attachShadow" in wrapperPrecursor)
 				wrapper = wrapperPrecursor.attachShadow({ mode: "open" });
 			else
@@ -82,7 +85,7 @@ export default class Console {
 				this.clear(...args);
 				break;
 
-			case "Error":
+			case "Error": {
 				const content = el`
 					.error-header ${args[0].filename}:${args[0].lineno}
 					.error-content
@@ -93,6 +96,7 @@ export default class Console {
 				this.putMessage("error", content);
 				this.updateCount("errors");
 				break;
+			}
 		}
 	}
 
@@ -119,7 +123,7 @@ export default class Console {
 
 	clear() {
 		for (const k in this.counts) {
-			if (this.counts.hasOwnProperty(k)) {
+			if (hasOwn(this.counts, k)) {
 				this.counts[k] = 0;
 				this.nodes.stats[k].dataset.count = 0;
 			}
@@ -136,7 +140,7 @@ export default class Console {
 				.message-content
 				.message-meta
 					span.date ${d.toDateString()}
-					|  
+					|
 					span.time ${d.toLocaleTimeString()}
 		`;
 
