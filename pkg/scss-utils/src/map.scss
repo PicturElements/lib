@@ -3,15 +3,15 @@
 
 @function map-deep-get($map, $accessor, $separator: ".") {
 	$path: str-split($accessor, $separator);
-	
+
 	@each $component in $path {
 		@if not is-map($map) {
 			@return ();
 		}
-		
+
 		$map: map-get($map, $component);
 	}
-	
+
 	@return if(is-map($map), $map, ());
 }
 
@@ -27,6 +27,6 @@
 			}
 		}
 	}
-	
+
 	@return $map;
 }
