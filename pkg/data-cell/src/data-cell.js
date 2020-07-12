@@ -62,20 +62,20 @@ const COMMON_PROCESSOR_OPTIONS = {
 		validate(proc) {
 			if (typeof proc == "string") {
 				const [ accessor, errorMsg ] = proc.trim().split(/\s*:\s*/);
-	
+
 				return ({ cell }, wrappedResponse) => {
 					if (get(wrappedResponse, accessor) && wrappedResponse.success)
 						return null;
-	
+
 					return getErrorMsg(cell, wrappedResponse, errorMsg);
 				};
 			} else if (Array.isArray(proc)) {
 				const [ accessor, value, errorMsg ] = proc;
-	
+
 				return ({ cell }, wrappedResponse) => {
 					if (get(wrappedResponse, accessor) == value && wrappedResponse.success)
 						return null;
-	
+
 					return getErrorMsg(cell, wrappedResponse, errorMsg);
 				};
 			} else if (isObject(proc)) {
@@ -85,16 +85,16 @@ const COMMON_PROCESSOR_OPTIONS = {
 					errorMsg,
 					errorMsgPath
 				} = proc;
-	
+
 				return ({ cell }, wrappedResponse) => {
 					let match = true;
-	
+
 					if (Array.isArray(matches)) {
 						const [ accessor, value, errMsg ] = matches;
-	
+
 						if (errMsg)
 							errorMsg = errMsg;
-	
+
 						match = get(wrappedResponse, accessor) == value;
 					} else if (typeof matches == "string") {
 						if (value !== undefined)
@@ -103,17 +103,17 @@ const COMMON_PROCESSOR_OPTIONS = {
 							match = Boolean(get(wrappedResponse, matches));
 					} else if (typeof matches == "function")
 						match = Boolean(matches(cell.args, wrappedResponse));
-	
+
 					if (match && wrappedResponse.success)
 						return null;
-	
+
 					if (typeof errorMsgPath == "string")
 						return getErrorMsg(cell, wrappedResponse, get(wrappedResponse, errorMsgPath));
-	
+
 					return getErrorMsg(cell, wrappedResponse, errorMsg);
 				};
 			}
-	
+
 			return proc;
 		},
 		data(proc) {
@@ -122,7 +122,7 @@ const COMMON_PROCESSOR_OPTIONS = {
 					return get(data, proc);
 				};
 			}
-	
+
 			return proc;
 		},
 		key(proc) {
@@ -256,7 +256,7 @@ export default class DataCell extends Hookable {
 		for (const k in config) {
 			if (!hasOwn(config, k))
 				continue;
-				
+
 			for (let i = 0, l = DataCell.loaders.length; i < l; i++)
 				DataCell.loaders[i](this, k, config[k], config);
 		}
@@ -307,7 +307,7 @@ export default class DataCell extends Hookable {
 			initConfig.statePresets,
 			newConfig.statePresets
 		);
-	
+
 		this.watchTaskDispatchers = Object.assign(
 			{},
 			DEFAULT_WATCHER_TASK_DISPATCHERS,
@@ -489,7 +489,7 @@ export default class DataCell extends Hookable {
 			this.setState({
 				fetches: this.state.fetches + 1
 			});
-			
+
 			fetcher.enqueuedResolvers = [];
 			fetcher.deferredFetch = null;
 			fetcher.throttledFetch = null;
@@ -605,16 +605,16 @@ export default class DataCell extends Hookable {
 			enqueuedResolvers: [],
 			poll: this.mkPollingObject(config.poll)
 		};
-	
+
 		if (typeof config == "function") {
 			config = {
 				fetch: config
 			};
 		}
-	
+
 		if (!isObject(config))
 			throw new TypeError("Failed to make fetcher object: fetcher config is invalid");
-	
+
 		inject(fetcher, config, {
 			schema: {
 				method: "string",
@@ -627,35 +627,35 @@ export default class DataCell extends Hookable {
 			},
 			override: true
 		});
-	
+
 		const characteristics = this.getFetcherCharacteristics(fetcher);
-	
+
 		if (characteristics.error != null)
 			throw new Error(`Failed to make fetcher object: ${characteristics.error}`);
-	
+
 		switch (characteristics.method) {
 			case "get":
 				fetcher.fetch = (a, url = null, preset = null) => {
 					return fetchRequest(a, "get", url, preset);
 				};
 				break;
-			
+
 			case "post":
 				fetcher.fetch = (a, url = null, preset = null) => {
 					return fetchRequest(a, "post", url, preset);
 				};
 				break;
-	
+
 			case "custom": {
 				const fetchHandler = config.fetch || config.handler;
-	
+
 				fetcher.fetch = (a, ...args) => {
 					return fetchCustom(a, fetchHandler, ...args);
 				};
 				break;
 			}
 		}
-	
+
 		fetcher.method = characteristics.method;
 		return fetcher;
 	}
@@ -669,15 +669,15 @@ export default class DataCell extends Hookable {
 			iterationCount: 0,
 			lastTimestamp: 0
 		};
-	
+
 		if (typeof config == "number") {
 			poll.interval = config;
 			return poll;
 		}
-	
+
 		if (!isObject(config))
 			return null;
-	
+
 		inject(poll, config, {
 			schema: {
 				interval: "number",
@@ -686,7 +686,7 @@ export default class DataCell extends Hookable {
 			},
 			strictSchema: true
 		});
-	
+
 		return poll;
 	}
 
@@ -694,14 +694,14 @@ export default class DataCell extends Hookable {
 		const watcher = {
 			dispatchers: {}
 		};
-	
+
 		if (!watchers)
 			return watcher;
-	
+
 		if (Array.isArray(watchers)) {
 			for (let i = 0, l = watchers.length; i < l; i++) {
 				const watch = watchers[i];
-	
+
 				// By default, watchers dispatch a fetch
 				if (typeof watch == "string")
 					watcher.dispatchers[watch] = "fetch";
@@ -714,17 +714,17 @@ export default class DataCell extends Hookable {
 			for (const k in watchers) {
 				if (!hasOwn(watchers, k))
 					continue;
-	
+
 				const watch = watchers[k];
-	
+
 				if (!matchType(watch, "string|function|Object"))
 					throw new TypeError(`Failed to make watcher object (at key '${k}'): properties must be a string refrence to a dispatcher, a dispatcher function, or a dispatcher object`);
-			
+
 				watcher.dispatchers[k] = watch;
 			}
 		} else
 			throw new TypeError("Failed to make watcher object: invalid watcher input, must be array or object");
-	
+
 		return watcher;
 	}
 
@@ -802,7 +802,7 @@ export default class DataCell extends Hookable {
 	getCells() {
 		return [this];
 	}
-	
+
 	// Advanced getter methods
 	getFetcherMethod(fetcher) {
 		if (!isObject(fetcher))
@@ -831,7 +831,7 @@ export default class DataCell extends Hookable {
 			case "get":
 			case "post":
 				break;
-			
+
 			case "custom":
 				characteristics.hasHandler = typeof (fetcher.fetch || fetcher.handler) == "function";
 				if (!characteristics.hasHandler)
@@ -854,15 +854,15 @@ export default class DataCell extends Hookable {
 	// Static methods
 	static definePreset(nameOrPreset, preset) {
 		let name = nameOrPreset;
-	
+
 		if (typeof nameOrPreset != "string") {
 			preset = nameOrPreset;
 			name = "default";
 		}
-	
+
 		if (!name || typeof name != "string")
 			throw new Error(`Cannot define preset: invalid preset name ${serialize(name)}`);
-	
+
 		addPreset(
 			this.presets,
 			name,
@@ -980,7 +980,7 @@ function applyStateTransforms(cell, newState) {
 			if (hasOwn(affected, k)) {
 				if (transformSession.transformed[k])
 					console.error(`Attempted to transform '${k}' again, after already being transformed. Origin at '${transformSession.source}', coming from '${key}'`);
-				
+
 				newState[k] = untransformedState[k];
 			} else if (newState[k] != untransformedState[k]) {
 				transformSession.transformed[k] = true;
@@ -1037,7 +1037,7 @@ function dispatchChanges(cell, changes) {
 			case "string":
 				if (dispatcher[0] == ".")
 					return resolveDispatcher(dispatchers[dispatcher.substring(1)]);
-				
+
 				return cell.watchTaskDispatchers[dispatcher];
 
 			case "function":
@@ -1082,7 +1082,7 @@ function dispatchChanges(cell, changes) {
 // Fetch
 function fetchRequest(a, method = "get", url = null, preset = null) {
 	method = method.toLowerCase();
-	
+
 	if (typeof url != "string") {
 		preset = {
 			payload: url
@@ -1128,7 +1128,7 @@ function fetchRequest(a, method = "get", url = null, preset = null) {
 				const payload = (typeof payloadOrStatus != "number") ?
 					payloadOrStatus :
 					null;
-				
+
 				let failResponse = cell.mkErrorResponse("Unknown Error", {
 					payload,
 					status: xhr.status,
@@ -1149,7 +1149,7 @@ async function fetchCustom(a, handler, ...args) {
 
 	try {
 		const response = await handler(a, ...args);
-		let wrappedResponse = response && response.isDataCellResponse ? 
+		let wrappedResponse = response && response.isDataCellResponse ?
 			response : (
 				response === null && !cell.config.errorOnReject ?
 					cell.mkErrorResponse(response) :
@@ -1192,7 +1192,7 @@ function getErrorMsg(cell, wrappedResponse, errorMsg) {
 				`GET Request Error (status: ${wrappedResponse.status})` :
 				"GET Request Error"
 			);
-		
+
 		case "post":
 			return (wrappedResponse.status >= 400 ?
 				`POST Request Error (status: ${wrappedResponse.status})` :

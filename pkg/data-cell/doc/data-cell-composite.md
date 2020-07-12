@@ -16,4 +16,4 @@ Normally, data cells may not be defined without a fetcher method, or must use a 
 In contrast, active cells are largely decoupled from their parents' data:
 
 1. When data is requested in an active cell, the cell itself is responsible of delivering the data.
-2. An active cell doesn't inherit its parents' data, nor does it directly interface with them. Thus, an active cell is best described as an independent node in the composite cell tree. 
+2. An active cell doesn't inherit its parents' data, nor does it directly interface with them. Thus, an active cell is best described as an independent node in the composite cell tree.

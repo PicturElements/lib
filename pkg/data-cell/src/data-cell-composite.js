@@ -241,7 +241,7 @@ export default class DataCellComposite extends DataCell {
 
 function resolveCell(cellOrConfig, parentCell, path) {
 	let cell;
-	
+
 	if (cellOrConfig instanceof DataCell) {
 		cell = cellOrConfig;
 

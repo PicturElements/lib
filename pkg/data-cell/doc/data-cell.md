@@ -1,6 +1,6 @@
 # DataCell
 
-`DataCell` is a generic data manager class. Its task is to streamline the loading, modification, and packaging of data. It does so through abstraction by a number of well defined public interfaces which together produce a friendly and expressive API. 
+`DataCell` is a generic data manager class. Its task is to streamline the loading, modification, and packaging of data. It does so through abstraction by a number of well defined public interfaces which together produce a friendly and expressive API.
 
 ### Hooks
 
@@ -42,7 +42,7 @@ DataCell employs a flexible configuration system at construction time, which als
   Polling object. Defines continuous fetching. See below for more information.
 
 * processors `object`
-  Object containing processors. Processors are used internally to transform data as it travels through the system. Optionally, these can be added directly to the configuration object, although the identifiers of these processors must be prefixed with "$". `DataCell` uses `@qtxr/utils/process` under the hood, which means that processors may be supplied together with transformers 
+  Object containing processors. Processors are used internally to transform data as it travels through the system. Optionally, these can be added directly to the configuration object, although the identifiers of these processors must be prefixed with "$". `DataCell` uses `@qtxr/utils/process` under the hood, which means that processors may be supplied together with transformers
 
 * hooks `object`
   Object containing hooks. Hooks are used to cause side effects as data flows through the system.
@@ -63,10 +63,10 @@ DataCell employs a flexible configuration system at construction time, which als
 The fetcher object is a major component of the system as it keeps track of everything related to the fetching and tracking of data. Fetchers follow the following structure:
 
 	{
-		method		// 
+		method		//
 		fetch		// The fetcher function. This is what gets called when DataCell.prototype.fetch is invoked
 		poll		// Polling object
-		processors	// 
+		processors	//
 		hooks		// Object with hooks
 	}
 
@@ -89,7 +89,7 @@ The watcher object is used to trigger actions when the state changes. `DataCell`
 
 ### Watcher Task Dispatchers
 
-Watcher task dispatchers run tasks. 
+Watcher task dispatchers run tasks.
 
 ### State
 

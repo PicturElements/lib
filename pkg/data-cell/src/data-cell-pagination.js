@@ -15,7 +15,7 @@ const PROCESSSOR_OPTIONS = {
 				return (cell, data) => get(data, proc);
 			else if (Array.isArray(proc)) {
 				const [ accessor, processor ] = proc;
-			
+
 				return (cell, data) => {
 					const val = get(data, accessor);
 
@@ -67,8 +67,8 @@ export default class DataCellPagination extends DataCell {
 		super(config, initConfig);
 
 		this.meta = {
-			useSequencing: this.processors.hasOwnProperty("sequence"),
-			useTagging: this.processors.hasOwnProperty("tag"),
+			useSequencing: hasOwn(this.processors, "sequence"),
+			useTagging: hasOwn(this.processors, "tag"),
 			maxSequence: null
 		};
 
@@ -118,7 +118,7 @@ export default class DataCellPagination extends DataCell {
 		const insert = path => {
 			if (typeof path != "string")
 				throw new Error("Cannot insert: invalid partition path");
-			if (used.hasOwnProperty(path))
+			if (hasOwn(used, path))
 				throw new Error(`Already inserted partition with path '${path}'`);
 
 			const insertionData = get(data, path);
@@ -132,10 +132,10 @@ export default class DataCellPagination extends DataCell {
 					seq = this.process("sequence")(item),
 					tag = this.process("tag")(item),
 					key = this.process("key")(item);
-	
+
 				if (this.meta.useSequencing && (!isFiniteNum(seq) || seq % 1 != 0))
 					throw new TypeError("Found non-integer sequence number");
-	
+
 				insertion.push({
 					seq,
 					tag,
@@ -149,23 +149,23 @@ export default class DataCellPagination extends DataCell {
 				insertion = mergesort(insertion, (a, b) => {
 					return b.seq - a.seq;
 				});
-	
+
 				const maxSeq = insertion[0].seq;
 				let rMaxSeq = this.meta.maxSequence;
 
 				this.cache[path] = this.cache[path] || [];
-	
+
 				if (rMaxSeq === null)
 					rMaxSeq = this.meta.maxSequence = maxSeq;
 				else if (maxSeq > rMaxSeq) {
 					this.shiftCache(path, maxSeq - rMaxSeq);
 					rMaxSeq = this.meta.maxSequence = maxSeq;
 				}
-	
+
 				for (let i = 0, l = insertion.length; i < l; i++) {
 					const item = insertion[i],
 						idx = rMaxSeq - item.seq;
-	
+
 					this.cache[path][idx] = item;
 				}
 			}
@@ -222,9 +222,9 @@ export default class DataCellPagination extends DataCell {
 		const partition = this.cache[partitionName];
 
 		for (let i = partition.length - 1; i >= 0; i--) {
-			if (partition.hasOwnProperty(i))
+			if (hasOwn(partition, i))
 				partition[i + amount] = partition[i];
-			
+
 			if (i < amount)
 				delete partition[i];
 		}
@@ -299,7 +299,7 @@ function getPaginationDataStruct(pagination) {
 
 		if (typeof path != "string")
 			throw new Error("Cannot create data structure: invalid partition path");
-		if (used.hasOwnProperty(path))
+		if (hasOwn(used, path))
 			throw new Error(`Cannot create data structure: partition with path '${path}' already exists`);
 		used[path] = true;
 

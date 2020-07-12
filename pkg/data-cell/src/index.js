@@ -34,7 +34,7 @@ function mkDataCell(config, initConfig) {
 			constr = DataCell.constructors[species];
 		else if (config[DATA_CELL_SPECIES_SYM])
 			constr = DataCell.constructors[config[DATA_CELL_SPECIES_SYM]];
-		
+
 		constr = constr || DataCell.constructors.default;
 		return new constr(config, initConfig);
 	}
@@ -48,7 +48,7 @@ function isCellConfig(candidate) {
 
 	if (candidate.type && candidate.type[DATA_CELL_SPECIES_SYM])
 		return true;
-	
+
 	if (candidate.species && candidate.species[DATA_CELL_SPECIES_SYM])
 		return true;
 

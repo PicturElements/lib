@@ -28,5 +28,5 @@ As `DataCellPagination` is a specialized class, it imposes a strict set of rules
 			data	// Array of data (required)
 			total	// Total length of the current set of data (optional)
 		}
-	
+
 	When processed, the main payload and metadata are dealt with separately.
