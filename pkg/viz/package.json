@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/viz",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "Flexible charting engine",
   "main": "index.js",
   "scripts": {
@@ -38,7 +38,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 12,
+    "pushes": 13,
     "expose": {
       "scripts": [
         "connect/feed.js"

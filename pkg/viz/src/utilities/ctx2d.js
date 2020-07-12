@@ -1,7 +1,8 @@
 import {
 	sym,
+	apply,
 	inject,
-	apply
+	hasOwn
 } from "@qtxr/utils";
 
 const contexts = {},
