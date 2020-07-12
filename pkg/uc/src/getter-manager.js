@@ -38,12 +38,12 @@ export default class GetterManager {
 
 		const add = (p, gs) => {
 			for (const k in gs) {
-				if (!gs.hasOwnProperty(k))
+				if (!hasOwn(gs, k))
 					continue;
 
 				const node = gs[k],
 					currPath = [...p, k];
-			
+
 				if (isGetter(node) || typeof node == "function")
 					this.addGetter(p, k, node);
 				else
@@ -76,7 +76,7 @@ export default class GetterManager {
 				return warn(`Cannot get: cannot step into Getter`);
 
 			if (getter instanceof GetterGroup) {
-				if (!getter.getters.hasOwnProperty(path[i]))
+				if (!hasOwn(getter.getters, path[i]))
 					return warn(`Cannot get: no getter by name '${path[i]}' found in GetterGroup instance`);
 			} else {
 				if (!getDirectoryMeta(getter).isDirectory)
@@ -88,7 +88,7 @@ export default class GetterManager {
 					rootGetter = getter;
 					groupPath = [];
 				}
-				
+
 				getter = getter.getters[path[i]];
 			} else
 				getter = getter[path[i]];
@@ -99,7 +99,7 @@ export default class GetterManager {
 
 		if (!isGetter(getter))
 			return warn(`Cannot get: failed to find getter at '${mkAccessor(path)}'`);
-		
+
 		return runGetter(getter, config, assets, rootGetter, groupPath);
 	}
 
@@ -122,7 +122,7 @@ function runGetter(getter, config = {}, assets = {}, rootGetter = null, groupPat
 
 		return resolveData(rootGetter, config, assets, runtime, groupPath, 0);
 	}
-	
+
 	return resolveData(getter, config, assets, runtime);
 }
 
@@ -133,7 +133,7 @@ function resolveData(getter, config, assets, runtime, groupPath, pathPtr) {
 		origConfig = config,
 		origAssets = assets,
 		cached = getCached(getter, origConfig, origAssets);
-		
+
 	if (cached)
 		return resolveCache(cached, groupPath, pathPtr);
 
@@ -181,7 +181,7 @@ function resolveData(getter, config, assets, runtime, groupPath, pathPtr) {
 		if (!isObj(d))
 			return d;
 
-		if (isObject(d) && d.hasOwnProperty(resolverSessionIdSym)) {
+		if (isObject(d) && hasOwn(d, resolverSessionIdSym)) {
 			const sessionId = d[resolverSessionIdSym],
 				session = sessions[sessionId];
 
@@ -218,7 +218,7 @@ function resolveData(getter, config, assets, runtime, groupPath, pathPtr) {
 			}
 		} else {
 			for (const k in d) {
-				if (!d.hasOwnProperty(k))
+				if (!hasOwn(d, k))
 					continue;
 
 				stack[stack.length - 1] = d[k];
@@ -349,7 +349,7 @@ function getDir(root, path) {
 		const key = restPath[i],
 			getters = dir.getters;
 
-		if (!getters.hasOwnProperty(key)) {
+		if (!hasOwn(getters, key)) {
 			dir = new GetterGroup(key, dir, {
 				get: {}
 			});
@@ -381,7 +381,7 @@ function mountGetter(owner, name, data) {
 	const target = (owner instanceof GetterGroup) ? owner.getters : owner;
 	let getter;
 
-	if (target.hasOwnProperty(name))
+	if (hasOwn(target, name))
 		throw new Error(`Cannot add getter: getter by name '${name}' already exists`);
 
 	if (typeof data == "function") {
@@ -461,7 +461,7 @@ class GetterGroup {
 		const getters = data.get || data.getters;
 
 		for (const k in getters) {
-			if (!getters.hasOwnProperty(k))
+			if (!hasOwn(getters, k))
 				continue;
 
 			mountGetter(this, k, getters[k]);
@@ -486,9 +486,9 @@ class GetterGroup {
 		const out = {};
 
 		for (const k in this.getters) {
-			if (!this.getters.hasOwnProperty(k))
+			if (!hasOwn(this.getters, k))
 				continue;
-			
+
 			this.unlogNewGetter(k);
 			out[k] = resolveData(this.getters[k], config, assets, runtime);
 		}
@@ -499,7 +499,7 @@ class GetterGroup {
 	}
 
 	logNewGetter(name) {
-		if (this.getters.hasOwnProperty(name) || this.newGetters.hasOwnProperty(name))
+		if (hasOwn(this.getters, name) || hasOwn(this.newGetters, name))
 			return;
 
 		this.newGetters[name] = true;
@@ -518,7 +518,7 @@ class GetterGroup {
 	}
 
 	unlogNewGetter(name) {
-		if (!this.newGetters.hasOwnProperty(name))
+		if (!hasOwn(this.newGetters, name))
 			return;
 
 		delete this.newGetters[name];

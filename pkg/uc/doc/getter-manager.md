@@ -12,7 +12,7 @@ Basic getter class. Manages data and when to refresh caches.
 
 ### GetterGroup
 
-Similar to Getter, but here getters are bound to their parent 
+Similar to Getter, but here getters are bound to their parent
 
 ---
 

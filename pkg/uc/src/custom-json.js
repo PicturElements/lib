@@ -1,5 +1,6 @@
 import {
 	from,
+	hasOwn,
 	isObject,
 	matchType,
 	resolveArgs,
@@ -30,7 +31,7 @@ const stockTransformers = [
 				case "function":
 					if (isNativeFunction(value))
 						return wrap("nativeFunction", getFunctionName(value));
-					
+
 					return wrap("function", `return ${value.toString()}`);
 
 				case "bigint":
@@ -73,7 +74,7 @@ const stockTransformers = [
 			function: packet => Function(packet.value)(),
 			nativeFunction(packet) {
 				const globalScope = getGlobalScope();
-				
+
 				if (!(packet.value in globalScope)) {
 					console.warn(`Global scope doesn't have a function by name '${packet.value}' - falling back to noop`, packet);
 					return noop => noop;
@@ -182,7 +183,7 @@ export default class CustomJSON {
 			throw new TypeError("Invalid transformer: replacer is not an object");
 		if (!transformer.name || typeof transformer.name != "string")
 			throw new Error("Invalid transformer: name must be a truthy string");
-		if (this.revivers.hasOwnProperty(transformer.name))
+		if (hasOwn(this.revivers, transformer.name))
 			throw new Error(`Invalid transformer: transformer by name '${transformer.name}' is already in use`);
 		if (!isObject(transformer.revive))
 			throw new Error("Invalid transformer: reviver must be an object");
@@ -205,7 +206,7 @@ export default class CustomJSON {
 		this.reviverSets[transformer.name] = reviverSet;
 
 		for (const k in revivers) {
-			if (!revivers.hasOwnProperty(k))
+			if (!hasOwn(revivers, k))
 				continue;
 
 			this.revivers[getReviverKey(transformer.name, k)] = revivers[k];
@@ -213,7 +214,7 @@ export default class CustomJSON {
 	}
 
 	removeTransformer(name) {
-		if (typeof name != "string" || !this.reviverSets.hasOwnProperty(name))
+		if (typeof name != "string" || !hasOwn(this.reviverSets, name))
 			return false;
 
 		// Remove replacer
@@ -242,7 +243,7 @@ function runReplace(inst, key, value, owner) {
 	wrapReplacer.setRuntime(key, value, owner);
 
 	// Don't run on processed data
-	if (owner.hasOwnProperty(reviverKeyKey))
+	if (hasOwn(owner, reviverKeyKey))
 		return value;
 
 	for (let i = 0, l = inst.replacers.length; i < l; i++) {
@@ -261,7 +262,7 @@ function runReplace(inst, key, value, owner) {
 }
 
 function runRevive(inst, key, value) {
-	if (!value.hasOwnProperty(reviverKeyKey))
+	if (!hasOwn(value, reviverKeyKey))
 		return value;
 
 	const reviverKey = value[reviverKeyKey],

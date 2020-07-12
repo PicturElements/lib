@@ -1,4 +1,7 @@
-import { isObject } from "@qtxr/utils";
+import {
+	hasOwn,
+	isObject
+} from "@qtxr/utils";
 import Version from "./version";
 
 const browserHints = [
@@ -117,12 +120,12 @@ export default class Agent {
 			device: null,
 			brand: null
 		};
-	
+
 		agent = agent || navigator.userAgent;
 
 		// Browser parsing
 		browser.name = searchHints(browserHints) || "Unknown";
-	
+
 		let browserVersion = null;
 
 		switch (browser.name) {
@@ -147,12 +150,12 @@ export default class Agent {
 			default:
 				browserVersion = extractPrefixed(browser.name + "/");
 		}
-	
+
 		browser.version = new Version(browserVersion);
 
 		// System parsing
 		system.name = searchHints(sysHints);
-	
+
 		let sysVersion = null,
 			nickname = null,
 			prefix = null;
@@ -161,7 +164,7 @@ export default class Agent {
 			case "Windows Phone":
 				sysVersion = extractPrefixed("Windows Phone ");
 				break;
-	
+
 			case "Android": {
 				sysVersion = extractPrefixed("Android ");
 				const nick = getVersionNickname(sysVersion, androidVersions);
@@ -169,22 +172,22 @@ export default class Agent {
 					nickname = nick;
 				break;
 			}
-	
+
 			case "Windows":
 				sysVersion = extractPrefixed("Windows NT ");
 				if (sysVersion)
 					prefix = "NT " + sysVersion;
-				if (msVersions.hasOwnProperty(sysVersion))
+				if (hasOwn(msVersions, sysVersion))
 					nickname = msVersions[sysVersion];
 				break;
-	
+
 			case "iOS":
 				sysVersion = dashToDot(extractVersion(/OS ([\d_]+)/));
 				break;
-	
+
 			case "Macintosh": {
 				const nick = extractVersion(/\d+_\d+/);
-				if (macVersions.hasOwnProperty(nick))
+				if (hasOwn(macVersions, nick))
 					nickname = macVersions[nick];
 				sysVersion = dashToDot(extractVersion(/OS X ([\d_]+)/));
 				break;
@@ -194,23 +197,23 @@ export default class Agent {
 				sysVersion = extractPrefixed("Ubuntu/");
 				break;
 		}
-	
+
 		system.version = new Version(sysVersion, nickname, prefix);
-	
+
 		system.device = searchHints(deviceHints);
 		system.brand = searchHints(brandHints);
 		system.family = searchHints(sysFamilies);
-	
+
 		// Utils
 		function extractPrefixed(prefix) {
 			return extractVersion(new RegExp(prefix + "([\\d.]+)"));
 		}
-	
+
 		function extractVersion(regex) {
 			const ex = regex.exec(agent);
 			return ex ? (ex[1] || ex[0]) : "";
 		}
-	
+
 		function searchHints(hints) {
 			for (let i = 0, l = hints.length; i < l; i++) {
 				if (hints[i] instanceof Array) {
@@ -219,7 +222,7 @@ export default class Agent {
 				} else if (agent.indexOf(hints[i]) > -1)
 					return hints[i];
 			}
-	
+
 			return null;
 		}
 
@@ -258,17 +261,17 @@ export default class Agent {
 			const version = this.system && systems[this.system.name.toLowerCase()];
 			matches &= (version === true || (version && this.system.version.compare(version) >= 0));
 		}
-		
+
 		return !!matches;
 	}
 }
-	
+
 function dashToDot(str) {
 	if (str && typeof str == "string")
 		str = str.split("_").join(".");
 	return str;
 }
-	
+
 function getVersionNickname(versionStr, nickArr) {
 	const ver = new Version(versionStr);
 	let last = null;

@@ -1,4 +1,7 @@
-import { matchType } from "@qtxr/utils";
+import {
+	hasOwn,
+	matchType
+} from "@qtxr/utils";
 
 const FIELD_SPECIES = {
 	as: "id",
@@ -37,9 +40,9 @@ export default class Formalizer {
 
 		if (typeof id != "string")
 			throw new TypeError("Cannot add ID: supplied value is not a string");
-		if (this.idMap.hasOwnProperty(id))
+		if (hasOwn(this.idMap, id))
 			throw new Error("Cannot add ID: supplied ID is already defined on this Formalizer");
-		
+
 		this.idMap[id] = this.activeDirective;
 		this.activeDirective.id = id;
 		return this;
@@ -142,7 +145,7 @@ class FormalizerCell {
 	transform(id) {
 		let directive = this.sourceDirective;
 
-		if (typeof id == "string" && this.owner.idMap.hasOwnProperty(id))
+		if (typeof id == "string" && hasOwn(this.owner.idMap, id))
 			directive = this.owner.idMap[id];
 
 		const data = directive.fromTransform(this.data, this);
@@ -186,7 +189,7 @@ function matchesValidation(data, validator, formalizer) {
 
 function logOrder(type, tracking) {
 	const species = FIELD_SPECIES[type];
-	
+
 	const err = msg => {
 		throw new Error(`Cannot define '${type}' ${species}: ${msg}`);
 	};
