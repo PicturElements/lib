@@ -141,7 +141,7 @@ export default class VueAdmin extends Hookable {
 		this.viewCount++;
 		return this;
 	}
-	
+
 	route(...routeData) {
 		const routeTree = compileTaggedTemplate(...routeData);
 		this.routes = parseRoutes(this, routeTree);
@@ -271,7 +271,7 @@ export default class VueAdmin extends Hookable {
 
 			return initializer;
 		}
-		
+
 		this.interfaces[interfaceName] = {
 			interface: stripConfigProps(inter),
 			config: inter
@@ -385,7 +385,7 @@ export default class VueAdmin extends Hookable {
 					admin: this
 				}, ...args);
 			}
-			
+
 			return method(...args);
 		};
 	}

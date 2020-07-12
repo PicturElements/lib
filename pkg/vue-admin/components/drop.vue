@@ -152,13 +152,13 @@
 			processedItems() {
 				if (this.cell)
 					return this.cell.data || [];
-				
+
 				return this.items;
 			},
 			processedData() {
 				if (this.cell)
 					return this.cell.data;
-				
+
 				return this.data;
 			},
 			processedArgs() {

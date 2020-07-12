@@ -14,7 +14,7 @@ export default function extractRoutes(routes, baseRoutes, path) {
 		else {
 			if (!baseRoutes)
 				throw new Error(`Cannot route: only base routes are allowed at root level (at '${route.fullPath}')`);
-			
+
 			route.path = URL.join(path, route.path);
 			baseRoutes.push(route);
 		}

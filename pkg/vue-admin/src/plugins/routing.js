@@ -58,7 +58,7 @@ export default {
 function updateTitle(args) {
 	requestFrame(_ => {
 		const title = get(args.route, "view.meta.title");
-	
+
 		if (title)
 			document.title = resolveVal(title, args);
 	});

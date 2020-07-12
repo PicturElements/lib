@@ -1,5 +1,6 @@
 import {
 	get,
+	hasOwn,
 	isObject,
 	parseTreeStr
 } from "@qtxr/utils";
@@ -24,19 +25,19 @@ export default function parseRoutes(inst, routeTree) {
 					parent: accumulator.parent,
 					root: null,
 					meta: {
-						id: accumulator.id + (depth ? `-${i}` : String(i))
+						id: `${accumulator.id}-${i}`
 					}
 				};
 
 			const resolveViewComponent = id => {
-				if (!inst.viewComponents.hasOwnProperty(id))
+				if (!hasOwn(inst.viewComponents, id))
 					throw new Error(`Failed to route: '${id}' is not a known view component`);
 
 				return inst.viewComponents[id];
 			};
 
 			const resolveView = id => {
-				if (!inst.views.hasOwnProperty(id))
+				if (!hasOwn(inst.views, id))
 					throw new Error(`Failed to route: '${id}' is not a known view`);
 
 				return inst.views[id];
@@ -64,15 +65,9 @@ export default function parseRoutes(inst, routeTree) {
 			route.isBaseRoute = child.path[0] == "/";
 			route.root = accumulator.root || route;
 			route.path = cleanPathComponent(child.path, depth) || "";
-			route.fullPath = URL.join(accumulator.fullPath, route.path) || "";
+			route.fullPath = URL.join(accumulator.fullPath, route.path) || "/";
 			route.meta.route = route;
 			route.specificity = calculatePathSpecificity(route.fullPath);
-
-			// Special case: root path
-			if (route.fullPath == "") {
-				route.path = "/";
-				route.fullPath = "/";
-			}
 
 			const view = getView(route);
 			let crumb = get(view, "meta.breadcrumb", {}) || cleanBreadcrumb(route.path);
@@ -115,10 +110,10 @@ export default function parseRoutes(inst, routeTree) {
 		throw new Error(`Failed to route: root must only be one route (${tree.length} roots found)`);
 
 	return traverse(tree, 0, {
-		fullPath: "",
+		fullPath: "/",
 		breadcrumbs: [],
 		parent: null,
-		id: "route-"
+		id: "route"
 	});
 }
 
@@ -203,6 +198,6 @@ function calculatePathSpecificity(path) {
 
 		specificity.push(specificityComponent);
 	}
-	
+
 	return specificity;
 }

@@ -16,12 +16,12 @@ $sidebar-nav-params: (
 			display: none;
 			border-left: 8px solid $background-highlight;
 		}
-		
+
 		.expando-link.active-route + .sidebar-nav-box,
 		.expando-link.pre-expanded + .sidebar-nav-box {
 			display: block;
 		}
-		
+
 		.sidebar-link {
 			display: flex;
 			justify-content: space-between;
@@ -146,7 +146,7 @@ $sidebar-nav-params: (
 				height: 100%;
 			}
 		}
-			
+
 		> * + .sidebar-expando > .expando-link.active-route:after {
 			top: 0;
 		}

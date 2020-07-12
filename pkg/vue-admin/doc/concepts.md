@@ -4,7 +4,7 @@ VueAdmin is in effect a framework built on top of Vue. What VueAdmin aims to do 
 
 ### Views
 
-Views are top level components that are intrinsically bound to routes. A view has a corresponding model that abstracts functionality away from the view. Views connect to the admin system using `VueAdmin.wrap`. `VueAdmin.wrap` connects 
+Views are top level components that are intrinsically bound to routes. A view has a corresponding model that abstracts functionality away from the view. Views connect to the admin system using `VueAdmin.wrap`. `VueAdmin.wrap` connects
 
 ### Models
 

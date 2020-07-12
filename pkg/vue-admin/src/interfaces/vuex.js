@@ -101,11 +101,11 @@ export default {
 		wrapper.addMethod("queryState", accessor => {
 			return admin.callInterfaceMethod("store", "queryState")(accessor);
 		});
-	
+
 		wrapper.addMethod("commit", (type, payload, options) => {
 			return admin.callInterfaceMethod("store", "commit")(type, payload, options);
 		});
-	
+
 		wrapper.addMethod("dispatch", (type, payload) => {
 			return admin.callInterfaceMethod("store", "dispatch")(type, payload);
 		});
@@ -114,11 +114,11 @@ export default {
 		admin.addMethod("queryState", accessor => {
 			return admin.callInterfaceMethod("store", "queryState")(accessor);
 		});
-	
+
 		admin.addMethod("commit", (type, payload, options) => {
 			return admin.callInterfaceMethod("store", "commit")(type, payload, options);
 		});
-	
+
 		admin.addMethod("dispatch", (type, payload) => {
 			return admin.callInterfaceMethod("store", "dispatch")(type, payload);
 		});
