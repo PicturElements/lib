@@ -148,7 +148,7 @@ function appendToken(list, token, clone = false) {
 			value: token.value
 		};
 	}
-	
+
 	if (token.key && token.value) {
 		if (hasOwn(list.lookup, token.key)) {
 			list.lookup[token.key].value = token.value;
@@ -626,14 +626,14 @@ function genDom(nodes, options = {}) {
 
 	if (!nodes.length)
 		return root;
-	
+
 	const useNativeNodes = nodes[0] instanceof Node;
 	let str = "";
 
 	const gen = (nds, parent, indent) => {
 		if (!nds || !nds.length)
 			return;
-		
+
 		for (let i = 0, l = nds.length; i < l; i++) {
 			const node = nds[i],
 				breakStr = (!minified && str) ? "\n" : "";
@@ -699,7 +699,7 @@ function genDom(nodes, options = {}) {
 
 				continue;
 			}
-			
+
 			let nd;
 
 			if (raw)
@@ -848,7 +848,7 @@ function genDom(nodes, options = {}) {
 		} else
 			node.setAttribute(key, value);
 	};
-	
+
 	gen(nodes, root, "");
 
 	if (raw)
@@ -911,7 +911,7 @@ function getNodeType(node) {
 		}
 	} else if (node && typeof node.type == "string")
 		return node.type;
-	
+
 	return null;
 }
 
@@ -1105,7 +1105,7 @@ function mkDynamicValue(dv) {
 		extendDynamicValue(dv, dv.value);
 		delete dv.value;
 	}
-	
+
 	return dv;
 }
 
@@ -1185,7 +1185,7 @@ function setAttribute(node, key, value) {
 function parseAttributes(node, meta = null) {
 	if (!node.attrData)
 		return;
-	
+
 	while (true) {
 		const ex = ATTR_SPLIT_REGEX.exec(node.attrData);
 		if (!ex)
@@ -1221,10 +1221,10 @@ function parseAttributes(node, meta = null) {
 						break;
 					}
 				}
-				
+
 				setAttribute(node, key, value);
 				break;
-			
+
 			default:
 				if (key.indexOf("data-") == 0) {
 					const ref = resolveInlineRefs(value, meta, "singleton"),
@@ -1294,7 +1294,7 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 			term = (...args) => {
 				if (typeof argRef.value == "function")
 					return argRef.value(...args);
-				
+
 				return argRef.value;
 			};
 
@@ -1448,7 +1448,7 @@ function overrideAttributes(attrs, ...overriders) {
 				default:
 					attrs[k] = overriderAttrs[k];
 			}
-		} 
+		}
 	}
 
 	cleanAttributes(attrs);

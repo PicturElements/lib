@@ -423,8 +423,8 @@ function resolveRawFunctional(application, resolver) {
 				resolved[2] :
 				resolved[1]
 		};
-	} 
-	
+	}
+
 	if (isObject(resolved)) {
 		return {
 			raw: resolved.raw,
@@ -434,7 +434,7 @@ function resolveRawFunctional(application, resolver) {
 				resolved.sOffset
 		};
 	}
-	
+
 	console.warn("resolveRawStr must return [raw, startOffset [, endOffset]] or { raw, startOffset [, endOffset] }");
 	return null;
 }

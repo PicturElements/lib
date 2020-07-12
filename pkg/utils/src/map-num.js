@@ -12,19 +12,19 @@ export default function mapNum(target, map, src, mapper) {
 		for (let i = 0, l = map.length; i < l; i++) {
 			const num = src[i % src.length],
 				key = map[i];
-			
+
 			if (typeof num == "number" && !isNaN(num))
 				target[key] = mapper(num, target[key], key, target);
 		}
 	} else {
 		for (let i = 0, l = map.length; i < l; i++) {
 			const num = src[i % src.length];
-			
+
 			if (typeof num == "number" && !isNaN(num))
 				target[map[i]] = num;
 		}
 	}
-	
+
 	return target;
 }
 

@@ -13,10 +13,10 @@ export default class MemoGetter {
 	memoize(memoizer, force) {
 		if (this.item !== undefined && force !== true)
 			return this.item;
-	
+
 		if (!this.target)
 			return console.error("Cannot memoize: target doesn't exist.");
-	
+
 		const memoized = typeof memoizer == "function" ?
 			memoizer(this.target, this.key) :
 			memoizer;

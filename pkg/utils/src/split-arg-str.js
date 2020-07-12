@@ -110,6 +110,6 @@ export default function splitArgStr(str, argSeparator = ",") {
 
 	if (arg || (useRegexArgSep && lastChar == argSeparator))
 		args.push(arg);
-	
+
 	return args;
 }

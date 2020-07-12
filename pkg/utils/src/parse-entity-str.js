@@ -9,7 +9,7 @@ export default function parseEntityStr(str) {
 		match = "",
 		code = 0,
 		matchMode = 0;
-	
+
 	const push = _ => {
 		if (matchMode == 1)
 			outStr += String.fromCharCode(code);

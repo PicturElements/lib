@@ -26,7 +26,7 @@ function binarySearch(arr, comparator, reverse = false) {
 			return pivot;
 		else if (proximity * direction < 0)
 			start = pivot + 1;
-		else 
+		else
 			end = pivot - 1;
 	}
 }
@@ -36,7 +36,7 @@ function binarySearch(arr, comparator, reverse = false) {
 function binaryIndexOf(arr, comparator, reverse) {
 	if (typeof comparator != "function")
 		comparator = mkStandardBinaryComparator(comparator);
-	
+
 	const idx = binarySearch(arr, comparator, reverse),
 		item = arr[idx];
 
@@ -71,14 +71,14 @@ function mkStandardBinaryComparator(val) {
 
 				if (v < val)
 					return -1;
-				
+
 				return 1;
 			};
 	}
 }
 
 // Finds the closest match (proximity) given bound parameters
-// 
+//
 // Compararator:
 // A function that tekes an array item and returns a number; 0 if the result is the same,
 // and negative or positive depending on proximity.
@@ -114,7 +114,7 @@ function findClosest(arr, comparator, options) {
 			steps
 		};
 	};
-	
+
 	if (!Array.isArray(arr) || !arr.length)
 		return dispatch(-1, 0);
 

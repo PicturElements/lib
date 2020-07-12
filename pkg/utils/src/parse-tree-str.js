@@ -45,10 +45,10 @@ export default function parseTreeStr(str, options = {}) {
 				children: [],
 				row: line
 			};
-			
+
 		if (!struct)
 			throw new SyntaxError(`Fell out of struct stack (line ${line})`);
-		
+
 		if (doesIndent) {
 			minIndent = indent;
 

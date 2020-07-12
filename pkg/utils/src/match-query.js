@@ -32,7 +32,7 @@ export default function matchQuery(value, query, options) {
 		for (const k in q) {
 			if (!hasOwn(q, k))
 				continue;
-			
+
 			if (options.noNullish && q[k] == null) {
 				if (matchRuntime)
 					matchRuntime.matchMap[k] = nullishMatch;
@@ -91,7 +91,7 @@ export default function matchQuery(value, query, options) {
 				if (options.throwOnStrictMismatch && strict) {
 					if (matchRuntime)
 						throw new Error(`${key} is a required property (at ${mkAccessor(matchRuntime.accessor)})`);
-					
+
 					throw new Error(`${key} is a required property`);
 				}
 
@@ -120,7 +120,7 @@ export default function matchQuery(value, query, options) {
 				matchMap: rootMatchMap,
 				rootMatchMap,
 				accessor: []
-			},	
+			},
 			matched = match(value, query, matchRuntime);
 
 		return {

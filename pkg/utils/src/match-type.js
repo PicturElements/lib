@@ -47,7 +47,7 @@ export default function matchType(val, type, options, forceFalseDefault = false)
 		if (isProbableConstructor(type)) {
 			if (options.strictConstructor !== false)
 				return val != null && val.constructor == type;
-			
+
 			return typeof val == "object" ?
 				val instanceof type :
 				val != null && val.constructor == type;
@@ -59,7 +59,7 @@ export default function matchType(val, type, options, forceFalseDefault = false)
 		} catch {
 			if (options.strictConstructor !== false)
 				return val != null && val.constructor == type;
-			
+
 			return typeof val == "object" ?
 				val instanceof type :
 				val != null && val.constructor == type;

@@ -9,7 +9,7 @@ describe("displays idempotent properties with identical arguments and returns co
 		for (let i = 1; i < 10; i++)
 			expect(memoize(func, 1, 2, 3)).toBe(6);
 
-		expect(func.mock.calls.length).toBe(1);		
+		expect(func.mock.calls.length).toBe(1);
 	});
 
 	test("when identical arguments are passed intermittently", () => {
@@ -25,7 +25,7 @@ describe("displays idempotent properties with identical arguments and returns co
 it("produces a reliable hash to distinguish call signatures", () => {
 	const func = jest.fn();
 
-	for (let i = 0; i < 10; i++) { 
+	for (let i = 0; i < 10; i++) {
 		memoize(func, null, "null");
 		memoize(func, "null", null);
 		memoize(func, "null", "null");

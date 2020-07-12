@@ -38,7 +38,7 @@ export default function query(list, q, options) {
 	for (let i = 0; i < keyLen; i++) {
 		if (options.noNullish && q[keys[i]] == null)
 			continue;
-		
+
 		const parsedQueryKey = parsePropStr(keys[i]);
 
 		let {

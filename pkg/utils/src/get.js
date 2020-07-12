@@ -12,7 +12,7 @@ import {
 
 export default function get(data, path, def, options = {}) {
 	options = createOptionsObject(options, optionsTemplates);
-	
+
 	const split = Array.isArray(path) ? path : splitPath(path),
 		trace = [],
 		nodeTrace = [],
@@ -24,7 +24,7 @@ export default function get(data, path, def, options = {}) {
 		match = true,
 		built = false,
 		error = null;
-		
+
 	const useBundledOutput = options.context || options.trace || options.info;
 
 	for (let i = options.pathOffset || 0, l = split.length; i < l; i++) {

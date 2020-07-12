@@ -53,7 +53,7 @@ export default function parseStr(str) {
 		case "[":
 			return parseObj(str);
 	}
-	
+
 	return str;
 }
 

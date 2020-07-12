@@ -5,7 +5,7 @@ const oHOP = Object.prototype.hasOwnProperty;
 const polyfillHasOwn = (obj, k, allowSymbols = true) => {
 	if (!oHOP.call(obj, k))
 		return false;
-	
+
 	if (allowSymbols || k[0] != "@")
 		return true;
 

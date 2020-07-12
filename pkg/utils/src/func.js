@@ -98,7 +98,7 @@ function resolveFunc(resolverOrTarget, keyOrResolver, key = null) {
 			this[keyOrResolver] = func;
 			return func.apply(this, arguments);
 		};
-	
+
 		return func;
 	} else if (typeof keyOrResolver == "function" && isValidObjectKey(key)) {
 		if (isPrimitive(resolverOrTarget))
@@ -112,14 +112,14 @@ function resolveFunc(resolverOrTarget, keyOrResolver, key = null) {
 			resolverOrTarget[key] = func;
 			return func.apply(this, arguments);
 		};
-	
+
 		return func;
 	} else if (typeof resolverOrTarget == "function") {
 		let func = function() {
 			func = resolverOrTarget.apply(this, arguments);
 			return func.apply(this, arguments);
 		};
-	
+
 		return function() {
 			return func.apply(this, arguments);
 		};

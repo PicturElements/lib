@@ -48,7 +48,7 @@ function joinRegexFlags(...flagSources) {
 
 		for (let i = 0, l = flags.length; i < l; i++) {
 			const flag = flags[i];
-	
+
 			if (hasOwn(FLAGS_MAP, flag) && !hasOwn(added, flag)) {
 				out += flag;
 				added[flag] = true;

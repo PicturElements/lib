@@ -2,7 +2,7 @@ function getEnvType() {
 	// Avoids false positives from webpack mocked processes
 	if (typeof process == "object" && typeof process.env == "object" && !process.browser)
 		return "node";
-		
+
 	if (typeof self == "object" && typeof WorkerGlobalScope == "function" && self instanceof WorkerGlobalScope && typeof document != "object")
 		return "worker";
 

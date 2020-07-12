@@ -87,7 +87,7 @@ const sinh = m.sinh || (n => {
 const tanh = m.tanh || (n => {
 	const exa = exp(+n),
 		exb = exp(-n);
-	
+
 	return exa == Infinity ?
 		1 :
 		(exb == Infinity ? -1 : (exa - exb) / (exa + exb));

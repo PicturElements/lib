@@ -173,7 +173,7 @@ function uncirculate(obj, options) {
 
 			return uncirc(v);
 		}, options);
-		
+
 		if (!isFrozen) {
 			if (o[circularIdKey] > -1)
 				out[circularIdKey] = o[circularIdKey];
@@ -369,10 +369,10 @@ function aliasCore(target, keyOrMap, shallow, ...aliases) {
 				break;
 
 			descriptor = Object.getOwnPropertyDescriptor(owner, key);
-	
+
 			if (descriptor || shallow)
 				break;
-	
+
 			owner = Object.getPrototypeOf(owner);
 		}
 
@@ -399,7 +399,7 @@ function aliasCore(target, keyOrMap, shallow, ...aliases) {
 		}
 	} else
 		apply(keyOrMap, aliases);
-	
+
 	return appliedCount;
 }
 
@@ -415,7 +415,7 @@ function extend(target, key, value, fallback) {
 	if (!hasOwn(target, key) && !Object.isExtensible(target)) {
 		if (typeof fallback == "function")
 			fallback(target, key, value);
-		
+
 		return false;
 	}
 

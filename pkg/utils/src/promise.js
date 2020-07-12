@@ -6,7 +6,7 @@ function then(value, onFulfilled, onRejected = null) {
 
 	if (isThenable(value))
 		return value.then(onFulfilled, onRejected);
-	
+
 	if (typeof onRejected == "function") {
 		try {
 			return onFulfilled(value);

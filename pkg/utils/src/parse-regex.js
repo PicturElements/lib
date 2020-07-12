@@ -221,7 +221,7 @@ export default function parseRegex(source, flags = "") {
 
 				if (hasOwn(GROUP_SIGNATURES, groupSignature))
 					tokenType = GROUP_SIGNATURES[groupSignature];
-				
+
 				if (!tokenType) {
 					groupSignature = source.substring(ptr + 1, ptr + 4);
 					if (hasOwn(GROUP_SIGNATURES, groupSignature))
@@ -348,7 +348,7 @@ export default function parseRegex(source, flags = "") {
 						count++;
 						continue;
 					}
-						
+
 					if (cc < 0 || cc > 9)
 						break;
 
@@ -403,7 +403,7 @@ export default function parseRegex(source, flags = "") {
 
 						if (cc < 0 || cc > 9)
 							break;
-						
+
 						refId = refId * 10 + cc;
 						refIdLen++;
 					}

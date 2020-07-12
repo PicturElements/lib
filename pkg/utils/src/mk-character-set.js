@@ -144,7 +144,7 @@ export default function mkCharacterSet(source, insensitive = false, err = throwE
 
 					if (item[1] - item[0] != diff)
 						break;
-	
+
 					end = item[1];
 					if (start == -1)
 						start = end;

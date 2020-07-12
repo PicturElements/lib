@@ -21,7 +21,7 @@ import {
 // If the type is a constructor the argument is tested with instanceof
 // If the type is an array the argument is tested for any match of the array's types
 // If the type is unspecified there is a match by default
-// 
+//
 // If it matches, the current argument is set as a named argument
 // If it doesn't match, the default value provided by the parameter argument is
 // set as the named argument and the next parameter is tested for a match, unless
@@ -104,7 +104,7 @@ export default function resolveArgs(args, signature, options) {
 	if (options.allowSingleSource && isObject(args[0])) {
 		if (matchType({}, signature[0].type, "falseDefault"))
 			throw new Error("Failed to resolve arguments: argument ambiguity; first argument of function that supports single source arguments cannot be an object. There is no way to determine which type of argument should be used from arguments alone");
-	
+
 		useSingleSource = true;
 	}
 
@@ -122,7 +122,7 @@ export default function resolveArgs(args, signature, options) {
 			argsOut[key] = argsOut[key] || [];
 			break;
 		}
-		
+
 		if (arg != null && matchType(arg, sgn.type)) {
 			if (sgn.coalesce) {
 				argsOut[key] = argsOut[key] || [];
@@ -156,7 +156,7 @@ export default function resolveArgs(args, signature, options) {
 
 			if (arg == null)
 				argPtr++;
-			
+
 			argsOut[key] = isObj(def) ? clone(def) : def;
 
 			if (sgn.required) {

@@ -25,13 +25,13 @@ function genParamStr(param) {
 function genTypeStr(type) {
 	if (typeof type == "string")
 		return type;
-	
+
 	if (typeof type == "function")
 		return getFunctionName(type) || "fn()";
 
 	if (type && type.constructor == Array)
 		return type.map(genTypeStr).join(" | ");
-	
+
 	return "any";
 }
 

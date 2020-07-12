@@ -16,7 +16,7 @@ class Lookup {
 			this.lookup[key] = true;
 			this.length++;
 		}
-		
+
 		return this;
 	}
 

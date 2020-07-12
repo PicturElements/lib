@@ -55,7 +55,7 @@ describe("correctly iterates", () => {
 describe("correctly iterates in reverse", () => {
 	const isReverseNumberArr = a => {
 		let last = null;
-	
+
 		for (const item of a) {
 			if (typeof item != "number" || last !== null && item > last)
 				return false;
@@ -155,14 +155,14 @@ describe("runs the callback function with the correct arguments", () => {
 		forEach(target, (val, k, obj, ...rest) => {
 			expect(rest).toStrictEqual([]);
 			expect(obj).toBe(target);
-			
+
 			if (target instanceof Set)
 				expect(obj.has(k)).toBe(true);
 			else
 				expect(obj[k]).toBe(val);
 		}, options);
 	};
-	
+
 	test("on arrays", () => {
 		runner(ARR);
 	});
@@ -174,7 +174,7 @@ describe("runs the callback function with the correct arguments", () => {
 	test("on iterables", () => {
 		runner(ITERABLE);
 	});
-	
+
 	test("on arrays in reverse", () => {
 		runner(ARR, "reverse");
 	});
@@ -280,7 +280,7 @@ describe("handles breaks correctly", () => {
 					acc.push(split);
 				});
 			});
-			
+
 			dataAcc.push(acc);
 		});
 
@@ -309,7 +309,7 @@ describe("handles breaks correctly", () => {
 					acc.push(split);
 				});
 			});
-			
+
 			dataAcc.push(acc);
 		});
 
@@ -345,7 +345,7 @@ describe("handles continues correctly", () => {
 
 			return continueRet == forEach && inc == 3;
 		};
-	
+
 	test("continues with arrays", () => {
 		expect(continuesFunc(ARR)).toBe(true);
 	});

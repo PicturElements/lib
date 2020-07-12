@@ -12,6 +12,6 @@ export default function forEachDeep(obj, callback, options) {
 				iterate(e);
 		}, options);
 	};
-	
+
 	iterate(obj);
 }

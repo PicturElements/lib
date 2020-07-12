@@ -15,7 +15,7 @@ export default function parsePropStr(key) {
 			ret.lazy = true;
 			ret.key = key.substring(0, lastIdx);
 			break;
-		
+
 		case "!":
 			ret.strict = true;
 			ret.key = key.substring(0, lastIdx);

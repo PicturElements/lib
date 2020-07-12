@@ -133,7 +133,7 @@ export default function getRegexMetrics(source, flags = "") {
 
 					if (emptyCount > 1)
 						complexity -= (emptyCount - 1);
-					
+
 					res.min += min;
 					res.max += max;
 					res.complexity += complexity - 1;

@@ -65,11 +65,11 @@ export default function serialize(data, optionsOrIndentStr = {}) {
 
 			case "boolean":
 				return String(item);
-				
+
 			case "object":
 				if (item == null)
 					return "null";
-				
+
 				if (Array.isArray(item)) {
 					const out = [],
 						indentSeq = repeat(indentStr, indent + 1);
@@ -89,7 +89,7 @@ export default function serialize(data, optionsOrIndentStr = {}) {
 						`[${out.join(", ")}]` :
 						`[\n${indentSeq}${out.join(`,\n${indentSeq}`)}\n${repeat(indentStr, indent)}]`;
 				}
-				
+
 				if (isObject(item) || !options.jsonCompatible) {
 					const out = [];
 
@@ -107,7 +107,7 @@ export default function serialize(data, optionsOrIndentStr = {}) {
 				}
 
 				return "{}";
-				
+
 			case "function":
 				if (options.jsonCompatible)
 					return "{}";
@@ -124,7 +124,7 @@ export default function serialize(data, optionsOrIndentStr = {}) {
 						indent
 					);
 				}
-				
+
 				return item.toString()
 					.split(/\n|\r/)
 					.join(`\n${repeat(indentStr, indent)}`);

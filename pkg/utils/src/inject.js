@@ -30,7 +30,7 @@ const REF_SET = new QNDSet();
 
 export default function inject(target, extender, options) {
 	options = createOptionsObject(options, optionsTemplates);
-	
+
 	if (options.clone || options.cloneTarget)
 		target = clone(target, options);
 	if (options.clone || options.cloneExtender)
@@ -97,7 +97,7 @@ export default function inject(target, extender, options) {
 		if (isObj(schema)) {
 			if (schema[key] === false)
 				return;
-			
+
 			if (isObj(schema[key]) && (!isObj(ext[key]) || Array.isArray(schema[key]) != isArrayLike(ext[key])))
 				return;
 		}
@@ -109,17 +109,17 @@ export default function inject(target, extender, options) {
 			} else
 				return;
 		}
-	
+
 		if (hasOwn(ext, key, allowSymbols) && (!options.noUndef || ext[key] !== undefined)) {
 			if (typeof options.preInject == "function")
 				options.preInject(targ[key], key, targ, ext, runtime);
-			
+
 			let val = targ[key];
 
 			if (isObj(ext[key]) && (options.preserveInstances || isNativeSimpleObject(ext[key])) && !options.shallow) {
 				runtime.schema = schema && schema[key];
 				runtime.ignore = ignore && ignore[key];
-				
+
 				if (options.circular) {
 					if (REF_SET.has(ext[key]))
 						val = ext[key];

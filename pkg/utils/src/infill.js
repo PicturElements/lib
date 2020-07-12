@@ -178,7 +178,7 @@ const STOCK_INFILL_MODIFIERS = {
 	forEach({ target, source: callback, key }) {
 		if (!target)
 			return;
-		
+
 		if (typeof callback != "function")
 			return console.warn(`Callback is not a function (at ${key})`);
 
@@ -187,7 +187,7 @@ const STOCK_INFILL_MODIFIERS = {
 	map({ target, parentTarget, source: mapper, key }) {
 		if (!target)
 			return;
-		
+
 		if (typeof mapper != "function")
 			return console.warn(`Mapper is not a function (at ${key})`);
 

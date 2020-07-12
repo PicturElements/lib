@@ -9,7 +9,7 @@ function getWrappedRange(from, to, len, relative) {
 			to = from;
 			from = from + delta;
 		} else
-			to += from; 
+			to += from;
 	} else
 		to = to < 0 ? len + to : to;
 

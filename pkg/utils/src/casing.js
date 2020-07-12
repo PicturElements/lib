@@ -75,7 +75,7 @@ const joiners = {
 	},
 	pascalKebab(split) {
 		let out = "";
-		
+
 		for (let i = 0, l = split.length; i < l; i++) {
 			if (i)
 				out += "-";
@@ -87,7 +87,7 @@ const joiners = {
 	},
 	title(split) {
 		let out = "";
-		
+
 		for (let i = 0, l = split.length; i < l; i++) {
 			if (i)
 				out += " ";
@@ -137,7 +137,7 @@ casing.to = type => {
 	const str = casing.session.str,
 		splitter = splitters[casing.session.from] || splitters.any,
 		joiner = joiners[type];
-	
+
 	resetCasingSession();
 
 	if (str === null) {

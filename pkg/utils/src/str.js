@@ -99,7 +99,7 @@ function compileTaggedTemplateCore(args, options) {
 
 		return out;
 	}
-	
+
 	if (typeof args[0] == "string")
 		return args[0];
 
@@ -151,7 +151,7 @@ function compileTaggedTemplateFull(args, options) {
 
 		return out;
 	}
-	
+
 	if (typeof args[0] == "string")
 		out.compiled = args[0];
 
@@ -169,7 +169,7 @@ function compileTaggedTemplate(...args) {
 
 	if (options)
 		return compiler(args, options);
-	
+
 	return compiler(args, CACHED_SERIALIZE_OPTIONS);
 }
 
@@ -332,7 +332,7 @@ function distance(a = "", b = "", options = {}) {
 				if (cost * iw < min)
 					min = cost * iw;
 			}
-			
+
 			// Deletion
 			if (ops.deletion) {
 				if (!i)
@@ -381,7 +381,7 @@ function distance(a = "", b = "", options = {}) {
 		// and at worst it lets the algorithm run slightly longer
 		if (maxDistance && rowMin > maxDistance)
 			return Infinity;
-		
+
 		if (ops.transposition)
 			alphabet[ac] = i;
 	}

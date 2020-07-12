@@ -25,7 +25,7 @@ export default function clone(obj, options) {
 	const cl = (o, d) => {
 		if (!isObj(o))
 			return o;
-		
+
 		// Check if the object is a direct instance of anything else than Object
 		// or Array, in which case we don't want to copy over the object naively,
 		// as the prototypes aren't transferred and we probably don't wish to deep copy

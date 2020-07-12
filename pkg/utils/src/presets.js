@@ -28,7 +28,7 @@ function mergePresets(data, presets, config = {}) {
 		const mrg = (outData, preset, key, force) => {
 			if (!key || !preset || (!force && hasOwn(visitedKeys, key)))
 				return null;
-			
+
 			visitedKeys[key] = true;
 
 			if (Array.isArray(preset)) {

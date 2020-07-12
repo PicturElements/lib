@@ -7,7 +7,7 @@ export default function repeat(str, count = 0) {
 
 	if (!count || !str)
 		return "";
-	
+
 	let out = "";
 
 	// Pretty much completely ripped off the left-pad implementation

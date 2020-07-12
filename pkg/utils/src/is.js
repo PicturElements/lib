@@ -20,7 +20,7 @@ function isNativeSimpleObject(val) {
 	const proto = Object.getPrototypeOf(val);
 	if (!proto)
 		return true;
-	
+
 	const constr = proto.constructor;
 	return constr == Object || constr == Array;
 }
@@ -201,7 +201,7 @@ function isNativeFunction(candidate) {
 		if (foundOpenBrace) {
 			if (c == "[")
 				return funcStr.substring(i, i + 13) == "[native code]";
-			
+
 			if (!isWhitespace(c))
 				return false;
 		} else if (c == "{")

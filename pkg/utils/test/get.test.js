@@ -65,7 +65,7 @@ describe("options work", () => {
 		expect(get(DATA.nest.obj, "nest.obj", null, {
 			pathOffset: 2
 		})).toBe(DATA.nest.obj);
-	
+
 		expect(get(DATA.nest.obj, "nest.obj.arr", null, {
 			pathOffset: 2
 		})).toBe(DATA.nest.obj.arr);
@@ -74,7 +74,7 @@ describe("options work", () => {
 	test("autoBuild", () => {
 		const obj = {};
 		get(obj, "test.a[0]", null, "autoBuild");
-		
+
 		expect(obj).toStrictEqual({
 			test: {
 				a: [

@@ -72,7 +72,7 @@ function mergeObject(
 		case "object":
 			if (Array.isArray(mergerPrecursor))
 				return merge(mergerPrecursor, templates, error, mergeType, mergeFunction);
-			
+
 			return mergerPrecursor ?
 				mergerPrecursor :
 				blank;

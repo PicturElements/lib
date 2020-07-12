@@ -22,7 +22,7 @@ import {
 // 3. iteration over iterables (with support for polyfilled iterables; see Map, Set)
 // 4. iteration over strings, with correct handling of surrogate pairs
 // Array-likes that implement the iteration prototcol are iterated over using a standard
-// for loop by default. Use the iterable flag to prefer iterators 
+// for loop by default. Use the iterable flag to prefer iterators
 //
 // It also supports reverse iteration over the same
 // Note that this function won't iterate over properties added during iteration if:
@@ -295,7 +295,7 @@ forEach.o = opt => {
 forEach.done = func => {
 	if (!jmpObj.aborted && typeof func == "function")
 		func.call(null);
-		
+
 	return forEach;
 };
 

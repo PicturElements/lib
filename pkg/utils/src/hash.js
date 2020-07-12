@@ -132,7 +132,7 @@ function hashStringHelper(str, reduce, cache) {
 
 	if (reduce)
 		return (cache[str] = `${hash.toString(36)}/${str.length}`);
-	
+
 	return (cache[str] = `${hash}/${str.length}`);
 }
 

@@ -122,7 +122,7 @@ function parseNodes(str, meta = null) {
 		indent = -1,
 		indentChar = null,
 		line = 0;
-	
+
 	NODE_REGEX.lastIndex = 0;
 
 	while (true) {
@@ -223,7 +223,7 @@ function parseNodes(str, meta = null) {
 
 				if (node.dynamicAttributes.length)
 					filterMut(node.staticAttributes, key => !hasOwn(node.dynamicAttributesMap, key));
-	
+
 				const elemContent = ex[8];
 
 				if (!elemContent)
@@ -265,7 +265,7 @@ function parseNodes(str, meta = null) {
 function parseClassesAndIDs(node, meta = null) {
 	if (!node.tagData)
 		return;
-	
+
 	while (true) {
 		const ex = CLASS_ID_REGEX.exec(node.tagData);
 		if (!ex)
