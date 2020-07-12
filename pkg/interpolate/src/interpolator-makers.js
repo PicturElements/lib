@@ -1,3 +1,4 @@
+import { hasOwn } from "@qrxr/utils";
 import Color from "@qtxr/color";
 import BasicInterpolator from "./basic-interpolator";
 import DiscreteInterpolator from "./discrete-interpolator";
@@ -38,7 +39,7 @@ const interpolatorMakers = {
 				conformArgs(args) {
 					if (args.length == 1)
 						return [args[0], 0];
-					
+
 					return args;
 				},
 				defaultUnits: "px",
@@ -80,7 +81,7 @@ const interpolatorMakers = {
 				conformArgs(args) {
 					if (args.length == 1)
 						return [args[0], 0];
-					
+
 					return args;
 				},
 				defaultUnits: "deg",
@@ -199,7 +200,7 @@ const interpolatorMakers = {
 				conformArgs(args) {
 					if (args.length == 3)
 						args.splice(2, 0, 0);
-					
+
 					return args;
 				},
 				paramDelimiter: "space",
@@ -256,7 +257,7 @@ const interpolatorMakers = {
 };
 
 function resolveInterpolatorMaker(property) {
-	if (!interpolatorMakers.hasOwnProperty(property))
+	if (!hasOwn(interpolatorMakers, property))
 		return interpolatorMakers._discrete;
 
 	if (typeof interpolatorMakers[property] == "string")

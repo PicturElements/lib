@@ -1,5 +1,6 @@
 import {
 	round,
+	hasOwn,
 	mkConverter
 } from "@qtxr/utils";
 import Interpolator from "./interpolator";
@@ -39,7 +40,7 @@ export default class FunctionListInterpolator extends Interpolator {
 		this.functionIndex = [];
 		this.useTagging = false;
 	}
-	
+
 	doInterpolation(kf, kf2, at, runtime) {
 		at = this.getInterpolationPosition(kf, kf2, at);
 
@@ -72,21 +73,21 @@ export default class FunctionListInterpolator extends Interpolator {
 				lookup: {},
 				index: []
 			};
-	
+
 		for (let i = 0, l = keyframes.length; i < l; i++) {
 			const { functionList, functionDict } = parseFunctionList(keyframes[i].raw, interpolator.units, functions, functionIndexer);
 			keyframes[i].functionList = functionList;
 			keyframes[i].functionDict = functionDict;
 		}
-	
+
 		interpolator.functionIndex = functionIndexer.index;
-	
+
 		fillInPlaceholders(keyframes, functionIndexer.index);
 		fillPlaceholders(keyframes[0].functionList, interpolator, functions);
 		fillPlaceholders(keyframes[keyframes.length - 1].functionList, interpolator, functions);
 		interpolatePlaceholders(keyframes);
 		precompileFunctionStr(interpolator, keyframes);
-	
+
 		return interpolator;
 	}
 }
@@ -100,10 +101,10 @@ function parseFunctionList(raw, units, functions, functionIndexer) {
 		const ex = splitFunctionRegex.exec(raw);
 		if (!ex)
 			break;
-		
+
 		const fName = ex[1];
 
-		if (!functions.hasOwnProperty(fName))
+		if (!hasOwn(functions, fName))
 			throw new SyntaxError(`'${fName}' is not a known function`);
 
 		if (!ex[2])
@@ -122,14 +123,14 @@ function parseFunctionList(raw, units, functions, functionIndexer) {
 			};
 		}
 
-		if (functionDict.hasOwnProperty(fName))
+		if (hasOwn(functionDict, fName))
 			replaceFunction(item, functionList, functionDict);
 		else
 			pushFunction(item, functionList, functionDict);
 
 		item.paramDelimiter = functionSignature.outParamDelimiter || functionSignature.paramDelimiter || ", ";
 
-		if (!functionIndexer.lookup.hasOwnProperty(fName)) {
+		if (!hasOwn(functionIndexer.lookup, fName)) {
 			functionIndexer.lookup[fName] = true;
 			functionIndexer.index.push(fName);
 		}
@@ -184,7 +185,7 @@ function splitArgs(str, type) {
 
 		args.push(ex[0].trim());
 	}
-	
+
 	return args;
 }
 
@@ -227,12 +228,12 @@ function parseArgs(fName, raw, units, functions) {
 		const argUnit = units[fName] && units[fName][i],
 			parsedUnit = argObj.unit;
 
-		if (units.hasOwnProperty(fName) && argUnit && parsedUnit && argUnit != parsedUnit) {
+		if (hasOwn(units, fName) && argUnit && parsedUnit && argUnit != parsedUnit) {
 			const converted = convert(argObj.value, parsedUnit, argUnit);
 
 			if (converted === null)
 				throw new SyntaxError(`Cannot construct interpolator: '${argUnit}' and '${parsedUnit}' are incompatible units (in arg list '${raw}', arg '${arg}' in ${fName})`);
-			
+
 			argObj.value = converted;
 		} else
 			units[fName][i] = argObj.unit || units[fName][i] || "";
@@ -260,7 +261,7 @@ function verifyArgs(args, raw, fName, functionSignature) {
 	} else {
 		if (typeof paramSignature == "number" && paramSignature == aLen)
 			return;
-	
+
 		if (Array.isArray(paramSignature)) {
 			for (let i = 0, l = paramSignature.length; i < l; i++) {
 				if (paramSignature[i] == aLen)
@@ -279,7 +280,7 @@ function fillInPlaceholders(keyframes, index) {
 			const fName = index[j],
 				kf = keyframes[i];
 
-			if (!kf.functionDict.hasOwnProperty(fName))
+			if (!hasOwn(kf.functionDict, fName))
 				pushFunction(mkPlaceholder(fName), kf.functionList, kf.functionDict);
 		}
 	}
@@ -310,7 +311,7 @@ function fillPlaceholders(list, interpolator, functions) {
 }
 
 function interpolatePlaceholders(keyframes) {
-	// const 
+	// const
 }
 
 const argSeparators = {
@@ -327,7 +328,7 @@ function createFunctionStr(kf, kf2, at, runtime, unitsArr) {
 
 	for (let i = 0, l = kf.args.length; i < l; i++) {
 		let val = interpolate(kf.args[i].value, kf2.args[i].value, at, runtime);
-		
+
 		if (typeof val == "number")
 			val = round(val, 5);
 
@@ -399,7 +400,7 @@ function pushToCompiled(compiled, item) {
 	} else {
 		if (typeof compiled[lastIdx] != "string")
 			throw new Error("Failed to precompile: strings and non-strings must be evenly interspersed");
-		
+
 		compiled.push(item);
 	}
 }
@@ -417,7 +418,7 @@ function createFunctionStrFromPrecompiled(precompiled, at, runtime) {
 				at,
 				runtime
 			);
-		
+
 			if (typeof val == "number")
 				val = round(val, 5);
 

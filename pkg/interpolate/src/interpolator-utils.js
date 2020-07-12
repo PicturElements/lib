@@ -258,11 +258,11 @@ function cleanKeyframePositions(keyframes) {
 
 		if (currPosition < lastPosition) {
 			// If the current keyframe appears before than the last chronologically,
-			// it will never be visited, as the time line can't go backwards 
+			// it will never be visited, as the time line can't go backwards
 			keyframes.splice(i, 1);
 			i--;
 		} else if (lastPosition == currPosition) {
-			// For consecutive keyframes with the same percentage value, use the latter 
+			// For consecutive keyframes with the same percentage value, use the latter
 			keyframes.splice(i - 1, 1);
 			i--;
 		} else {

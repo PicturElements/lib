@@ -1,3 +1,4 @@
+import { hasOwn } from "@qtxr/utils";
 import Interpolator from "./interpolator";
 import {
 	prepareKeyframes,
@@ -10,7 +11,7 @@ export default class StyleInterpolator extends Interpolator {
 		super(keyframes);
 		this.useTagging = false;
 	}
-	
+
 	doInterpolation(kf, kf2, at, runtime) {
 		at = getInterpolationPositionRaw(kf.start, kf.end, at);
 		const list = kf.value,
@@ -29,7 +30,7 @@ export default class StyleInterpolator extends Interpolator {
 
 			callbackOrNode = s => {
 				for (const k in s) {
-					if (s.hasOwnProperty(k))
+					if (hasOwn(s, k))
 						style[k] = s[k];
 				}
 			};
@@ -47,7 +48,7 @@ export default class StyleInterpolator extends Interpolator {
 				outStyle = [];
 
 			for (const k in style) {
-				if (!style.hasOwnProperty(k) || Interpolator.isReservedKey(k))
+				if (!hasOwn(style, k) || Interpolator.isReservedKey(k))
 					continue;
 
 				const name = propToAttr(k),

@@ -1,6 +1,6 @@
 import Color from "@qtxr/color";
 import Interpolator from "./interpolator";
-import { 
+import {
 	prepareKeyframes,
 	interpolate
 } from "./interpolator-utils";
@@ -10,7 +10,7 @@ export default class BasicInterpolator extends Interpolator {
 		super(keyframes);
 		this.useTagging = false;
 	}
-	
+
 	doInterpolation(kf, kf2, at, runtime) {
 		at = this.getInterpolationPosition(kf, kf2, at);
 		return interpolate(kf.value, kf2.value, at, runtime);
@@ -34,7 +34,7 @@ export default class BasicInterpolator extends Interpolator {
 
 		for (let i = 0, l = keyframes.length; i < l; i++)
 			keyframes[i].value = keyframes[i].raw;
-		
+
 		return new BasicInterpolator(keyframes);
 	}
 }

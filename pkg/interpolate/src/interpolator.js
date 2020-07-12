@@ -1,6 +1,7 @@
 import {
-	binarySearch,
-	isObject
+	hasOwn,
+	isObject,
+	binarySearch
 } from "@qtxr/utils";
 import { Ease } from "@qtxr/anim";
 import { getInterpolationPosition } from "./interpolator-utils";
@@ -60,10 +61,10 @@ export default class Interpolator {
 
 		const interPos = getInterpolationPosition(from, to, at);
 
-		if (!interpolated.hasOwnProperty("interAt"))
+		if (!hasOwn(interpolated, "interAt"))
 			interpolated.interAt = interPos;
 
-		if (!interpolated.hasOwnProperty("debounce"))
+		if (!hasOwn(interpolated, "debounce"))
 			interpolated.debounce = interPos == this.lastPosition;
 
 		this.lastPosition = interPos;
@@ -92,7 +93,7 @@ export default class Interpolator {
 	}
 
 	static isReservedKey(key) {
-		return Interpolator.reservedKeys.hasOwnProperty(key);
+		return hasOwn(Interpolator.reservedKeys, key);
 	}
 
 	// Compile may accept a number of different formats.
@@ -112,7 +113,7 @@ export default class Interpolator {
 	static c(...keyframes) {
 		if (keyframes.length == 1)
 			return this.compile(keyframes[0]);
-			
+
 		return this.compile(keyframes);
 	}
 }

@@ -8,7 +8,7 @@ export default class PureInterpolator extends Interpolator {
 	constructor(keyframes) {
 		super(keyframes);
 	}
-	
+
 	doInterpolation(kf, kf2, at, runtime) {
 		at = this.getInterpolationPosition(kf, kf2, at);
 		return interpolate(kf.value, kf2.value, at, runtime);

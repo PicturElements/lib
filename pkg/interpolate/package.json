@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/interpolate",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Universal interpolation library",
   "main": "index.js",
   "scripts": {
@@ -24,9 +24,9 @@
   },
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/interpolate#readme",
   "dependencies": {
-    "@qtxr/anim": "^2.0.3",
-    "@qtxr/color": "^1.1.1",
-    "@qtxr/utils": "^1.49.0"
+    "@qtxr/anim": "^2.0.4",
+    "@qtxr/color": "^1.2.1",
+    "@qtxr/utils": "^1.58.1"
   },
   "devDependencies": {},
   "files": [
@@ -34,7 +34,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 7,
+    "pushes": 8,
     "expose": {
       "scripts": [
         "connect/feed.js"
