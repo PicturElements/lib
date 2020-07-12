@@ -16,7 +16,7 @@ export default class EventManager {
 			return warnReturn(null, "Cannot listen: name is not valid");
 		if (!(target instanceof EventTarget))
 			return warnReturn(null, "Cannot listen: event target is not valid (must be an EventTarget)");
-		
+
 		const listeners = listenerList.map(l => {
 			const extend = listenerExtend[l.name],
 				override = {
@@ -25,7 +25,7 @@ export default class EventManager {
 					handlers: []
 				};
 			let listener = null;
-			
+
 			if (!hasOwn(listenerExtend, name))
 				listener = Object.assign({}, l);
 			else if (extend && typeof extend == "object") {
@@ -37,7 +37,7 @@ export default class EventManager {
 					override.handlers;
 			} else
 				listener = Object.assign({}, l, LISTENER_MODIFIERS[extend] || LISTENER_MODIFIERS.disabled);
-			
+
 			return Object.assign(listener, override);
 		});
 

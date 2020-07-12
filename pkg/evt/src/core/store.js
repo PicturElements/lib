@@ -51,7 +51,7 @@ export default class EventStore {
 			scrollTop: -1,
 			scrollLeft: -1
 		};
-		
+
 		this.init();
 	}
 
@@ -105,7 +105,7 @@ export default class EventStore {
 			targetListeners.push(l);
 			l.handlers.push(handler);
 		});
-		
+
 		handler.listeners = targetListeners;
 
 		return handler;

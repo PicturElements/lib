@@ -21,13 +21,13 @@ const DEFAULT_DEBOUNCE_THRESHOLD = 1000 / 60,
 	};
 
 // Symbols
-// Super basic tracker. This key is added to all newly added event handlers and 
+// Super basic tracker. This key is added to all newly added event handlers and
 // serves as an indicator to determine whether a handler is in the system
 // This is by no means a bulletproof feature, but it may catch issues in the future
 const REG_HANDLER = sym("registered handler"),
 	OWN_TRIGGER_KEY = sym("own trigger"),
 	OWN_HANDLER_KEY = sym("own handler");
-	
+
 // Event dispatching
 function triggerEvents(evt, store, listener) {
 	listener = resolveListener(store, listener);
@@ -111,7 +111,7 @@ function shouldDebounce(evt, store, listener, handler) {
 
 	if (typeof listener.debounce == "number")
 		threshold = listener.debounce;
-	
+
 	return threshold > evt.timeStamp - store.debounceTimeStamps[listener.debounceId];
 }
 

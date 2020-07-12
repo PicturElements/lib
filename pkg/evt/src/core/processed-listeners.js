@@ -7,7 +7,7 @@ import listeners from "./listeners";
 
 const listenerMap = {},
 	listenerAliasMap = {};
-	
+
 listeners.forEach((l, i) => {
 	listenerMap[l.name] = i;
 

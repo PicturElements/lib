@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/evt",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Event handling, grouping, and guarding library",
   "main": "index.js",
   "scripts": {
@@ -25,7 +25,7 @@
   },
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/evt#readme",
   "dependencies": {
-    "@qtxr/utils": "^1.51.1"
+    "@qtxr/utils": "^1.58.1"
   },
   "devDependencies": {},
   "files": [
@@ -33,7 +33,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 7,
+    "pushes": 8,
     "expose": {
       "scripts": [
         "connect/feed.js"
