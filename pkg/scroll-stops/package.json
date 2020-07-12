@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/scroll-stops",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Scroll stops for efficient scrolling events",
   "main": "index.js",
   "scripts": {
@@ -24,9 +24,9 @@
   },
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/scroll-stops#readme",
   "dependencies": {
-    "@qtxr/bc": "^1.4.3",
-    "@qtxr/interpolate": "^1.0.3",
-    "@qtxr/utils": "^1.40.2"
+    "@qtxr/bc": "^1.5.1",
+    "@qtxr/interpolate": "^1.0.5",
+    "@qtxr/utils": "^1.58.1"
   },
   "devDependencies": {},
   "files": [
@@ -34,7 +34,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 9,
+    "pushes": 10,
     "expose": {
       "scripts": [
         "connect/feed.js"

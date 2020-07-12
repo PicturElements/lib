@@ -1,5 +1,6 @@
 import {
 	get,
+	hasOwn,
 	queryObj,
 	filterMut
 } from "@qtxr/utils";
@@ -101,9 +102,9 @@ export default class ScrollStops extends Hookable {
 	addStop(stop) {
 		stop = Object.assign({}, stop);
 
-		if (stop.hasOwnProperty("track"))
+		if (hasOwn(stop, "track"))
 			stop.trackY = stop.track;
-		if (stop.hasOwnProperty("handler"))
+		if (hasOwn(stop, "handler"))
 			stop.handlerY = stop.handler;
 
 		stop.trackX = parseTracking(stop.trackX) || null;
@@ -166,11 +167,11 @@ export default class ScrollStops extends Hookable {
 		const tracker = stop[dir == "x" ? "trackX" : "trackY"];
 		if (!tracker)
 			return;
-	
+
 		const handler = stop[dir == "x" ? "handlerX" : "handlerY"];
 		if (typeof handler != "function")
 			return;
-		
+
 		if (tracker.shouldHandle(dir, payload))
 			handler.call(this.thisVal, payload, this);
 	}
@@ -191,7 +192,7 @@ export default class ScrollStops extends Hookable {
 
 	static mkPureInterpolator(data) {
 		const interpolator = PureInterpolator.compile(data);
-		
+
 		return (stop, start, extent) => {
 			const perc = clipNum((stop - start) / extent);
 			return interpolator.interpolate(perc);
@@ -211,7 +212,7 @@ export default class ScrollStops extends Hookable {
 
 	static wrapPureInterpolator(data, accessor) {
 		const interpolator = ScrollStops.mkPureInterpolator(data);
-		
+
 		return function(start = 0, extent = null, multiplier = 1) {
 			extent = extent == null ? 1 - start : extent;
 			const stop = get(this, accessor);
@@ -252,13 +253,13 @@ function parseTracking(track) {
 
 		return createTracker("elements", track);
 	}
-	
+
 	if (Array.isArray(track))
 		return createTracker("range", track.map(parseTracking));
-	
+
 	if (track instanceof Node)
 		return createTracker("elements", [track]);
-	
+
 	if (typeof track == "function")
 		return createTracker("dynamic", track);
 
@@ -269,10 +270,10 @@ function parseTracking(track) {
 const trackerDefaults = {
 	shouldHandle(dir, payload) {
 		const percKey = resolveCoordKey(this, dir);
-	
+
 		if (!payload.prev)
 			return payload[percKey] >= this.value;
-	
+
 		return stopReached(this.value, payload.prev[percKey], payload[percKey]);
 	},
 	calcFrac(dir, payload) {
@@ -320,7 +321,7 @@ const trackerStructs = {
 				this.active = true;
 				return true;
 			}
-			
+
 			if (this.active) {
 				this.active = false;
 				return true;
