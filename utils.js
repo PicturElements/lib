@@ -1,3 +1,5 @@
+/* eslint-disable no-prototype-builtins */
+
 // Miscellaneous pure utilities not pertinent to CLI, the file system, or OS
 
 function promisify(func, paramNamesOrParamMap, returnKeyOrReturnIndex, optionsOrCallback) {
@@ -25,7 +27,7 @@ function promisify(func, paramNamesOrParamMap, returnKeyOrReturnIndex, optionsOr
 
 			if (namedArgs.err)
 				return resolve(null);
-			
+
 			resolve(namedArgs[returnKeyOrReturnIndex]);
 		} else
 			resolve(args[returnKeyOrReturnIndex || 0]);
@@ -119,7 +121,7 @@ function repeat(str, count = 0) {
 
 	if (!count)
 		return "";
-	
+
 	let out = "";
 
 	// Pretty much completely ripped off the left-pad implementation
@@ -173,7 +175,7 @@ class BuildStamp {
 		this.logBuild();
 		const date = new Date(),
 			dateStr = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
-		
+
 		return `@ ${dateStr} ${date.getDate()}/${date.getMonth() + 1} - build ${this.builds}`;
 	}
 }

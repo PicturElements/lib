@@ -1,3 +1,5 @@
+/* eslint-disable no-prototype-builtins */
+
 const Form = require("./form");
 const { writeFile } = require("../pkg/node-utils");
 const {
@@ -46,7 +48,7 @@ function structuredSerialize(fieldsOrItem, indentStr = "\t", isFieldArray = fals
 			case "object":
 				if (item == null)
 					return "null";
-				
+
 				if (Array.isArray(item)) {
 					const flat = !item.some(isObject);
 					if (flat)
@@ -63,7 +65,7 @@ function structuredSerialize(fieldsOrItem, indentStr = "\t", isFieldArray = fals
 
 					return `[\n${out.join(",\n")}\n${repeat(indentStr, indent)}]`;
 				}
-				
+
 				if (isObject(item)) {
 					const out = [];
 

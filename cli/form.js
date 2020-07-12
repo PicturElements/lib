@@ -6,7 +6,7 @@ const {
 	resolveVal,
 	shortPrint,
 	coerceNum,
-	isObject 
+	isObject
 } = require("../utils");
 
 const FIELDMAP_SRC_SYMBOL = Symbol("fieldMap source"),
@@ -82,7 +82,7 @@ module.exports = class Form {
 			partition = path.reduce((part, key) => {
 				return part && (part[key] || null);
 			}, map);
-		} else 
+		} else
 			partition = keyOrField;
 
 		if (!partition)
@@ -96,7 +96,7 @@ module.exports = class Form {
 
 	async cli(precedence = DEF_PRECEDENCE, rlSettings = DEF_RL_INTERFACE_SETTINGS) {
 		const rl = NestedReadlineInterface.create(FORM_INTERFACE_PARTITION_NAME, rlSettings);
-		
+
 		const runCLI = async (fields, map) => {
 			for (const field of fields) {
 				const prec = coerceNum(field.precedence, DEF_PRECEDENCE);
@@ -177,10 +177,10 @@ function mkQuestion(form, field) {
 	}
 }
 
-function mkErrorMsg(form, field, validatorResponse) {	
+function mkErrorMsg(form, field, validatorResponse) {
 	if (typeof validatorResponse == "string")
 		return validatorResponse;
-	
+
 	return mkDefaultErrorMsg(form, field);
 }
 

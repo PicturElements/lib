@@ -37,17 +37,17 @@ const commands = new Commander({
 
 async function push(root) {
 	const jsonPath = path.join(PKG_DIR, root, "package.json"),
-		package = await readJSONNull(jsonPath);
+		pkg = await readJSONNull(jsonPath);
 
-	if (!package) {
+	if (!pkg) {
 		error("Couldn't find package.json");
 		return false;
 	}
 
-	const pushes = package.qlib.pushes || 0;
+	const pushes = pkg.qlib.pushes || 0;
 
-	package.qlib.pushes = pushes + 1;
-	if (!await (writeJSON(jsonPath, package, "  "))) {
+	pkg.qlib.pushes = pushes + 1;
+	if (!await (writeJSON(jsonPath, pkg, "  "))) {
 		error("Aborting: failed to update package.json");
 		return false;
 	}
@@ -61,9 +61,9 @@ async function push(root) {
 		else
 			error("Failed to reset commit. Run 'git reset --soft HEAD~1' to reset manually");
 
-		package.qlib.pushes = pushes;
+		pkg.qlib.pushes = pushes;
 
-		if (await writeJSON(jsonPath, package, "  "))
+		if (await writeJSON(jsonPath, pkg, "  "))
 			console.log("Successfully undid changes; exiting");
 		else {
 			error("WARNING: failed to update package.json. Please update it manually with the following data:");
@@ -81,7 +81,7 @@ async function push(root) {
 	if (!await booleanQuestion())
 		return console.log("Cancelling");
 
-	const msgPrefix = `${package.name} ${package.version} - ${pushes}: `;
+	const msgPrefix = `${pkg.name} ${pkg.version} - ${pushes}: `;
 	let msg = "updated package";
 
 	while (true) {
@@ -90,7 +90,7 @@ async function push(root) {
 				return input.length > 3 ? true : "Terse commit messages are not allowed";
 			}
 		});
-		
+
 		msg.trim();
 
 		if (await booleanQuestion(`${msgPrefix}${msg}\nOk?`))

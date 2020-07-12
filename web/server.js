@@ -87,10 +87,10 @@ function plural(count, base) {
 	}
 
 	info(`Finished building exposed files for ${count} ${plural(count, "package")} (${Date.now() - startTime} ms)`);
-	
+
 	if (errors)
 		error(`${errors} ${plural(errors, "error")}`);
-		
+
 	if (fatalErrors)
 		error(`${fatalErrors} fatal ${plural(fatalErrors, "error")}`);
 })();

@@ -1,3 +1,5 @@
+/* eslint-disable no-prototype-builtins */
+
 export default function feed(exp, defaultName) {
 	if (!exp || typeof exp != "object")
 		exp = { default: exp };

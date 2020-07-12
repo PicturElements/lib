@@ -1,3 +1,5 @@
+/* eslint-disable no-prototype-builtins */
+
 // TODO:
 // check nested Commanders for duplicate commands/aliases
 

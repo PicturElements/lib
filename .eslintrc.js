@@ -30,6 +30,16 @@ module.exports = {
 				varsIgnorePattern: "^_+$"
 			}
 		],
-		"arrow-parens": ["warn", "as-needed"]
+		"no-undef": [
+			"error",
+			{
+				typeof: true
+			}
+		],
+		"arrow-parens": ["warn", "as-needed"],
+		"no-unexpected-multiline": "off"
+	},
+	globals: {
+		BigInts
 	}
 };

@@ -23,25 +23,25 @@ const commands = new Commander()
 			return false;
 		}
 
-		const package = await readJSONNull(join(pth, "package.json"));
+		const pkg = await readJSONNull(join(pth, "package.json"));
 
-		if (!package) {
+		if (!pkg) {
 			error("Failed to run install: package.json not readable");
 			return false;
 		}
-		
+
 		const exit = await spawn("npm", [
 			"i",
-			package.name,
+			pkg.name,
 			...passedArgs
 		], STD_IO);
 
 		if (exit.code) {
-			error(`Failed to run install on ${package.name} (exit code ${exit.code})`);
+			error(`Failed to run install on ${pkg.name} (exit code ${exit.code})`);
 			return false;
 		}
-		
-		success(`Sucessfully installed ${package.name}`);
+
+		success(`Sucessfully installed ${pkg.name}`);
 	})
 	.cmd("local-install", async options => {
 		const [ pkgName ] = options.args,
@@ -55,9 +55,9 @@ const commands = new Commander()
 			return false;
 		}
 
-		const package = await readJSONNull(join(pth, "package.json"));
+		const pkg = await readJSONNull(join(pth, "package.json"));
 
-		if (!package) {
+		if (!pkg) {
 			error("Failed to run local-install: package.json not readable");
 			return false;
 		}
@@ -73,7 +73,7 @@ const commands = new Commander()
 			return false;
 		}
 
-		success(`Sucessfully installed ${package.name}`);
+		success(`Sucessfully installed ${pkg.name}`);
 	})
 	.cmd("local-uninstall", async options => {
 		const [ pkgName ] = options.args;
@@ -82,25 +82,25 @@ const commands = new Commander()
 			return false;
 
 		const pth = join(__dirname, "../../pkg", pkgName);
-		const package = await readJSONNull(join(pth, "package.json"));
+		const pkg = await readJSONNull(join(pth, "package.json"));
 
-		if (!package) {
+		if (!pkg) {
 			error("Failed to run local-uninstall: package.json not readable");
 			return false;
 		}
-		
+
 		const exit = await spawn("npm", [
 			"uninstall",
 			"-D",
-			package.name
+			pkg.name
 		], STD_IO);
 
 		if (exit.code) {
-			error(`Failed to run local-uninstall on ${package.name} (exit code ${exit.code})`);
+			error(`Failed to run local-uninstall on ${pkg.name} (exit code ${exit.code})`);
 			return false;
 		}
-		
-		success(`Sucessfully uninstalled ${package.name}`);
+
+		success(`Sucessfully uninstalled ${pkg.name}`);
 	});
 
 async function isValidPkgName(pkgName, cmd) {

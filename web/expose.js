@@ -1,3 +1,5 @@
+/* eslint-disable no-prototype-builtins */
+
 const webpack = require("webpack");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const {
@@ -149,7 +151,7 @@ async function buildExposedAtPkg(pkgName, pkg = null) {
 
 		pkg = await readJSON(jsonPath);
 	}
-	
+
 	const locals = await resolveLocals(pkgName, pkg);
 	const statuses = await buildExposed(pkgName, locals);
 
@@ -169,7 +171,7 @@ function getWebpackOptions(pkgName, type) {
 					path: join(__dirname, "bundles", pkgName, type),
 				}
 			};
-		
+
 		case "styles":
 			return {
 				mode: "development",

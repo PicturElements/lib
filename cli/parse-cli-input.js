@@ -1,3 +1,5 @@
+/* eslint-disable no-prototype-builtins */
+
 const superfluousPrefixRegex = /^ql(?:ib)?\s+/;
 
 module.exports = function parseCLIInput(argv, aliases, extraArgs) {
@@ -9,7 +11,7 @@ module.exports = function parseCLIInput(argv, aliases, extraArgs) {
 		const ex = superfluousPrefixRegex.exec(argv);
 		if (ex)
 			argv = argv.substr(ex[0].length);
-		
+
 		argv = process.argv.slice(0, 2).concat(toArgv(argv));
 	}
 

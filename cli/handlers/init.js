@@ -23,10 +23,10 @@ const HOME_DIR = path.join(__dirname, "../.."),
 module.exports = async function init(options) {
 	const [ name ] = options.args,
 		precedence = JSONForm.calcPrecedenceFromCLIOptions(options);
-	
+
 	if (!name)
 		return error("Failed to initialize package: name is not valid");
-	
+
 	const pkgPathLocal = path.join(PKG_DIR, name),
 		pkgPath = path.join(HOME_DIR, pkgPathLocal);
 
@@ -53,7 +53,7 @@ module.exports = async function init(options) {
 
 			if (!success)
 				return;
-			
+
 			break;
 		}
 	}
@@ -102,7 +102,7 @@ module.exports = async function init(options) {
 
 		for (const file of exposeFiles) {
 			const pth = path.join(pkgPath, file),
-				fileName = /([^.\/]+)(?:\.\w+)?$/.exec(file)[1];
+				fileName = /([^./]+)(?:\.\w+)?$/.exec(file)[1];
 			const success = await writeFile(pth, getExposeDefault(fileName));
 
 			if (!success) {
@@ -125,7 +125,7 @@ function panic(pkgPath, reason) {
 async function writeFiles(files) {
 	for (const file of files) {
 		const success = await writeFile(file.path, file.content || "");
-		
+
 		if (!success)
 			return file.err || `failed to write file at ${file.path}`;
 	}
