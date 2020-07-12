@@ -1,4 +1,7 @@
-import { get } from "@qtxr/utils";
+import {
+	get,
+	hasOwn
+} from "@qtxr/utils";
 
 // Caching manager. Allows you to cache calculated data if it's ever needed again.
 // Useful when you need similar data across different areas of your program that
@@ -9,7 +12,7 @@ export default class CalcCache {
 	}
 
 	registerCachePartition(partition) {
-		if (this.cache.hasOwnProperty(partition))
+		if (hasOwn(this.cache, partition))
 			throw new Error(`Cache partition '${partition}' is already in use.`);
 		if (!partition)
 			throw new Error("Cache partition must have a valid name.");
@@ -18,14 +21,14 @@ export default class CalcCache {
 
 	clearCache(partition) {
 		if (partition) {
-			if (this.cache.hasOwnProperty(partition))
+			if (hasOwn(this.cache, partition))
 				this.cache[partition] = {};
 		} else
 			this.cache = {};
 	}
 
 	request(partition, accessor, fallback, callback, terminateOnUndefined) {
-		if (!this.cache.hasOwnProperty(partition))
+		if (!hasOwn(this.cache, partition))
 			throw new Error("Partition does not exist in cache.");
 
 		let item = get(this.cache[partition], accessor),

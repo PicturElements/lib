@@ -1,5 +1,6 @@
 import {
 	clone,
+	hasOwn,
 	forEach,
 	isObject,
 	findClosest,
@@ -42,7 +43,7 @@ function node(tag, cls, inner, attrs, ns) {
 			for (let i = 0; i < NS_LEN; i++) {
 				let nsi = DOM_NAMESPACES[i];
 
-				if (nsi.tags[tag] && nsi.tags.hasOwnProperty(tag)) {
+				if (nsi.tags[tag] && hasOwn(nsi.tags, tag)) {
 					tag = nsi.tagGetter(tag);
 					ns = nsi.uri;
 					break;
@@ -58,7 +59,7 @@ function node(tag, cls, inner, attrs, ns) {
 			n.setAttribute("class", cls);
 
 		for (let k in attrs) {
-			if (attrs.hasOwnProperty(k)) {
+			if (hasOwn(attrs, k)) {
 				switch (k) {
 					case "style":
 						n.setAttribute("style", createStyleStr(attrs[k]));
@@ -109,7 +110,7 @@ function createStyleStr(style) {
 
 	let out = "";
 	for (let k in style) {
-		if (style.hasOwnProperty(k))
+		if (hasOwn(style, k))
 			out += (k.replace(propToAttrRegex, "$1-$2").toLowerCase() + ": " + style[k] + "; ");
 	}
 
@@ -223,20 +224,20 @@ function fillInData(target, reference, forceFill) {
 
 	function fill(targ, ref) {
 		for (let k in ref) {
-			const matching = ref.hasOwnProperty(k) && targ.hasOwnProperty(k);
+			const matching = hasOwn(ref, k) && hasOwn(targ, k);
 			let recessive = !!ref.fillRecessive;
 
 			if (ref[k] && ref[k].fillDominant)
 				recessive = false;
 
-			if (ref.hasOwnProperty(k) && !recessive || matching || forceFill) {
+			if (hasOwn(ref, k) && !recessive || matching || forceFill) {
 				const tk = targ[k],
 					rk = ref[k];
 
 				if (isNativeSimpleObject(tk))
 					fill(tk, rk);
 				else if (k != "fillRecessive" && k != "fillDominant") {
-					if (!targ.hasOwnProperty(k))
+					if (!hasOwn(targ, k))
 						targ[k] = rk;
 					// If the property is true and the reference property is an object,
 					// also fill in with the reference's data
@@ -266,15 +267,15 @@ function mapClone(target, source, map) {
 	}
 
 	for (let k in source) {
-		if (source.hasOwnProperty(k)) {
+		if (hasOwn(source, k)) {
 			const srcIsSimple = isNativeSimpleObject(source[k]);
 
-			if (!map[k] && !target.hasOwnProperty(k))
+			if (!map[k] && !hasOwn(target, k))
 				target[k] = source[k];
 			else if (map === true)
 				target[k] = clone(source[k]);
 			else {
-				if (!target.hasOwnProperty(k) && srcIsSimple)
+				if (!hasOwn(target, k) && srcIsSimple)
 					target[k] = source[k].constructor();
 
 				mapClone(target[k], source[k], map[k]);

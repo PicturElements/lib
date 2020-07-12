@@ -1,4 +1,7 @@
-import { remFromArr } from "@qtxr/utils";
+import {
+	hasOwn,
+	remFromArr
+} from "@qtxr/utils";
 
 export default class VizMessenger {
 	constructor() {
@@ -7,7 +10,7 @@ export default class VizMessenger {
 
 	subscribe(recipients) {
 		for (let k in recipients) {
-			if (!recipients.hasOwnProperty(k))
+			if (!hasOwn(recipients, k))
 				continue;
 
 			const list = this.subscriberLists[k] || [];
@@ -26,7 +29,7 @@ export default class VizMessenger {
 	}
 
 	post(key, values) {
-		if (this.subscriberLists.hasOwnProperty(key)) {
+		if (hasOwn(this.subscriberLists, key)) {
 			const list = this.subscriberLists[key];
 			for (let i = 0, l = list.length; i < l; i++)
 				list[i](key, values);

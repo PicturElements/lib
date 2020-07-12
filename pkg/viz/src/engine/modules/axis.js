@@ -1,4 +1,7 @@
-import { clone } from "@qtxr/utils";
+import {
+	clone,
+	hasOwn
+} from "@qtxr/utils";
 import { warningFlagEnabled } from "../viz-utils";
 
 export default class Axis {
@@ -47,7 +50,7 @@ export default class Axis {
 		if (!isFinite(startIndex) || !isFinite(endIndex)) {
 			if (warningFlagEnabled(this.warnings, "infiniteSpan"))
 				console.warn("Infinite span detected. Will refuse to paint axis.");
-			
+
 			return;
 		}
 
@@ -71,7 +74,7 @@ export default class Axis {
 		const extr = (interval, start, end, ref) => {
 			let s = 0,
 				e = 0,
-				canAdd = !interval.showMap || interval.showMap.hasOwnProperty(zoomLvl);
+				canAdd = !interval.showMap || hasOwn(interval.showMap, zoomLvl);
 
 			switch (interval.type) {
 				case "template":
@@ -187,7 +190,7 @@ function calcKillMap(interval) {
 		for (let i = 0, l = s.length; i < l; i++) {
 			const km2 = calcKillMap(s[i]);
 			for (let k in km2) {
-				if (km2.hasOwnProperty(k))
+				if (hasOwn(km2, k))
 					km[k] = false;
 			}
 		}
@@ -201,6 +204,6 @@ function arrToTruthMap(arr) {
 
 	for (let i = 0, l = arr.length; i < l; i++)
 		out[arr[i]] = true;
-	
+
 	return out;
 }

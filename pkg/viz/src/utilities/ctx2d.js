@@ -49,7 +49,7 @@ export default class CTX2D {
 			return;
 
 		for (let k in data) {
-			if (data.hasOwnProperty(k))
+			if (hasOwn(data, k))
 				this.item[k] = data[k];
 		}
 
@@ -71,7 +71,7 @@ export default class CTX2D {
 
 (_ => {
 	for (let k in proto) {
-		if (proto.hasOwnProperty(k))
+		if (hasOwn(proto, k))
 			setProto(k);
 	}
 
@@ -93,20 +93,20 @@ export default class CTX2D {
 				set(val) {
 					const c = contexts[this.sym];
 
-					if (c.custom.hasOwnProperty(key))
+					if (hasOwn(c.custom, key))
 						c.custom[key] = val;
 					else
 						c.stock[key] = val;
 				},
 				get() {
 					const c = contexts[this.sym];
-					return (c.custom.hasOwnProperty(key) ? c.custom : c.stock)[key];
+					return (hasOwn(c.custom, key) ? c.custom : c.stock)[key];
 				}
 			});
 		} else {
 			CTX2D.prototype[key] = function() {
 				const c = contexts[this.sym],
-					ret = (c.custom.hasOwnProperty(key) ? c.custom : c.stock)[key]
+					ret = (hasOwn(c.custom, key) ? c.custom : c.stock)[key]
 						.apply(c.stock, arguments);
 
 				return ret || this;

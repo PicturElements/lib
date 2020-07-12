@@ -1,5 +1,6 @@
 import {
 	clone,
+	hasOwn,
 	filterMut,
 	parsePugStr,
 	parseTreeStr,
@@ -52,7 +53,7 @@ function parseSubTemplate(template, subTemplates) {
 
 	if (template.children.length != 1)
 		throw new Error(`Failed to parse template: templates must have exactly one top level child`);
-		
+
 	const traverse = node => {
 		const ex = templateRegex.exec(node.raw);
 
@@ -73,7 +74,7 @@ function parseSubTemplate(template, subTemplates) {
 			const subTemplateName = ex[2],
 				subTemplate = subTemplates[subTemplateName];
 
-			if (!subTemplates.hasOwnProperty(subTemplateName))
+			if (!hasOwn(subTemplates, subTemplateName))
 				throw new Error(`Failed to parse template: no sub-template by name '${subTemplateName}' found`);
 			if (!subTemplate.parsed && subTemplate.parsingInitialized)
 				throw new Error(`Failed to parse template: circular data found at '${subTemplateName}'`);
@@ -82,7 +83,7 @@ function parseSubTemplate(template, subTemplates) {
 			overrideAttributes(parsedTemplate.attributes, nodeData.attributes);
 			outNode = parsedTemplate;
 		}
-		
+
 		outNode.criteria = extractCriteria(outNode.attributes);
 		outNode.id = ex[4] || outNode.id;
 
@@ -101,7 +102,7 @@ function extractCriteria(attrs) {
 	const criteria = [];
 
 	for (const k in attrs) {
-		if (!attrs.hasOwnProperty(k) || CRITERION_EXEMPT_ATTRS.hasOwnProperty(k))
+		if (!hasOwn(attrs, k) || hasOwn(CRITERION_EXEMPT_ATTRS, k))
 			continue;
 
 		criteria.push({

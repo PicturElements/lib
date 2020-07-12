@@ -1,7 +1,8 @@
 import {
-	forEach,
+	hasOwn,
 	equals,
-	unenum
+	unenum,
+	forEach
 } from "@qtxr/utils";
 
 const readonlyProps = {
@@ -15,10 +16,10 @@ export default class Dataset {
 		owner = owner || null;
 
 		forEach(data, (e, k) => {
-			if (readonlyProps.hasOwnProperty(k))
+			if (hasOwn(readonlyProps, k))
 				throw new Error(`Action forbidden: Cannot override property "${k}".`);
 
-			if (Dataset.prototype.hasOwnProperty(k))
+			if (hasOwn(Dataset.prototype, k))
 				console.warn(`Dataset prototype "${k}" has been overwritten by a custom value. This might not be intentional.`);
 
 			this[k] = data[k];

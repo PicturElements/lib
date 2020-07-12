@@ -96,14 +96,14 @@ feed.add("viz", activeFeed => {
 								]
 							}
 						]
-					}, 
+					},
 					xAxis: true,	// Simply inherit the default value
 					yAxis: true,
 					tooltip: [],/*{
 						global: [
 							"{{ x | round=2 | prefix='X value: ' | wrap='span.legend-centered-text' }}",
 							"{{ y | round=2 | prefix='Y value: ' | wrap='span.legend-centered-text' }}",
-							// { 
+							// {
 							// 	template: "{{ y | round=3 |  | wrap-before=span.legend-value }}",
 							// 	custom: {
 							// 		unitValue(data){

@@ -1,6 +1,6 @@
 
 const style = {
-	line: "col1" 
+	line: "col1"
 };
 
 const style2 = {
@@ -39,7 +39,7 @@ function get(config, assets, r) {
 				getSpan(args) {
 					args.hour = 0;
 					const span = args.span;
-					
+
 					if (span < 3) return 100;
 					if (span < 5) return 200;
 

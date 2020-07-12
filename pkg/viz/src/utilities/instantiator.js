@@ -1,5 +1,6 @@
 import {
 	get,
+	hasOwn,
 	isNativeSimpleObject
 } from "@qtxr/utils";
 
@@ -30,7 +31,7 @@ export default class Instantiator {
 
 			if (typeof arg == "string") {
 				const ex = dynArgRegex.exec(arg);
-				
+
 				if (!ex)
 					continue;
 
@@ -47,7 +48,7 @@ function applyInstantiators(obj, dynamicArgs) {
 		return obj;
 
 	for (let k in obj) {
-		if (obj.hasOwnProperty(k)) {
+		if (hasOwn(obj, k)) {
 			if (obj[k] instanceof Instantiator) {
 				obj[k].setDynamicArgs(dynamicArgs);
 				obj[k] = obj[k].instantiate();

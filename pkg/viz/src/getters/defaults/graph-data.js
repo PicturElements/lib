@@ -2,6 +2,7 @@
 
 import {
 	get,
+	hasOwn,
 	inject,
 	isFiniteNum
 } from "@qtxr/utils";
@@ -71,13 +72,13 @@ function getter(config, assets, r) {
 
 						// First add base graphs
 						sets.forEach(set => {
-							if (!set.hasOwnProperty("reference"))
+							if (!hasOwn(set, "reference"))
 								inst.addPlot(set);
 						});
 
 						// Then add derived graphs
 						sets.forEach(set => {
-							if (set.hasOwnProperty("reference"))
+							if (hasOwn(set, "reference"))
 								inst.addDerivedPlot(set);
 						});
 
@@ -373,7 +374,7 @@ function getter(config, assets, r) {
 						};
 					},
 					paint(inst, mod, data) {
-						console.log("_selfKey should be implemented: ", mod.hasOwnProperty("_selfKey"));
+						console.log("_selfKey should be implemented: ", hasOwn(mod, "_selfKey"));
 						mod.elements[mod._key].innerHTML = renderTextTemplate(mod.template, data, null, mod.placeholder);
 					}
 				},
@@ -415,7 +416,7 @@ function getter(config, assets, r) {
 			},
 			hooks: {
 				handleCollectedDataset(inst, dataset, collection, index) {
-					if (collection.hasOwnProperty("pointDescriptor")) {
+					if (hasOwn(collection, "pointDescriptor")) {
 						dataset.data = collection.pointDescriptor;
 						dataset.ownBounding = collection.bounding || {};
 					} else {

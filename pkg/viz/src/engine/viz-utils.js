@@ -1,5 +1,6 @@
 import {
 	get,
+	hasOwn,
 	coerceNum,
 	isFiniteNum
 } from "@qtxr/utils";
@@ -14,7 +15,7 @@ import Undoable from "../utilities/undoable";
 const ctxConfig = {
 	modifiers: {
 		add(data, dataset) {
-			if (data.hasOwnProperty("x"))
+			if (hasOwn(data, "x"))
 				data.x /= dataset._owner.config.canvRes;
 		}
 	}

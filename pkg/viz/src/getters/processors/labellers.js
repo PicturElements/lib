@@ -17,14 +17,14 @@ const getters = {
 				span = bounding.span,
 				timestamp = snapped && time ? time : perc * span + bounding.min;
 			let timeAccuracy = 0;
-	
+
 			if (span < 172800000)		// < 2 days
 				timeAccuracy = 3;
 			else if (span < 604800000)	// < 1 week
 				timeAccuracy = 2;
 			else if (span < 2592000000)	// < 1 month
 				timeAccuracy = 1;
-	
+
 			return inst.i18n.dateCompose(config.i18nDateStringAccessor, {
 				timestamp,
 				timeAccuracy

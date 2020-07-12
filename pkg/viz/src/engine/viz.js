@@ -3,6 +3,7 @@ import {
 	get,
 	isObj,
 	clone,
+	hasOwn,
 	unenum,
 	equals,
 	inject,
@@ -63,7 +64,7 @@ import mkGetterManager from "../getters/mk-getter-manager";
 // 		As it stands, you have to define an object with a "standard" key
 // - Add setting that sets "tracking", i.e. how the graph should repaint if there's new data
 // 		For example: lock to last value, slide to fit span
-// - make derived graph modules, possibly. 
+// - make derived graph modules, possibly.
 // - add support for cross-module tasks
 // - add in absolutely positioned graphs that inherit the collector value of the parent
 
@@ -168,7 +169,7 @@ export default class Viz {
 
 		// If the config data includes a night mode style, complement it
 		// with day mode data where needed, and create a day mode clone.
-		if (this.config.hasOwnProperty("styleAlt"))
+		if (hasOwn(this.config, "styleAlt"))
 			this.registerAltStyle(this.config.styleAlt);
 
 		this.setGraphId(optionals.displayId || Object.keys(this.graphData)[0]);
@@ -177,7 +178,7 @@ export default class Viz {
 	}
 
 	setGraphId(id) {
-		if (this.state.graphId == id || !this.graphData.hasOwnProperty(id))
+		if (this.state.graphId == id || !hasOwn(this.graphData, id))
 			return;
 
 		this.state.graphId = id;
@@ -373,7 +374,7 @@ export default class Viz {
 
 			zim.forEach(({ idx }) => {
 				const dataset = datasets[idx];
-				
+
 				if (get(dataset, "data.points")) {
 					const args = {
 						dataset,
@@ -456,10 +457,10 @@ export default class Viz {
 			const n = node(tmpl.tag, tmpl.attributes.class, null, attrs);
 
 			if (tmpl.id) {
-				if (ref.hasOwnProperty(tmpl.id))
+				if (hasOwn(ref, tmpl.id))
 					throw new Error(`Elements with duplicate ID found: '${tmpl.id}'`);
 
-				if (modules.hasOwnProperty(tmpl.id)) {
+				if (hasOwn(modules, tmpl.id)) {
 					modules[tmpl.id].dom = n;
 					modules[tmpl.id].elems = {};
 				}
@@ -510,12 +511,12 @@ export default class Viz {
 			message.source = source;
 
 		for (let k in targets) {
-			if (modules.hasOwnProperty(k)) {
+			if (hasOwn(modules, k)) {
 				const mod = modules[k],
 					props = Array.isArray(targets[k]) ? targets[k] : [targets[k]];
 
 				props.forEach(prop => {
-					if (mod.hasOwnProperty(prop) && typeof mod[prop] == "function")
+					if (hasOwn(mod, prop) && typeof mod[prop] == "function")
 						mod[prop](this, mod, message);
 				});
 			}
@@ -551,7 +552,7 @@ export default class Viz {
 					ref.derivedSets[ds.id] = ds;
 				});
 
-			if (!dataset.hasOwnProperty("derived"))
+			if (!hasOwn(dataset, "derived"))
 				unenum(dataset, "derived", true);
 		}
 
@@ -601,7 +602,7 @@ export default class Viz {
 
 		return this.currentGraphData.datasets.filter(ds => {
 			for (let k in query) {
-				if (query.hasOwnProperty(k) && (!equals(query[k], ds[k])) ^ invert)
+				if (hasOwn(query, k) && (!equals(query[k], ds[k])) ^ invert)
 					return false;
 			}
 
@@ -641,7 +642,7 @@ export default class Viz {
 			return;
 
 		datasets.forEach(ds => {
-			if (data.hasOwnProperty(ds.id)) {
+			if (hasOwn(data, ds.id)) {
 				const points = data[ds.id];
 
 				ds.data = {
@@ -861,7 +862,7 @@ export default class Viz {
 				alt: conf.styleAlt
 			};
 
-		if (!styles.hasOwnProperty(type) || type == this.state.styleMode)
+		if (!hasOwn(styles, type) || type == this.state.styleMode)
 			return;
 
 		if (type == "alt" && !styles.alt)
@@ -889,7 +890,7 @@ export default class Viz {
 				}
 			};
 
-		if (!dataset.hasOwnProperty("mode") || !plotModes.hasOwnProperty(dataset.mode))
+		if (!hasOwn(dataset, "mode") || !hasOwn(plotModes, dataset.mode))
 			throw new Error("Plot mode not defined. Datasets must have a valid mode property: " + Object.keys(plotModes).join(", "));
 
 		// This allows data to be incomplete when this function is first called.
@@ -995,7 +996,7 @@ export default class Viz {
 	//				  It also expects width/height accessors, but these can be omitted
 	//				  at the cost of reading from the DOM, potentially causing needless renders.
 	// labellers	- Labellers that provide the labels at the end of each crosshair line. These are
-	//				  pairs of functions that convert 
+	//				  pairs of functions that convert
 	addCrosshair(wrapper, dataset, labellers, callback) {
 		const overlay = this.currentGraphData.modules.overlay;
 
@@ -1289,7 +1290,7 @@ export default class Viz {
 					snappedX = false,
 					snappedY = false;
 
-				if (accessors.hasOwnProperty("snapX")) {
+				if (hasOwn(accessors, "snapX")) {
 					const plotIndex = get(this, accessors.snapX) || [],
 						cx = getClosestIndex(plotIndex, point.x, "x");
 
@@ -1302,7 +1303,7 @@ export default class Viz {
 					x = snappedX ? closestX.indexItem.x : point.x;
 				}
 
-				if (accessors.hasOwnProperty("snapY")) {
+				if (hasOwn(accessors, "snapY")) {
 					const plotIndex = get(this, accessors.snapY) || [],
 						cy = getClosestIndex(plotIndex, point.y, "y");
 
@@ -1431,7 +1432,7 @@ export default class Viz {
 				for (let k in cgd.modules) {
 					const mod = cgd.modules[k];
 
-					if (!called.hasOwnProperty(k) && mod && typeof mod[cName] == "function")
+					if (!hasOwn(called, k) && mod && typeof mod[cName] == "function")
 						mod[cName](this, mod);
 				}
 			});
@@ -1441,12 +1442,12 @@ export default class Viz {
 	callHooks(...hookNames) {
 		const hooks = this.currentGraphData.hooks;
 
-		if (hookNames.length < 2 && !hooks.hasOwnProperty(hookNames[0]))
+		if (hookNames.length < 2 && !hasOwn(hooks, hookNames[0]))
 			return _ => _;
 
 		return (...args) => {
 			hookNames.forEach(hName => {
-				if (hooks.hasOwnProperty(hName))
+				if (hasOwn(hooks, hName))
 					hooks[hName](this, ...args);
 			});
 		};
@@ -1479,9 +1480,9 @@ function getDatasetId(inst, desired) {
 
 	datasets.forEach(d => ids[d.id] = true);
 
-	for (let i = 0; i >= 0; i++) {
+	while (true) {
 		const key = desired + (i ? (i + 1) : "");
-		if (!ids.hasOwnProperty(key))
+		if (!hasOwn(ids, key))
 			return key;
 	}
 }
@@ -1502,7 +1503,7 @@ function mountPlot(inst, dataset) {
 	}, dataset.accessors);
 
 	switch (dataset.mode) {
-		case "own":
+		case "own": {
 			const yAxis = inst.currentGraphData.modules.yAxis,
 				graphBox = inst.elements.graphBox,
 				box = node("div", "viz-graph-wrapper"),
@@ -1559,7 +1560,8 @@ function mountPlot(inst, dataset) {
 
 			inst.addScaleBox(box, dataset);
 			break;
-		
+		}
+
 		case "overlay":
 			if (refDataset.canvasType != dataset.canvasType)
 				return console.error(`Failed to add overlay plot - incompatible canvas types: Reference dataset has type '${refDataset.canvasType}' but this dataset has type '${dataset.canvasType}'.`);

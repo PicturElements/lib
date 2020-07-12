@@ -1,7 +1,7 @@
 import { padStart } from "@qtxr/utils";
 
 const style = {
-	line: "col1" 
+	line: "col1"
 };
 
 const style2 = {

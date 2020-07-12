@@ -1,3 +1,5 @@
+import { hasOwn } from "@qtxr/utils";
+
 export default class CalcInjector {
 	constructor() {
 		this.partitions = {};
@@ -11,16 +13,16 @@ export default class CalcInjector {
 	}
 
 	registerInjectorPartition(partition) {
-		if (this.partitions.hasOwnProperty(partition))
+		if (hasOwn(this.partitions, partition))
 			throw new Error(`Injector partition '${partition}' is already in use`);
 		if (!partition)
 			throw new Error("Injector partition must have a valid name");
-			
+
 		this.partitions[partition] = new Map();
 	}
 
 	at(partition) {
-		if (!this.partitions.hasOwnProperty(partition)) {
+		if (!hasOwn(this.partitions, partition)) {
 			console.error("Partition does not exist in injector");
 			return this;
 		}
