@@ -10,7 +10,7 @@ export default class AnimationManager {
 		this.enqueued = false;
 		this.tick = this.tick.bind(this);
 	}
-	
+
 	requestTick() {
 		Queue.enqueue(
 			this,
@@ -31,7 +31,7 @@ export default class AnimationManager {
 					runtime.phase = "delayed";
 					animation.tick(0, t, 0, t);
 				}
-				
+
 				if (runtime.delayPosition < 1) {
 					return true;
 				} else

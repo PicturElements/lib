@@ -1,7 +1,8 @@
 import {
+	hasOwn,
 	forEach,
-	mergesort,
 	memoize,
+	mergesort,
 	parseArgStr
 } from "@qtxr/utils";
 
@@ -17,14 +18,14 @@ const Ease = {
 	compile(easingData, ...args) {
 		easingData = easingData || this.DEFAULT_EASING;
 		const easings = this.easings;
-		
+
 		switch (typeof easingData) {
 			case "string": {
-				if (easings.cache.hasOwnProperty(easingData))
+				if (hasOwn(easings.cache, easingData))
 					return easings.cache[easingData];
-				if (easings.pure.hasOwnProperty(easingData))
+				if (hasOwn(easings.pure, easingData))
 					return easings.pure[easingData];
-				if (easings.factory.hasOwnProperty(easingData))
+				if (hasOwn(easings.factory, easingData))
 					return easings.factory[easingData](...args);
 
 				const ex = Ease.regexes.matchStart.exec(easingData);
@@ -105,7 +106,7 @@ const Ease = {
 				accuracy = accuracy || 1000;
 				const interpResolution = accuracy * 10,
 					frames = memoize(calcBezier, x, y, x2, y2, accuracy, interpResolution);
-			
+
 				return at => {
 					const idx = ~~(at * interpResolution),
 						perc = (at * interpResolution) % 1;
@@ -116,7 +117,7 @@ const Ease = {
 				const invT = 1 - at,
 					inComp = ((inStrength * at * invT) + (at * at)) * invT,
 					outComp = (1 - (outStrength * invT * at) - (invT * invT)) * at;
-		
+
 				return inComp + outComp;
 			},
 			steps: (steps = 1, jump = "end") => {
@@ -224,7 +225,7 @@ function updateRegexes() {
 		easingInitialsArr = [],
 		easingSecondChars = {},
 		easingSecondCharsArr = [];
-		
+
 	let easingPureNamesArr = [],
 		easingMakerNamesArr = [];
 
@@ -232,21 +233,21 @@ function updateRegexes() {
 			[Ease.easings.pure, easingPureNamesArr],
 			[Ease.easings.factory, easingMakerNamesArr]
 		], ([partition, nameArr]) => {
-			
+
 		forEach(partition, (_, name) => {
-			if (easingNames.hasOwnProperty(name))
+			if (hasOwn(easingNames, name))
 				throw new Error(`Found duplicate easing function by name '${name}'`);
 			easingNames[name] = true;
 			nameArr.push(name);
 
-			if (!easingInitials.hasOwnProperty(name[0]))
+			if (!hasOwn(easingInitials, name[0]))
 				easingInitialsArr.push(name[0]);
 			easingInitials[name[0]] = true;
 
 			if (!name[1])
 				throw new Error(`'${name}' is not a valid name; names must be at least two characters long`);
 
-			if (!easingSecondChars.hasOwnProperty(name[1]))
+			if (!hasOwn(easingSecondChars, name[1]))
 				easingSecondCharsArr.push(name[1]);
 			easingSecondChars[name[1]] = true;
 		});
