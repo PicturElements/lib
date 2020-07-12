@@ -16,14 +16,14 @@ function viewChoices() {
 				value: route.name,
 				short: route.choiceName
 			};
-		
+
 			choicesOut.push(choice);
 		}
 
 		const children = route.children || [];
 		for (let i = 0, l = children.length; i < l; i++) {
 			const child = children[i];
-			
+
 			traverse(
 				child,
 				route.forceRender ? indent : indent + 1,

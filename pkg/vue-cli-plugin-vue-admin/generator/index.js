@@ -142,7 +142,7 @@ function compileRoutesTemplate(template, args) {
 	for (const row of template) {
 		const mainWidth = row.indent * args.indentWidth + row.route.route.length,
 			roundedIndent = Math.ceil((mainWidth + 1) / args.indentWidth) * args.indentWidth;
-	
+
 		if (roundedIndent > boundaryIndent)
 			boundaryIndent = roundedIndent;
 	}
@@ -154,7 +154,7 @@ function compileRoutesTemplate(template, args) {
 
 		out.push(
 			args.indentChar.repeat(row.indent) +
-			row.route.route + 
+			row.route.route +
 			args.indentChar.repeat(pad) +
 			row.route.name
 		);

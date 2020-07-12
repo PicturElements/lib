@@ -165,7 +165,7 @@ function watchViews() {
 					fileName
 				});
 			}
-			
+
 			await genViewMap();
 		})
 		.on("unlink", async pth => {

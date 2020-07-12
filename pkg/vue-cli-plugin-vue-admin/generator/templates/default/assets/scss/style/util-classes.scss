@@ -160,13 +160,13 @@
 
 	.fw-bold { font-weight: bold }
 	.fw-normal { font-weight: normal }
-	
+
 	@include rangeClass("mxw", "max-width", "px", 50, 400, 50);
 
 	@include mobile {
 		@include rangeClass("m-mxw", "max-width", "px", 50, 400, 50);
 	}
-	
+
 	@include rangeClass("mnw", "min-width", "px", 50, 400, 50);
 
 	@include mobile {

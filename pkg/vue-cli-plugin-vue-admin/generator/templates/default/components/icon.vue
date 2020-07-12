@@ -139,7 +139,7 @@
 		&.ico-thin-cross {
 			stroke-width: 3;
 		}
-		
+
 		// Modifiers
 		&.hairline {
 			fill: none;

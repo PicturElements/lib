@@ -74,37 +74,37 @@ $theme: (
 	general: (
 		main-background: $main-background,
 		main-color: $main-color,
-		
+
 		sidebar-background: $sidebar-background,
 		sidebar-alt-background: $sidebar-alt-background,
 		sidebar-color: $sidebar-color,
 		sidebar-default-width: $sidebar-default-width,
-		
+
 		overlap-background: $overlap-background,
 		overlap-logo-width: $overlap-logo-width,
 		overlap-logo-height: $overlap-logo-height,
 		overlap-overlay-color: $overlap-overlay-color,
-		
+
 		header-background: $header-background,
 		header-color: $header-color,
 		header-height: $header-height,
 		header-horizontal-padding: $header-horizontal-padding,
-		
+
 		repeating-pattern-foreground: $repeating-pattern-foreground,
 		repeating-pattern-background: $repeating-pattern-background,
-		
+
 		card-background: $card-background,
 		card-shadow: $card-shadow,
-		
+
 		highlight: $highlight,
 		highlight-complement: $highlight-complement,
 		highlight-light: $highlight-light,
 		highlight-dark: $highlight-dark,
-		
+
 		subdued: $subdued,
 		subdued-complement: $subdued-complement,
 		subdued-dark-complement: $subdued-dark-complement,
-		
+
 		sidebar-base-indent: $sidebar-base-indent,
 		sidebar-overlay-background: $sidebar-overlay-background,
 
@@ -161,7 +161,7 @@ $theme: (
 		padding: 10px,
 
 		accent-background: $accent-background,
-		
+
 		page-selector-border: 1px solid #dadada,
 		page-selector-side: $input-master-height,
 
@@ -209,17 +209,17 @@ $theme: (
 	// Package: VueForm
 	inputs: (
 		// Core input styling
-		core-inputs: (
-			general: (
-				highlight: $highlight,
-				highlight-complement: $highlight-complement
+		core: (
+			base: (
+				focus-background: rgba($main-color, 0.1)
 			),
 			date-selector: (),
+			drop: (),
+			search-input-box: (
+				border-radius: 1px,
+				focus-border: 1px solid $main-color
+			),
 			time-selector: ()
-		),
-		search-input-box: (
-			highlight: $highlight,
-			highlight-complement: $highlight-complement
 		),
 		// Base style for all inputs, which can be extended
 		// or inherited by each input map

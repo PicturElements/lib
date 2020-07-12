@@ -400,7 +400,7 @@
 	.flat-back {
 		&.flat-back-blue {
 			background: $flat-blue-light;
-	
+
 			.flat-outline {
 				box-shadow: 0 0 0 $flat-outline-width $flat-blue-light;
 			}
@@ -408,42 +408,42 @@
 
 		&.flat-back-green {
 			background: $flat-green-light;
-	
+
 			.flat-outline {
 				box-shadow: 0 0 0 $flat-outline-width $flat-green-light;
 			}
 		}
-	
+
 		&.flat-back-orange {
 			background: $flat-orange-light;
-	
+
 			.flat-outline {
 				box-shadow: 0 0 0 $flat-outline-width $flat-orange-light;
 			}
 		}
-	
+
 		&.flat-back-red {
 			background: $flat-red-light;
-	
+
 			.flat-outline {
 				box-shadow: 0 0 0 $flat-outline-width $flat-red-light;
 			}
 		}
 	}
-	
+
 	.flat-front {
 		&.flat-front-blue {
 			background: $flat-blue-dark;
 		}
-	
+
 		&.flat-front-green {
 			background: $flat-green-dark;
 		}
-	
+
 		&.flat-front-orange {
 			background: $flat-orange-dark;
 		}
-	
+
 		&.flat-front-red {
 			background: $flat-red-dark;
 		}
@@ -500,7 +500,7 @@
 
 	.stat-wrapper {
 		display: flex;
-	
+
 		.stat-legend {
 			display: flex;
 			flex-direction: column;

@@ -17,7 +17,7 @@ const admin = new VueAdmin(viewMap, {
 	}
 });
 
-// ====== ROUTES ====== 
+// ====== ROUTES ======
 // Route your app here. Use indentation to nest routes
 // A route prefixed with a forward slash is treated as
 // a base route nested in its parent view (accessible via router-view),
