@@ -134,7 +134,7 @@
 
 				if (payload.value != null)
 					this.setDialValue(dials[activeIdx], payload.value);
-				
+
 				this.activeIndices[this.activeDialsIdx] = payload.nextIdx;
 				this.emitDisplayData();
 				this.$emit("trigger");

@@ -70,7 +70,7 @@
 			},
 			runSearch() {
 				this.runningSearch = true;
-				
+
 				const request = {
 					query: this.query,
 					fields: ["geometry"]

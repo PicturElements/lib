@@ -42,7 +42,7 @@ $formatted-params: (
 				border: $focus-border;
 			}
 		}
-	
+
 		.validation-msg {
 			display: none;
 			position: absolute;
@@ -54,7 +54,7 @@ $formatted-params: (
 			background: $focus-border-color;
 			color: $background;
 		}
-	
+
 		&.error {
 			.formatted-content-editable  {
 				&:not(:focus) {
@@ -62,7 +62,7 @@ $formatted-params: (
 					border: $error-border;
 					color: $error-color;
 				}
-	
+
 				&:focus + .validation-msg {
 					display: block;
 				}

@@ -20,7 +20,7 @@
 		template(#loading-icon="d")
 			slot(:name="`${name}-loading-icon`" v-bind="d")
 				slot(name="loading-icon" v-bind="d")
-	
+
 	Count(
 		v-else-if="is('count')"
 		v-bind="props"
@@ -32,16 +32,16 @@
 		template(#up-symbol="d")
 			slot(:name="`${name}-up-symbol`" v-bind="d")
 				slot(name="count-up-symbol" v-bind="d")
-	
+
 	Date(
 		v-else-if="is('date')"
 		v-bind="props"
 		:eagerCollapse="c.eagerCollapse")
-	
+
 	DateTime(
 		v-else-if="is('date-time')"
 		v-bind="props")
-	
+
 	Dropdown(
 		v-else-if="is('dropdown')"
 		v-bind="props"
@@ -199,7 +199,7 @@
 		v-else-if="is('textarea')"
 		v-bind="props"
 		:placeholder="c.placeholder")
-	
+
 	Time(
 		v-else-if="is('time')"
 		v-bind="props"

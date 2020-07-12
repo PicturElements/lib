@@ -125,7 +125,7 @@ $date-selector-params: (
 
 				&.disabled {
 					cursor: default;
-					
+
 					span {
 						opacity: $disabled-opacity;
 					}
@@ -159,7 +159,7 @@ $date-selector-params: (
 				&.in-range {
 					color: $highlight-complement;
 					text-shadow: 1px 1px $highlight, 1px 0 $highlight, -1px 0 $highlight, -1px -1px $highlight, 0 1px $highlight, 0 -1px $highlight, -1px 1px $highlight, 1px -1px $highlight;
-					
+
 					&.today {
 						color: $highlight-complement;
 					}
@@ -286,7 +286,7 @@ $date-selector-params: (
 
 				&.disabled {
 					cursor: default;
-					
+
 					span {
 						opacity: $disabled-opacity;
 					}
@@ -311,7 +311,7 @@ $date-selector-params: (
 
 				&.disabled {
 					cursor: default;
-					
+
 					span {
 						opacity: $disabled-opacity;
 					}

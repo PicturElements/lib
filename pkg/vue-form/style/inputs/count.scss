@@ -26,7 +26,7 @@ $count-params: (
 		&.compact {
 			width: 90px;
 		}
-	
+
 		input {
 			flex-grow: 1;
 			-webkit-appearance: none;
@@ -41,7 +41,7 @@ $count-params: (
 			font-size: 100%;
 			color: inherit;
 			outline: none;
-	
+
 			&:focus {
 				background: $focus-background;
 			}
@@ -62,16 +62,16 @@ $count-params: (
 			font: inherit;
 			font-size: 120%;
 			color: inherit;
-	
+
 			&:active {
 				background: $focus-background;
 				color: inherit;
 			}
-	
+
 			&.down {
 				border-right: inherit;
 			}
-	
+
 			&.up {
 				border-left: inherit;
 			}

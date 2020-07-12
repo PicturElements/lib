@@ -53,10 +53,10 @@
 			trigger() {
 				if (this.inert)
 					return;
-				
+
 				const reduce = (cardsData, dialsData) => {
 					const dateTimeData = {};
-					
+
 					for (let i = 0, l = cardsData.cards.length; i < l; i++) {
 						const cardData = cardsData.cards[i];
 						set(dateTimeData, cardData.card.accessor, cardData.value);

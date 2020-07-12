@@ -18,7 +18,7 @@ $list-params: (
 	"focus-padding",
 	"focus-transition",
 	"add-icon-transition"
-);	
+);
 
 @mixin list-style(
 	// Basic
@@ -270,12 +270,12 @@ $list-params: (
 				&:not(:disabled) {
 					z-index: 10;
 					cursor: pointer;
-		
+
 					&:before {
 						transform: translate(-50%, -50%) scaleY(1);
 						transition-delay: 0ms;
 					}
-		
+
 					.list-row-add-icon {
 						transform: translate(-50%, -50%) scale(1);
 						transition-delay: $add-icon-transition / 2;
@@ -318,7 +318,7 @@ $list-params: (
 			.list-inp-row {
 				flex-direction: column-reverse;
 				padding-top: 0;
-	
+
 				.row-actions-runner {
 					position: sticky;
 					top: 0;
@@ -335,7 +335,7 @@ $list-params: (
 					display: flex;
 					flex-direction: row-reverse;
 				}
-	
+
 				.row-action {
 					+ .row-action {
 						margin: 0 8px 0 0;

@@ -153,7 +153,7 @@
 						if (active) {
 							if (aIdx == -1 && (j - i) < 6 && rows.length)
 								rows[rows.length - 1].cells[6].class["bottom-corner"] = true;
-						
+
 							aIdx = j - i;
 						}
 
@@ -203,7 +203,7 @@
 								this.previousCard();
 							}
 						};
-						
+
 						row.cells.push(cell);
 					}
 
@@ -266,7 +266,7 @@
 					node.day = minDate.getDate();
 				else
 					node.day = 1;
-		
+
 				this.setActiveDisplayAndTrigger(node, card);
 				this.previousCard();
 			},
@@ -673,7 +673,7 @@
 
 				if (Array.isArray(data)) {
 					const activeDisplay = this.activeDisplay || [];
-					
+
 					for (let i = 0, l = data.length; i < l; i++) {
 						activeDisplay[i] = Object.assign({
 							year: null,

@@ -7,10 +7,10 @@
 			@focus="updateSelection"
 			@paste="paste"
 			ref="content")
-			| test, 
-			span in span, 
+			| test,
+			span in span,
 			span
-				| in span again, 
+				| in span again,
 				span span in span
 </template>
 

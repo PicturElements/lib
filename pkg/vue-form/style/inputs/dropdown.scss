@@ -60,19 +60,19 @@ $dropdown-params: (
 		&.place-top .drop-dropdown {
 			flex-direction: column-reverse;
 		}
-	
+
 		&.error {
 			&:not(.open) {
 				background: $error-background;
 				color: $error-color;
 				border: $error-border;
-	
+
 				.placeholder {
 					opacity: 1;
 				}
 			}
 		}
-		
+
 		.active-option {
 			> .dropdown-icon {
 				position: absolute;

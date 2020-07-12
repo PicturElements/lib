@@ -43,7 +43,7 @@
 			trigger() {
 				if (this.inert)
 					return;
-					
+
 				const reduce = dials => {
 					const timeData = {};
 

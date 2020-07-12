@@ -35,7 +35,7 @@
 	@include options(compose-args($core-theme, $options-params, "base", "options")...);
 	@include search-input-box(compose-args($core-theme, $search-input-box-params, "base", "search-input-box")...);
 	@include time-selector(compose-args($core-theme, $time-selector-params, "base", "time-selector")...);
-	
+
 	// Input style
 	@include base(compose-args($theme, $base-params, "base")...);
 	@include coordinates(compose-args($theme, $coordinates-params, "base", "coordinates")...);

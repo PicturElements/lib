@@ -133,7 +133,7 @@
 
 		if (bytes > 1e3)
 			return round(bytes / 1e3, 2) + "KB";
-			
+
 		return bytes + "bytes";
 	}
 
@@ -292,7 +292,7 @@
 					fd.currentTime = video.currentTime;
 					this.setSliderPosition(video.currentTime / video.duration);
 				};
-				
+
 				video.onerror = _ => {
 					video.onerror = null;
 					this.setError({
@@ -368,7 +368,7 @@
 
 				crop.dimensions.wp = w / ts.w * 100;
 				crop.dimensions.hp = h / ts.h * 100;
-					
+
 				this.setImagePosition(w / 2, h / 2);
 				this.setSliderPosition(0);
 				this.setEditPhase("edit");
@@ -616,7 +616,7 @@
 			dispatchChange() {
 				if (this.inert)
 					return;
-				
+
 				if (this.input.multiple) {
 					const val = [];
 

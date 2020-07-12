@@ -42,10 +42,10 @@
 			trigger(value) {
 				if (this.inert)
 					return;
-				
+
 				const reduce = cardsData => {
 					const dateData = {};
-					
+
 					for (let i = 0, l = cardsData.cards.length; i < l; i++) {
 						const cardData = cardsData.cards[i];
 						set(dateData, cardData.card.accessor, cardData.value);

@@ -51,7 +51,7 @@
 
 				if (evtOrTarget instanceof EventTarget)
 					return evtOrTarget;
-				
+
 				return null;
 			}
 		},
@@ -273,7 +273,7 @@
 						node = this.getProbeNode();
 						node.focus();
 					}
-					
+
 					this.focusData.target = node;
 					this.focusData.focusWeight = 0;
 
@@ -341,7 +341,7 @@
 					minWidth: `${ebcr.width}px`,
 					maxHeight: `${maxHeight}px`
 				};
-					
+
 				if (placeBottom) {
 					stl.borderTopLeftRadius = `${Math.min(brBottomLeft, leftShift)}px`;
 					stl.borderTopRightRadius = `${Math.min(brBottomRight, Math.max(rightShift, 0))}px`;
@@ -363,7 +363,7 @@
 
 				if (evtOrTarget instanceof EventTarget)
 					return evtOrTarget;
-				
+
 				return null;
 			},
 			nodeIsFocusable(node) {

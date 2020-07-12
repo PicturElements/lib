@@ -44,14 +44,14 @@ $text-params: (
 			font: inherit;
 			font-size: 100%;
 			outline: none;
-	
+
 			&:focus {
 				border: $focus-border;
 			}
-	
+
 			@include autofill($autofill-background, $autofill-color, $autofill-border);
 		}
-	
+
 		.validation-msg {
 			border-radius: $border-radius;
 			background: $focus-border-color;
@@ -61,7 +61,7 @@ $text-params: (
 				box-shadow: 0px -20px $focus-border-color;
 			}
 		}
-	
+
 		&.error {
 			input {
 				&:not(:focus) {
@@ -70,7 +70,7 @@ $text-params: (
 					color: $error-color;
 					@include autofill($error-background, $error-color, $error-border);
 				}
-	
+
 				&:focus + .validation-msg {
 					display: block;
 				}

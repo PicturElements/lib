@@ -134,7 +134,7 @@ $base-params: (
 				opacity: 0.6;
 				transition: transform 200ms;
 			}
-	
+
 			&.flip:before {
 				transform: translateY(5px) rotate(-135deg);
 			}

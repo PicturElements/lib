@@ -20,12 +20,12 @@ $radio-params: (
 	.inp-radio {
 		position: relative;
 		user-select: none;
-	
+
 		.radio-section {
 			+ .radio-section {
 				margin-top: 5px;
 			}
-	
+
 			&.active .radio-option {
 				&:before {
 					visibility: visible;
@@ -37,7 +37,7 @@ $radio-params: (
 				align-items: center;
 			}
 		}
-	
+
 		.radio-option {
 			position: relative;
 			width: 1.8em;
@@ -64,17 +64,17 @@ $radio-params: (
 				transform: scale(0.6);
 				background: currentColor;
 			}
-	
+
 			&:focus {
 				border: $focus-border;
 			}
 		}
-	
+
 		.label {
 			margin-left: 10px;
 			cursor: pointer;
 		}
-	
+
 		&.error {
 			.radio-option:not(:active) {
 				background: $error-background;

@@ -19,7 +19,7 @@
 <script>
 	import { Radio } from "@qtxr/form";
 	import mixin from "../mixin";
-	
+
 	export default {
 		name: "Radio",
 		mixins: [mixin],
@@ -53,7 +53,7 @@
 			},
 			async updateSelection() {
 				const options = await this.res(this.input.options);
-				
+
 				if (options.hasOwnProperty(this.activeIndex) && this.input.compare(options[this.activeIndex], this.input.value))
 					return;
 

@@ -84,7 +84,7 @@ $media-params: (
 					z-index: 1;
 				}
 			}
-		
+
 			&.error {
 				box-shadow: 0 0 0 2px $error-border-color;
 
@@ -184,7 +184,7 @@ $media-params: (
 				.mask-disc {
 					transform: scale(1);
 				}
-				
+
 				.media-upload-icon {
 					&.ripple {
 						opacity: 0;
@@ -459,7 +459,7 @@ $media-params: (
 				height: 100%;
 				flex-shrink: 0;
 			}
-			
+
 			.queued-output-item {
 				position: relative;
 				flex-shrink: 0;

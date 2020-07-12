@@ -39,12 +39,12 @@ $textarea-params: (
 			font: inherit;
 			font-size: 100%;
 			outline: none;
-	
+
 			&:focus {
 				border: $focus-border;
 			}
 		}
-	
+
 		.validation-msg {
 			border-radius: $border-radius;
 			background: $focus-border-color;
@@ -54,7 +54,7 @@ $textarea-params: (
 				box-shadow: 0px -20px $focus-border-color;
 			}
 		}
-	
+
 		&.error {
 			textarea {
 				&:not(:focus) {
@@ -62,7 +62,7 @@ $textarea-params: (
 					border: $error-border;
 					color: $error-color;
 				}
-	
+
 				&:focus + .validation-msg {
 					display: block;
 				}

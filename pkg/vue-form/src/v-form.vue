@@ -27,7 +27,7 @@
 			let rows = this.rows;
 			const settings = this.settings || rows || {},
 				form = this.form || new Form(settings.preset || settings.hooks, settings.opt);
-			
+
 			rows = !rows && form.inputsStruct && form.inputsStruct.length ?
 				form.inputsStruct :
 				rows;
@@ -52,7 +52,7 @@
 			InputBlock
 		},
 		props: {
-			form: Form, 
+			form: Form,
 			rows: [Array, Object],
 			settings: Object,
 			mobileQuery: {

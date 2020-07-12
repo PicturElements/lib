@@ -59,7 +59,7 @@ export default {
 		res(val, ...args) {
 			if (typeof val == "function")
 				return val.call(this, this.mkRuntime(), ...args);
-		
+
 			return val;
 		},
 		bind(...sources) {
@@ -127,7 +127,7 @@ export default {
 		ac() {
 			if (this.input.bare === false || (!this.input.form.options.bareInputs && !this.input.bare))
 				return null;
-		
+
 			return "off";
 		},
 		inert() {
