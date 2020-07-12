@@ -110,7 +110,7 @@ class I18NManager extends Hookable {
 
 				for (let i = 0, l = newDependencies.length; i < l; i++)
 					dependencies.push(URL.join(path, "..", newDependencies[i]));
-				
+
 				return dependencies;
 			},
 			assetNode: (loader, path, node, dependent) => {
@@ -123,12 +123,12 @@ class I18NManager extends Hookable {
 						case "file": {
 							const stripped = stripExtension(path),
 								ex = /\.?([^.]+?)$/.exec(stripped);
-							
+
 							if (ex)
 								locale = new IETF(ex[1]);
 							break;
 						}
-	
+
 						case "dir": {
 							const baseUrl = resolveBaseUrl(this.config.baseUrl),
 								fullPath = URL.join(baseUrl, path),
@@ -201,17 +201,17 @@ class I18NManager extends Hookable {
 			partition = this.getPartition(locale);
 		let formatTrace = null,
 			outFormat = format;
-		
+
 		if (typeof format == "string") {
 			formatTrace = resolveRefTrace(partition, p, meta);
 			outFormat = formatTrace.data;
 		}
-			
+
 		if (!formatTrace || formatTrace.data === undefined || typeof formatTrace.data != "string") {
 			formatTrace = resolveRefTrace(partition, "", meta);
 			outFormat = format;
 		}
-		
+
 		const parsedFormat = parseFormat(outFormat, {
 			customGrammars
 		});
@@ -233,13 +233,13 @@ class I18NManager extends Hookable {
 
 	interpolate(key, ...args) {
 		let str = this.get(key);
-		
+
 		if (typeof str != "string")
 			return str;
 
 		for (let i = args.length - 1; i >= 0; i--)
 			str = str.replace(new RegExp(`%${i - 1}(?![0-9])`, "g"), args[i]);
-		
+
 		return str;
 	}
 
@@ -304,7 +304,7 @@ class I18NManager extends Hookable {
 				path = URL.join(locale.toString(), path || "index");
 				break;
 		}
-		
+
 		path = normalizeFilename(path, this);
 
 		if (lazy && hasOwn(this.addedAssets, path))
@@ -343,7 +343,7 @@ class I18NManager extends Hookable {
 
 		if (payload.locale)
 			locale = IETF.coerce(payload.locale);
-		
+
 		if (payload.isAssetNode) {
 			dependencies = payload.dependencies;
 			inData = payload.item;

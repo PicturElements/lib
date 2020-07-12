@@ -294,7 +294,7 @@ function parseFormat(format, parseMeta = {}) {
 	FORMAT_CACHE[cachedFormatKey] = parsed;
 	return parsed;
 }
- 
+
 // Create AST-like object by combining the lexing and parsing steps
 // Additional processing will be done by processAST, most notably constructing
 // and verifying expressions, arguments, literals, and accessors
@@ -489,7 +489,7 @@ function parse(format, currentStack) {
 
 				if (alsh) {
 					alsh.type = "selector";
-					
+
 					if (alsh.length > 1)
 						throwSyntaxError(alsh, "Selector term may not contain multiple expressions");
 
@@ -672,7 +672,7 @@ function parse(format, currentStack) {
 				const alsh = getParentNodeByType("arrayLiteralOrSelectorHead", structStack);
 				if (alsh)
 					alsh.length++;
-				
+
 				push(mkNode("separator", ex));
 
 				break;
@@ -718,7 +718,7 @@ function mkNode(data = {}, exOrIndex = null) {
 
 	if (!hasOwn(data, "resolvable"))
 		data.resolvable = true;
- 
+
 	data.isNode = true;
 	return data;
 }
@@ -1003,7 +1003,7 @@ function pASTResolveGrammars(nodes, parseMeta = {}) {
 			replaceNodes(newNodes, grammars[j]);
 
 		nodes.splice(i, 1, ...newNodes);
-	}	
+	}
 }
 
 function pASTFormatArray(nodes, parseMeta = {}) {
@@ -1211,7 +1211,7 @@ function flattenGroups(arr, depth = Infinity, out = []) {
 
 function throwSyntaxError(node, msg) {
 	let e;
- 
+
 	if (typeof node.index == "number")
 		e = new SyntaxError(`\n\nparser@${node.type} (at ${node.index + 1})\n${msg}\n------`);
 	else

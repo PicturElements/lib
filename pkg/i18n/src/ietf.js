@@ -23,14 +23,14 @@ export default class IETF {
 	parse(str) {
 		if (typeof str != "string")
 			return this.reset();
-	
+
 		str = str.toLowerCase();
 		const ex = ietfRegex.exec(str),
 			value = [];
 
 		if (!ex)
 			return this.reset();
-		
+
 		this.valid = true;
 
 		for (let i = 0, l = subtagData.length; i < l; i++) {
@@ -50,15 +50,15 @@ export default class IETF {
 			this[subtag] = subtagValue;
 			value.push(subtagValue);
 		}
-	
+
 		this.value = value.join("-");
 		return this;
 	}
-	
+
 	reset() {
 		for (let i = 0, l = subtagData.length; i < l; i++)
 			this[subtagData[i].tag] = null;
-	
+
 		this.valid = false;
 		this.value = "";
 		return this;

@@ -154,7 +154,7 @@ const langStdLib = {
 					visitOrderItem: visitOrder[i],
 					formatter: visitOrder[i].formatter
 				};
-			
+
 				if (typeof v[j] == "function")
 					refArgs.value = v[j](refArgs);
 
