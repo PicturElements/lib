@@ -4,6 +4,7 @@ import {
 	hash,
 	clone,
 	inject,
+	hasOwn,
 	isObj,
 	isObject,
 	splitPath,
