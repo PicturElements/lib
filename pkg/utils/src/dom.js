@@ -5,7 +5,6 @@ import casing from "./casing";
 import serialize from "./serialize";
 import hasOwn from "./has-own";
 import parseEntityStr from "./parse-entity-str";
-import { nub } from "./arr";
 import {
 	isObject,
 	isPrimitive,
@@ -1124,6 +1123,45 @@ function resolveDynamicValue(dv, args = []) {
 	return dv.extract(dv, args);
 }
 
+function resolveAttribute(node, key, args = []) {
+	if (!Array.isArray(args))
+		args = [args];
+
+	const attr = node.attributes[key];
+
+	if (attr && attr.isDynamicValue)
+		return attr.extract(attr, args);
+
+	if (typeof attr == "function")
+		return attr(...args);
+
+	return attr;
+}
+
+function resolveTextContent(node, args = []) {
+	if (!Array.isArray(args))
+		args = [args];
+
+	switch (node && node.type) {
+		case "text":
+			if (node.content && node.content.isDynamicValue)
+				return node.content.extract(node.content, args);
+
+			return node.content;
+
+		case "element": {
+			let out = "";
+
+			for (let i = 0, l = node.children.length; i < l; i++)
+				out += resolveTextContent(node.children[i]);
+
+			return out;
+		}
+	}
+
+	return "";
+}
+
 function isDynamicValueCandidate(value, meta = null) {
 	switch (typeof value) {
 		case "object":
@@ -1270,10 +1308,13 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 	if (!meta || !meta.refKeys.length || typeof str != "string")
 		return str;
 
+	// Flags
 	const preserveWhitespace = context == "raw",
 		useTerms = context != "raw" || (meta.options.compile && !meta.options.resolve),
 		wrapDynamic = context == "class" || context == "style" || context == "data",
-		refRegex = meta.options.refRegex || REF_REGEX,
+		rawResolve = context == "event";
+
+	const refRegex = meta.options.refRegex || REF_REGEX,
 		terms = [],
 		staticTerms = [],
 		dynamicTerms = [];
@@ -1291,12 +1332,16 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 			};
 
 			meta.argRefs[meta.refIndices[ref]] = argRef;
-			term = (...args) => {
-				if (typeof argRef.value == "function")
-					return argRef.value(...args);
+			if (rawResolve)
+				term = _ => argRef.value;
+			else {
+				term = (...args) => {
+					if (typeof argRef.value == "function")
+						return argRef.value(...args);
 
-				return argRef.value;
-			};
+					return argRef.value;
+				};
+			}
 
 			terms.push(term);
 			dynamicTerms.push(term);
@@ -1305,9 +1350,10 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 			if (meta.options.resolve || !isDynamicValueCandidate(term, meta)) {
 				pushTerm(terms, term);
 				pushTerm(staticTerms, term);
-				out += serialize(term, meta.options);
+				if (!rawResolve || typeof term != "function")
+					out += serialize(term, meta.options);
 			} else {
-				if (wrapDynamic && typeof term != "function") {
+				if (rawResolve || (wrapDynamic && typeof term != "function")) {
 					const rawTerm = term;
 					term = _ => rawTerm;
 				}
@@ -1437,12 +1483,16 @@ function overrideAttributes(attrs, ...overriders) {
 				continue;
 
 			switch (k) {
+				case "style":
+					attrs.style = joinStyle(attrs.style, overriderAttrs.style);
+					break;
+
 				case "class":
-					attrs.class = attrs.class.concat(overriderAttrs.class);
+					attrs.class = joinClass(attrs.class, overriderAttrs.class);
 					break;
 
 				case "data":
-					Object.assign(attrs.data, overriderAttrs.data);
+					attrs.data = joinDatasets(attrs.data, overriderAttrs.data);
 					break;
 
 				default:
@@ -1458,7 +1508,7 @@ function overrideAttributes(attrs, ...overriders) {
 // This is applied on object representations
 // and not on actual DOM nodes
 function cleanAttributes(attrs) {
-	attrs.class = nub(attrs.class);
+	attrs.class = parseClass(attrs.class, true);
 }
 
 export {
@@ -1512,6 +1562,8 @@ export {
 	extendDynamicValue,
 	mergeDynamicValue,
 	resolveDynamicValue,
+	resolveAttribute,
+	resolveTextContent,
 	setAttribute,
 	parseAttributes,
 	resolveInlineRefs,

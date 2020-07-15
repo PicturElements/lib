@@ -8,6 +8,7 @@ import {
 	mkVNode,
 	setAttribute,
 	parseAttributes,
+	resolveAttribute,
 	resolveInlineRefs,
 	mkAttrRepresentationObj
 } from "./dom";
@@ -220,9 +221,17 @@ function parseNodes(str, meta = null) {
 
 				parseClassesAndIDs(node, meta);
 				parseAttributes(node, meta);
-
+			
 				if (node.dynamicAttributes.length)
 					filterMut(node.staticAttributes, key => !hasOwn(node.dynamicAttributesMap, key));
+
+				if (hasOwn(node.attributes, "xmlns")) {
+					if (typeof node.attributes.xmlns == "string")
+						node.namespace = node.attributes.xmlns;
+					else if (meta.options.compile && meta.options.resolve)
+						node.namespace = resolveAttribute(node, "xmlns", meta.options.args);
+				} else if (parent && parent.namespace != "http://www.w3.org/1999/xhtml")
+					node.namespace = parent.namespace;
 
 				const elemContent = ex[8];
 
