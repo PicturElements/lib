@@ -13,7 +13,9 @@ const subTemplateDeclaratorRegex = /^@(\w+)$/,
 const CRITERION_EXEMPT_ATTRS = {
 	class: true,
 	id: true,
-	data: true
+	data: true,
+	style: true,
+	events: true
 };
 
 export default function parseTemplate(tmpl) {

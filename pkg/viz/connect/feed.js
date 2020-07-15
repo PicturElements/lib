@@ -10,7 +10,7 @@ feed.add("viz", activeFeed => {
 		sitemapPath: null
 	});
 
-	i18n.registerLocale({
+	i18n.feed({
 		name: "viz",
 		locale: "en",
 		data: {

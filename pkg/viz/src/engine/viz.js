@@ -1480,7 +1480,7 @@ function getDatasetId(inst, desired) {
 
 	datasets.forEach(d => ids[d.id] = true);
 
-	while (true) {
+	for (let i = 0; i >= 0; i++) {
 		const key = desired + (i ? (i + 1) : "");
 		if (!hasOwn(ids, key))
 			return key;

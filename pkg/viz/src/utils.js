@@ -6,6 +6,7 @@ import {
 	findClosest,
 	isNativeSimpleObject
 } from "@qtxr/utils";
+import { setAttribute } from "../../utils/src/dom";
 
 const DOM_NAMESPACES = [
 	{
@@ -57,19 +58,32 @@ function node(tag, cls, inner, attrs, ns) {
 			n.setAttribute("class", cls.join(" "));
 		else if (cls && typeof cls == "string")
 			n.setAttribute("class", cls);
+		else if (cls && cls.isTokenList)
+			n.setAttribute("class", cls.keys.join(" "));
 
 		for (let k in attrs) {
-			if (hasOwn(attrs, k)) {
-				switch (k) {
-					case "style":
-						n.setAttribute("style", createStyleStr(attrs[k]));
-						break;
-					case "data":
-						forEach(attrs[k], (v, k) => n.dataset[k] = v);
-						break;
-					default:
-						n.setAttribute(k, attrs[k]);
+			if (!hasOwn(attrs, k))
+				continue;
+
+			switch (k) {
+				case "style": {
+					const styleData = attrs[k] && attrs[k].isTokenList ?
+						attrs[k].map :
+						attrs[k];
+
+					n.setAttribute("style", createStyleStr(styleData));
+					break;
 				}
+
+				case "data":
+					if (attrs[k].isTokenList)
+						forEach(attrs[k].list, d => n.setAttribute(d.key, d.value));
+					else
+						forEach(attrs[k], (v, k) => n.dataset[k] = v);
+					break;
+
+				default:
+					n.setAttribute(k, attrs[k]);
 			}
 		}
 
