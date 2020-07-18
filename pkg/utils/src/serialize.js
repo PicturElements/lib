@@ -12,7 +12,7 @@ import {
 
 const WRAPPED_SYM = sym("serialize wrapper");
 
-export default function serialize(data, optionsOrIndentStr = {}) {
+export default function serialize(data, optionsOrIndentStr = {}, args = null) {
 	let options = optionsOrIndentStr;
 
 	if (typeof optionsOrIndentStr == "string") {
@@ -21,11 +21,12 @@ export default function serialize(data, optionsOrIndentStr = {}) {
 		};
 	}
 
-	const indentStr = typeof options.indentStr == "string" ? options.indentStr : "\t",
+	const indentStr = setStr(options.indentStr, "\t"),
 		startIndent = typeof options.indent == "number" ? options.indent || 0 : 0,
 		quoteChar = typeof options.quote == "string" && !options.jsonCompatible ? options.quote : "\"",
 		bareString = options.bareString && !options.jsonCompatible,
 		optionalReplacer = typeof options.replace == "function" ? options.replace : null,
+		compact = Boolean(options.compact),
 		replace = (key, item, wrap) => {
 			if (key == circularIdKey)
 				return;
@@ -43,6 +44,29 @@ export default function serialize(data, optionsOrIndentStr = {}) {
 
 			return item;
 		};
+
+	let fieldSpacing = " ",
+		arrSpacing = " ",
+		objSpacing = " ",
+		arrBoundarySpacing = "",
+		objBoundarySpacing = " ";
+
+	if (typeof options.spacing == "string")
+		fieldSpacing = arrSpacing = objSpacing = arrBoundarySpacing = objBoundarySpacing = options.spacing;
+	else if (isObject(options.spacing)) {
+		if (typeof options.spacing.gap == "string")
+			fieldSpacing = arrSpacing = objSpacing = options.spacing.gap;
+
+		fieldSpacing = setStr(options.spacing.field, fieldSpacing);
+		arrSpacing = setStr(options.spacing.arr, arrSpacing);
+		objSpacing = setStr(options.spacing.obj, objSpacing);
+
+		if (typeof options.spacing.boundary == "string")
+			arrBoundarySpacing = objBoundarySpacing = options.spacing.boundary;
+
+		arrBoundarySpacing = setStr(options.spacing.arrBoundary, arrBoundarySpacing);
+		objBoundarySpacing = setStr(options.spacing.objBoundary, objBoundarySpacing);
+	}
 
 	const srz = (key, item, indent = 0, preventReplace = false, preventBareString = false) => {
 		if (replace && !preventReplace)
@@ -85,23 +109,28 @@ export default function serialize(data, optionsOrIndentStr = {}) {
 							flat = false;
 					}
 
-					return flat ?
-						`[${out.join(", ")}]` :
-						`[\n${indentSeq}${out.join(`,\n${indentSeq}`)}\n${repeat(indentStr, indent)}]`;
+					if (flat || compact)
+						return "[" + arrBoundarySpacing + out.join("," + arrSpacing) + arrBoundarySpacing + "]";
+
+					return `[\n${indentSeq}${out.join(`,\n${indentSeq}`)}\n${repeat(indentStr, indent)}]`;
 				}
 
 				if (isObject(item) || !options.jsonCompatible) {
-					const out = [];
+					const out = [],
+						indt = compact ? "" : repeat(indentStr, indent + 1);
 
 					for (const k in item) {
 						const serialized = srz(k, item[k], indent + 1, preventReplace, true);
 
 						if (serialized !== undefined)
-							out.push(`${repeat(indentStr, indent + 1)}${quoteChar}${k}${quoteChar}: ${serialized}`);
+							out.push(indt + quoteChar + k + quoteChar + ":" + fieldSpacing + serialized);
 					}
 
 					if (!out.length)
 						return "{}";
+
+					if (compact)
+						return "{" + objBoundarySpacing + out.join("," + objSpacing) + objBoundarySpacing + "}";
 
 					return `{\n${out.join(",\n")}\n${repeat(indentStr, indent)}}`;
 				}
@@ -113,16 +142,23 @@ export default function serialize(data, optionsOrIndentStr = {}) {
 					return "{}";
 
 				if (options.resolveFunctions) {
-					return srz(
-						null,
-						item(Object.assign({
+					const ctx = {
 							data,
 							key,
 							item,
 							indent
-						}, options.args)),
-						indent
-					);
+						},
+						a = args || options.args;
+					let resolved;
+
+					if (Array.isArray(a) && !options.singleContextArg)
+						resolved = item(ctx, ...a);
+					else {
+						const arg = Array.isArray(a) ? a[0] : a;
+						resolved = item(Object.assign(ctx, arg));
+					}
+
+					return srz(null, resolved, indent);
 				}
 
 				return item.toString()
@@ -163,4 +199,11 @@ function wrapItem(type, data) {
 		[WRAPPED_SYM]: type,
 		data
 	};
+}
+
+function setStr(candidate, def) {
+	if (typeof candidate == "string")
+		return candidate;
+
+	return def;
 }

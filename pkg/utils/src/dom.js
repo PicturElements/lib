@@ -10,7 +10,11 @@ import {
 	isPrimitive,
 	isEmptyString
 } from "./is";
-import { splitClean } from "./str";
+import {
+	splitClean,
+	mkStrMatcher,
+	compileTaggedTemplate
+} from "./str";
 import {
 	VOID_TAGS,
 	BOOLEAN_ATTRS,
@@ -587,7 +591,7 @@ function printStyle(style) {
 	return out;
 }
 
-const optionsTemplates = composeOptionsTemplates({
+const GEN_OPTIONS_TEMPLATES = composeOptionsTemplates({
 	minified: true,
 	comments: true,
 	raw: true
@@ -600,7 +604,7 @@ const optionsTemplates = composeOptionsTemplates({
 // 2.	Node, Node[]
 //		Native Node DOM tree
 function genDom(nodes, options = {}) {
-	options = createOptionsObject(options, optionsTemplates);
+	options = createOptionsObject(options, GEN_OPTIONS_TEMPLATES);
 
 	if (nodes instanceof Node && nodes.nodeType == Node.DOCUMENT_FRAGMENT_NODE)
 		nodes = nodes.children;
@@ -889,24 +893,15 @@ function getTagProperties(tag) {
 function getNodeType(node) {
 	if (node instanceof Node) {
 		switch (node.nodeType) {
-			case Node.ELEMENT_NODE:
-				return "element";
-			case Node.TEXT_NODE:
-				return "text";
-			case Node.CDATA_SECTION_NODE:
-				return "cdata";
-			case Node.PROCESSING_INSTRUCTION_NODE:
-				return "processing-instruction";
-			case Node.COMMENT_NODE:
-				return "comment";
-			case Node.DOCUMENT_NODE:
-				return "document";
-			case Node.DOCUMENT_TYPE_NODE:
-				return "doctype";
-			case Node.DOCUMENT_FRAGMENT_NODE:
-				return "fragment";
-			default:
-				return null;
+			case Node.ELEMENT_NODE: return "element";
+			case Node.TEXT_NODE: return "text";
+			case Node.CDATA_SECTION_NODE: return "cdata";
+			case Node.PROCESSING_INSTRUCTION_NODE: return "processing-instruction";
+			case Node.COMMENT_NODE: return "comment";
+			case Node.DOCUMENT_NODE: return "document";
+			case Node.DOCUMENT_TYPE_NODE: return "doctype";
+			case Node.DOCUMENT_FRAGMENT_NODE: return "fragment";
+			default: return null;
 		}
 	} else if (node && typeof node.type == "string")
 		return node.type;
@@ -931,13 +926,23 @@ function getTagName(node) {
 // 1: key
 // 2: value
 // 3: string quote character
-const ATTR_SPLIT_REGEX = /([\w-.:]+)(?:\s*=\s*((["'`])(?:[^\\]|\\.)*?\3|[^"'`\s]+))?/g,
+const ATTR_SPLIT_REGEX = /([^\s=]+)(?:\s*=\s*((["'`])(?:[^\\]|\\.)*?\3|[^"'`\s]+))?/g,
 	REF_REGEX = /ref_[a-zA-Z0-9]{15}/g,
 	DEFAULT_TAGS = {
 		comment: "#comment",
 		text: "#text",
 		element: "div"
-	};
+	},
+	DEF_ATTR_PREFIX_MATCHER = mkStrMatcher({
+		on: key => [
+			"event",
+			key.substring(2)
+		],
+		"data-": key => [
+			"data-item",
+			casing(key).from.data.to.camel
+		]
+	});
 
 function mkVNode(type, data) {
 	const node = Object.assign({
@@ -961,8 +966,8 @@ function mkVNode(type, data) {
 // Extend dynamic value with data
 const DV_EXTENDERS = {
 	default: (dv, data) => dv,
+	literal: (dv, data) => dv.data = data,
 	stringbuilder: (dv, data) => concatMut(dv.data, data),
-	singleton: (dv, data) => dv.data = data,
 	ordered: (dv, data) => {
 		concatMut(dv.data, data);
 		return dv;
@@ -1015,8 +1020,8 @@ const DV_EXTENDERS = {
 // Merge dynamic value with other dynamic value
 const DV_MERGERS = {
 	default: (dv, dv2) => dv,
+	literal: (dv, dv2) => dv.data = dv2.data,
 	stringbuilder: (dv, dv2) => concatMut(dv.data, dv2.data),
-	singleton: (dv, dv2) => dv.data = dv2.data,
 	ordered: (dv, dv2) => {
 		concatMut(dv.data, dv2.data);
 		return dv;
@@ -1037,24 +1042,33 @@ const DV_MERGERS = {
 // Extract data from dynamic value
 const DV_EXTRACTORS = {
 	default: dv => dv,
+	literal: (dv, args) => {
+		if (typeof dv.data == "function")
+			return dv.data(...args);
+
+		return dv.data;
+	},
 	stringbuilder: (dv, args) => {
 		const d = dv.data;
 		let out = "";
 
 		for (let i = 0, l = d.length; i < l; i++) {
+			let val;
+
 			if (typeof d[i] == "function")
-				out += d[i](...args);
+				val = d[i](...args);
 			else
-				out += d[i];
+				val = d[i];
+
+			if (typeof val == "string")
+				out += val;
+			else if (isPrimitive(val) && typeof val != "symbol")
+				out += String(val);
+			else
+				out += serialize(val, dv.meta.options, args);
 		}
 
 		return out;
-	},
-	singleton: (dv, args) => {
-		if (typeof dv.data == "function")
-			return dv.data(...args);
-
-		return dv.data;
 	},
 	ordered: dv => dv.data,
 	partitioned: dv => dv.dynamic.concat(dv.static),
@@ -1072,15 +1086,18 @@ const DV_EXTRACTORS = {
 // Create dynamic value resolver object with associated helper methods
 // Takes an optional "value" field, which is fed into the assigned
 // extender method on init
-function mkDynamicValue(dv) {
+function mkDynamicValue(dv, meta = null) {
 	dv.type = dv.type || "partitioned";
 	dv.extend = dv.extend || DV_EXTENDERS[dv.type] || DV_EXTENDERS.default;
 	dv.merge = dv.merge || DV_MERGERS[dv.type] || DV_MERGERS.default;
 	dv.extract = dv.extract || DV_EXTRACTORS[dv.type] || DV_EXTRACTORS.default;
+	dv.meta = meta || {
+		options: null
+	};
 	dv.isDynamicValue = true;
 
 	switch (dv.type) {
-		case "singleton":
+		case "literal":
 			dv.data = dv.data || null;
 			break;
 
@@ -1153,13 +1170,25 @@ function resolveTextContent(node, args = []) {
 			let out = "";
 
 			for (let i = 0, l = node.children.length; i < l; i++)
-				out += resolveTextContent(node.children[i]);
+				out += resolveTextContent(node.children[i], args);
 
 			return out;
 		}
 	}
 
 	return "";
+}
+
+function resolveTag(node, args = []) {
+	if (!Array.isArray(args))
+		args = [args];
+
+	const tag = node.tag;
+
+	if (tag && tag.isDynamicValue)
+		return tag.extract(tag, args);
+
+	return tag;
 }
 
 function isDynamicValueCandidate(value, meta = null) {
@@ -1229,79 +1258,128 @@ function parseAttributes(node, meta = null) {
 		if (!ex)
 			break;
 
-		const key = ex[1],
-			value = ex[2] === undefined ? true : parseStr(ex[2]);
+		const value = ex[2] === undefined ? true : parseStr(ex[2]),
+			{
+				type,
+				key,
+				matched,
+				context = "literal"
+			} = resolveAttributeMeta(ex[1], meta);
 
-		switch (key) {
-			case "class":
-				setAttribute(
-					node,
-					"class",
-					meta ?
-						resolveInlineRefs(value, meta, "class") :
-						String(value).terms(/\s+/g)
-				);
-				break;
+		if (type == "style") {
+			setAttribute(
+				node,
+				"style",
+				resolveInlineRefs(value, meta, "style")
+			);
+		} else if (type == "class") {
+			setAttribute(
+				node,
+				"class",
+				meta ?
+					resolveInlineRefs(value, meta, "class") :
+					String(value).terms(/\s+/g)
+			);
+		} else if (type == "data") {
+			if (meta) {
+				const obj = resolveInlineRefs(value, meta, "data");
+				if (isObject(obj)) {
+					setAttribute(node, "data", obj);
+					break;
+				}
+			}
 
-			case "style":
-				setAttribute(
-					node,
-					"style",
-					resolveInlineRefs(value, meta, "style")
-				);
-				break;
+			setAttribute(node, key, value);
+		} else if (type == "event" && matched) {
+			setAttribute(node, "events", {
+				[key]: resolveInlineRefs(value, meta, "event")
+			});
+		} else if (type == "data-item" && matched) {
+			const ref = resolveInlineRefs(value, meta, "literal");
 
-			case "data":
-				if (meta) {
-					const obj = resolveInlineRefs(value, meta, "data");
-					if (isObject(obj)) {
-						setAttribute(node, "data", obj);
-						break;
-					}
+			if (ref && ref.isDynamicValue) {
+				const value = ref.data;
+				let resolver;
+
+				if (typeof value == "function") {
+					resolver = (...args) => ({
+						[key]: value(...args)
+					});
+				} else {
+					resolver = _ => ({
+						[key]: value
+					});
 				}
 
-				setAttribute(node, key, value);
-				break;
+				setAttribute(node, "data", mkDynamicValue({
+					type: "tokenlist",
+					joiner: joinDatasets,
+					merger: extendDataset,
+					staticTokens: mkDatasetList(),
+					dynamicTokens: [resolver]
+				}, meta));
+			} else {
+				setAttribute(node, "data", {
+					[key]: ref
+				});
+			}
+		} else
+			setAttribute(node, key, resolveInlineRefs(value, meta, context));
+	}
+}
 
-			default:
-				if (key.indexOf("data-") == 0) {
-					const ref = resolveInlineRefs(value, meta, "singleton"),
-						k = casing(key).from.data.to.camel;
+function resolveAttributeMeta(key, meta = null) {
+	const prefixes = meta && meta.options && meta.options.attributePrefixes;
+	let matcher = DEF_ATTR_PREFIX_MATCHER;
 
-					if (ref && ref.isDynamicValue) {
-						const value = ref.data;
-						let resolver;
+	if (prefixes) {
+		if (typeof prefixes == "function")
+			matcher = prefixes;
+		else
+			matcher = mkStrMatcher(prefixes);
+	}
 
-						if (typeof value == "function") {
-							resolver = (...args) => ({
-								[k]: value(...args)
-							});
-						} else {
-							resolver = _ => ({
-								[k]: value
-							});
-						}
+	let match = matcher(key),
+		resolved = false;
 
-						setAttribute(node, "data", mkDynamicValue({
-							type: "tokenlist",
-							joiner: joinDatasets,
-							merger: extendDataset,
-							staticTokens: mkDatasetList(),
-							dynamicTokens: [resolver]
-						}));
-					} else {
-						setAttribute(node, "data", {
-							[k]: ref
-						});
-					}
-				} else if (key.indexOf("on") == 0) {
-					setAttribute(node, "events", {
-						[key.substring(2)]: resolveInlineRefs(value, meta, "event")
-					});
-				} else
-					setAttribute(node, key, resolveInlineRefs(value, meta, "singleton"));
+	if (match && typeof match.value == "function") {
+		match = match.value(key, match);
+		resolved = true;
+	}
+	
+	if (typeof match == "string") {
+		return {
+			type: match,
+			key,
+			matched: true
 		}
 	}
+
+	if (Array.isArray(match)) {
+		return {
+			type: match[0],
+			key: match[1],
+			matched: true
+		};
+	}
+
+	if (!isObject(match)) {
+		return {
+			type: key,
+			key,
+			matched: false
+		};
+	}
+
+	return {
+		type: resolved ?
+			match.type || match.value :
+			match.value,
+		key: resolved ?
+			match.key || key :
+			key,
+		matched: true
+	};
 }
 
 function resolveInlineRefs(str, meta = null, context = "raw") {
@@ -1312,7 +1390,7 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 	const preserveWhitespace = context == "raw",
 		useTerms = context != "raw" || (meta.options.compile && !meta.options.resolve),
 		wrapDynamic = context == "class" || context == "style" || context == "data",
-		rawResolve = context == "event";
+		rawResolve = context == "event" || context == "literal" || meta.options.rawResolve;
 
 	const refRegex = meta.options.refRegex || REF_REGEX,
 		terms = [],
@@ -1410,7 +1488,7 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 			return mkDynamicValue({
 				type: "ordered",
 				value: terms
-			});
+			}, meta);
 
 		case "string":
 			if (!hasDynamicTerms)
@@ -1419,16 +1497,16 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 			return mkDynamicValue({
 				type: "stringbuilder",
 				value: terms
-			});
+			}, meta);
 
-		case "singleton":
+		case "literal":
 			if (!hasDynamicTerms)
 				return useTerms ? terms[0] : out;
 
 			return mkDynamicValue({
-				type: "singleton",
+				type: "literal",
 				data: terms[0]
-			});
+			}, meta);
 
 		case "class":
 			if (!hasDynamicTerms)
@@ -1440,7 +1518,7 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 				merger: extendClass,
 				staticTokens: joinClassAsTokenList(...staticTerms),
 				dynamicTokens: dynamicTerms
-			});
+			}, meta);
 
 		case "style":
 			if (!hasDynamicTerms)
@@ -1452,7 +1530,7 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 				merger: extendStyle,
 				staticTokens: joinStyle(...staticTerms),
 				dynamicTokens: dynamicTerms
-			});
+			}, meta);
 
 		case "data":
 			if (!hasDynamicTerms)
@@ -1464,13 +1542,91 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 				merger: extendDataset,
 				staticTokens: joinDatasets(...staticTerms),
 				dynamicTokens: dynamicTerms
-			});
+			}, meta);
 
 		case "event":
 			return terms[0];
 	}
 
 	return out;
+}
+
+const PARSE_OPTIONS_TEMPLATES = {
+	compile: true,
+	resolve: true,
+	lazyDynamic: true,
+	eagerDynamic: true,
+	lazy: true,
+	rawResolve: true,
+	singleContextArg: true,
+	compact: true,
+	render: {
+		compile: true,
+		resolve: true
+	}
+};
+let templateCache = null;
+
+// Generic DOM parsing utility/router
+function parseDom(parser, source, options) {
+	const isTagged = isTaggedTemplateArgs(source);
+
+	if (isObj(source[0]) && !isTagged)
+		return source[0];
+
+	options = Object.assign(
+		{},
+		createOptionsObject(options, PARSE_OPTIONS_TEMPLATES)
+	);
+
+	if (options.attributePrefixes)
+		options.attributePrefixes = mkStrMatcher(options.attributePrefixes);
+
+	if (options.compile) {
+		Object.assign(options, {
+			ref: 16,
+			refPrefix: "ref_",
+			refSuffix: "",
+			refRegex: /ref_[a-zA-Z0-9]{16}/g,
+			resolveFunctions: true
+		});
+
+		if (options.eagerDynamic || options.lazy) {
+			// This works because tagged template args are singletons
+			// defined at parse time, effectively producing a unique ID
+			// for every unique template
+			if (!templateCache && typeof Map != "undefined")
+				templateCache = new Map();
+
+			if (options.lazy && isTagged && templateCache && templateCache.has(source[0])) {
+				const d = templateCache.get(source[0]);
+				for (let i = 0, l = d.argRefs.length; i < l; i++)
+					d.argRefs[i].value = source[i + 1];
+				return d;
+			}
+
+			const meta = compileTaggedTemplate.with(options)(...source);
+			meta.argRefs = [];
+			const data = {
+				meta,
+				argRefs: meta.argRefs,
+				dom: parser(meta.compiled, meta)
+			};
+
+			if (templateCache && isTagged)
+				templateCache.set(source[0], data);
+
+			return data;
+		}
+
+		const meta = compileTaggedTemplate.with(options)(...source);
+		return parser(meta.compiled, meta);
+	}
+
+	return parser(
+		compileTaggedTemplate.with(options)(...source),
+		null
+	);
 }
 
 // Legacy
@@ -1564,9 +1720,11 @@ export {
 	resolveDynamicValue,
 	resolveAttribute,
 	resolveTextContent,
+	resolveTag,
 	setAttribute,
 	parseAttributes,
 	resolveInlineRefs,
+	parseDom,
 	// Legacy
 	overrideAttributes,
 	cleanAttributes

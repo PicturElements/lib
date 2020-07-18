@@ -30,11 +30,7 @@ function isObj(val) {
 }
 
 function isObject(val) {
-	if (!val)
-		return false;
-
-	const proto = Object.getPrototypeOf(val);
-	return proto == null || proto == Object.prototype;
+	return Object.prototype.toString.call(val) == "[object Object]";
 }
 
 function isInstance(val) {

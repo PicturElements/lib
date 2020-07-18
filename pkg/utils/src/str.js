@@ -1,6 +1,7 @@
 import { getWrappedRange } from "./range";
 import {
 	isObject,
+	isPrimitive,
 	isTaggedTemplateArgs
 } from "./is";
 import serialize from "./serialize";
@@ -74,6 +75,136 @@ function uid(length = 10, alphabet = BASE_62) {
 		out += alphabet[Math.floor(Math.random() * len)];
 
 	return out;
+}
+
+// Fast stringification with common reasonable defaults:
+// All primitives except symbols can be casted
+// Non-primitives cannot be casted
+// All non-castable values return null
+// All castable values return a string
+function castStr(value) {
+	switch (typeof value) {
+		case "string":
+			return value;
+
+		case "object":
+			if (value === null)
+				return "null";
+
+			return null;
+
+		case "function":
+		case "symbol":
+			return null;
+	}
+
+	return String(value);
+}
+
+// Possible to make as fallback ponyfill, but
+// currently faster than/similar in performance compared
+// to native implementation (Chromium) by using the highly
+// optimized indexOf native prototype method
+function startsWith(str, ref, offs = 0) {
+	ref = castStr(ref);
+	if (typeof str != "string" || ref === null)
+		return false;
+
+	if (!ref)
+		return true;
+
+	if (typeof offs != "number" || offs < 0)
+		offs = 0;
+
+	// Quick check: make sure at least first character matches
+	if (str[offs] !== ref[0])
+		return false;
+
+	return str.indexOf(ref, offs) == offs;
+}
+
+function endsWith(str, ref, offs = 0) {
+	ref = castStr(ref);
+	if (typeof str != "string" || ref === null)
+		return false;
+
+	if (!ref)
+		return true;
+
+	if (typeof offs != "number" || offs < 0)
+		offs = 0;
+
+	offs = str.length - ref.length - offs;
+
+	// Quick check: make sure at least first character matches
+	if (offs < 0 || str[offs] !== ref[0])
+		return false;
+
+	return str.lastIndexOf(ref, offs) == offs;
+}
+
+// Simple static trie-based lookup
+function mkStrMatcher(...sources) {
+	const trie = {};
+
+	const add = (key, value) => {
+		key = castStr(key);
+		if (key == null)
+			return;
+
+		let node = trie;
+
+		for (let i = 0, l = key.length; i < l; i++) {
+			const char = key[i];
+
+			if (hasOwn(node, char))
+				node = node[char];
+			else {
+				const newNode = {};
+				node[char] = newNode;
+				node = newNode;
+			}
+		}
+
+		node.value = {
+			key,
+			value
+		};
+	};
+
+	for (let i = 0, l = sources.length; i < l; i++) {
+		const source = sources[i];
+
+		if (Array.isArray(source)) {
+			for (let j = 0, l2 = source.length; j < l2; j += 2)
+				add(source[j], source[j + 1]);
+		} else if (isObject(source)) {
+			for (const k in source) {
+				if (hasOwn(source, k))
+					add(k, source[k]);
+			}
+		}
+	}
+
+	return str => {
+		str = String(str);
+
+		let node = trie,
+			value = hasOwn(trie, "value") ?
+				trie.value :
+				null;
+
+		for (let i = 0, l = str.length; i < l; i++) {
+			if (!hasOwn(node, str[i]))
+				break;
+
+			node = node[str[i]];
+			if (hasOwn(node, "value"))
+				value = node.value;
+		}
+
+		return value;
+	};
 }
 
 function getSerializeOptions() {
@@ -159,8 +290,8 @@ function compileTaggedTemplateFull(args, options) {
 }
 
 function compileTaggedTemplate(...args) {
-	const options = compileTaggedTemplate.options;
-	compileTaggedTemplate.options = null;
+	const options = compileTaggedTemplate._options;
+	compileTaggedTemplate._options = null;
 
 	const useFull = options && (hasOwn(options, "ref") || options.full || options.meta),
 		compiler = useFull ?
@@ -173,18 +304,18 @@ function compileTaggedTemplate(...args) {
 	return compiler(args, CACHED_SERIALIZE_OPTIONS);
 }
 
-compileTaggedTemplate.options = null;
+compileTaggedTemplate._options = null;
 compileTaggedTemplate.with = (options, override = true) => {
 	if (!isObject(options))
 		return compileTaggedTemplate;
 
-	if (compileTaggedTemplate.options) {
+	if (compileTaggedTemplate._options) {
 		if (override)
-			compileTaggedTemplate.options = Object.assign(compileTaggedTemplate.options, options);
+			compileTaggedTemplate._options = Object.assign(compileTaggedTemplate._options, options);
 		else
-			compileTaggedTemplate.options = Object.assign({}, options, compileTaggedTemplate.options);
+			compileTaggedTemplate._options = Object.assign({}, options, compileTaggedTemplate._options);
 	} else
-		compileTaggedTemplate.options = Object.assign(getSerializeOptions(), options);
+		compileTaggedTemplate._options = Object.assign(getSerializeOptions(), options);
 
 	return compileTaggedTemplate;
 };
@@ -459,6 +590,10 @@ export {
 	trimStr,
 	splitClean,
 	uid,
+	castStr,
+	startsWith,
+	endsWith,
+	mkStrMatcher,
 	compileTaggedTemplate,
 	distance,
 	fromCodePoint,

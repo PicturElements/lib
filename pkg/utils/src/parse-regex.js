@@ -126,7 +126,7 @@ export default function parseRegex(source, flags = "") {
 
 		// Special meta sequences, control characters
 		if (hasOwn(SPECIAL_TOKENS, nextChar)) {
-			ptr += 2;
+			ptr += SPECIAL_TOKENS[nextChar].length;
 			return SPECIAL_TOKENS[nextChar];
 		}
 
@@ -311,9 +311,12 @@ export default function parseRegex(source, flags = "") {
 					consumed = 0,
 					visited = 0;
 
+				if (ptr + 1 == len)
+					visited = 1;
+
 				for (let i = ptr + 1; i < len; i++) {
 					const c = source[i],
-						cc = c.charCodeAt(0) - 48;
+						digit = c.charCodeAt(0) - 48;
 
 					visited++;
 
@@ -330,9 +333,8 @@ export default function parseRegex(source, flags = "") {
 						if (min > max)
 							err("Quantifier range out of order");
 
-						const diff = i - ptr + 1;
 						addQuantifier(min, max, i);
-						ptr += diff;
+						ptr += (i - ptr + 1);
 						visited = 0;
 						break;
 					}
@@ -349,14 +351,14 @@ export default function parseRegex(source, flags = "") {
 						continue;
 					}
 
-					if (cc < 0 || cc > 9)
+					if (digit < 0 || digit > 9)
 						break;
 
-					dec = dec * 10 + cc;
+					dec = dec * 10 + digit;
 					consumed++;
 				}
 
-				if (flagLookup.has("u"))
+				if (visited && flagLookup.has("u"))
 					err("Unescaped '{' not valid with unicode flag enabled unless in valid range quantifier");
 
 				for (let i = 0; i < visited; i++)
@@ -399,12 +401,12 @@ export default function parseRegex(source, flags = "") {
 						refIdLen = 0;
 					for (let i = 0; i < 3 && ptr + i + 1 < len; i++) {
 						const c = source[ptr + i + 1],
-							cc = c.charCodeAt(0) - 48;
+							digit = c.charCodeAt(0) - 48;
 
-						if (cc < 0 || cc > 9)
+						if (digit < 0 || digit > 9)
 							break;
 
-						refId = refId * 10 + cc;
+						refId = refId * 10 + digit;
 						refIdLen++;
 					}
 

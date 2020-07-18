@@ -1,11 +1,7 @@
 import filterMut from "./filter-mut";
 import {
-	isObj,
-	isTaggedTemplateArgs
-} from "./is";
-import { compileTaggedTemplate } from "./str";
-import {
 	mkVNode,
+	parseDom,
 	setAttribute,
 	parseAttributes,
 	resolveAttribute,
@@ -18,13 +14,15 @@ import {
 	createOptionsObject
 } from "./internal/options";
 
-let TEMPLATE_CACHE = null;
 const optionsTemplates = composeOptionsTemplates({
 	compile: true,
 	resolve: true,
 	lazyDynamic: true,
 	eagerDynamic: true,
 	lazy: true,
+	rawResolve: true,
+	singleContextArg: true,
+	compact: true,
 	render: {
 		compile: true,
 		resolve: true
@@ -32,67 +30,30 @@ const optionsTemplates = composeOptionsTemplates({
 });
 
 // Parses a subset of pug (no control flow)
-export default function parsePugStr(...args) {
-	const isTagged = isTaggedTemplateArgs(args);
-
-	if (isObj(args[0]) && !isTagged)
-		return args[0];
-
-	const options = compileTaggedTemplate.options;
-
-	if (options && options.compile) {
-		compileTaggedTemplate.with({
-			ref: 16,
-			refPrefix: "ref_",
-			refSuffix: "",
-			refRegex: /ref_[a-zA-Z0-9]{16}/g,
-			resolveFunctions: true
-		});
-
-		if (options.eagerDynamic || options.lazy) {
-			// This works because tagged template args are singletons
-			// defined at parse time, effectively producing a unique ID
-			// for every unique template
-			if (!TEMPLATE_CACHE && typeof Map != "undefined")
-				TEMPLATE_CACHE = new Map();
-			window.TEMPLATE_CACHE = TEMPLATE_CACHE;
-
-			if (options.lazy && isTagged && TEMPLATE_CACHE && TEMPLATE_CACHE.has(args[0])) {
-				const d = TEMPLATE_CACHE.get(args[0]);
-				for (let i = 0, l = d.argRefs.length; i < l; i++)
-					d.argRefs[i].value = args[i + 1];
-				return d;
-			}
-
-			const meta = compileTaggedTemplate(...args);
-			meta.argRefs = [];
-			const data = {
-				meta,
-				argRefs: meta.argRefs,
-				dom: parsePugCore(meta.compiled, meta)
-			};
-
-			if (TEMPLATE_CACHE && isTagged)
-				TEMPLATE_CACHE.set(args[0], data);
-
-			return data;
-		}
-
-		const meta = compileTaggedTemplate(...args);
-		return parsePugCore(meta.compiled, meta);
-	}
-
-	return parsePugCore(
-		compileTaggedTemplate(...args),
-		null
-	);
+export default function parsePugStr(...source) {
+	const options = parsePugStr._options;
+	parsePugStr._options = null;
+	return parseDom(parsePugCore, source, options);
 }
 
-parsePugStr.with = options => {
+parsePugStr.with = (options, override = true) => {
 	options = createOptionsObject(options, optionsTemplates);
-	compileTaggedTemplate.with(options);
+
+	if (!isObject(options))
+		return parsePugStr;
+
+	if (parsePugStr._options) {
+		if (override)
+			parsePugStr._options = Object.assign(parsePugStr._options, options);
+		else
+			parsePugStr._options = Object.assign({}, options, parsePugStr._options);
+	} else
+		parsePugStr._options = Object.assign({}, options);
+
 	return parsePugStr;
 };
+
+parsePugStr._options = null;
 
 // Capturing groups:
 // 1: indent
@@ -156,7 +117,7 @@ function parseNodes(str, meta = null) {
 
 		const node = mk(type, {
 			raw: ex[0],
-			tag: resolveInlineRefs(ex[4], meta, "string")
+			tag: resolveInlineRefs(ex[4], meta, "literal")
 		});
 
 		if (indentStr && !WELL_FORMED_INDENT_REGEX.test(indentStr))
