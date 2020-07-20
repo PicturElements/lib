@@ -1,6 +1,7 @@
 import DataCell from "./data-cell";
 import {
 	get,
+	hasOwn,
 	inject,
 	isObject,
 	mergesort,
