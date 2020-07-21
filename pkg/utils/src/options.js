@@ -3,6 +3,7 @@ import {
 	mergeObject,
 	mergeObjectWithDefault
 } from "./internal/merge-obj";
+import { createOptionizer } from "./internal/options";
 import inject from "./inject";
 
 function composeOptionsTemplates(...templates) {
@@ -30,8 +31,18 @@ function createOptionsObjectWithDefault(optionsPrecursor, templates, def, error)
 	);
 }
 
+function optionize(target, initializer, ...templates) {
+	return createOptionizer(
+		target,
+		initializer,
+		templates,
+		createOptionsObject
+	);
+}
+
 export {
 	composeOptionsTemplates,
 	createOptionsObject,
-	createOptionsObjectWithDefault
+	createOptionsObjectWithDefault,
+	optionize
 };

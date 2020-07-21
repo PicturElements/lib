@@ -8,9 +8,11 @@ import parseEntityStr from "./parse-entity-str";
 import {
 	isObject,
 	isPrimitive,
-	isEmptyString
+	isEmptyString,
+	isTaggedTemplateArgs
 } from "./is";
 import {
+	castStr,
 	splitClean,
 	mkStrMatcher,
 	compileTaggedTemplate
@@ -449,6 +451,16 @@ function joinDatasetsHelper(list, data) {
 					value: d[k]
 				});
 			}
+		} else {
+			const key = castStr(d);
+
+			if (key === null)
+				continue;
+
+			appendToken(list, {
+				key,
+				value: data[++i]
+			});
 		}
 	}
 
@@ -968,6 +980,15 @@ const DV_EXTENDERS = {
 	default: (dv, data) => dv,
 	literal: (dv, data) => dv.data = data,
 	stringbuilder: (dv, data) => concatMut(dv.data, data),
+	entitystringbuilder: (dv, data) => concatMut(dv.data, data),
+	entitystringbuilder: (dv, data) => {
+		for (let i = 0, l = data.length; i < l; i++) {
+			if (typeof data[i] == "string")
+				dv.data.push(parseEntityStr(data[i]));
+			else
+				dv.data.push(data[i]);
+		}
+	},
 	ordered: (dv, data) => {
 		concatMut(dv.data, data);
 		return dv;
@@ -1022,6 +1043,15 @@ const DV_MERGERS = {
 	default: (dv, dv2) => dv,
 	literal: (dv, dv2) => dv.data = dv2.data,
 	stringbuilder: (dv, dv2) => concatMut(dv.data, dv2.data),
+	entitystringbuilder: (dv, dv2) => {
+		for (let i = 0, l = dv2.data.length; i < l; i++) {
+			const d = dv2.data[i];
+			if (typeof d == "string")
+				dv.data.push(parseEntityStr(d));
+			else
+				dv.data.push(d);
+		}
+	},
 	ordered: (dv, dv2) => {
 		concatMut(dv.data, dv2.data);
 		return dv;
@@ -1053,12 +1083,10 @@ const DV_EXTRACTORS = {
 		let out = "";
 
 		for (let i = 0, l = d.length; i < l; i++) {
-			let val;
+			let val = d[i];
 
-			if (typeof d[i] == "function")
-				val = d[i](...args);
-			else
-				val = d[i];
+			if (typeof val == "function")
+				val = val(...args);
 
 			if (typeof val == "string")
 				out += val;
@@ -1066,6 +1094,31 @@ const DV_EXTRACTORS = {
 				out += String(val);
 			else
 				out += serialize(val, dv.meta.options, args);
+		}
+
+		return out;
+	},
+	entitystringbuilder: (dv, args) => {
+		const d = dv.data;
+		let out = "";
+
+		for (let i = 0, l = d.length; i < l; i++) {
+			let val = d[i];
+
+			if (typeof val == "string") {
+				out += val;
+				continue;
+			}
+
+			if (typeof val == "function")
+				val = val(...args);
+
+			if (typeof val == "string")
+				out += parseEntityStr(val);
+			else if (isPrimitive(val) && typeof val != "symbol")
+				out += String(val);
+			else
+				out += parseEntityStr(serialize(val, dv.meta.options, args));
 		}
 
 		return out;
@@ -1102,6 +1155,7 @@ function mkDynamicValue(dv, meta = null) {
 			break;
 
 		case "stringbuilder":
+		case "entitystringbuilder":
 		case "ordered":
 			dv.data = dv.data || [];
 			break;
@@ -1161,6 +1215,7 @@ function resolveTextContent(node, args = []) {
 
 	switch (node && node.type) {
 		case "text":
+		case "comment":
 			if (node.content && node.content.isDynamicValue)
 				return node.content.extract(node.content, args);
 
@@ -1249,6 +1304,24 @@ function setAttribute(node, key, value) {
 	}
 }
 
+function setTextContent(node, text, meta = null) {
+	text = text || "";
+	const options = meta && meta.options;
+	let content;
+
+	if (!meta || !meta.refKeys.length) {
+		content = options && options.preserveEntities ?
+			text :
+			parseEntityStr(text);
+	} else {
+		const textType = options && options.preserveEntities ? "string" : "entitystring";
+		content = resolveInlineRefs(text, meta, ctx(node, "content")(textType));
+	}
+
+	node.content = content;
+	node.static = !content || !content.isDynamicValue;
+}
+
 function parseAttributes(node, meta = null) {
 	if (!node.attrData)
 		return;
@@ -1263,39 +1336,36 @@ function parseAttributes(node, meta = null) {
 				type,
 				key,
 				matched,
-				context = "literal"
+				context
 			} = resolveAttributeMeta(ex[1], meta);
 
 		if (type == "style") {
 			setAttribute(
 				node,
 				"style",
-				resolveInlineRefs(value, meta, "style")
+				resolveInlineRefs(value, meta, ctx(node, "attribute", "style"))
 			);
 		} else if (type == "class") {
 			setAttribute(
 				node,
 				"class",
 				meta ?
-					resolveInlineRefs(value, meta, "class") :
+					resolveInlineRefs(value, meta, ctx(node, "attribute", "class")) :
 					String(value).terms(/\s+/g)
 			);
 		} else if (type == "data") {
 			if (meta) {
-				const obj = resolveInlineRefs(value, meta, "data");
-				if (isObject(obj)) {
+				const obj = resolveInlineRefs(value, meta, ctx(node, "attribute", "data"));
+				if (isObject(obj))
 					setAttribute(node, "data", obj);
-					break;
-				}
-			}
-
-			setAttribute(node, key, value);
+			} else
+				setAttribute(node, key, value);
 		} else if (type == "event" && matched) {
 			setAttribute(node, "events", {
-				[key]: resolveInlineRefs(value, meta, "event")
+				[key]: resolveInlineRefs(value, meta, ctx(node, "attribute", "events")("event"))
 			});
 		} else if (type == "data-item" && matched) {
-			const ref = resolveInlineRefs(value, meta, "literal");
+			const ref = resolveInlineRefs(value, meta, ctx(node, "attribute", "data")("data-item"));
 
 			if (ref && ref.isDynamicValue) {
 				const value = ref.data;
@@ -1323,9 +1393,18 @@ function parseAttributes(node, meta = null) {
 					[key]: ref
 				});
 			}
-		} else
-			setAttribute(node, key, resolveInlineRefs(value, meta, context));
+		} else {
+			let c = context;
+			if (typeof c == "string")
+				c = ctx(node, "attribute", key)(c);
+			else if (!c)
+				c = ctx(node, "attribute", key)("literal");
+
+			setAttribute(node, key, resolveInlineRefs(value, meta, c));
+		}
 	}
+
+	return node;
 }
 
 function resolveAttributeMeta(key, meta = null) {
@@ -1382,17 +1461,17 @@ function resolveAttributeMeta(key, meta = null) {
 	};
 }
 
-function resolveInlineRefs(str, meta = null, context = "raw") {
+function resolveInlineRefs(str, meta = null, context = null) {
 	if (!meta || !meta.refKeys.length || typeof str != "string")
 		return str;
 
-	// Flags
-	const preserveWhitespace = context == "raw",
-		useTerms = context != "raw" || (meta.options.compile && !meta.options.resolve),
-		wrapDynamic = context == "class" || context == "style" || context == "data",
-		rawResolve = context == "event" || context == "literal" || meta.options.rawResolve;
+	if (typeof context == "function")
+		context = context(null);
+	if (!context)
+		context = ctx(null, null, null)("raw");
 
-	const refRegex = meta.options.refRegex || REF_REGEX,
+	const ct = context.type,
+		refRegex = meta.options.refRegex || REF_REGEX,
 		terms = [],
 		staticTerms = [],
 		dynamicTerms = [];
@@ -1401,12 +1480,19 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 		ptr = 0,
 		hasDynamicTerms = false;
 
+	// Flags
+	const preserveWhitespace = ct == "raw" || ct == "string" || ct == "entitystring",
+		useTerms = ct != "raw" || (meta.options.compile && !meta.options.resolve),
+		wrapDynamic = ct == "class" || ct == "style" || ct == "data" || ct == "data-item",
+		rawResolve = ct == "event" || ct == "literal" || meta.options.rawResolve;
+
 	const push = (term, ref) => {
 		if (ref && meta.options.eagerDynamic) {
 			const argRef = {
 				ref,
 				value: term,
-				changed: false
+				changed: false,
+				context
 			};
 
 			meta.argRefs[meta.refIndices[ref]] = argRef;
@@ -1480,7 +1566,7 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 		ptr = ex.index + match.length;
 	}
 
-	switch (context) {
+	switch (ct) {
 		case "raw":
 			if (!hasDynamicTerms)
 				return useTerms ? terms[0] : out;
@@ -1499,7 +1585,17 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 				value: terms
 			}, meta);
 
+		case "entitystring":
+			if (!hasDynamicTerms)
+				return parseEntityStr(out);
+
+			return mkDynamicValue({
+				type: "entitystringbuilder",
+				value: terms
+			}, meta);
+
 		case "literal":
+		case "data-item":
 			if (!hasDynamicTerms)
 				return useTerms ? terms[0] : out;
 
@@ -1551,19 +1647,31 @@ function resolveInlineRefs(str, meta = null, context = "raw") {
 	return out;
 }
 
+function ctx(node, target, key = null) {
+	return (type = null) => ({
+		node,
+		target,
+		key,
+		type: type || key
+	});
+}
+
+resolveInlineRefs.ctx = ctx;
+
 const PARSE_OPTIONS_TEMPLATES = {
 	compile: true,
 	resolve: true,
+	render: {
+		compile: true,
+		resolve: true
+	},
 	lazyDynamic: true,
 	eagerDynamic: true,
 	lazy: true,
 	rawResolve: true,
 	singleContextArg: true,
 	compact: true,
-	render: {
-		compile: true,
-		resolve: true
-	}
+	preserveEntities: true
 };
 let templateCache = null;
 
@@ -1628,6 +1736,8 @@ function parseDom(parser, source, options) {
 		null
 	);
 }
+
+parseDom.options = PARSE_OPTIONS_TEMPLATES;
 
 // Legacy
 function overrideAttributes(attrs, ...overriders) {
@@ -1722,6 +1832,7 @@ export {
 	resolveTextContent,
 	resolveTag,
 	setAttribute,
+	setTextContent,
 	parseAttributes,
 	resolveInlineRefs,
 	parseDom,

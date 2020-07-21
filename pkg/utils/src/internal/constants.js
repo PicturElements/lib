@@ -9,6 +9,8 @@ const SYM_ITER_KEY = typeof Symbol == "undefined" ?
 	POLYFILL_PREFIXES.symIterator :
 	Symbol.iterator;
 
+// Whitespace characters (as recognized by the standard of String.prototype.trim)
+const WHITESPACE = lookup("\t\n\v\f\r \xa0\u2028\u2029\ufeff", "");
 const VOID_TAGS = lookup("area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr");
 const BOOLEAN_ATTRS = lookup("allowfullscreen|allowpaymentrequest|async|autofocus|autoplay|checked|controls|default|disabled|formnovalidate|hidden|ismap|itemscope|loop|multiple|muted|nomodule|novalidate|open|playsinline|readonly|required|reversed|selected|truespeed");
 
@@ -32,6 +34,7 @@ const BASE_64_YT = BASE_62 + "-_";
 export {
 	POLYFILL_PREFIXES,
 	SYM_ITER_KEY,
+	WHITESPACE,
 	VOID_TAGS,
 	BOOLEAN_ATTRS,
 	DOM_NAMESPACES,

@@ -207,12 +207,13 @@ function isNativeFunction(candidate) {
 	return false;
 }
 
+// Whitespace characters (as recognized by the standard of String.prototype.trim)
 function isWhitespace(char) {
 	if (typeof char != "string" || char.length != 1)
 		return false;
 
 	const code = char.charCodeAt(0);
-	return code > 8 && code < 14 || code == 32;
+	return code > 8 && code < 14 || code == 32 || code == 0xa0 || code == 0x2028 || code == 0x2029 || code == 0xfeff;
 }
 
 function isDigit(char) {

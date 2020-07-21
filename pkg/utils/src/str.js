@@ -1,14 +1,14 @@
 import { getWrappedRange } from "./range";
 import {
 	isObject,
-	isPrimitive,
 	isTaggedTemplateArgs
 } from "./is";
 import serialize from "./serialize";
 import repeat from "./repeat";
 import {
 	composeOptionsTemplates,
-	createOptionsObject
+	createOptionsObject,
+	optionize
 } from "./internal/options";
 import { BASE_62 } from "./internal/constants";
 import hasOwn from "./has-own";
@@ -290,10 +290,8 @@ function compileTaggedTemplateFull(args, options) {
 }
 
 function compileTaggedTemplate(...args) {
-	const options = compileTaggedTemplate._options;
-	compileTaggedTemplate._options = null;
-
-	const useFull = options && (hasOwn(options, "ref") || options.full || options.meta),
+	const options = compileTaggedTemplate.extractOptions(),
+		useFull = options && (hasOwn(options, "ref") || options.full || options.meta),
 		compiler = useFull ?
 			compileTaggedTemplateFull :
 			compileTaggedTemplateCore;
@@ -304,21 +302,7 @@ function compileTaggedTemplate(...args) {
 	return compiler(args, CACHED_SERIALIZE_OPTIONS);
 }
 
-compileTaggedTemplate._options = null;
-compileTaggedTemplate.with = (options, override = true) => {
-	if (!isObject(options))
-		return compileTaggedTemplate;
-
-	if (compileTaggedTemplate._options) {
-		if (override)
-			compileTaggedTemplate._options = Object.assign(compileTaggedTemplate._options, options);
-		else
-			compileTaggedTemplate._options = Object.assign({}, options, compileTaggedTemplate._options);
-	} else
-		compileTaggedTemplate._options = Object.assign(getSerializeOptions(), options);
-
-	return compileTaggedTemplate;
-};
+optionize(compileTaggedTemplate, getSerializeOptions);
 
 const ALL_OPS = {
 	substitution: true,

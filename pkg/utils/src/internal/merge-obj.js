@@ -1,4 +1,5 @@
 import { getEnvType } from "../env";
+import { isObject } from "./duplicates";
 import hasOwn from "../has-own";
 
 // To reduce call overhead, functions in this file take a large number of arguments.
@@ -37,10 +38,10 @@ function addMergerTemplate(
 	templates,
 	key,
 	template,
-	mergeType = "merge"
+	type = "merge"
 ) {
 	if (typeof key != "string") {
-		console.error(`Failed to create ${mergeType} template: key is not a string`);
+		console.error(`Failed to create ${type} template: key is not a string`);
 		return templates;
 	}
 
@@ -59,19 +60,19 @@ function mergeObject(
 	mergerPrecursor,
 	templates,
 	error,
-	mergeType = "merge",
-	mergeFunction = Object.assign
+	type = "merge",
+	merger = Object.assign
 ) {
 	switch (typeof mergerPrecursor) {
 		case "string":
-			return templates[mergerPrecursor] || tryBundle(mergerPrecursor, templates, mergeType) || (
-				logMergeError(error, mergerPrecursor, templates, mergeType) ||
+			return templates[mergerPrecursor] || tryBundle(mergerPrecursor, templates, type) || (
+				logMergeError(error, mergerPrecursor, templates, type) ||
 				blank
 			);
 
 		case "object":
 			if (Array.isArray(mergerPrecursor))
-				return merge(mergerPrecursor, templates, error, mergeType, mergeFunction);
+				return merge(mergerPrecursor, templates, error, type, merger);
 
 			return mergerPrecursor ?
 				mergerPrecursor :
@@ -87,30 +88,30 @@ function mergeObjectWithDefault(
 	templates,
 	def,
 	error,
-	mergeType = "merge",
-	mergeFunction = Object.assign
+	type = "merge",
+	merger = Object.assign
 ) {
 	switch (typeof optionsPrecursor) {
 		case "string":
-			return templates[optionsPrecursor] || tryBundle(optionsPrecursor, templates, mergeType) || (
-				logMergeError(error, optionsPrecursor, templates, mergeType) ||
-				mergeObject(def, templates, error, mergeType)
+			return templates[optionsPrecursor] || tryBundle(optionsPrecursor, templates, type) || (
+				logMergeError(error, optionsPrecursor, templates, type) ||
+				mergeObject(def, templates, error, type)
 			);
 
 		case "object":
 			if (Array.isArray(optionsPrecursor))
-				return merge(optionsPrecursor, templates, error, mergeType, mergeFunction);
+				return merge(optionsPrecursor, templates, error, type, merger);
 
 			return optionsPrecursor ?
 				optionsPrecursor :
-				mergeObject(def, templates, error, mergeType);
+				mergeObject(def, templates, error, type);
 
 		default:
-			return mergeObject(def, templates, error, mergeType);
+			return mergeObject(def, templates, error, type);
 	}
 }
 
-function tryBundle(optionsStr, templates, mergeType = "merge") {
+function tryBundle(optionsStr, templates, type = "merge") {
 	if (optionsStr.indexOf("|") == -1)
 		return null;
 
@@ -123,7 +124,7 @@ function tryBundle(optionsStr, templates, mergeType = "merge") {
 		if (templ)
 			Object.assign(template, templ);
 		else {
-			console.error(`Failed to bundle ${mergeType} object '${options[i]}': no template with that name exists`);
+			console.error(`Failed to bundle ${type} object '${options[i]}': no template with that name exists`);
 			return null;
 		}
 	}
@@ -132,8 +133,8 @@ function tryBundle(optionsStr, templates, mergeType = "merge") {
 	return templates[optionsStr];
 }
 
-function logMergeError(error, option, templates, mergeType = "merge") {
-	console.error(error || `'${option}' is not a valid ${mergeType} object`);
+function logMergeError(error, option, templates, type = "merge") {
+	console.error(error || `'${option}' is not a valid ${type} object`);
 
 	if (getEnvType() != "window")
 		return;
@@ -156,27 +157,17 @@ function merge(
 	options,
 	templates,
 	error,
-	mergeType = "merge",
-	mergeFunction = Object.assign
+	type = "merge",
+	merger = Object.assign
 ) {
 	const template = Object.create(null);
 
 	for (let i = 0, l = options.length; i < l; i++) {
-		const merger = mergeObject(options[i], templates, error, mergeType);
-		mergeFunction(template, merger);
+		const obj = mergeObject(options[i], templates, error, type);
+		merger(template, obj);
 	}
 
 	return Object.freeze(template);
-}
-
-// Copy of the isObject utility in src/is, duplicated
-// to remove circular dependency problems
-function isObject(val) {
-	if (!val)
-		return false;
-
-	const proto = Object.getPrototypeOf(val);
-	return proto == null || proto == Object.prototype;
 }
 
 export {

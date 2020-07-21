@@ -68,6 +68,7 @@ export { default as parseEntityStr } from "./src/parse-entity-str";
 export { default as parseEscapeSequence } from "./src/parse-escape-sequence";
 export { default as parseEscapeSequenceStr } from "./src/parse-escape-sequence-str";
 export { default as parseFloatStr } from "./src/parse-float-str";
+export { default as parseHtmlStr } from "./src/parse-html-str";
 export { default as parsePropStr } from "./src/parse-prop-str";
 export { default as parsePugStr } from "./src/parse-pug-str";
 export { default as parseRegex } from "./src/parse-regex";

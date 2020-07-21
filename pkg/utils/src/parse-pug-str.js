@@ -3,57 +3,41 @@ import {
 	mkVNode,
 	parseDom,
 	setAttribute,
+	setTextContent,
 	parseAttributes,
 	resolveAttribute,
 	resolveInlineRefs,
 	mkAttrRepresentationObj
 } from "./dom";
 import hasOwn from "./has-own";
-import {
-	composeOptionsTemplates,
-	createOptionsObject
-} from "./internal/options";
+import { optionize } from "./internal/options";
 
-const optionsTemplates = composeOptionsTemplates({
+const ctx = resolveInlineRefs.ctx;
+
+// Parses a subset of pug (no control flow)
+export default function parsePugStr(...source) {
+	return parseDom(
+		parsePugCore,
+		source,
+		parsePugStr.extractOptions()
+	);
+}
+
+optionize(parsePugStr, null, {
 	compile: true,
 	resolve: true,
+	render: {
+		compile: true,
+		resolve: true
+	},
 	lazyDynamic: true,
 	eagerDynamic: true,
 	lazy: true,
 	rawResolve: true,
 	singleContextArg: true,
 	compact: true,
-	render: {
-		compile: true,
-		resolve: true
-	}
+	preserveEntities: true
 });
-
-// Parses a subset of pug (no control flow)
-export default function parsePugStr(...source) {
-	const options = parsePugStr._options;
-	parsePugStr._options = null;
-	return parseDom(parsePugCore, source, options);
-}
-
-parsePugStr.with = (options, override = true) => {
-	options = createOptionsObject(options, optionsTemplates);
-
-	if (!isObject(options))
-		return parsePugStr;
-
-	if (parsePugStr._options) {
-		if (override)
-			parsePugStr._options = Object.assign(parsePugStr._options, options);
-		else
-			parsePugStr._options = Object.assign({}, options, parsePugStr._options);
-	} else
-		parsePugStr._options = Object.assign({}, options);
-
-	return parsePugStr;
-};
-
-parsePugStr._options = null;
 
 // Capturing groups:
 // 1: indent
@@ -72,12 +56,10 @@ const NODE_REGEX = /^([\t ]*)(?:\/\/-(.*(?:\n\1[\t ]+.+)*)|\|\s?(.+)|([^#.\s*(]+
 	WELL_FORMED_INDENT_REGEX = /^(\s)\1*$/;
 
 function parsePugCore(str, meta = null) {
-	return parseNodes(str || "", meta);
-}
-
-function parseNodes(str, meta = null) {
 	const root = [],
-		stack = [];
+		stack = [],
+		options = (meta && meta.options) || {},
+		mk = options.mkVNode || mkVNode;
 	let lastNode = null,
 		parent = null,
 		target = root,
@@ -113,12 +95,10 @@ function parseNodes(str, meta = null) {
 
 		const indentStr = ex[1],
 			indentLen = indentStr.length,
-			mk = meta && meta.options.mkVNode || mkVNode;
-
-		const node = mk(type, {
-			raw: ex[0],
-			tag: resolveInlineRefs(ex[4], meta, "literal")
-		});
+			node = mk(type, {
+				raw: ex[0]
+			});
+		node.tag = resolveInlineRefs(ex[4], meta, ctx(node, "tag")("literal"));
 
 		if (indentStr && !WELL_FORMED_INDENT_REGEX.test(indentStr))
 			throw new SyntaxError(`Malformed indent on line ${line}`);
@@ -156,19 +136,13 @@ function parseNodes(str, meta = null) {
 		}
 
 		switch (type) {
-			case "comment": {
-				const content = resolveInlineRefs(ex[2], meta);
-				node.content = content;
-				node.static = !content || !content.isDynamicValue;
+			case "comment":
+				setTextContent(node, ex[2], meta);
 				break;
-			}
 
-			case "text": {
-				const content = resolveInlineRefs(ex[3] || null, meta);
-				node.content = content;
-				node.static = !content || !content.isDynamicValue;
+			case "text":
+				setTextContent(node, ex[3], meta);
 				break;
-			}
 
 			case "element": {
 				node.children = [];
@@ -189,28 +163,24 @@ function parseNodes(str, meta = null) {
 				if (hasOwn(node.attributes, "xmlns")) {
 					if (typeof node.attributes.xmlns == "string")
 						node.namespace = node.attributes.xmlns;
-					else if (meta.options.compile && meta.options.resolve)
-						node.namespace = resolveAttribute(node, "xmlns", meta.options.args);
+					else if (options.compile && options.resolve)
+						node.namespace = resolveAttribute(node, "xmlns", options.args);
 				} else if (parent && parent.namespace != "http://www.w3.org/1999/xhtml")
 					node.namespace = parent.namespace;
 
-				const elemContent = ex[8];
+				const textContent = ex[8];
 
-				if (!elemContent)
+				if (!textContent)
 					break;
 
-				const content = resolveInlineRefs(elemContent, meta, "string"),
-					isStatic = !content || !content.isDynamicValue;
+				const textNode = mk("text", {
+					raw: textContent,
+					parent: node
+				});
 
-				node.children.push(
-					mk("text", {
-						content,
-						static: isStatic,
-						raw: elemContent,
-						parent: node
-					})
-				);
-				node.static = node.static && isStatic;
+				setTextContent(textNode, textContent, meta);
+				node.children.push(textNode);
+				node.static = node.static && textNode.static;
 				break;
 			}
 		}
@@ -247,7 +217,7 @@ function parseClassesAndIDs(node, meta = null) {
 					setAttribute(
 						node,
 						"class",
-						resolveInlineRefs(ex[2], meta, "class")
+						resolveInlineRefs(ex[2], meta, ctx(node, "attribute", "class")("raw"))
 					);
 				} else
 					setAttribute(node, "class", ex[2]);
@@ -257,7 +227,7 @@ function parseClassesAndIDs(node, meta = null) {
 				setAttribute(
 					node,
 					"id",
-					resolveInlineRefs(ex[2], meta)
+					resolveInlineRefs(ex[2], meta, ctx(node, "attribute", "class")("raw"))
 				);
 				break;
 		}
