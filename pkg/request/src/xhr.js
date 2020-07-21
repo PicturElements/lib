@@ -858,7 +858,8 @@ function injectStateDependencies(state, manager) {
 		return;
 
 	for (const k in hooks) {
-		if (!hasOwn(hooks, k))
+		// FIXME: when bc/Hookable is updated to not store metadata in a singular object, remove last two checks
+		if (!hasOwn(hooks, k) || k == "last" || k == "keys")
 			continue;
 
 		state.hook(k, hooks[k]);
