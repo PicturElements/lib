@@ -29,6 +29,8 @@ feed.add("viz", activeFeed => {
 		}
 	});
 
+	console.log(i18n);
+
 	const data = [],
 		now = Date.now();
 
