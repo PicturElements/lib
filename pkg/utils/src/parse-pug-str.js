@@ -96,9 +96,10 @@ function parsePugCore(str, meta = null) {
 		const indentStr = ex[1],
 			indentLen = indentStr.length,
 			node = mk(type, {
-				raw: ex[0]
+				raw: ex[0],
+				tag: ex[4]
 			});
-		node.tag = resolveInlineRefs(ex[4], meta, ctx(node, "tag")("literal"));
+		node.tag = resolveInlineRefs(node.tag, meta, ctx(node, "tag")("literal"));
 
 		if (indentStr && !WELL_FORMED_INDENT_REGEX.test(indentStr))
 			throw new SyntaxError(`Malformed indent on line ${line}`);
