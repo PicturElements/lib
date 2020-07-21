@@ -6,6 +6,7 @@ import serialize from "./serialize";
 import hasOwn from "./has-own";
 import parseEntityStr from "./parse-entity-str";
 import {
+	isObj,
 	isObject,
 	isPrimitive,
 	isEmptyString,
