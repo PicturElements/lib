@@ -2,7 +2,11 @@
 // without to prevent circular dependency problems
 
 function isObject(val) {
-	return Object.prototype.toString.call(val) == "[object Object]";
+	if (!val || typeof val != "object")
+		return false;
+
+	const proto = Object.getPrototypeOf(val);
+	return proto == null || proto == Object.prototype;
 }
 
 export {

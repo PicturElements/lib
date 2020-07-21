@@ -30,6 +30,14 @@ function isObj(val) {
 }
 
 function isObject(val) {
+	if (!val || typeof val != "object")
+		return false;
+
+	const proto = Object.getPrototypeOf(val);
+	return proto == null || proto == Object.prototype;
+}
+
+function isObjectLike(val) {
 	return Object.prototype.toString.call(val) == "[object Object]";
 }
 
@@ -275,6 +283,7 @@ export {
 	isNativeSimpleObject,
 	isObj,
 	isObject,
+	isObjectLike,
 	isInstance,
 	isConstructor,
 	isProbableConstructor,
