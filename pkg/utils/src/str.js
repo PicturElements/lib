@@ -304,7 +304,7 @@ function compileTaggedTemplate(...args) {
 
 optionize(compileTaggedTemplate, getSerializeOptions);
 
-const ALL_OPS = {
+const OPS = {
 	substitution: true,
 	insertion: true,
 	deletion: true,
@@ -347,7 +347,7 @@ const distanceOptionsTemplates = composeOptionsTemplates({
 		}
 	},
 	full: {
-		ops: ALL_OPS
+		ops: OPS
 	},
 	md1: {
 		maxDistance: 1
@@ -366,13 +366,15 @@ const distanceOptionsTemplates = composeOptionsTemplates({
 // Damerau–Levenshtein distance, with modifications based on
 // the Apache Commons Lang implementation as found here:
 // https://stackoverflow.com/a/35069964
+// and memory optimized through a reusable matrix array
+const DISTANCE_MATRIX = [];
 function distance(a = "", b = "", options = {}) {
 	if (a == b)
 		return 0;
 
 	options = createOptionsObject(options, distanceOptionsTemplates);
 
-	const ops = options.ops || ALL_OPS,
+	const ops = options.ops || OPS,
 		weights = options.weights || WEIGHTS,
 		maxDistance = typeof options.maxDistance == "number" ?
 			options.maxDistance :
@@ -382,7 +384,7 @@ function distance(a = "", b = "", options = {}) {
 		bl = b.length;
 
 	if (al < bl) {
-		let tmpStr = a,
+		const tmpStr = a,
 			tmpLen = al;
 
 		a = b;
@@ -400,18 +402,28 @@ function distance(a = "", b = "", options = {}) {
 		return al || 0;
 
 	const alphabet = {},
-		matrix = Array(al * bl),
 		sw = typeof weights.substitution == "number" ? weights.substitution : 1,
 		iw = typeof weights.insertion == "number" ? weights.insertion : 1,
 		dw = typeof weights.deletion == "number" ? weights.deletion : 1,
-		tw = typeof weights.transposition == "number" ? weights.transposition : 1;
+		tw = typeof weights.transposition == "number" ? weights.transposition : 1,
+		mod = ops.transposition ?
+			(maxDistance ?
+				Math.max(Math.min(al, maxDistance), 3) :
+				Math.max(al, 3)) :
+			3,
+		matrix = DISTANCE_MATRIX;
+	let lastStart = -1,
+		lastEnd = bl + 1;
 
 	for (let i = 0; i < al; i++) {
-		const ac = a[i];
+		const ac = a[i],
+			row = (i % mod) * bl,
+			prevRow = ((mod + i - 1) % mod) * bl;
+
 		let db = 0,
 			jStart = 0,
 			jEnd = bl,
-			rowMin = Infinity;
+			rowMin = Infinity
 
 		if (maxDistance) {
 			jEnd = Math.min(i + maxDistance + 1, bl);
@@ -429,34 +441,42 @@ function distance(a = "", b = "", options = {}) {
 					cost = j;
 				else if (!j)
 					cost = i;
+				else if (j == lastStart)
+					cost = Infinity;
 				else
-					cost = nullish(matrix[(i - 1) * bl + (j - 1)]);
-				cost += Number(ac != bc);
+					cost = matrix[prevRow + j - 1];
 
-				if (cost * sw < min)
-					min = cost * sw;
+				if (ac == bc)
+					cost *= sw;
+				else
+					cost = (cost + 1) * sw;
+
+				if (cost < min)
+					min = cost;
 			}
 
 			// Insertion
 			if (ops.insertion) {
 				if (!j)
-					cost = i + 1;
+					cost = (i + 1) * iw;
 				else
-					cost = nullish(matrix[i * bl + (j - 1)]) + 1;
+					cost = (matrix[row + j - 1] + 1) * iw;
 
-				if (cost * iw < min)
-					min = cost * iw;
+				if (cost < min)
+					min = cost;
 			}
 
 			// Deletion
 			if (ops.deletion) {
 				if (!i)
-					cost = j + 1;
+					cost = (j + 1) * dw;
+				else if (j >= lastEnd)
+					cost = Infinity
 				else
-					cost = nullish(matrix[(i - 1) * bl + j]) + 1;
+					cost = (matrix[prevRow + j] + 1) * dw;
 
-				if (cost * dw < min)
-					min = cost * dw;
+				if (cost < min)
+					min = cost;
 			}
 
 			// Transposition
@@ -467,28 +487,36 @@ function distance(a = "", b = "", options = {}) {
 					const k = alphabet[bc] || 0,
 						l = db;
 
-					if (k < 0 || l < 0)
+					if (k < 0 || l < 0 || i - k - 1 > mod)
 						cost = Infinity;
 					else {
 						if (!k)
 							cost = l + 2;
 						else if (!l)
 							cost = k + 2;
-						else
-							cost = nullish(matrix[(k - 1) * bl + (l - 1)]);
+						else if (maxDistance) {
+							const end = Math.min(k + maxDistance, bl),
+								start = Math.max(end - maxDistance * 2 - 1, 0);
 
-						cost += ((i - k - 1) + 1 + (j - l - 1));
+							if (l < start + 1 || l >= end)
+								cost = Infinity;
+							else
+								cost = matrix[((k - 1) % mod) * bl + (l - 1)];
+						} else
+							cost = matrix[((k - 1) % mod) * bl + (l - 1)];
+
+						cost = (cost + ((i - k - 1) + 1 + (j - l - 1))) * tw;
 					}
 
-					if (cost * tw < min)
-						min = cost * tw;
+					if (cost < min)
+						min = cost;
 				}
 			}
 
 			if (maxDistance && min < rowMin)
 				rowMin = min;
 
-			matrix[i * bl + j] = min;
+			matrix[row + j] = min;
 		}
 
 		// rowMin gives a lower bound for the distance after each
@@ -499,19 +527,17 @@ function distance(a = "", b = "", options = {}) {
 
 		if (ops.transposition)
 			alphabet[ac] = i;
+
+		lastStart = jStart;
+		lastEnd = jEnd;
 	}
 
-	if (maxDistance && matrix[matrix.length - 1] > maxDistance)
+	const dist = matrix[((al - 1) % mod + 1) * bl - 1];
+
+	if (maxDistance && dist > maxDistance)
 		return Infinity;
 
-	return matrix[matrix.length - 1];
-}
-
-function nullish(candidate) {
-	if (candidate == null)
-		return Infinity;
-
-	return candidate;
+	return dist
 }
 
 // Adapted from

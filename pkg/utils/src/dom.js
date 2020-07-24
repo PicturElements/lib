@@ -961,18 +961,12 @@ function mkVNode(type, data) {
 	const node = Object.assign({
 		type,
 		raw: "",
-		tag: null
+		tag: null,
+		namespace: DEF_NS,
+		void: false
 	}, data);
 
 	node.tag = node.tag || DEFAULT_TAGS[type];
-
-	if (type == "element") {
-		const props = getTagProperties(node.tag);
-		node.tag = props.tag;
-		node.namespace = props.namespace;
-		node.void = props.void;
-	}
-
 	return node;
 }
 
@@ -1309,6 +1303,9 @@ function setTextContent(node, text, meta = null) {
 	text = text || "";
 	const options = meta && meta.options;
 	let content;
+
+	if (!options || !options.preserveNewlines)
+		text = text.replace(/^[\n\r]+|[\n\r]+$/g, "");
 
 	if (!meta || !meta.refKeys.length) {
 		content = options && options.preserveEntities ?
@@ -1672,7 +1669,8 @@ const PARSE_OPTIONS_TEMPLATES = {
 	rawResolve: true,
 	singleContextArg: true,
 	compact: true,
-	preserveEntities: true
+	preserveEntities: true,
+	preserveNewlines: true
 };
 let templateCache = null;
 

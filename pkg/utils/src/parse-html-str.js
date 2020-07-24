@@ -2,6 +2,7 @@ import filterMut from "./filter-mut";
 import {
 	mkVNode,
 	parseDom,
+	getTagProperties,
 	setTextContent,
 	parseAttributes,
 	resolveAttribute,
@@ -36,6 +37,8 @@ optionize(parseHtmlStr, null, {
 	rawResolve: true,
 	singleContextArg: true,
 	compact: true,
+	preserveEntities: true,
+	preserveNewlines: true,
 	trim: true
 });
 
@@ -51,22 +54,26 @@ function parseHtmlCore(str, meta = null) {
 	const root = [],
 		stack = [],
 		options = (meta && meta.options) || {},
-		mk = options.mkVNode || mkVNode;
+		mk = options.mkVNode || mkVNode,
+		eData = {
+			tag: null,
+			selfClosing: false
+		};
 	let state = STATES.CONTENT,
 		buffer = "",
 		whitespaceBuffer = "",
-		backupWhitespaceBuffer = "",
+		quote = null,
 		hasContent = false,
-		tag = null,
 		target = root,
-		parent = null;
+		parent = null,
+		i = 0,
+		cutoffIdx = 0;
 
 	const append = char => {
 		if (options.trim) {
 			if (isWhitespace(char)) {
 				if (buffer)
 					whitespaceBuffer += char;
-				backupWhitespaceBuffer += char;
 			} else {
 				if (whitespaceBuffer) {
 					buffer += whitespaceBuffer;
@@ -85,19 +92,33 @@ function parseHtmlCore(str, meta = null) {
 	};
 
 	const dispatch = _ => {
-		if (!hasContent) {
+		const prevNode = (target.length && target[target.length - 1]) || null,
+			prevIsText = Boolean(prevNode) && prevNode.type == "text";
+
+		if (prevIsText)
+			buffer = prevNode.raw + str.substring(cutoffIdx, i);
+		else if (state != STATES.CONTENT)
+			buffer = str.substring(cutoffIdx, i) + buffer;
+		else if (!hasContent) {
 			clear();
 			return;
 		}
+
+		cutoffIdx = i;
 
 		const text = mk("text", {
 			raw: buffer
 		});
 		setTextContent(text, buffer, meta);
-		clear();
 		text.parent = parent;
-		target.push(text);
+
+		if (prevIsText)
+			target[target.length - 1] = text;
+		else
+			target.push(text);
+
 		state = STATES.CONTENT;
+		clear();
 	};
 
 	const push = (tag, attrData) => {
@@ -114,6 +135,14 @@ function parseHtmlCore(str, meta = null) {
 		});
 
 		node.tag = resolveInlineRefs(tag, meta, ctx(node, "tag")("literal"));
+
+		if (typeof node.tag == "string") {
+			const props = getTagProperties(node.tag);
+			node.tag = props.tag;
+			node.namespace = props.namespace;
+			node.void = props.void;
+		}
+
 		parseAttributes(node, meta);
 
 		if (node.dynamicAttributes.length)
@@ -128,9 +157,17 @@ function parseHtmlCore(str, meta = null) {
 			node.namespace = parent.namespace;
 
 		target.push(node);
-		target = node.children;
-		parent = node;
-		stack.push(node);
+
+		if (eData.selfClosing || node.void)
+			eData.selfClosing = false;
+		else {
+			target = node.children;
+			parent = node;
+			stack.push(node);
+		}
+
+		cutoffIdx = i + 1;
+		state = STATES.CONTENT;
 		clear();
 	};
 
@@ -145,6 +182,7 @@ function parseHtmlCore(str, meta = null) {
 		target = parent ?
 			parent.children :
 			root;
+		state = STATES.CONTENT;
 		clear();
 	};
 
@@ -154,7 +192,7 @@ function parseHtmlCore(str, meta = null) {
 		hasContent = false;
 	};
 
-	for (let i = 0, l = str.length; i < l; i++) {
+	for (let l = str.length; i < l; i++) {
 		const char = str[i];
 
 		if (state == STATES.COMMENT) {
@@ -174,13 +212,39 @@ function parseHtmlCore(str, meta = null) {
 
 			continue;
 		}
+		
+		if (state == STATES.ATTRIBUTES) {
+			if (char == "\"" || char == "'" || char == "`") {
+				if (!quote)
+					quote = char;
+				else if (quote == char)
+					quote = null;
+
+				append(char);
+				continue;
+			}
+
+			if (!quote && char == "/") {
+				eData.selfClosing = true;
+				continue;
+			}
+			
+			if (quote || (char != "<" && char != ">")) {
+				append(char);
+				continue;
+			}
+		}
 
 		switch (char) {
 			case "\\":
 				if (i == l - 1)
 					append(char);
-				else
+				else {
+					if (state == STATES.ATTRIBUTES)
+						append("\\");
+
 					append(str[i + 1]);
+				}
 				break;
 
 			case "<":
@@ -191,15 +255,17 @@ function parseHtmlCore(str, meta = null) {
 				} else if (str[i + 1] == "/") {
 					state = STATES.END_TAG;
 					i++;
-				} else
+				} else {
 					state = STATES.TAG;
+					eData.selfClosing = false;
+				}
 				break;
 
 			case ">":
-				if (state == STATES.TAG)
+				if (state == STATES.TAG && buffer)
 					push(buffer, null);
 				else if (state == STATES.ATTRIBUTES)
-					push(tag, buffer);
+					push(eData.tag, buffer);
 				else if (state == STATES.END_TAG)
 					pop(buffer);
 				else
@@ -208,9 +274,10 @@ function parseHtmlCore(str, meta = null) {
 
 			default:
 				if (state == STATES.TAG) {
-					if (isWhitespace(char)) {
+					if (isWhitespace(char) || char == "/") {
 						if (buffer) {
-							tag = buffer;
+							eData.tag = buffer;
+							eData.selfClosing = char == "/";
 							clear();
 							state = STATES.ATTRIBUTES;
 						} else

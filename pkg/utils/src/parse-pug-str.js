@@ -2,6 +2,7 @@ import filterMut from "./filter-mut";
 import {
 	mkVNode,
 	parseDom,
+	getTagProperties,
 	setAttribute,
 	setTextContent,
 	parseAttributes,
@@ -36,7 +37,8 @@ optionize(parsePugStr, null, {
 	rawResolve: true,
 	singleContextArg: true,
 	compact: true,
-	preserveEntities: true
+	preserveEntities: true,
+	preserveNewlines: true
 });
 
 // Capturing groups:
@@ -99,7 +101,15 @@ function parsePugCore(str, meta = null) {
 				raw: ex[0],
 				tag: ex[4]
 			});
+
 		node.tag = resolveInlineRefs(node.tag, meta, ctx(node, "tag")("literal"));
+
+		if (typeof node.tag == "string") {
+			const props = getTagProperties(node.tag);
+			node.tag = props.tag;
+			node.namespace = props.namespace;
+			node.void = props.void;
+		}
 
 		if (indentStr && !WELL_FORMED_INDENT_REGEX.test(indentStr))
 			throw new SyntaxError(`Malformed indent on line ${line}`);
