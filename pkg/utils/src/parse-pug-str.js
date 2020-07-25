@@ -25,20 +25,21 @@ export default function parsePugStr(...source) {
 }
 
 optionize(parsePugStr, null, {
-	compile: true,
-	resolve: true,
-	render: {
+	compile: true,				// Compile inline values (${xyz}) as part of the template 
+	resolve: true,				// Resolve getters at parse time
+	render: {					// Compile and resolve, producing a static asset
 		compile: true,
 		resolve: true
 	},
-	lazyDynamic: true,
-	eagerDynamic: true,
-	lazy: true,
-	rawResolve: true,
-	singleContextArg: true,
-	compact: true,
-	preserveEntities: true,
-	preserveNewlines: true
+	lazy: true,					// cache templates (returns compiled object)
+	compact: true,				// Serialize resolved values in compact mode (serializer hint)
+	lazyDynamic: true,			// treat all inline values except functions as constants
+	eagerDynamic: true,			// treat every inline value as a getter (caches, returns compiled object)
+	rawResolve: true,			// resolve every inline value in raw form
+	functionalTags: true,		// Treat tags as entry points for functional components
+	singleContextArg: true,		// Use single context arguments in callbacks (serializer hint)
+	preserveEntities: true,		// Preserve entity strings in their original form
+	preserveNewlines: true,		// Preserve newlines surrounding text blocks
 });
 
 // Capturing groups:
@@ -102,7 +103,9 @@ function parsePugCore(str, meta = null) {
 				tag: ex[4]
 			});
 
-		node.tag = resolveInlineRefs(node.tag, meta, ctx(node, "tag")("literal"));
+		node.tag = resolveInlineRefs(node.tag, meta, ctx(node, "tag")(
+			options.functionalTags ? "literal" : "string")
+		);
 
 		if (typeof node.tag == "string") {
 			const props = getTagProperties(node.tag);

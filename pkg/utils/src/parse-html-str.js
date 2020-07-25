@@ -25,21 +25,23 @@ export default function parseHtmlStr(...source) {
 }
 
 optionize(parseHtmlStr, null, {
-	compile: true,
-	resolve: true,
-	render: {
+	compile: true,				// Compile inline values (${xyz}) as part of the template 
+	resolve: true,				// Resolve getters at parse time
+	render: {					// Compile and resolve, producing a static asset
 		compile: true,
 		resolve: true
 	},
-	lazyDynamic: true,
-	eagerDynamic: true,
-	lazy: true,
-	rawResolve: true,
-	singleContextArg: true,
-	compact: true,
-	preserveEntities: true,
-	preserveNewlines: true,
-	trim: true
+	lazy: true,					// cache templates (returns compiled object)
+	compact: true,				// Serialize resolved values in compact mode (serializer hint)
+	permissive: true,			// Parses HTML with additional, more lenient syntax
+	lazyDynamic: true,			// treat all inline values except functions as constants
+	eagerDynamic: true,			// treat every inline value as a getter (caches, returns compiled object)
+	rawResolve: true,			// resolve every inline value in raw form
+	functionalTags: true,		// Treat tags as entry points for functional components
+	singleContextArg: true,		// Use single context arguments in callbacks (serializer hint)
+	preserveEntities: true,		// Preserve entity strings in their original form
+	preserveNewlines: true,		// Preserve newlines surrounding text blocks
+	trimWhitespace: true		// Trim whitespace surrounding text blocks
 });
 
 const STATES = {
@@ -70,7 +72,7 @@ function parseHtmlCore(str, meta = null) {
 		cutoffIdx = 0;
 
 	const append = char => {
-		if (options.trim) {
+		if (options.trimWhitespace) {
 			if (isWhitespace(char)) {
 				if (buffer)
 					whitespaceBuffer += char;
@@ -91,9 +93,16 @@ function parseHtmlCore(str, meta = null) {
 		}
 	};
 
+	const clear = _ => {
+		buffer = "";
+		whitespaceBuffer = "";
+		hasContent = false;
+	};
+
 	const dispatch = _ => {
 		const prevNode = (target.length && target[target.length - 1]) || null,
-			prevIsText = Boolean(prevNode) && prevNode.type == "text";
+			prevIsText = Boolean(prevNode) && prevNode.type == "text",
+			requiresTrim = prevIsText || state != STATES.CONTENT;
 
 		if (prevIsText)
 			buffer = prevNode.raw + str.substring(cutoffIdx, i);
@@ -109,7 +118,13 @@ function parseHtmlCore(str, meta = null) {
 		const text = mk("text", {
 			raw: buffer
 		});
-		setTextContent(text, buffer, meta);
+		setTextContent(
+			text,
+			requiresTrim && options.trimWhitespace ?
+				buffer.trim() :
+				buffer,
+			meta
+		);
 		text.parent = parent;
 
 		if (prevIsText)
@@ -118,6 +133,7 @@ function parseHtmlCore(str, meta = null) {
 			target.push(text);
 
 		state = STATES.CONTENT;
+		propagate(text);
 		clear();
 	};
 
@@ -134,7 +150,9 @@ function parseHtmlCore(str, meta = null) {
 			attrData: attrData
 		});
 
-		node.tag = resolveInlineRefs(tag, meta, ctx(node, "tag")("literal"));
+		node.tag = resolveInlineRefs(tag, meta, ctx(node, "tag")(
+			options.functionalTags ? "literal" : "string")
+		);
 
 		if (typeof node.tag == "string") {
 			const props = getTagProperties(node.tag);
@@ -168,6 +186,7 @@ function parseHtmlCore(str, meta = null) {
 
 		cutoffIdx = i + 1;
 		state = STATES.CONTENT;
+		propagate(node);
 		clear();
 	};
 
@@ -186,10 +205,16 @@ function parseHtmlCore(str, meta = null) {
 		clear();
 	};
 
-	const clear = _ => {
-		buffer = "";
-		whitespaceBuffer = "";
-		hasContent = false;
+	const propagate = node => {
+		if (node.static)
+			return;
+
+		for (let i = stack.length - 1; i >= 0; i--) {
+			if (!stack[i].static)
+				break;
+
+			stack[i].static = false;
+		}
 	};
 
 	for (let l = str.length; i < l; i++) {
@@ -229,7 +254,7 @@ function parseHtmlCore(str, meta = null) {
 				continue;
 			}
 			
-			if (quote || (char != "<" && char != ">")) {
+			if (quote || (char != ">" && (!options.permissive || char != "<"))) {
 				append(char);
 				continue;
 			}
@@ -268,8 +293,10 @@ function parseHtmlCore(str, meta = null) {
 					push(eData.tag, buffer);
 				else if (state == STATES.END_TAG)
 					pop(buffer);
-				else
+				else {
+					state = STATES.CONTENT;
 					append(char);
+				}
 				break;
 
 			default:

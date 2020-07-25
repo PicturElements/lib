@@ -619,12 +619,18 @@ const GEN_OPTIONS_TEMPLATES = composeOptionsTemplates({
 function genDom(nodes, options = {}) {
 	options = createOptionsObject(options, GEN_OPTIONS_TEMPLATES);
 
+	let parserOptions;
+
 	if (nodes instanceof Node && nodes.nodeType == Node.DOCUMENT_FRAGMENT_NODE)
 		nodes = nodes.children;
-	else if (!Array.isArray(nodes))
+	else if (nodes && nodes.isCompiledDomData) {
+		parserOptions = nodes.options;
+		nodes = nodes.dom;
+	} else if (!Array.isArray(nodes))
 		nodes = [nodes];
 
 	const raw = options.raw,
+		args = options.args,
 		root = raw ?
 			"" :
 			document.createDocumentFragment(),
@@ -654,7 +660,7 @@ function genDom(nodes, options = {}) {
 			const node = nds[i],
 				breakStr = (!minified && str) ? "\n" : "";
 			let type = getNodeType(node),
-				tag = getTagName(node);
+				tag = getTagName(node) || resolveTag(node, args);
 
 			if (processType) {
 				type = processType({
@@ -687,7 +693,7 @@ function genDom(nodes, options = {}) {
 
 				const content = useNativeNodes ?
 					node.textContent :
-					node.content.trim();
+					resolveTextContent(node, args).trim();
 
 				if (raw)
 					str += `${breakStr}${indent}<!-- ${content} -->`;
@@ -701,9 +707,16 @@ function genDom(nodes, options = {}) {
 				str += breakStr;
 
 			if (type == "text") {
-				const content = useNativeNodes ?
-					node.textContent :
-					parseEntityStr(node.content);
+				let content;
+
+				if (useNativeNodes)
+					content = node.textContent;
+				else if (node.content && node.content.isDynamicValue)
+					content = resolveTextContent(node, args);
+				else if (parserOptions && parserOptions.preserveEntities)
+					content = node.content;
+				else
+					content = parseEntityStr(node.content);
 
 				if (raw) {
 					if (minified && i > 0 && getNodeType(nds[i - 1]) == "text")
@@ -836,6 +849,9 @@ function genDom(nodes, options = {}) {
 	};
 
 	const setAttr = (key, value, rawValue, node, sourceNode) => {
+		if (value && value.isDynamicValue)
+			value = resolveAttribute(node, key, args);
+
 		if (processAttribute) {
 			value = processAttribute({
 				key,
@@ -1307,7 +1323,7 @@ function setTextContent(node, text, meta = null) {
 	if (!options || !options.preserveNewlines)
 		text = text.replace(/^[\n\r]+|[\n\r]+$/g, "");
 
-	if (!meta || !meta.refKeys.length) {
+	if (!meta || !meta.refKeys || !meta.refKeys.length) {
 		content = options && options.preserveEntities ?
 			text :
 			parseEntityStr(text);
@@ -1460,7 +1476,7 @@ function resolveAttributeMeta(key, meta = null) {
 }
 
 function resolveInlineRefs(str, meta = null, context = null) {
-	if (!meta || !meta.refKeys.length || typeof str != "string")
+	if (!meta || !meta.refKeys || !meta.refKeys.length || typeof str != "string")
 		return str;
 
 	if (typeof context == "function")
@@ -1657,20 +1673,21 @@ function ctx(node, target, key = null) {
 resolveInlineRefs.ctx = ctx;
 
 const PARSE_OPTIONS_TEMPLATES = {
-	compile: true,
-	resolve: true,
-	render: {
+	compile: true,				// Compile inline values (${xyz}) as part of the template 
+	resolve: true,				// Resolve getters at parse time
+	render: {					// Compile and resolve, producing a static asset
 		compile: true,
 		resolve: true
 	},
-	lazyDynamic: true,
-	eagerDynamic: true,
-	lazy: true,
-	rawResolve: true,
-	singleContextArg: true,
-	compact: true,
-	preserveEntities: true,
-	preserveNewlines: true
+	lazy: true,					// cache templates (returns compiled object)
+	compact: true,				// Serialize resolved values in compact mode (serializer hint)
+	lazyDynamic: true,			// treat all inline values except functions as constants
+	eagerDynamic: true,			// treat every inline value as a getter (caches, returns compiled object)
+	rawResolve: true,			// resolve every inline value in raw form
+	functionalTags: true,		// Treat tags as entry points for functional components
+	singleContextArg: true,		// Use single context arguments in callbacks (serializer hint)
+	preserveEntities: true,		// Preserve entity strings in their original form
+	preserveNewlines: true,		// Preserve newlines surrounding text blocks
 };
 let templateCache = null;
 
@@ -1698,17 +1715,19 @@ function parseDom(parser, source, options) {
 			resolveFunctions: true
 		});
 
-		if (options.eagerDynamic || options.lazy) {
+		if (options.lazy) {
 			// This works because tagged template args are singletons
 			// defined at parse time, effectively producing a unique ID
 			// for every unique template
 			if (!templateCache && typeof Map != "undefined")
 				templateCache = new Map();
 
-			if (options.lazy && isTagged && templateCache && templateCache.has(source[0])) {
+			if (isTagged && templateCache && templateCache.has(source[0])) {
 				const d = templateCache.get(source[0]);
+
 				for (let i = 0, l = d.argRefs.length; i < l; i++)
 					d.argRefs[i].value = source[i + 1];
+
 				return d;
 			}
 
@@ -1717,7 +1736,8 @@ function parseDom(parser, source, options) {
 			const data = {
 				meta,
 				argRefs: meta.argRefs,
-				dom: parser(meta.compiled, meta)
+				dom: parser(meta.compiled, meta),
+				isCompiledDomData: true
 			};
 
 			if (templateCache && isTagged)
@@ -1726,13 +1746,27 @@ function parseDom(parser, source, options) {
 			return data;
 		}
 
+		if (options.eagerDynamic) {
+			const meta = compileTaggedTemplate.with(options)(...source);
+			meta.argRefs = [];
+
+			return {
+				meta,
+				argRefs: meta.argRefs,
+				dom: parser(meta.compiled, meta),
+				isCompiledDomData: true
+			};
+		}
+
 		const meta = compileTaggedTemplate.with(options)(...source);
 		return parser(meta.compiled, meta);
 	}
 
 	return parser(
 		compileTaggedTemplate.with(options)(...source),
-		null
+		{
+			options
+		}
 	);
 }
 
