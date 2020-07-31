@@ -53,23 +53,31 @@ const STATES = {
 };
 
 function parseHtmlCore(str, meta = null) {
-	const root = [],
-		stack = [],
-		options = (meta && meta.options) || {},
+	const options = (meta && meta.options) || {},
 		mk = options.mkVNode || mkVNode,
+		root = mk("fragment", {
+			raw: str,
+			children: []
+		}),
+		stack = [root],
 		eData = {
 			tag: null,
 			selfClosing: false
+		},
+		refData = {
+			positions: meta && meta.refPositions,
+			ptr: -1
 		};
-	let state = STATES.CONTENT,
+	let parent = root,
+		target = root.children,
+		// states
+		state = STATES.CONTENT,
 		buffer = "",
 		whitespaceBuffer = "",
 		quote = null,
 		hasContent = false,
-		target = root,
-		parent = null,
-		i = 0,
-		cutoffIdx = 0;
+		cutoffIdx = 0,
+		ptr = 0;
 
 	const append = char => {
 		if (options.trimWhitespace) {
@@ -99,21 +107,21 @@ function parseHtmlCore(str, meta = null) {
 		hasContent = false;
 	};
 
-	const dispatch = _ => {
+	const pushText = _ => {
 		const prevNode = (target.length && target[target.length - 1]) || null,
 			prevIsText = Boolean(prevNode) && prevNode.type == "text",
 			requiresTrim = prevIsText || state != STATES.CONTENT;
 
 		if (prevIsText)
-			buffer = prevNode.raw + str.substring(cutoffIdx, i);
+			buffer = prevNode.raw + str.substring(cutoffIdx, ptr);
 		else if (state != STATES.CONTENT)
-			buffer = str.substring(cutoffIdx, i) + buffer;
+			buffer = str.substring(cutoffIdx, ptr) + buffer;
 		else if (!hasContent) {
 			clear();
 			return;
 		}
 
-		cutoffIdx = i;
+		cutoffIdx = ptr;
 
 		const text = mk("text", {
 			raw: buffer
@@ -137,7 +145,7 @@ function parseHtmlCore(str, meta = null) {
 		clear();
 	};
 
-	const push = (tag, attrData) => {
+	const pushElem = (tag, attrData) => {
 		const node = mk("element", {
 			raw: tag,
 			parent,
@@ -171,7 +179,7 @@ function parseHtmlCore(str, meta = null) {
 				node.namespace = node.attributes.xmlns;
 			else if (options.compile && options.resolve)
 				node.namespace = resolveAttribute(node, "xmlns", options.args);
-		} else if (parent && parent.namespace != "http://www.w3.org/1999/xhtml")
+		} else if (parent.namespace && parent.namespace != "http://www.w3.org/1999/xhtml")
 			node.namespace = parent.namespace;
 
 		target.push(node);
@@ -184,23 +192,41 @@ function parseHtmlCore(str, meta = null) {
 			stack.push(node);
 		}
 
-		cutoffIdx = i + 1;
+		cutoffIdx = ptr + 1;
 		state = STATES.CONTENT;
 		propagate(node);
 		clear();
 	};
 
+	const pushFragment = _ => {
+		const key = meta.refKeys[refData.ptr],
+			fragment = mk("fragment", {
+				static: false
+			});
+
+		fragment.children = resolveInlineRefs(
+			key,
+			meta,
+			ctx(fragment, "children")("literal")
+		);
+
+		target.push(fragment);
+		ptr += (key.length - 1);
+		cutoffIdx = ptr + 1;
+		state = STATES.CONTENT;
+		propagate(fragment);
+		clear();
+	};
+
 	const pop = tagName => {
-		while (true) {
+		while (stack.length > 1) {
 			const node = stack.pop();
 			if (!node || !tagName || node.tag == tagName || typeof node.tag != "string")
 				break;
 		}
 
-		parent = stack[stack.length - 1] || null;
-		target = parent ?
-			parent.children :
-			root;
+		parent = stack[stack.length - 1];
+		target = parent.children;
 		state = STATES.CONTENT;
 		clear();
 	};
@@ -217,11 +243,14 @@ function parseHtmlCore(str, meta = null) {
 		}
 	};
 
-	for (let l = str.length; i < l; i++) {
-		const char = str[i];
+	for (let l = str.length; ptr < l; ptr++) {
+		const char = str[ptr];
+
+		if (refData.positions && refData.positions[refData.ptr + 1] == ptr)
+			refData.ptr++;
 
 		if (state == STATES.COMMENT) {
-			if (char != "-" || str[i + 1] != "-" || str[i + 2] != ">")
+			if (char != "-" || str[ptr + 1] != "-" || str[ptr + 2] != ">")
 				append(char);
 			else {
 				const comment = mk("comment", {
@@ -232,7 +261,7 @@ function parseHtmlCore(str, meta = null) {
 				comment.parent = parent;
 				target.push(comment);
 				state = STATES.CONTENT;
-				i += 2;
+				ptr += 2;
 			}
 
 			continue;
@@ -262,24 +291,24 @@ function parseHtmlCore(str, meta = null) {
 
 		switch (char) {
 			case "\\":
-				if (i == l - 1)
+				if (ptr == l - 1)
 					append(char);
 				else {
 					if (state == STATES.ATTRIBUTES)
 						append("\\");
 
-					append(str[i + 1]);
+					append(str[ptr + 1]);
 				}
 				break;
 
 			case "<":
-				dispatch();
-				if (str[i + 1] == "!" && str[i + 2] == "-" && str[i + 3] == "-") {
+				pushText();
+				if (str[ptr + 1] == "!" && str[ptr + 2] == "-" && str[ptr + 3] == "-") {
 					state = STATES.COMMENT;
-					i += 3;
-				} else if (str[i + 1] == "/") {
+					ptr += 3;
+				} else if (str[ptr + 1] == "/") {
 					state = STATES.END_TAG;
-					i++;
+					ptr++;
 				} else {
 					state = STATES.TAG;
 					eData.selfClosing = false;
@@ -288,9 +317,9 @@ function parseHtmlCore(str, meta = null) {
 
 			case ">":
 				if (state == STATES.TAG && buffer)
-					push(buffer, null);
+					pushElem(buffer, null);
 				else if (state == STATES.ATTRIBUTES)
-					push(eData.tag, buffer);
+					pushElem(eData.tag, buffer);
 				else if (state == STATES.END_TAG)
 					pop(buffer);
 				else {
@@ -311,11 +340,30 @@ function parseHtmlCore(str, meta = null) {
 							state = STATES.CONTENT;
 					} else
 						append(char);
-				} else
-					append(char);
+				} else {
+					if (refData.ptr > -1 && refData.positions[refData.ptr] == ptr) {
+						const ref = meta.refList[refData.ptr];
+
+						if ((ref && (ref.isParsedDom || ref.isCompiledDomData)) || (options.functionalTags && typeof ref == "function")) {
+							pushText();
+							pushFragment();
+						} else 
+							append(char);
+					} else 
+						append(char);
+				}
 		}
 	}
 
-	dispatch();
+	pushText();
+
+	if (root.children.length == 1) {
+		const child = root.children[0];
+		child.parent = null;
+		child.isParsedDom = true;
+		return child;
+	}
+
+	root.isParsedDom = true;
 	return root;
 }

@@ -625,7 +625,7 @@ function genDom(nodes, options = {}) {
 		nodes = nodes.children;
 	else if (nodes && nodes.isCompiledDomData) {
 		parserOptions = nodes.options;
-		nodes = nodes.dom;
+		nodes = [nodes.dom];
 	} else if (!Array.isArray(nodes))
 		nodes = [nodes];
 
@@ -679,7 +679,7 @@ function genDom(nodes, options = {}) {
 			if (type == "fragment") {
 				const children = useNativeNodes ?
 					node.childNodes :
-					node.children;
+					resolveChildren(node, args);
 
 				if (children && children.length)
 					gen(children, parent, indent);
@@ -886,7 +886,7 @@ function genDom(nodes, options = {}) {
 	if (raw)
 		return str;
 
-	if (nodes.length == 1 || root.childNodes.length == 1)
+	if (root.childNodes.length == 1)
 		return root.firstChild;
 
 	return root;
@@ -960,6 +960,7 @@ const ATTR_SPLIT_REGEX = /([^\s=]+)(?:\s*=\s*((["'`])(?:[^\\]|\\.)*?\3|[^"'`\s]+
 	DEFAULT_TAGS = {
 		comment: "#comment",
 		text: "#text",
+		fragment: "#document-fragment",
 		element: "div"
 	},
 	DEF_ATTR_PREFIX_MATCHER = mkStrMatcher({
@@ -974,14 +975,19 @@ const ATTR_SPLIT_REGEX = /([^\s=]+)(?:\s*=\s*((["'`])(?:[^\\]|\\.)*?\3|[^"'`\s]+
 	});
 
 function mkVNode(type, data) {
-	const node = Object.assign({
+	const nodeData = {
 		type,
 		raw: "",
 		tag: null,
-		namespace: DEF_NS,
-		void: false
-	}, data);
+		parent: null
+	};
 
+	if (type == "element") {
+		nodeData.namespace = DEF_NS;
+		nodeData.void = false;
+	}
+
+	const node = Object.assign(nodeData, data);
 	node.tag = node.tag || DEFAULT_TAGS[type];
 	return node;
 }
@@ -1257,6 +1263,28 @@ function resolveTag(node, args = []) {
 	return tag;
 }
 
+function resolveChildren(node, args = []) {
+	if (!Array.isArray(args))
+		args = [args];
+
+	let children = node.children;
+
+	if (children && children.isDynamicValue) {
+		children = children.extract(children, args);
+
+		if (children && children.isCompiledDomData)
+			children = children.dom;
+	}
+
+	if (children == null)
+		return [];
+
+	if (!Array.isArray(children))
+		children = [children];
+
+	return children;
+}
+
 function isDynamicValueCandidate(value, meta = null) {
 	switch (typeof value) {
 		case "object":
@@ -1317,18 +1345,18 @@ function setAttribute(node, key, value) {
 
 function setTextContent(node, text, meta = null) {
 	text = text || "";
-	const options = meta && meta.options;
+	const options = (meta && meta.options) || {};
 	let content;
 
-	if (!options || !options.preserveNewlines)
+	if (!options.preserveNewlines)
 		text = text.replace(/^[\n\r]+|[\n\r]+$/g, "");
 
 	if (!meta || !meta.refKeys || !meta.refKeys.length) {
-		content = options && options.preserveEntities ?
+		content = options.preserveEntities ?
 			text :
 			parseEntityStr(text);
 	} else {
-		const textType = options && options.preserveEntities ? "string" : "entitystring";
+		const textType = options.preserveEntities ? "string" : "entitystring";
 		content = resolveInlineRefs(text, meta, ctx(node, "content")(textType));
 	}
 
@@ -1708,10 +1736,10 @@ function parseDom(parser, source, options) {
 
 	if (options.compile) {
 		Object.assign(options, {
-			ref: 16,
+			ref: 15,
 			refPrefix: "ref_",
 			refSuffix: "",
-			refRegex: /ref_[a-zA-Z0-9]{16}/g,
+			refRegex: /ref_[a-zA-Z0-9]{15}/g,
 			resolveFunctions: true
 		});
 
@@ -1864,6 +1892,7 @@ export {
 	resolveAttribute,
 	resolveTextContent,
 	resolveTag,
+	resolveChildren,
 	setAttribute,
 	setTextContent,
 	parseAttributes,

@@ -10,7 +10,7 @@ export default function mkAccessor(path) {
 	let accessor = "";
 
 	for (let i = 0, l = path.length; i < l; i++) {
-		if (path[i] == "")
+		if (path[i] === "")
 			continue;
 
 		const component = String(path[i]);

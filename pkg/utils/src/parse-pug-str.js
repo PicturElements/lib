@@ -59,13 +59,17 @@ const NODE_REGEX = /^([\t ]*)(?:\/\/-(.*(?:\n\1[\t ]+.+)*)|\|\s?(.+)|([^#.\s*(]+
 	WELL_FORMED_INDENT_REGEX = /^(\s)\1*$/;
 
 function parsePugCore(str, meta = null) {
-	const root = [],
-		stack = [],
-		options = (meta && meta.options) || {},
-		mk = options.mkVNode || mkVNode;
+	const options = (meta && meta.options) || {},
+		mk = options.mkVNode || mkVNode,
+		root = mk("fragment", {
+			raw: str,
+			children: []
+		}),
+		stack = [];
 	let lastNode = null,
-		parent = null,
-		target = root,
+		parent = root,
+		target = root.children,
+		// states
 		indent = -1,
 		indentChar = null,
 		line = 0;
@@ -128,15 +132,12 @@ function parsePugCore(str, meta = null) {
 		if (indentLen > indent) {
 			parent = lastNode ?
 				lastNode :
-				null;
-			target = lastNode ?
-				lastNode.children :
 				root;
+			target = parent.children;
 			indent = indentLen;
 
 			stack.push({
 				parent,
-				target,
 				indent
 			});
 		} else if (indentLen < indent) {
@@ -146,7 +147,8 @@ function parsePugCore(str, meta = null) {
 			if (!stack.length)
 				throw new Error(`Fell out of struct stack on line ${line}`);
 
-			({ parent, target, indent } = stack[stack.length - 1]);
+			({ parent, indent } = stack[stack.length - 1]);
+			target = parent.children;
 		}
 
 		switch (type) {
@@ -179,7 +181,7 @@ function parsePugCore(str, meta = null) {
 						node.namespace = node.attributes.xmlns;
 					else if (options.compile && options.resolve)
 						node.namespace = resolveAttribute(node, "xmlns", options.args);
-				} else if (parent && parent.namespace != "http://www.w3.org/1999/xhtml")
+				} else if (parent.namespace && parent.namespace != "http://www.w3.org/1999/xhtml")
 					node.namespace = parent.namespace;
 
 				const textContent = ex[8];
@@ -213,6 +215,14 @@ function parsePugCore(str, meta = null) {
 		target.push(node);
 	}
 
+	if (root.children.length == 1) {
+		const child = root.children[0];
+		child.parent = null;
+		child.isParsedDom = true;
+		return child;
+	}
+
+	root.isParsedDom = true;
 	return root;
 }
 

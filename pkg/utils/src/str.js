@@ -218,11 +218,11 @@ const CACHED_SERIALIZE_OPTIONS = getSerializeOptions();
 
 function compileTaggedTemplateCore(args, options) {
 	if (isTaggedTemplateArgs(args)) {
-		const raw = args[0].raw;
+		const strings = args[0];
 		let out = "";
 
-		for (let i = 0, l = raw.length; i < l; i++) {
-			out += raw[i];
+		for (let i = 0, l = strings.length; i < l; i++) {
+			out += strings[i];
 
 			if (i < l - 1)
 				out += serialize(args[i + 1], options);
@@ -241,50 +241,64 @@ function compileTaggedTemplateFull(args, options) {
 	const out = {
 		compiled: "",
 		refs: {},
+		refList: [],
 		refKeys: [],
 		refIndices: {},
+		refPositions: [],
 		options
 	};
 
-	if (isTaggedTemplateArgs(args)) {
-		const raw = args[0].raw;
+	let pos = 0;
 
-		for (let i = 0, l = raw.length; i < l; i++) {
-			out.compiled += raw[i];
-
-			if (i == l - 1)
-				continue;
-
-			const refResult = typeof options.ref == "function" ?
-				options.ref(args[i + 1]) :
-				options.ref;
-
-			if (refResult === true || typeof refResult == "number") {
-				const key = (options.refPrefix || "ref:") +
-					uid(typeof refResult == "number" ? refResult : 10) +
-					(options.refSuffix || "");
-
-				out.refs[key] = args[i + 1];
-				out.refIndices[key] = i;
-				out.refKeys.push(key);
-				out.compiled += key;
-			} else if (typeof refResult == "string") {
-				if (hasOwn(out.refs, refResult))
-					throw new Error(`Duplicate reference key '${refResult}'`);
-
-				out.refs[refResult] = args[i + 1];
-				out.refIndices[refResult] = i;
-				out.refKeys.push(refResult);
-				out.compiled += refResult;
-			} else
-				out.compiled += serialize(args[i + 1], options);
-		}
+	if (!isTaggedTemplateArgs(args)) {
+		if (typeof args[0] == "string")
+			out.compiled = args[0];
 
 		return out;
 	}
 
-	if (typeof args[0] == "string")
-		out.compiled = args[0];
+	const strings = args[0];
+
+	for (let i = 0, l = strings.length; i < l; i++) {
+		out.compiled += strings[i];
+		pos += strings[i].length;
+
+		if (i == l - 1)
+			continue;
+
+		const refResult = typeof options.ref == "function" ?
+			options.ref(args[i + 1]) :
+			options.ref;
+
+		if (refResult === true || typeof refResult == "number") {
+			const key = (options.refPrefix || "ref:") +
+				uid(typeof refResult == "number" ? refResult : 10) +
+				(options.refSuffix || "");
+
+			out.refs[key] = args[i + 1];
+			out.refIndices[key] = i;
+			out.refList.push(args[i + 1]);
+			out.refKeys.push(key);
+			out.refPositions.push(pos);
+			out.compiled += key;
+			pos += key.length;
+		} else if (typeof refResult == "string") {
+			if (hasOwn(out.refs, refResult))
+				throw new Error(`Duplicate reference key '${refResult}'`);
+
+			out.refs[refResult] = args[i + 1];
+			out.refIndices[refResult] = i;
+			out.refList.push(args[i + 1]);
+			out.refKeys.push(refResult);
+			out.refPositions.push(pos);
+			out.compiled += refResult;
+			pos += refResult.length;
+		} else {
+			const serialized = serialize(args[i + 1], options);
+			pos += serialized.length;
+			out.compiled += serialized;
+		}
+	}
 
 	return out;
 }
@@ -302,16 +316,19 @@ function compileTaggedTemplate(...args) {
 	return compiler(args, CACHED_SERIALIZE_OPTIONS);
 }
 
-optionize(compileTaggedTemplate, getSerializeOptions);
+optionize(compileTaggedTemplate, getSerializeOptions, {
+	ref: 15,
+	full: true
+});
 
-const OPS = {
+const DISTANCE_OPS = {
 	substitution: true,
 	insertion: true,
 	deletion: true,
 	transposition: true
 };
 
-const WEIGHTS = {
+const DISTANCE_WEIGHTS = {
 	substitution: 1,
 	insertion: 1,
 	deletion: 1,
@@ -347,7 +364,7 @@ const distanceOptionsTemplates = composeOptionsTemplates({
 		}
 	},
 	full: {
-		ops: OPS
+		ops: DISTANCE_OPS
 	},
 	md1: {
 		maxDistance: 1
@@ -366,7 +383,7 @@ const distanceOptionsTemplates = composeOptionsTemplates({
 // Damerau–Levenshtein distance, with modifications based on
 // the Apache Commons Lang implementation as found here:
 // https://stackoverflow.com/a/35069964
-// and memory optimized through a reusable matrix array
+// and memory optimized through a reusable minimal matrix array
 const DISTANCE_MATRIX = [];
 function distance(a = "", b = "", options = {}) {
 	if (a == b)
@@ -374,8 +391,8 @@ function distance(a = "", b = "", options = {}) {
 
 	options = createOptionsObject(options, distanceOptionsTemplates);
 
-	const ops = options.ops || OPS,
-		weights = options.weights || WEIGHTS,
+	const ops = options.ops || DISTANCE_OPS,
+		weights = options.weights || DISTANCE_WEIGHTS,
 		maxDistance = typeof options.maxDistance == "number" ?
 			options.maxDistance :
 			null;
