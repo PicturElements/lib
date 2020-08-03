@@ -59,6 +59,8 @@ $listing-box-params: (
 		background: transparent;
 		outline: none;
 		color: inherit;
+		font-family: inherit;
+		font-size: 100%;
 		cursor: pointer;
 
 		&.selected {

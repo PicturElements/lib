@@ -4,7 +4,6 @@ import {
 	isObject,
 	parseTreeStr
 } from "@qtxr/utils";
-
 import URL from "@qtxr/url";
 
 const routeViewIdRegex = /([^\s>]+)(?:\s*((?:[\w-]+(?:\s+as\s+[\w-]+)?)(?:\s*,\s*[\w-]+(?:\s+as\s+[\w-]+)?)*))?/,
@@ -19,6 +18,7 @@ export default function parseRoutes(inst, routeTree) {
 				route = {
 					path: null,
 					fullPath: null,
+					accessor: accumulator.accessor.concat(i),
 					breadcrumbs: [],
 					children: [],
 					depth,
@@ -94,6 +94,7 @@ export default function parseRoutes(inst, routeTree) {
 
 			route.children = traverse(child.children, depth + 1, {
 				fullPath: route.fullPath,
+				accessor: route.accessor,
 				breadcrumbs: route.breadcrumbs,
 				parent: route,
 				root: route.root,
@@ -111,6 +112,7 @@ export default function parseRoutes(inst, routeTree) {
 
 	return traverse(tree, 0, {
 		fullPath: "/",
+		accessor: [],
 		breadcrumbs: [],
 		parent: null,
 		id: "route"

@@ -35,10 +35,10 @@
 			v-if="cell.state.fetches")
 			span.listing-count(v-if="isPagination && !conf.hideListingCount")
 				span.listing-count-num.listing-from {{ cell.state.offset }}
-				|  -
+				| &nbsp;-&nbsp;
 				span.listing-count-num.listing-to {{ Math.min(cell.state.offset + Math.min(cell.state.pageSize, cell.state.fetchedLength), cell.state.total) }}
 				span(v-if="cell.state.total < Infinity")
-					|  of
+					| &nbsp;of&nbsp;
 					span.listing-count-num.listing-total {{ cell.state.total }}
 			span.listing-count(v-else-if="isArray(cell.data) && !conf.hideListingCount") {{ cell.data.length }}
 		template(#header-utils-pre="d")
@@ -98,7 +98,7 @@
 						v-for="page in pages"
 						:class="page.class"
 						:disabled="page.disabled"
-						@click="cell.setPage(page.id)") {{ page.id + 1 }}
+						@click="cell.setPage(page.id)") {{ page.label }}
 		template(
 			v-if="isFormular('footerRight') || hasSlot('footer-right', 'footer-right-form')"
 			#footer-right="d")
@@ -188,10 +188,12 @@
 				if (this.conf.pageArrows) {
 					pages.push({
 						id: 0,
+						label: null,
 						class: "to-start",
 						disabled: page <= 0
 					}, {
 						id: page - 1,
+						label: null,
 						class: "decrement",
 						disabled: page <= 0
 					});
@@ -200,6 +202,7 @@
 				for (let i = 0; i < padLeft + 1 + padRight; i++) {
 					pages.push({
 						id: page + i - padLeft,
+						label: String(page + i - padLeft + 1),
 						class: i == padLeft ? "selected" : null
 					});
 				}
@@ -207,6 +210,7 @@
 				if (this.conf.pageArrows) {
 					pages.push({
 						id: page + 1,
+						label: null,
 						class: "increment",
 						disabled: page >= pageCount
 					});
@@ -214,6 +218,7 @@
 					if (isFinite(pageCount)) {
 						pages.push({
 							id: pageCount,
+							label: null,
 							class: "to-end",
 							disabled: page >= pageCount
 						});

@@ -22,7 +22,7 @@ $drop-params: (
 		z-index: 10000;
 
 		.drop-launcher {
-			position: relative;
+			position: absolute;
 			padding: $padding;
 			margin: -$padding;
 			box-sizing: content-box;
