@@ -57,7 +57,9 @@ const INIT_OPTIONS_SCHEMA = {
 	type: "string",
 	format: "string",
 	bare: "boolean",
+	sourceValues: "any",
 
+	source: "string|function",
 	checkKey: "Object|string|function|RegExp",
 	checkWord: "Object|string|function|RegExp",
 	compare: "function|string|number|Array",
@@ -136,6 +138,7 @@ export default class Input extends Hookable {
 
 		// Set handlers / dynamic state
 		this.handlers = {};
+		this.source = null;
 		this.checkKey = null;
 		this.checkWord = null;
 		this.compare = null;
@@ -191,13 +194,16 @@ export default class Input extends Hookable {
 
 		this.hookAll(rootHooks);
 		this.hookAll(this._options.hooks);
-		this.default = this._options.value;
 	}
 
 	initValue() {
-		then(
-			this.setValue(this._options.value),
-			_ => this.instantiated = true
+		return then(
+			this.setValue(this._options.value, this._options.sourceValues),
+			val => {
+				this.instantiated = true;
+				this.default = val;
+				return val;
+			}
 		);
 	}
 
@@ -489,7 +495,15 @@ export default class Input extends Hookable {
 	}
 
 	// Semi-private methods
-	setValue(value) {
+	setValue(value, sourceValues = null) {
+		if (value == null && sourceValues)
+			value = this.source(sourceValues);
+		else if (!this.instantiated && sourceValues) {
+			const sourced = this.source(sourceValues);
+			if (sourced != null)
+				value = sourced;
+		}
+
 		this.dynamicValue.setting = true;
 		const oldValue = resolveValue(this.dynamicValue.value),
 			newValue = this[OVERRIDE_INJECT](value);
@@ -842,6 +856,14 @@ export default class Input extends Hookable {
 		this.handlers.checkWord = Input.mkChecker(handler, "validate");
 	}
 
+	get source() {
+		return this.handlers.source;
+	}
+
+	set source(handler) {
+		this.handlers.source = Input.mkSourcer(this, handler);
+	}
+
 	get compare() {
 		return this.handlers.compare;
 	}
@@ -1079,6 +1101,33 @@ export default class Input extends Hookable {
 		}
 
 		return null;
+	}
+
+	// string|function
+	static mkSourcer(input, precursor) {
+		return sourceValues => {
+			let value = null;
+
+			switch (typeof precursor) {
+				case "function":
+					value = precursor(input.mkRuntime({
+						sourceValues
+					}));
+					break;
+
+				case "string":
+					value = get(sourceValues, precursor, null);
+					break;
+
+				default:
+					if (input.path != null)
+						value = get(sourceValues, input.path);
+					else
+						value = get(sourceValues, input.name);
+			}
+
+			return value;
+		};
 	}
 
 	// function|string|number|Array

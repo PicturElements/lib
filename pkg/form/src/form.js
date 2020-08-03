@@ -201,7 +201,7 @@ export default class Form extends Hookable {
 		return inp;
 	}
 
-	connectRows(rows, values = {}) {
+	connectRows(rows, sourceValues = {}) {
 		const foundNames = {};
 
 		const hasBlocks = cells => {
@@ -334,9 +334,10 @@ export default class Form extends Hookable {
 			} else if (this.options.noDuplicateNames)
 				throw new Error(`Cannot connect: duplicate inputs by name "${name}". To support multiple inputs with the same name, use the 'noDuplicateNames' option`);
 
-			if (values && hasOwn(values, name))
-				options.value = values[name];
+			/*if (sourceValues && hasOwn(sourceValues, name))
+				options.value = sourceValues[name];*/
 
+			options.sourceValues = sourceValues;
 			options.input = this.connect(nData, options);
 			options.isInputCell = true;
 
