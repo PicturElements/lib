@@ -997,7 +997,6 @@ const DV_EXTENDERS = {
 	default: (dv, data) => dv,
 	literal: (dv, data) => dv.data = data,
 	stringbuilder: (dv, data) => concatMut(dv.data, data),
-	entitystringbuilder: (dv, data) => concatMut(dv.data, data),
 	entitystringbuilder: (dv, data) => {
 		for (let i = 0, l = data.length; i < l; i++) {
 			if (typeof data[i] == "string")
@@ -1473,7 +1472,7 @@ function resolveAttributeMeta(key, meta = null) {
 			type: match,
 			key,
 			matched: true
-		}
+		};
 	}
 
 	if (Array.isArray(match)) {

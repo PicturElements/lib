@@ -46,9 +46,9 @@ function createOptionizer(target, initializer, templates, merger) {
 	
 		if (target._options) {
 			if (override)
-				target._options = Object.assign(parsePugStr._options, options);
+				target._options = Object.assign(target._options, options);
 			else
-				target._options = Object.assign({}, options, parsePugStr._options);
+				target._options = Object.assign({}, options, target._options);
 		} else
 			target._options = Object.assign(init(options, override), options);
 	

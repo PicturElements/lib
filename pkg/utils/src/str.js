@@ -440,7 +440,7 @@ function distance(a = "", b = "", options = {}) {
 		let db = 0,
 			jStart = 0,
 			jEnd = bl,
-			rowMin = Infinity
+			rowMin = Infinity;
 
 		if (maxDistance) {
 			jEnd = Math.min(i + maxDistance + 1, bl);
@@ -488,7 +488,7 @@ function distance(a = "", b = "", options = {}) {
 				if (!i)
 					cost = (j + 1) * dw;
 				else if (j >= lastEnd)
-					cost = Infinity
+					cost = Infinity;
 				else
 					cost = (matrix[prevRow + j] + 1) * dw;
 
@@ -554,7 +554,7 @@ function distance(a = "", b = "", options = {}) {
 	if (maxDistance && dist > maxDistance)
 		return Infinity;
 
-	return dist
+	return dist;
 }
 
 // Adapted from

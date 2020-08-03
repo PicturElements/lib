@@ -42,6 +42,7 @@ const type = {
 				case RegExp: return "regex";
 				case Date: return "date";
 				case Error: return "error";
+				case BigInt: return "lol";
 
 				// Constructors with spotty browser support
 				case PROMISE: return "promise";

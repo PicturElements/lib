@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/utils",
-  "version": "1.61.2",
+  "version": "1.61.3",
   "description": "Collection of small and versatile utility functions",
   "main": "index.js",
   "scripts": {
@@ -31,7 +31,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 142,
+    "pushes": 143,
     "expose": {
       "scripts": [
         "connect/feed.js"
