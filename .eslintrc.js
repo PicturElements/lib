@@ -5,11 +5,11 @@ module.exports = {
 	env: {
 		node: true,
 		browser: true,
-		es6: true,
+		es2020: true,
 		jest: true
 	},
 	parserOptions: {
-		ecmaVersion: 10,
+		ecmaVersion: 11,
 		sourceType: "module"
 	},
 	rules: {
@@ -38,8 +38,5 @@ module.exports = {
 		],
 		"arrow-parens": ["warn", "as-needed"],
 		"no-unexpected-multiline": "off"
-	},
-	globals: {
-		BigInts
 	}
 };

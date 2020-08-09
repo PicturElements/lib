@@ -18,15 +18,16 @@ const routes = require("./routes");
 const app = express();
 const PORT = 1234;
 
-const scssStamp = new BuildStamp(),
-	pkgStamp = new BuildStamp();
+const SCSS_STAMP = new BuildStamp(),
+	PKG_STAMP = new BuildStamp(),
+	BUILD_DEBOUNCES = new Map();
 
 // Build
 chokidar
 	.watch("web/style/scss/*.scss")
 	.on("change", _ => {
 		console.log(
-			`Compiling SCSS ${scssStamp.verbose()}`
+			`Compiling SCSS ${SCSS_STAMP.verbose()}`
 		);
 
 		spawn("sass", ["--update", "web/style/scss:web/style/css"], { stdio: "inherit" });
@@ -34,11 +35,33 @@ chokidar
 
 chokidar
 	.watch("pkg")
-	.on("change", async p => {
+	.on("change", p => {
 		const pkgName = p.split(path.sep)[1];
-		console.log();
-		await buildExposedAtPkg(pkgName);
-		info(`from ${p} ${pkgStamp.verbose()}`);
+		let partition = BUILD_DEBOUNCES.get(pkgName);
+
+		const build = async _ => {
+			const deferStr = partition.defers ?
+				` (${partition.defers} ${plural(partition.defers, "defer")})` :
+				"";
+
+			console.log();
+			await buildExposedAtPkg(pkgName);
+			info(`from ${p} ${PKG_STAMP.verbose()}${deferStr}`);
+			BUILD_DEBOUNCES.delete(pkgName);
+		};
+
+		if (partition) {
+			clearTimeout(partition.timeout);
+			partition.defers++;
+		} else {
+			partition = {
+				timeout: null,
+				defers: 0
+			};
+			BUILD_DEBOUNCES.set(pkgName, partition);
+		}
+
+		partition.timeout = setTimeout(build, 200);
 	});
 
 // Routes
@@ -51,7 +74,7 @@ app.use("/pkg", express.static(join(__dirname, "../pkg")));
 app.listen(PORT, _ => console.log(`Visit port ${PORT}.`));
 
 function plural(count, base) {
-	return base + (count ? "s" : "");
+	return base + (count == 1 ? "" : "s");
 }
 
 (async _ => {
