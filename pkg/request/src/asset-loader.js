@@ -345,15 +345,14 @@ export default class AssetLoader {
 		}
 	}
 
-	static traverse(rootNode, callback, tail = false) {
+	static traverse(rootNode, callback) {
 		if (!rootNode || !rootNode.isAssetNode || typeof callback != "function")
 			return false;
 
 		const visited = {};
 
 		const traverse = (node, depth) => {
-			if (!tail)
-				callback(node, rootNode, depth);
+			callback(node, rootNode, depth);
 
 			for (let i = 0, l = node.dependencies.length; i < l; i++) {
 				const child = node.dependencies[i];
@@ -363,9 +362,6 @@ export default class AssetLoader {
 				visited[child.id] = true;
 				traverse(child, depth + 1);
 			}
-
-			if (tail)
-				callback(node, rootNode, depth);
 		};
 
 		traverse(rootNode, 0);

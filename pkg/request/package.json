@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/request",
-  "version": "3.8.5",
+  "version": "3.8.6",
   "description": "Collection of libraries for efficient, clean, and intuitive web requests",
   "main": "index.js",
   "scripts": {
@@ -27,7 +27,7 @@
   "dependencies": {
     "@qtxr/bc": "^1.5.1",
     "@qtxr/url": "^1.2.5",
-    "@qtxr/utils": "^1.60.0"
+    "@qtxr/utils": "^1.61.3"
   },
   "devDependencies": {},
   "files": [
@@ -35,7 +35,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 43,
+    "pushes": 44,
     "expose": {
       "scripts": [
         "connect/feed.js"
