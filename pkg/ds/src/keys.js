@@ -1,31 +1,18 @@
 import {
 	alias,
-	hasOwn,
-	compileGlob,
-	binarySearch
+	compileGlob
 } from "@qtxr/utils";
+import KeyedLinkedList from "./keyed-linked-list";
 
 export default class Keys {
 	constructor(compileConfig = {}) {
 		this.partitions = {
-			plaintext: {
-				keys: [],
-				length: 0,
-				lookup: {}
-			},
-			glob: {
-				keys: [],
-				length: 0,
-				lookup: {}
-			},
-			any: {
-				keys: [],
-				length: 0,
-				lookup: {}
-			}
+			plaintext: new KeyedLinkedList(),
+			glob: new KeyedLinkedList(),
+			any: new KeyedLinkedList()
 		};
 		this.compileConfig = compileConfig;
-		this.length = 0;
+		this.size = 0;
 	}
 
 	add(key, compileConfig = null) {
@@ -47,12 +34,8 @@ export default class Keys {
 				partition = this.partitions.plaintext;
 		}
 
-		const nextIdx = binarySearch(partition.keys, key) + 1;
-		partition.keys.splice(nextIdx, 0, key);
-		partition.lookup[key] = lookupValue;
-
-		partition.length++;
-		this.length++;
+		partition.push(key, lookupValue);
+		this.size++;
 
 		return this;
 	}
@@ -61,19 +44,13 @@ export default class Keys {
 		const partitionKey = this.getPartitionKey(key);
 
 		if (partitionKey == null)
-			return this;
+			return false;
 
-		const partition = this.partitions[partitionKey],
-			keyIdx = binarySearch(partition.keys, key);
+		const partition = this.partitions[partitionKey];
+		partition.delete(key);
+		this.size--;
 
-		delete partition.lookup[key];
-		if (keyIdx > -1)
-			partition.keys.splice(keyIdx, 1);
-
-		partition.length--;
-		this.length--;
-
-		return this;
+		return true;
 	}
 
 	has(key) {
@@ -84,12 +61,12 @@ export default class Keys {
 		if (typeof key != "string")
 			return null;
 
-		// Super basic loop unrolling
-		if (hasOwn(this.partitions.plaintext.lookup, key))
+		// Super naive loop unrolling
+		if (this.partitions.plaintext.has(key))
 			return "plaintext";
-		if (hasOwn(this.partitions.glob.lookup, key))
+		if (this.partitions.glob.has(key))
 			return "glob";
-		if (hasOwn(this.partitions.any.lookup, key))
+		if (this.partitions.any.has(key))
 			return "any";
 
 		return null;
@@ -99,20 +76,15 @@ export default class Keys {
 		if (typeof key != "string")
 			return false;
 
-		if (hasOwn(this.partitions.plaintext.lookup, key))
+		if (this.partitions.plaintext.has(key))
 			callback(key, "plaintext");
 
-		const globs = this.partitions.glob.keys;
-		for (let i = 0, l = globs.length; i < l; i++) {
-			const regex = this.partitions.glob.lookup[globs[i]];
-
+		this.partitions.glob.forEach((regex, key) => {
 			if (regex.test(key))
-				callback(globs[i], "glob");
-		}
+				callback(key, "glob");
+		});
 
-		const any = this.partitions.any.keys;
-		for (let i = 0, l = any.length; i < l; i++)
-			callback(any[i], "any");
+		this.partitions.any.forEach((_, key) => callback(key, "any"));
 
 		return true;
 	}

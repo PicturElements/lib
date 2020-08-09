@@ -29,7 +29,7 @@ import StatelessIterator from "./internal/stateless-iterator";
 // 1.	A binary search is done on partitions in the root level array. This is done by comparing
 //		the first elements of each partition. It returns the index of the partition whose head has
 //		a value closest to the inserted value.
-// 2.	If a the partition is full, a new partition is spliced into the root array with the value
+// 2.	If the partition is full, a new partition is spliced into the root array with the value
 //		as its only element.
 // 3.	If the partition is not full, a second binary search is run over its elements whereupon the
 //		value is spliced into the partition. While this is an expensive operation, the size of the array

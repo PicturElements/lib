@@ -6,6 +6,10 @@ import {
 import KeyedLinkedList from "./keyed-linked-list";
 import { typeHash } from "./internal/utils";
 
+// For next version, look into the feasability of turning
+// tries into DAFSAs or possibly radix trees
+// https://en.wikipedia.org/wiki/Deterministic_acyclic_finite_state_automaton
+
 const PARENT = sym("parent"),
 	KEY = sym("key"),
 	CHILDREN = sym("children"),

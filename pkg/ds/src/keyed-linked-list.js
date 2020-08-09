@@ -8,8 +8,6 @@ import { SYM_ITER_KEY } from "@qtxr/utils/internal";
 import StatelessIterator from "./internal/stateless-iterator";
 import { typeHash } from "./internal/utils";
 
-let id = 0;
-
 export default class KeyedLinkedList {
 	constructor(iterable, enforceUnique = true) {
 		if (typeof iterable == "boolean") {
@@ -73,7 +71,34 @@ export default class KeyedLinkedList {
 		node.next = next;
 		node.previous = previous;
 		node.linked = true;
-		node.id = id++;
+
+		if (!previous && !next)
+			node.id = 0;
+		else if (!next)
+			node.id = previous.id + 1;
+		else if (!previous)
+			node.id = next.id - 1;
+		else {
+			const prevId = previous.id,
+				nextId = next.id,
+				id = (prevId + nextId) / 2;
+
+			// Catch floating point rounding errors and patch by spacing IDs further apart
+			// This happens appoximately once every 50 insertions (assumes the worst case
+			// scenario where nodes are spliced at the same location repeatedly)
+			if (id <= prevId || id >= nextId) {
+				let n = next;
+				node.id = ~~prevId + 1;
+				next.id = node.id + 1;
+
+				while (n && n.next) {
+					n.next.id = n.id + 1;
+					n = n.next;
+				}
+				console.log("uh");
+			} else
+				node.id = id;
+		}
 
 		if (previous)
 			previous.next = node;
@@ -162,12 +187,41 @@ export default class KeyedLinkedList {
 		return assertValidKey(key) && Boolean(this.map[typeHash(key)]);
 	}
 
-	get(key) {
-		return (assertValidKey(key) && this.map[typeHash(key)]) || (this.enforceUnique ? null : []);
+	get(key, raw = false) {
+		const nullValue = this.enforceUnique ? null : [];
+
+		if (!assertValidKey(key))
+			return nullValue;
+
+		const item = this.map[typeHash(key)];
+		if (!item)
+			return nullValue;
+
+		if (raw)
+			return item;
+
+		if (this.enforceUnique)
+			return item.value;
+
+		const out = [];
+
+		for (let i = 0, l = item.length; i < l; i++)
+			out.push(item[i].value);
+
+		return out;
+	}
+
+	item(key) {
+		const nullValue = this.enforceUnique ? null : [];
+
+		if (!assertValidKey(key))
+			return nullValue;
+
+		return this.map[typeHash(key)] || nullValue;
 	}
 
 	delete(key) {
-		if (!assertValidKey(key) || !this.has(key))
+		if (!this.has(key))
 			return false;
 
 		const typedKey = typeHash(key);
@@ -268,33 +322,29 @@ function assertValidKey(key) {
 }
 
 function mkIterator(inst, dispatcher) {
-	let next = inst.head,
-		node = null;
+	let current = null;
 
 	return new StatelessIterator(
 		inst,
 		_ => {
-			if (next == null)
-				next = inst.head;
-			else if (typeof next == "number")
-				next = inst.find((v, k, kll, n) => n.id >= next);
-			else if (!next.linked)
-				next = inst.find((v, k, kll, n) => n.id >= next.id);
+			if (current && !current.linked)
+				current = inst.find((v, k, kll, n) => n.id > current.id);
+			else if (current == null)
+				current = inst.head;
+			else
+				current = current.next;
 
-			if (!next)
+			if (!current)
 				return StatelessIterator.EXIT;
 
-			node = next;
-			next = node.next || node.id + 1;
-
 			switch (dispatcher) {
-				case "key": return node.key;
-				case "value": return node.value;
-				case "entry": return [node.key, node.value];
-				case "kv-key": return node.value[0];
-				case "kv-value": return node.value[1];
-				case "kv-entry": return [node.value[0], node.value[1]];
-				default: return dispatcher(node);
+				case "key": return current.key;
+				case "value": return current.value;
+				case "entry": return [current.key, current.value];
+				case "kv-key": return current.value[0];
+				case "kv-value": return current.value[1];
+				case "kv-entry": return [current.value[0], current.value[1]];
+				default: return dispatcher(current);
 			}
 		}
 	);
