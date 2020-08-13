@@ -240,6 +240,13 @@ function isHexDigit(char) {
 	return (code >= 48 && code <= 57) || (code >= 97 && code <= 102) || (code >= 65 && code <= 70);
 }
 
+function isQuote(char) {
+	if (typeof char != "string" || char.length != 1)
+		return false;
+
+	return char == "\"" || char == "'" || char == "`";
+}
+
 function isLowerCase(char) {
 	return char.toLowerCase() == char;
 }
@@ -299,6 +306,7 @@ export {
 	isWhitespace,
 	isDigit,
 	isHexDigit,
+	isQuote,
 	isLowerCase,
 	isUpperCase,
 	isEmptyString,

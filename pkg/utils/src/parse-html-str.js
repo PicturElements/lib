@@ -11,7 +11,11 @@ import {
 } from "./dom";
 import hasOwn from "./has-own";
 import { optionize } from "./internal/options";
-import { isWhitespace } from "./is";
+import {
+	isWhitespace,
+	isQuote
+} from "./is";
+import { startsWith } from "./str";
 
 const ctx = resolveInlineRefs.ctx;
 
@@ -75,6 +79,8 @@ function parseHtmlCore(str, meta = null) {
 		buffer = "",
 		whitespaceBuffer = "",
 		quote = null,
+		contentQuote = null,
+		strictContent = false,
 		hasContent = false,
 		cutoffIdx = 0,
 		ptr = 0;
@@ -105,6 +111,8 @@ function parseHtmlCore(str, meta = null) {
 		buffer = "";
 		whitespaceBuffer = "";
 		hasContent = false;
+		contentQuote = null;
+		strictContent = false;
 	};
 
 	const pushText = _ => {
@@ -184,7 +192,9 @@ function parseHtmlCore(str, meta = null) {
 
 		target.push(node);
 
-		if (eData.selfClosing || node.void)
+		const selfCloses = eData.selfClosing || node.void;
+
+		if (selfCloses)
 			eData.selfClosing = false;
 		else {
 			target = node.children;
@@ -196,6 +206,11 @@ function parseHtmlCore(str, meta = null) {
 		state = STATES.CONTENT;
 		propagate(node);
 		clear();
+
+		if (!selfCloses) {
+			if (parent.tag == "script" || parent.tag == "style")
+				strictContent = true;
+		}
 	};
 
 	const pushFragment = _ => {
@@ -268,7 +283,7 @@ function parseHtmlCore(str, meta = null) {
 		}
 		
 		if (state == STATES.ATTRIBUTES) {
-			if (char == "\"" || char == "'" || char == "`") {
+			if (isQuote(char)) {
 				if (!quote)
 					quote = char;
 				else if (quote == char)
@@ -289,6 +304,24 @@ function parseHtmlCore(str, meta = null) {
 			}
 		}
 
+		if (state == STATES.CONTENT && strictContent) {
+			if (char == "<" && str[ptr + 1] == "/" && startsWith(str, parent.tag + ">", ptr + 2))
+				strictContent = false;
+			else if (isQuote(char)) {
+				if (contentQuote) {
+					if (char == contentQuote)
+						contentQuote = null;
+				} else
+					contentQuote = char;
+
+				append(char);
+				continue;
+			} else {
+				append(char);
+				continue;
+			}
+		}
+
 		switch (char) {
 			case "\\":
 				if (ptr == l - 1)
@@ -298,6 +331,7 @@ function parseHtmlCore(str, meta = null) {
 						append("\\");
 
 					append(str[ptr + 1]);
+					ptr++;
 				}
 				break;
 
@@ -347,9 +381,9 @@ function parseHtmlCore(str, meta = null) {
 						if ((ref && (ref.isParsedDom || ref.isCompiledDomData)) || (options.functionalTags && typeof ref == "function")) {
 							pushText();
 							pushFragment();
-						} else 
+						} else
 							append(char);
-					} else 
+					} else
 						append(char);
 				}
 		}
