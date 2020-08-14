@@ -708,10 +708,20 @@ function genDom(nodes, options = {}) {
 			if (raw)
 				str += breakStr;
 
-			if (type == "text") {
+			if (type == "text" || type == null) {
 				let content;
 
-				if (useNativeNodes)
+				if (type == null) {
+					if (typeof node == "string")
+						content = node;
+					else if (isPrimitive(node) && typeof node != "symbol")
+						content = String(node);
+					else
+						content = serialize(node, parserOptions, args);
+
+					if (!parserOptions || !parserOptions.preserveEntities)
+						content = parseEntityStr(content);
+				} else if (useNativeNodes)
 					content = node.textContent;
 				else if (node.content && node.content.isDynamicValue)
 					content = resolveTextContent(node, args);
@@ -967,7 +977,7 @@ const ATTR_SPLIT_REGEX = /([^\s=]+)(?:\s*=\s*((["'`])(?:[^\\]|\\.)*?\3|[^"'`\s]+
 	},
 	DEF_ATTR_PREFIX_MATCHER = mkStrMatcher({
 		on: key => [
-			"event",
+			"event-item",
 			key.substring(2)
 		],
 		"data-": key => [
@@ -1235,6 +1245,44 @@ function resolveAttribute(node, key, args = []) {
 	return attr;
 }
 
+function resolveAttributes(node, args = []) {
+	if (!Array.isArray(args))
+		args = [args];
+
+	const out = {
+			attributes: {},
+			staticAttributes: [],
+			dynamicAttributes: []
+		},
+		sAttrs = node.staticAttributes,
+		dAttrs = node.dynamicAttributes;
+
+	for (let i = 0, l = sAttrs.length; i < l; i++) {
+		let attr = node.attributes[sAttrs[i]];
+		if (attr && attr.isDynamicValue)
+			attr = attr.extract(attr, args);
+
+		if (typeof attr == "function")
+			attr = attr(...args);
+
+		out.attributes[sAttrs[i]] = node.attributes[sAttrs[i]];
+		out.staticAttributes.push(sAttrs[i]);
+	}
+
+	for (let i = 0, l = dAttrs.length; i < l; i++) {
+		let attr = node.attributes[dAttrs[i]];
+		attr = attr.extract(attr, args);
+
+		if (typeof attr == "function")
+			attr = attr(...args);
+
+		out.attributes[dAttrs[i]] = attr;
+		out.dynamicAttributes.push(dAttrs[i]);
+	}
+
+	return out;
+}
+
 function resolveTextContent(node, args = []) {
 	if (!Array.isArray(args))
 		args = [args];
@@ -1411,10 +1459,6 @@ function parseAttributes(node, meta = null) {
 					setAttribute(node, "data", obj);
 			} else
 				setAttribute(node, key, value);
-		} else if (type == "event" && matched) {
-			setAttribute(node, "events", {
-				[key]: resolveInlineRefs(value, meta, ctx(node, "attribute", "events")("event"))
-			});
 		} else if (type == "data-item" && matched) {
 			const ref = resolveInlineRefs(value, meta, ctx(node, "attribute", "data")("data-item"));
 
@@ -1441,6 +1485,42 @@ function parseAttributes(node, meta = null) {
 				}, meta));
 			} else {
 				setAttribute(node, "data", {
+					[key]: ref
+				});
+			}
+		} else if (type == "events") {
+			if (meta) {
+				const obj = resolveInlineRefs(value, meta, ctx(node, "attribute", "events"));
+				if (isObject(obj))
+					setAttribute(node, "events", obj);
+			} else
+				setAttribute(node, key, value);
+		} else if (type == "event-item" && matched) {
+			const ref = resolveInlineRefs(value, meta, ctx(node, "attribute", "events")("event-item"));
+
+			if (ref && ref.isDynamicValue) {
+				const value = ref.data;
+				let resolver;
+
+				if (typeof value == "function") {
+					resolver = (...args) => ({
+						[key]: value(...args)
+					});
+				} else {
+					resolver = _ => ({
+						[key]: value
+					});
+				}
+
+				setAttribute(node, "events", mkDynamicValue({
+					type: "tokenlist",
+					joiner: joinEvents,
+					merger: extendEvents,
+					staticTokens: mkEventList(),
+					dynamicTokens: [resolver]
+				}, meta));
+			} else {
+				setAttribute(node, "events", {
 					[key]: ref
 				});
 			}
@@ -1534,8 +1614,8 @@ function resolveInlineRefs(str, meta = null, context = null) {
 	// Flags
 	const preserveWhitespace = ct == "raw" || ct == "string" || ct == "entitystring",
 		useTerms = ct != "raw" || (meta.options.compile && !meta.options.resolve),
-		wrapDynamic = ct == "class" || ct == "style" || ct == "data" || ct == "data-item",
-		rawResolve = meta.options.rawResolve || ct == "event" || (ct == "literal" && !meta.options.eagerDynamic);
+		wrapDynamic = ct == "class" || ct == "style" || ct == "data" || ct == "event-item" || ct == "data-item",
+		rawResolve = meta.options.rawResolve || ct == "event-item" || (ct == "literal" && !meta.options.eagerDynamic);
 
 	const push = (term, ref) => {
 		if (ref && meta.options.eagerDynamic) {
@@ -1647,6 +1727,7 @@ function resolveInlineRefs(str, meta = null, context = null) {
 
 		case "literal":
 		case "data-item":
+		case "event-item":
 			if (!hasDynamicTerms)
 				return useTerms ? terms[0] : out;
 
@@ -1691,8 +1772,17 @@ function resolveInlineRefs(str, meta = null, context = null) {
 				dynamicTokens: dynamicTerms
 			}, meta);
 
-		case "event":
-			return terms[0];
+		case "events":
+			if (!hasDynamicTerms)
+				return joinEvents(...terms);
+
+			return mkDynamicValue({
+				type: "tokenlist",
+				joiner: joinEvents,
+				merger: extendEvents,
+				staticTokens: joinEvents(...staticTerms),
+				dynamicTokens: dynamicTerms
+			}, meta);
 	}
 
 	return out;
@@ -1900,6 +1990,7 @@ export {
 	mergeDynamicValue,
 	resolveDynamicValue,
 	resolveAttribute,
+	resolveAttributes,
 	resolveTextContent,
 	resolveTag,
 	resolveChildren,

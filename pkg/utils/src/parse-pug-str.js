@@ -274,7 +274,7 @@ function parseClassesAndIDs(node, meta = null) {
 					setAttribute(
 						node,
 						"class",
-						resolveInlineRefs(ex[2], meta, ctx(node, "attribute", "class")("raw"))
+						resolveInlineRefs(ex[2], meta, ctx(node, "attribute", "class"))
 					);
 				} else
 					setAttribute(node, "class", ex[2]);
@@ -284,7 +284,7 @@ function parseClassesAndIDs(node, meta = null) {
 				setAttribute(
 					node,
 					"id",
-					resolveInlineRefs(ex[2], meta, ctx(node, "attribute", "class")("raw"))
+					resolveInlineRefs(ex[2], meta, ctx(node, "attribute", "id")("literal"))
 				);
 				break;
 		}
