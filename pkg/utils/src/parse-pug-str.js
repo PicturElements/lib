@@ -2,13 +2,13 @@ import filterMut from "./filter-mut";
 import {
 	mkVNode,
 	parseDom,
+	addAttributeData,
 	getTagProperties,
 	setAttribute,
 	setTextContent,
 	parseAttributes,
 	resolveAttribute,
-	resolveInlineRefs,
-	mkAttrRepresentationObj
+	resolveInlineRefs
 } from "./dom";
 import hasOwn from "./has-own";
 import { optionize } from "./internal/options";
@@ -37,6 +37,7 @@ optionize(parsePugStr, null, {
 	eagerDynamic: true,			// treat every inline value as a getter (caches, returns compiled object)
 	rawResolve: true,			// resolve every inline value in raw form
 	functionalTags: true,		// Treat tags as entry points for functional components
+	eagerTemplates: true,		// Treat any inline reference as a template
 	singleContextArg: true,		// Use single context arguments in callbacks (serializer hint)
 	preserveEntities: true,		// Preserve entity strings in their original form
 	preserveNewlines: true,		// Preserve newlines surrounding text blocks
@@ -63,9 +64,14 @@ function parsePugCore(str, meta = null) {
 		mk = options.mkVNode || mkVNode,
 		root = mk("fragment", {
 			raw: str,
-			children: []
+			children: [],
+			static: true
 		}),
-		stack = [];
+		stack = [root],
+		refData = {
+			positions: meta && meta.refPositions,
+			ptr: -1
+		};
 	let lastNode = null,
 		parent = root,
 		target = root.children,
@@ -83,6 +89,11 @@ function parsePugCore(str, meta = null) {
 
 		line++;
 
+		if (refData.positions) {
+			while (refData.ptr < refData.positions.length && ex.index < refData.positions[refData.ptr + 1])
+				refData.ptr++;
+		}
+
 		if (!ex[0]) {
 			NODE_REGEX.lastIndex++;
 			continue;
@@ -91,9 +102,15 @@ function parsePugCore(str, meta = null) {
 		if (!ex[0].trim())
 			continue;
 
+		if (options.eagerTemplates && !ex[6] && !ex[6] && refData.ptr > -1 && refData.positions[refData.ptr] == ex.index + ex[1].length) {
+			console.log("found");
+		}
+
 		let type;
 
-		if (ex[2] != null)
+		if (options.eagerTemplates && (refData.ptr > -1 && refData.positions[refData.ptr] == ex.index + ex[1].length))
+			type = "template";
+		else if (ex[2] != null)
 			type = "comment";
 		else if (ex[3])
 			type = "text";
@@ -104,19 +121,9 @@ function parsePugCore(str, meta = null) {
 			indentLen = indentStr.length,
 			node = mk(type, {
 				raw: ex[0],
-				tag: ex[4]
+				tag: ex[4],
+				static: true
 			});
-
-		node.tag = resolveInlineRefs(node.tag, meta, ctx(node, "tag")(
-			options.functionalTags ? "literal" : "string")
-		);
-
-		if (typeof node.tag == "string") {
-			const props = getTagProperties(node.tag);
-			node.tag = props.tag;
-			node.namespace = props.namespace;
-			node.void = props.void;
-		}
 
 		if (indentStr && !WELL_FORMED_INDENT_REGEX.test(indentStr))
 			throw new SyntaxError(`Malformed indent on line ${line}`);
@@ -133,7 +140,9 @@ function parsePugCore(str, meta = null) {
 			parent = lastNode ?
 				lastNode :
 				root;
-			target = parent.children;
+			target = parent.type == "template" ?
+				parent.commonChildren :
+				parent.children;
 			indent = indentLen;
 
 			stack.push({
@@ -144,11 +153,13 @@ function parsePugCore(str, meta = null) {
 			while (stack.length && stack[stack.length - 1].indent > indentLen)
 				stack.pop();
 
-			if (!stack.length)
+			if (stack.length < 2)
 				throw new Error(`Fell out of struct stack on line ${line}`);
 
 			({ parent, indent } = stack[stack.length - 1]);
-			target = parent.children;
+			target = parent.type == "template" ?
+				parent.commonChildren :
+				parent.children;
 		}
 
 		switch (type) {
@@ -160,15 +171,37 @@ function parsePugCore(str, meta = null) {
 				setTextContent(node, ex[3], meta);
 				break;
 
+			case "template":
+				node.children = [];
+				node.commonChildren = [];
+				node.static = false;
+				addAttributeData(node);
+
+				node.children = resolveInlineRefs(
+					node.tag,
+					meta,
+					ctx(node, "children")("literal")
+				);
+
+				node.tag = "#template";
+				break;
+
 			case "element": {
 				node.children = [];
-				node.attributes = mkAttrRepresentationObj();
-				node.static = true;
-				node.staticAttributes = [];
-				node.dynamicAttributes = [];
-				node.dynamicAttributesMap = {};
 				node.tagData = ex[5] || null;
 				node.attrData = ex[6] || null;
+				addAttributeData(node);
+
+				node.tag = resolveInlineRefs(node.tag, meta, ctx(node, "tag")(
+					options.functionalTags ? "literal" : "string")
+				);
+		
+				if (typeof node.tag == "string") {
+					const props = getTagProperties(node.tag);
+					node.tag = props.tag;
+					node.namespace = props.namespace;
+					node.void = props.void;
+				}
 
 				parseClassesAndIDs(node, meta);
 				parseAttributes(node, meta);

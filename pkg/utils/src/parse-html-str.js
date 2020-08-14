@@ -2,12 +2,12 @@ import filterMut from "./filter-mut";
 import {
 	mkVNode,
 	parseDom,
+	addAttributeData,
 	getTagProperties,
 	setTextContent,
 	parseAttributes,
 	resolveAttribute,
-	resolveInlineRefs,
-	mkAttrRepresentationObj
+	resolveInlineRefs
 } from "./dom";
 import hasOwn from "./has-own";
 import { optionize } from "./internal/options";
@@ -42,6 +42,7 @@ optionize(parseHtmlStr, null, {
 	eagerDynamic: true,			// treat every inline value as a getter (caches, returns compiled object)
 	rawResolve: true,			// resolve every inline value in raw form
 	functionalTags: true,		// Treat tags as entry points for functional components
+	eagerTemplates: true,		// Treat any inline reference as a template
 	singleContextArg: true,		// Use single context arguments in callbacks (serializer hint)
 	preserveEntities: true,		// Preserve entity strings in their original form
 	preserveNewlines: true,		// Preserve newlines surrounding text blocks
@@ -61,7 +62,8 @@ function parseHtmlCore(str, meta = null) {
 		mk = options.mkVNode || mkVNode,
 		root = mk("fragment", {
 			raw: str,
-			children: []
+			children: [],
+			static: true
 		}),
 		stack = [root],
 		eData = {
@@ -154,17 +156,16 @@ function parseHtmlCore(str, meta = null) {
 	};
 
 	const pushElem = (tag, attrData) => {
-		const node = mk("element", {
-			raw: tag,
-			parent,
-			children: [],
-			attributes: mkAttrRepresentationObj(),
-			static: true,
-			staticAttributes: [],
-			dynamicAttributes: [],
-			dynamicAttributesMap: {},
-			attrData: attrData
-		});
+		const node = addAttributeData(
+			mk("element", {
+				raw: tag,
+				parent,
+				children: [],
+				static: true,
+				tagData: tag,
+				attrData: attrData
+			})
+		);
 
 		node.tag = resolveInlineRefs(tag, meta, ctx(node, "tag")(
 			options.functionalTags ? "literal" : "string")
@@ -213,23 +214,29 @@ function parseHtmlCore(str, meta = null) {
 		}
 	};
 
-	const pushFragment = _ => {
+	const pushTemplate = _ => {
 		const key = meta.refKeys[refData.ptr],
-			fragment = mk("fragment", {
-				static: false
-			});
+			template = addAttributeData(
+				mk("template", {
+					raw: "",
+					parent,
+					commonChildren: [],
+					tag: "#template",
+					static: false
+				})
+			);
 
-		fragment.children = resolveInlineRefs(
+		template.children = resolveInlineRefs(
 			key,
 			meta,
-			ctx(fragment, "children")("literal")
+			ctx(template, "children")("literal")
 		);
 
-		target.push(fragment);
+		target.push(template);
 		ptr += (key.length - 1);
 		cutoffIdx = ptr + 1;
 		state = STATES.CONTENT;
-		propagate(fragment);
+		propagate(template);
 		clear();
 	};
 
@@ -378,9 +385,9 @@ function parseHtmlCore(str, meta = null) {
 					if (refData.ptr > -1 && refData.positions[refData.ptr] == ptr) {
 						const ref = meta.refList[refData.ptr];
 
-						if ((ref && (ref.isParsedDom || ref.isCompiledDomData)) || (options.functionalTags && typeof ref == "function")) {
+						if (options.eagerTemplates || (ref && (ref.isParsedDom || ref.isCompiledDomData)) || (options.functionalTags && typeof ref == "function")) {
 							pushText();
-							pushFragment();
+							pushTemplate();
 						} else
 							append(char);
 					} else

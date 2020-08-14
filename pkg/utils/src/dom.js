@@ -657,7 +657,9 @@ function genDom(nodes, options = {}) {
 			return;
 
 		for (let i = 0, l = nds.length; i < l; i++) {
-			const node = nds[i],
+			const node = nds[i] && nds[i].isCompiledDomData ?
+					nds[i].dom :
+					nds[i],
 				breakStr = (!minified && str) ? "\n" : "";
 			let type = getNodeType(node),
 				tag = getTagName(node) || resolveTag(node, args);
@@ -676,7 +678,7 @@ function genDom(nodes, options = {}) {
 				}) || tag;
 			}
 
-			if (type == "fragment") {
+			if (type == "fragment" || type == "template") {
 				const children = useNativeNodes ?
 					node.childNodes :
 					resolveChildren(node, args);
@@ -850,7 +852,7 @@ function genDom(nodes, options = {}) {
 
 	const setAttr = (key, value, rawValue, node, sourceNode) => {
 		if (value && value.isDynamicValue)
-			value = resolveAttribute(node, key, args);
+			value = resolveAttribute(sourceNode, key, args);
 
 		if (processAttribute) {
 			value = processAttribute({
@@ -989,6 +991,14 @@ function mkVNode(type, data) {
 
 	const node = Object.assign(nodeData, data);
 	node.tag = node.tag || DEFAULT_TAGS[type];
+	return node;
+}
+
+function addAttributeData(node) {
+	node.attributes = mkAttrRepresentationObj();
+	node.staticAttributes = [];
+	node.dynamicAttributes = [];
+	node.dynamicAttributesMap = {};
 	return node;
 }
 
@@ -1525,7 +1535,7 @@ function resolveInlineRefs(str, meta = null, context = null) {
 	const preserveWhitespace = ct == "raw" || ct == "string" || ct == "entitystring",
 		useTerms = ct != "raw" || (meta.options.compile && !meta.options.resolve),
 		wrapDynamic = ct == "class" || ct == "style" || ct == "data" || ct == "data-item",
-		rawResolve = ct == "event" || ct == "literal" || meta.options.rawResolve;
+		rawResolve = meta.options.rawResolve || ct == "event" || (ct == "literal" && !meta.options.eagerDynamic);
 
 	const push = (term, ref) => {
 		if (ref && meta.options.eagerDynamic) {
@@ -1884,6 +1894,7 @@ export {
 	getNodeType,
 	// VDOM
 	mkVNode,
+	addAttributeData,
 	mkDynamicValue,
 	extendDynamicValue,
 	mergeDynamicValue,

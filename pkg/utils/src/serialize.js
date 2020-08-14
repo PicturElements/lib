@@ -173,7 +173,7 @@ export default function serialize(data, optionsOrIndentStr = {}, args = null) {
 		}
 	};
 
-	if (options.isCircular && !isCircular(data))
+	if ((options.circular || options.isCircular) && !isCircular(data))
 		return repeat(indentStr, startIndent) + srz(null, uncirculate(data), startIndent);
 
 	// First try stringifying the data as-is. If that fails,
@@ -183,7 +183,7 @@ export default function serialize(data, optionsOrIndentStr = {}, args = null) {
 	} catch (e) {
 		// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Cyclic_object_value
 		if (e instanceof RangeError || (e instanceof TypeError && /circular|cyclic/i.test(e.message))) {
-			console.warn("Found circular structure in input data; trying again. If you see this message frequently, consider explicitly enabling circular input support with the isCircular flag", data);
+			console.warn("Found circular structure in input data; trying again. If you see this message frequently, consider explicitly enabling circular input support with the 'circular' flag", data);
 			return repeat(indentStr, startIndent) + srz(null, uncirculate(data));
 		}
 
