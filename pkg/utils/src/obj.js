@@ -408,7 +408,7 @@ function alias(target, keyOrMap, ...aliases) {
 }
 
 function aliasOwn(target, keyOrMap, ...aliases) {
-	return aliasCore(target, keyOrMap, false, ...aliases);
+	return aliasCore(target, keyOrMap, true, ...aliases);
 }
 
 function extend(target, key, value, fallback) {
