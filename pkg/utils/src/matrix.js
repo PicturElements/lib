@@ -1,6 +1,11 @@
 import { padEnd } from "./str";
+import hasOwn from "./has-own";
 
 const matrix = {};
+
+matrix.codegen = {
+	multiply: prepopulate([5, 5, 5, 5])
+};
 
 // Matrix generators
 matrix.identity = n => {
@@ -18,6 +23,25 @@ matrix.identity = n => {
 	return mx;
 };
 
+matrix.fill = (m, n = m, value = 0) => {
+	const mx = [];
+
+	for (let i = 0; i < m; i++) {
+		const row = [];
+
+		for (let j = 0; j < n; j++)
+			row.push(value);
+
+		mx.push(row);
+	}
+
+	return mx;
+};
+
+matrix.null = (m, n = m) => {
+	return matrix.fill(m, n, 0);
+};
+
 matrix.clone = mx => {
 	const cloned = [];
 
@@ -27,33 +51,180 @@ matrix.clone = mx => {
 	return cloned;
 };
 
-matrix.toMatrix = (val, clone = false) => {
-	if (!Array.isArray(val)) {
-		if (typeof val != "number")
-			return [];
+// Make new matrix from data
+// If given a shallow array and dimensions, it will fill in a matrix
+// with those dimensions, and fill with zeroes where data is missing
+// Very nested to optimize performance
+matrix.make = (data, options = {}, clone = true) => {
+	if (typeof data == "number") {
+		if (options.resolve == "function")
+			return [[options.resolve(data, 0, 0, data)]];
 
-		return [[val || 0]];
+		return [[data || 0]];
 	}
-
-	if (!val.length)
+	if (!Array.isArray(data) || !data.length)
 		return [];
 
-	if (Array.isArray(val[0])) {
-		if (clone)
-			return matrix.clone(val);
+	if (typeof options.clone == "boolean")
+		clone = options.clone;
 
-		return val;
+	const w = typeof options.width == "number" ?
+			options.width || 0 :
+			null,
+		h = typeof options.height == "number" ?
+			options.height || 0 :
+			null,
+		resolve = typeof options.resolve == "function" ?
+			options.resolve :
+			null,
+		out = [];
+	let maxWidth = -1,
+		applyFill = false;
+
+	if (matrix.isStrictMatrix(data)) {
+		for (let i = 0, m = data.length; i < m; i++) {
+			const item = data[i];
+			let row = clone ? [] : item;
+
+			if (Array.isArray(item)) {
+				const n = w === null ?
+					item.length :
+					Math.min(item.length, w);
+
+				if (clone) {
+					for (let j = 0; j < n; j++) {
+						if (resolve)
+							row.push(resolve(item[j], i, j, data));
+						else
+							row.push(item[j]);
+					}
+				} else if (resolve) {
+					for (let j = 0; j < n; j++)
+						row[j] = resolve(item[j], i, j, data);
+				}
+			} else if (resolve)
+				row = [resolve(item, i, 0, data)];
+			else
+				row = [item];
+
+			if (w !== null && row.length >= w)
+				row.length = w;
+
+			const l = row.length;
+
+			if (maxWidth == -1)
+				maxWidth = l;
+			else if (l != maxWidth) {
+				if (l > maxWidth)
+					maxWidth = l;
+				applyFill = true;
+			}
+
+			out.push(row);
+
+			if (h !== null && i == h - 1)
+				break;
+		}
+	} else {
+		let i = 0,
+			j = 0,
+			row = null,
+			finishedRow = false;
+
+		for (let a = 0, l = data.length; a < l; a++) {
+			const item = data[a];
+
+			if (Array.isArray(item)) {
+				const n = w === null ?
+					item.length :
+					Math.min(item.length, w);
+
+				if (row && row.length) {
+					out.push(row);
+					i++;
+				}
+
+				row = clone ? [] : item;
+
+				if (clone) {
+					for (let b = 0; b < n; b++) {
+						if (resolve)
+							row.push(resolve(item[b], i, b, data));
+						else
+							row.push(item[b]);
+					}
+				} else if (resolve) {
+					for (let b = 0; b < n; b++)
+						row[b] = resolve(item[b], i, b, data);
+				}
+
+				finishedRow = true;
+			} else {
+				if (j == 0)
+					row = [];
+
+				if (resolve)
+					row[j] = resolve(item, i, j, data);
+				else
+					row[j] = item;
+
+				j++;
+			}
+
+			if (finishedRow || (w !== null && row.length == w) || a == l - 1) {
+				const l = row.length;
+
+				if (maxWidth == -1)
+					maxWidth = l;
+				else if (l != maxWidth) {
+					if (l > maxWidth)
+						maxWidth = l;
+					applyFill = true;
+				}
+
+				i++;
+				j = 0;
+				out.push(row);
+				row = null;
+				finishedRow = false;
+
+				if (h !== null && i == h)
+					break;
+			}
+		}
 	}
 
-	const mx = [];
-	for (let i = 0, m = val.length; i < m; i++) {
-		if (typeof val[i] == "number")
-			mx.push([val[i] || 0]);
-		else
-			mx.push([0]);
+	const fullWidth = w == null ?
+		maxWidth :
+		w;
+
+	if (h !== null && out.length < h) {
+		for (let i = out.length; i < h; i++) {
+			const row = [];
+
+			for (let j = 0; j < fullWidth; j++) {
+				if (resolve)
+					row.push(resolve(undefined, i, j, data));
+				else
+					row.push(0);
+			}
+			
+			out.push(row);
+		}
 	}
 
-	return mx;
+	if (applyFill || fullWidth > maxWidth) {
+		for (let i = 0, m = out.length; i < m; i++) {
+			for (let j = out[i].length; j < fullWidth; j++) {
+				if (resolve)
+					out[i].push(resolve(undefined, i, j, data));
+				else
+					out[i].push(0);
+			}
+		}
+	}
+
+	return out;
 };
 
 // Matrix generators cont.: 2D transforms
@@ -141,8 +312,32 @@ matrix.swap = (mx, m, m2) => {
 	return mx;
 };
 
+matrix.map = (mx, callback, clone = true) => {
+	const [m, n] = matrix.dimensions(mx),
+		out = clone ? [] : mx;
+
+	for (let i = 0; i < m; i++) {
+		if (clone) {
+			const row = [];
+
+			for (let j = 0; j < n; j++)
+				row.push(callback(mx[i][j], i, j, mx));
+
+			out.push(row);
+		} else {
+			for (let j = 0; j < n; j++)
+				mx[i][j] = callback(mx[i][j], i, j, mx);
+		}
+	}
+
+	return out;
+};
+
 // Simple matrix operations
 matrix.add = (mx, mx2) => {
+	if (typeof mx == "number" || typeof mx2 == "number")
+		return matrix.addScalar(mx, mx2);
+
 	const [m, n] = matrix.dimensions(mx),
 		[m2, n2] = matrix.dimensions(mx2);
 
@@ -159,9 +354,18 @@ matrix.add = (mx, mx2) => {
 
 		out.push(row);
 	}
+
+	return out;
+};
+
+matrix.addScalar = (mx, scalar) => {
+	return scalarOperation(mx, scalar, (e, s) => e + s);
 };
 
 matrix.subtract = (mx, mx2) => {
+	if (typeof mx == "number" || typeof mx2 == "number")
+		return matrix.subtractScalar(mx, mx2);
+
 	const [m, n] = matrix.dimensions(mx),
 		[m2, n2] = matrix.dimensions(mx2);
 
@@ -178,6 +382,12 @@ matrix.subtract = (mx, mx2) => {
 
 		out.push(row);
 	}
+
+	return out;
+};
+
+matrix.subtractScalar = (mx, scalar) => {
+	return scalarOperation(mx, scalar, (e, s) => e - s);
 };
 
 matrix.multiply = (mx, mx2) => {
@@ -189,6 +399,16 @@ matrix.multiply = (mx, mx2) => {
 
 	if (n != m2)
 		return null;
+
+	if (m <= 5 && n <= 5 && m2 <= 5 && n2 <= 5) {
+		let gen = matrix.codegen.multiply[m][n][m2][n2];
+		if (gen)
+			return gen(mx, mx2);
+
+		gen = codegenMul(m, n, m2, n2);
+		matrix.codegen.multiply[m][n][m2][n2] = gen;
+		return gen(mx, mx2);
+	}
 
 	const out = [];
 
@@ -211,6 +431,10 @@ matrix.multiply = (mx, mx2) => {
 };
 
 matrix.multiplyScalar = (mx, scalar) => {
+	return scalarOperation(mx, scalar, (e, s) => e * s);
+};
+
+function scalarOperation(mx, scalar, callback) {
 	if (typeof mx == "number" && scalar == "number")
 		return mx * scalar;
 
@@ -220,23 +444,11 @@ matrix.multiplyScalar = (mx, scalar) => {
 		scalar = tmpScalar;
 	}
 
-	const [m, n] = matrix.dimensions(mx),
-		out = [];
-
-	for (let i = 0; i < m; i++) {
-		const row = [];
-
-		for (let j = 0; j < n; j++)
-			row.push(mx[i][j] * scalar);
-
-		out.push(row);
-	}
-
-	return out;
-};
+	return matrix.map(mx, e => callback(e, scalar), true);
+}
 
 // Non-trivial matrix operations
-matrix.ref = (mx, clone = false, detailed = false) => {
+matrix.ref = (mx, clone = true, detailed = false) => {
 	if (clone)
 		mx = matrix.clone(mx);
 
@@ -284,12 +496,10 @@ matrix.ref = (mx, clone = false, detailed = false) => {
 	};
 };
 
-matrix.rref = (mx, aug, clone = false, detailed = false) => {
-	if (clone) {
+matrix.rref = (mx, aug, clone = true, detailed = false) => {
+	if (clone)
 		mx = matrix.clone(mx);
-		aug = matrix.toMatrix(aug, true);
-	} else
-		aug = matrix.toMatrix(aug);
+	aug = matrix.column.make(aug, clone);
 
 	const [m, n] = matrix.dimensions(mx),
 		[m2, n2] = matrix.dimensions(aug);
@@ -355,7 +565,7 @@ matrix.rref = (mx, aug, clone = false, detailed = false) => {
 	};
 };
 
-matrix.invert = (mx, clone = false, detailed = false) => {
+matrix.invert = (mx, clone = true, detailed = false) => {
 	if (!matrix.isSquare(mx))
 		return null;
 
@@ -370,14 +580,49 @@ matrix.invert = (mx, clone = false, detailed = false) => {
 	);
 };
 
+matrix.transpose = mx => {
+	const [m, n] = matrix.dimensions(mx),
+		out = [];
+
+	for (let j = 0; j < n; j++) {
+		const row = [];
+
+		for (let i = 0; i < m; i++)
+			row.push(mx[i][j]);
+
+		out.push(row);
+	}
+
+	return out;
+};
+
 // Reducing operators
 matrix.isSquare = mx => {
-	return mx.length > 0 && mx.length == mx[0].length;
+	return Boolean(mx) && mx.length > 0 && mx.length == mx[0].length;
+};
+
+matrix.isMatrix = candidate => {
+	return Array.isArray(candidate) && Array.isArray(candidate[0]);
+};
+
+matrix.isStrictMatrix = candidate => {
+	if (!Array.isArray(candidate))
+		return false;
+
+	for (let i = 0, l = candidate.length; i < l; i++) {
+		if (!Array.isArray(candidate[i]))
+			return false;
+	}
+
+	return true;
 };
 
 matrix.dimensions = mx => {
-	if (!mx.length)
+	if (!mx || !mx.length)
 		return [0, 0];
+
+	if (!mx[0] || typeof mx[0].length != "number")
+		return [1, mx.length];
 
 	return [mx.length, mx[0].length];
 };
@@ -456,6 +701,40 @@ matrix.mulTrace = mx => {
 // Row operations
 matrix.row = {};
 
+// Convert input into one or many rows
+// If given a singular numerical value, a 1x1 matrix is returned
+// If given a shallow array, it's treated as a row vector and put cloned into a singular row, with type checking
+// If given a matrix array, it's returned as-is, or cloned
+// Else, returns an empty matrix
+matrix.row.make = (data, clone = true) => {
+	if (!Array.isArray(data)) {
+		if (typeof data != "number")
+			return [];
+
+		return [[data || 0]];
+	}
+
+	if (!data.length)
+		return [];
+
+	if (Array.isArray(data[0])) {
+		if (clone)
+			return matrix.clone(data);
+
+		return data;
+	}
+
+	const row = [];
+	for (let i = 0, m = data.length; i < m; i++) {
+		if (typeof data[i] == "number")
+			row.push([data[i] || 0]);
+		else
+			row.push([0]);
+	}
+
+	return [row];
+};
+
 matrix.row.pivot = row => {
 	for (let j = 0, n = row.length; j < n; j++) {
 		if (row[j] != 0)
@@ -465,114 +744,135 @@ matrix.row.pivot = row => {
 	return 0;
 };
 
-function printMatrix(matrix, options) {
+// Column operations
+matrix.column = {};
+
+// Convert input into one or many columns
+// If given a singular numerical value, a 1x1 matrix is returned
+// If given a shallow array, it's treated as a column vector and split into into separate rows, with type checking
+// If given a matrix array, it's returned as-is, or cloned
+// Else, returns an empty matrix
+matrix.column.make = (data, clone = true) => {
+	if (!Array.isArray(data)) {
+		if (typeof data != "number")
+			return [];
+
+		return [[data || 0]];
+	}
+
+	if (!data.length)
+		return [];
+
+	if (Array.isArray(data[0])) {
+		if (clone)
+			return matrix.clone(data);
+
+		return data;
+	}
+
+	const mx = [];
+	for (let i = 0, m = data.length; i < m; i++) {
+		if (typeof data[i] == "number")
+			mx.push([data[i] || 0]);
+		else
+			mx.push([0]);
+	}
+
+	return mx;
+};
+
+matrix.print = (mx, options = {}) => {
 	let {
-		width: w = null,
-		height: h = null,
 		placeholder = ".",
 		pad = 1,
 		resolve = null
 	} = options;
 
-	if (!matrix.length || w === 0 || h === 0)
-		return "";
-
 	placeholder = String(placeholder);
-	resolve = typeof resolve == "function" ? resolve : null;
+	resolve = typeof resolve == "function" ?
+		resolve :
+		null;
 
-	const outMatrix = [],
+	const opts = Object.assign({}, options),
 		maxLengths = [];
 
-	if (typeof w == "number" && !Array.isArray(matrix[0])) {
-		const len = matrix.length,
-			fullLen = typeof h == "number" ?
-				w * h :
-				Math.ceil(len / w) * w;
-		let row = [];
+	opts.resolve = (e, i, j) => {
+		if (!hasOwn(maxLengths, j))
+			maxLengths[j] = 0;
 
-		for (let i = 0; i < w; i++)
-			maxLengths.push(0);
+		if (e === undefined && !resolve)
+			e = placeholder;
+		else if (resolve)
+			e = String(resolve(e));
+		else
+			e = String(e);
 
-		for (let i = 0; i < fullLen; i++) {
-			let value = i >= len ?
-				placeholder :
-				matrix[i];
+		if (e.length > maxLengths[j])
+			maxLengths[j] = e.length;
 
-			if (value === undefined && !resolve)
-				value = placeholder;
-			else if (resolve)
-				value = String(resolve(value));
-			else
-				value = String(value);
+		return e;
+	};
 
-			if (value.length > maxLengths[i % w])
-				maxLengths[i % w] = value.length;
-
-			row.push(value);
-
-			if (i % w == w - 1) {
-				outMatrix.push(row);
-				row = [];
-			}
-		}
-	} else {
-		const height = typeof h == "number" ?
-			h :
-			matrix.length;
-		let width = typeof w == "number" ?
-			w :
-			0;
-
-		for (let i = 0, l = matrix.length; i < l; i++) {
-			if (matrix[i].length > width)
-				width = matrix[i].length;
-		}
-
-		for (let i = 0; i < width; i++)
-			maxLengths.push(0);
-
-		for (let i = 0; i < height; i++) {
-			const row = [];
-
-			for (let j = 0; j < width; j++) {
-				let value = i >= matrix.length || j >= matrix[i].length ?
-					placeholder :
-					matrix[i][j];
-
-				if (value === undefined && !resolve)
-					value = placeholder;
-				else if (resolve)
-					value = String(resolve(value));
-				else
-					value = String(value);
-
-				if (value.length > maxLengths[j])
-					maxLengths[j] = value.length;
-
-				row.push(value);
-			}
-
-			outMatrix.push(row);
-		}
-	}
-
+	const outMx = matrix.make(mx, opts);
 	let out = "";
 
-	for (let i = 0, l = outMatrix.length; i < l; i++) {
-		const row = outMatrix[i],
-			len = row.length;
+	for (let i = 0, m = outMx.length; i < m; i++) {
+		const row = outMx[i];
 
-		for (let j = 0; j < len; j++) {
-			out += j < len - 1 ?
+		for (let j = 0, n = row.length; j < n; j++) {
+			out += j < n - 1 ?
 				padEnd(row[j], maxLengths[j] + pad) :
-				row[j] + "\n";
+				row[j];
 		}
+
+		if (i < m - 1)
+			out += "\n";
 	}
 
 	return out;
+};
+
+function codegenMul(m, n, m2, n2) {
+	if (n != m2)
+		return _ => null;
+
+	let code = "return [";
+
+	for (let i = 0; i < m; i++) {
+		let rowCode = "[";
+
+		for (let j2 = 0; j2 < n2; j2++) {
+			let elementCode = "";
+
+			for (var j = 0; j < n; j++)
+				elementCode += (j ? " + " : "") + `mx[${i}][${j}] * mx2[${j}][${j2}]`;
+
+			rowCode += (j2 ? ", " : "") + elementCode;
+		}
+
+		code += (i ? ", " : "") + rowCode + "]";
+	}
+
+	code += "]";
+	return Function("mx", "mx2", code);
 }
 
-matrix.print = printMatrix;
+// Legacy
+const printMatrix = matrix.print;
+
+// Codegen
+function prepopulate(dimensions, idx = 0) {
+	if (idx == dimensions.length)
+		return null;
+
+	const node = [],
+		dimension = dimensions[idx];
+
+	for (let i = 0; i < dimension; i++)
+		node.push(prepopulate(dimensions, idx + 1));
+	
+	return node;
+}
 
 export {
 	matrix,
