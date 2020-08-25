@@ -394,7 +394,7 @@ export default class DataCell extends Hookable {
 
 	throttle(throttle) {
 		if (typeof throttle != "number") {
-			console.log("Cannot set fetcher modifier: throttle value must be a number");
+			console.warn("Cannot set fetcher modifier: throttle value must be a number");
 			return this;
 		}
 
@@ -406,7 +406,7 @@ export default class DataCell extends Hookable {
 
 	defer(defer) {
 		if (typeof defer != "boolean") {
-			console.log("Cannot set fetcher modifier: defer value must be a boolean");
+			console.warn("Cannot set fetcher modifier: defer value must be a boolean");
 			return this;
 		}
 
@@ -1081,8 +1081,6 @@ function dispatchChanges(cell, changes) {
 
 // Fetch
 function fetchRequest(a, method = "get", url = null, preset = null) {
-	method = method.toLowerCase();
-
 	if (typeof url != "string") {
 		preset = {
 			payload: url
@@ -1098,9 +1096,13 @@ function fetchRequest(a, method = "get", url = null, preset = null) {
 	return new Promise(resolve => {
 		const runtimePreset = cell.process("preset")(runtime.preset);
 
+		// Override method at last moment
+		if (runtimePreset && hasOwn(runtimePreset, "method"))
+			method = runtimePreset.method;
+
 		cell.xhrManager
 			.use(cell.xhrPreset, runtimePreset, preset)
-			[method](url)
+			.request(method, url)
 			.success((response, xhr, xhrState) => {
 				let successResponse = cell.mkSuccessResponse(response, {
 					status: xhr.status,
