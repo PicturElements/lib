@@ -52,18 +52,30 @@ matrix.clone = mx => {
 };
 
 // Make new matrix from data
-// If given a shallow array and dimensions, it will fill in a matrix
-// with those dimensions, and fill with zeroes where data is missing
-// Very nested to optimize performance
+// Intended to be highly flexible. If provided with a shallow array,
+// it will fill out the matrix with the individual elements based on the width
+// specified in the options. If no width is provided, the result will be equal
+// to a row vector inserted as the first row of the returned matrix.
+// If an array contains both shallow values and arrays, consecutive primitives
+// will be inserted into their own rows, and similarly, individual arrays will
+// be inserted as their own rows.
+// If either the width or height (if specified) is larger than the size of the
+// normalized input data, padding will be added to fill the matrix out to the
+// specified dimensions.
+// Similarly, if the either the width or height is smaller than the normalized
+// input data, clipping will be done on the data.
+// This implementation is very nested to optimize performance.
 matrix.make = (data, options = {}, clone = true) => {
 	if (typeof data == "number") {
 		if (options.resolve == "function")
-			return [[options.resolve(data, 0, 0, data)]];
-
-		return [[data || 0]];
+			data = [[options.resolve(data, 0, 0, data)]];
+		else
+			data = [[data || 0]];
+	} else if (!Array.isArray(data)) {
+		clone = options;
+		options = data;
+		data = [];
 	}
-	if (!Array.isArray(data) || !data.length)
-		return [];
 
 	if (typeof options.clone == "boolean")
 		clone = options.clone;
@@ -77,6 +89,9 @@ matrix.make = (data, options = {}, clone = true) => {
 		resolve = typeof options.resolve == "function" ?
 			options.resolve :
 			null,
+		fill = hasOwn(options, "fill") ?
+			options.fill :
+			0,
 		out = [];
 	let maxWidth = -1,
 		applyFill = false;
@@ -205,8 +220,14 @@ matrix.make = (data, options = {}, clone = true) => {
 			for (let j = 0; j < fullWidth; j++) {
 				if (resolve)
 					row.push(resolve(undefined, i, j, data));
-				else
-					row.push(0);
+				else {
+					if (typeof fill == "number")
+						row.push(fill);
+					else if (fill == "identity" && i == j)
+						row.push(1);
+					else
+						row.push(0);
+				}
 			}
 			
 			out.push(row);
@@ -218,8 +239,14 @@ matrix.make = (data, options = {}, clone = true) => {
 			for (let j = out[i].length; j < fullWidth; j++) {
 				if (resolve)
 					out[i].push(resolve(undefined, i, j, data));
-				else
-					out[i].push(0);
+				else {
+					if (typeof fill == "number")
+						out[i].push(fill);
+					else if (fill == "identity" && i == j)
+						out[i].push(1);
+					else
+						out[i].push(0);
+				}
 			}
 		}
 	}
@@ -227,48 +254,86 @@ matrix.make = (data, options = {}, clone = true) => {
 	return out;
 };
 
-// Matrix generators cont.: 2D transforms
+// Matrix generators cont.: affine 2D transforms
 matrix.two = {};
 
 matrix.two.scale = (mx, xc, yc) => {
 	return resolveTransform(mx, xc, yc, (x = 1, y = x) => [
-		[x, 0],
-		[0, y]
+		[x, 0, 0],
+		[0, y, 0],
+		[0, 0, 1]
 	]);
 };
 
 matrix.two.scaleX = (mx, xc) => {
 	return resolveTransform(mx, xc, (x = 1) => [
-		[x, 0],
-		[0, 1]
+		[x, 0, 0],
+		[0, 1, 0],
+		[0, 0, 1]
 	]);
 };
 
 matrix.two.scaleY = (mx, yc) => {
 	return resolveTransform(mx, yc, (y = 1) => [
-		[1, 0],
-		[0, y]
+		[1, 0, 0],
+		[0, y, 0],
+		[0, 0, 1]
 	]);
 };
 
 matrix.two.rotate = (mx, th) => {
 	return resolveTransform(mx, th, (t = 0) => [
-		[Math.cos(t), Math.sin(t)],
-		[-Math.sin(t), Math.cos(t)]
+		[Math.cos(t), Math.sin(t), 0],
+		[-Math.sin(t), Math.cos(t), 0],
+		[0, 0, 1]
+	]);
+};
+
+matrix.two.shear = (mx, shx, shy) => {
+	return resolveTransform(mx, shx, shy, (sx = 0, sy = sx) => [
+		[1, sx, 0],
+		[sy, 1, 0],
+		[0, 0, 1]
 	]);
 };
 
 matrix.two.shearX = (mx, sh) => {
 	return resolveTransform(mx, sh, (s = 0) => [
-		[1, s],
-		[0, 1]
+		[1, s, 0],
+		[0, 1, 0],
+		[0, 0, 1]
 	]);
 };
 
 matrix.two.shearY = (mx, sh) => {
 	return resolveTransform(mx, sh, (s = 0) => [
-		[1, 0],
-		[s, 1]
+		[1, 0, 0],
+		[s, 1, 0],
+		[0, 0, 1]
+	]);
+};
+
+matrix.two.translate = (mx, dx, dy) => {
+	return resolveTransform(mx, dx, dy, (x = 0, y = x) => [
+		[1, 0, x],
+		[0, 1, y],
+		[0, 0, 1]
+	]);
+};
+
+matrix.two.translateX = (mx, dx) => {
+	return resolveTransform(mx, dx, (x = 0) => [
+		[1, 0, x],
+		[0, 1, 0],
+		[0, 0, 1]
+	]);
+};
+
+matrix.two.translateY = (mx, dy) => {
+	return resolveTransform(mx, dy, (y = 0) => [
+		[1, 0, 0],
+		[0, 1, y],
+		[0, 0, 1]
 	]);
 };
 
@@ -605,6 +670,26 @@ matrix.isMatrix = candidate => {
 	return Array.isArray(candidate) && Array.isArray(candidate[0]);
 };
 
+matrix.equals = (mx, mx2) => {
+	if (mx == mx2)
+		return true;
+
+	const [m, n] = matrix.dimensions(mx),
+		[m2, n2] = matrix.dimensions(mx2);
+
+	if (m != m2 || n != n2)
+		return false;
+
+	for (let i = 0; i < m; i++) {
+		for (let j = 0; j < n; j++) {
+			if (mx[i][j] != mx2[i][j])
+				return false;
+		}
+	}
+
+	return true;
+};
+
 matrix.isStrictMatrix = candidate => {
 	if (!Array.isArray(candidate))
 		return false;
@@ -844,8 +929,8 @@ function codegenMul(m, n, m2, n2) {
 		for (let j2 = 0; j2 < n2; j2++) {
 			let elementCode = "";
 
-			for (var j = 0; j < n; j++)
-				elementCode += (j ? " + " : "") + `mx[${i}][${j}] * mx2[${j}][${j2}]`;
+			for (let j = 0; j < n; j++)
+				elementCode += `${j ? " + " : ""}mx[${i}][${j}] * mx2[${j}][${j2}]`;
 
 			rowCode += (j2 ? ", " : "") + elementCode;
 		}
