@@ -7,6 +7,7 @@ const {
 	exists,
 	readJSON,
 	success,
+	error,
 	errorBlock
 } = require("../pkg/node-utils");
 
@@ -47,7 +48,8 @@ function buildExposedPartition(pkgName, exposeType, locals) {
 
 		webpack(options, (err, stats) => {
 			if (err || stats.hasErrors()) {
-				errorBlock("ERROR:", err);
+				errorBlock("ERROR");
+				error(stats.compilation.errors[0]);
 				resolve(false);
 			} else {
 				resolve(true);
