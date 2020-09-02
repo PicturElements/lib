@@ -61,15 +61,11 @@ Lib provides a basic command-line tool. This is made available as `ql` and `qlib
 ---
 
 ## Style Choices
-The following are style choices that diverge to some extent, however small, from common style guides (in this case, Airbnb).
-
-* [3.2](https://github.com/airbnb/javascript#es6-computed-properties) - Use computed property names when creating objects with dynamic property names
-  
-  In general, this is followed, but in certain cases it may be cleaner to assign on the existing object.
+The following are style choices that diverge or differ to some extent, however small, from common style guides (in this case, Airbnb). Code should never diverge too far from standard formatting, but neither should the developer be held to a fixed set of rules. However menial the differences are to common style guide, the importance of applying a pragmatic mindset to code style is impressed on the developer, who is first and foremost responsible for producing a legible and elegant product. If in a certain case diverging from fixed rules means the code becomes more pleasant to read, this is preferred. Perhaps all of this goes without saying, but for transparency reasons, these are the main cases where rules have been found to be fuzzy:
 
 * [3.5](https://github.com/airbnb/javascript#objects--grouped-shorthand) - Group your shorthand properties at the beginning of your object declaration
   
-  As a general rule, the most pertinent data to the object receives priority over other data. Similarly, grouping of properties with similar properties is also preferred over shorthand definitions.
+  As a general rule, the most pertinent data to the object receives priority over other data, and is put at the top. Similarly, grouping of properties with similar characteristics is also preferred over shorthand definitions.
 
 * [3.8](https://github.com/airbnb/javascript#objects--rest-spread) - Prefer the object spread operator over `Object.assign` to shallow-copy objects. Use the object rest operator to get a new object with certain properties omitted
   
@@ -77,29 +73,32 @@ The following are style choices that diverge to some extent, however small, from
 
 * [4.3](https://github.com/airbnb/javascript#es6-array-spreads) - Use array spreads `...` to copy arrays
   
-  `Array.prototype.slice` or `Array.prototype.concat` are preferred over spread in most cases. However, when creating new compound arrays, spread may still be used
+  `Array.prototype.slice` or `Array.prototype.concat` are preferred over spread in most cases for cloning arrays. However, when creating new, non-trivial, compound arrays, spread may still be used.
 
 * [4.4](https://github.com/airbnb/javascript#arrays--from-iterable) / [4.5](https://github.com/airbnb/javascript#arrays--from-array-like) / [4.6](https://github.com/airbnb/javascript#arrays--mapping) - `Array.from` and spread
   
-  These operations are rarely done, as usually data is purposefully stored in a non-array format. Transforms such as these are actively discouraged for iteration. Use an explicit loop, a built-in prototype method, or `@qtxr/utils/forEach` as not to create unnecessary intermediate arrays.
+  These operations are rarely done, as certain data is usually purposefully stored in a non-array format. Transforms such as these are actively discouraged for iteration. Use an explicit loop, a built-in prototype method, or `@qtxr/utils/forEach` as not to create unnecessary intermediate arrays.
 
 * [6.1](https://github.com/airbnb/javascript#strings--quotes) - Use single quotes `''` for strings
   
-  Double quotes are preferred. While this is definitely a stylistic choice, a double quote is harder to confuse for a backtick character. Single quotes are used, however, in console logs, as they look slightly cleaner at a casual glance.
+  Double quotes are preferred. While this is a purely stylistic choice, a double quote is marginally harder to confuse for a backtick character. Single quotes are used, however, in console logs, as they look slightly cleaner at a casual glance.
 
 * [7.1](https://github.com/airbnb/javascript#functions--declarations) - Use named function expressions instead of function declarations
   
-  Top-level functions are almost exclusively written in function declaration form. Residing in one file, functions should have high cohesion. As such, oftentimes the functions reference and leverage each other to produce an effect. Therefore, functions are seen as intrinsically interconnected and not strictly as procedural steps. In general, the main functions, or entrypoints, are placed at the top, with the supporting functions at the bottom, interwoven if there are multiple entrypoint functions. However, callback functions and closures should always be expressions, and preferably constructed using fat arrow notation.
+  Top-level functions are almost exclusively written in function declaration form. Residing in one file, functions should have high cohesion but as a side effect often have slightly higher coupling between themselves. As such, oftentimes the functions reference and leverage each other to produce an effect. Therefore, such functions are seen as intrinsically interconnected and their use internally should not be thought of strictly sequential. In general, the main functions, or entrypoints, are placed at the top, with the supporting functions at the bottom, interwoven if there are multiple entrypoint functions.
+  
+  However, callback functions and closures should always be expressions, and preferably constructed using fat arrow notation.
 
 * [7.7](https://github.com/airbnb/javascript#es6-default-parameters) - Use default parameter syntax rather than mutating function arguments
   
-  When feasible and sensible from a method signature point of view, always define defaults inline in the parameters. If further processing needs to be done, it is okay to modify the argument, but only when certain conditions are met:
+  When feasible and sensible from a method signature point of view, always define defaults inline in the parameters. The main reason for this is that it oftentimes becomes tricky to find a suitable alias for an argument. In certain cases it is deemed okay to reassign the argument:
 
-  1. It is okay to modify an argument if it does not conform to the desired type, when throwing an error is not desired.
-  2. It is okay to modify an argument to apply processing to it. When this is done, keeping track of types is a priority.
-  3. Argument modifications must happen at the start of a function or method. Once in the main function body, it must be regarded as constant. The exception is when a method is created with the explicit purpose of modifying a passed object (see: [7.12](https://github.com/airbnb/javascript#functions--mutate-params)).
+  1. It is okay to reassign an argument if it does not conform to the desired type, when throwing an error is not desired.
+  2. It is okay to reassign an argument to apply processing to it. When this is done, keeping track of types is a priority.
   
-  At no point do processing in default parameters (as per [7.8](https://github.com/airbnb/javascript#functions--default-side-effects)).
+  Argument modifications must happen at the start of a function or method, and must not include complex conditional modifications. In effect, the result of argument reassignments must leave the data in a state as if the function had been invoked with it in the first place. Once in the main function body, arguments must be regarded as constant and immutable, as this part of the function should remain ignorant of changes applied to its data. The exception is when a method is created with the explicit purpose of modifying a passed object (see: [7.12](https://github.com/airbnb/javascript#functions--mutate-params)).
+  
+  At no point do processing in default parameters (see also: [7.8](https://github.com/airbnb/javascript#functions--default-side-effects)).
 
 * [7.10](https://github.com/airbnb/javascript#functions--constructor) - Never use the Function constructor to create a new function
   
@@ -107,11 +106,11 @@ The following are style choices that diverge to some extent, however small, from
 
 * [8.4](https://github.com/airbnb/javascript#arrows--one-arg-parens) - Always include parentheses around arguments for clarity and consistency
   
-  For purely aesthetic reasons, single parameter functions are not wrapped in parentheses. Similarly, 0-parameter functions use `_` as in lieu of `()` for terseness reasons. The underscore also often signifies that the caller does not intend to provide any arguments to the callee.
+  For purely aesthetic reasons, single parameter functions are not wrapped in parentheses. Similarly, 0-parameter functions use `_` as in lieu of `()` for terseness. The underscore also often signifies that the caller does not intend to provide any arguments to the callee.
 
 * [10.3](https://github.com/airbnb/javascript#modules--no-export-from-import) - Do not export directly from an import
   
-  These exports are found overwhelmingly in aggregation modules. As such, their intent is clear enough to warrant the shorthand form.
+  These exports are found almost exclusively in aggregation modules. As such, their intent is clear enough to warrant the shorthand form.
 
 * [10.10](https://github.com/airbnb/javascript#modules--import-extensions) - Do not include JavaScript filename extensions
   
@@ -119,7 +118,7 @@ The following are style choices that diverge to some extent, however small, from
 
 * [13.2](https://github.com/airbnb/javascript#variables--one-const) - Use one `const` or `let` declaration per variable or assignment
   
-  Combined with a linter, combining multiple declarations into one statement looks a bit cleaner and more organized, and modern debuggers can step through each sub-statement individually. Only exception is when using `await` syntax in assign.
+  Combined with a linter, combining multiple declarations into one statement arguably looks a bit cleaner and more organized, and modern debuggers can step through each sub-statement individually. Only exception is when using `await` syntax in assign.
 
 * [13.6](https://github.com/airbnb/javascript#variables--unary-increment-decrement) - Avoid using unary increments and decrements
   
@@ -127,11 +126,11 @@ The following are style choices that diverge to some extent, however small, from
 
 * [15.1](https://github.com/airbnb/javascript#comparison--eqeqeq) - Use `===` and `!==` over `==` and `!=`
   
-  Code should always be robust enough not to accept values of the wrong type. A bug occuring in a loose comparison is likely indicative of a bigger problem wherein incompatible data is allowed to flow through the system.
+  Code should always be robust enough not to accept values of the wrong type. A bug occuring in a loose comparison is likely indicative of a bigger problem wherein incompatible data is allowed to flow through the system unimpeded. When explicitly used, trict comparisons convey that there is a good chance that compatible data may erroneously match an expression, and that care has been taken to prevent such an eventuality.
 
 * [16.1](https://github.com/airbnb/javascript#blocks--braces) - Use braces with all multiline blocks
   
-  Single line blocks are always written on two lines, with the body on the second, indented line. This is because adding braces adds unnecessary bloat, and writing a block in a single line makes it more difficult to spot that a special code space is reached. Bugs arising from incorrect use of this syntax is considered rare. However, whenever more than one line is used in a block, brackets are used, even if not strictly necessary (e.g. `for { if / expr }` over `for / if / expr`).
+  Single line blocks are always written on two lines, with the body on the second, indented line. This is because adding braces adds unnecessary bloat, and writing a block in a single line makes it more difficult to spot that a special code space is reached. Bugs arising from incorrect use of this syntax are considered rare. However, whenever more than one line is used in a block, brackets are used, even if not strictly necessary (e.g. `for { if / expr }` over `for / if / expr`).
 
 * [17.1](https://github.com/airbnb/javascript#control-statements) - In case your control statement (`if`, `while` etc.) gets too long or exceeds the maximum line length, each (grouped) condition could be put into a new line. The logical operator should begin the line
   
@@ -139,11 +138,11 @@ The following are style choices that diverge to some extent, however small, from
 
 * [19.1](https://github.com/airbnb/javascript#whitespace--spaces) - Use soft tabs (space character) set to 2 spaces
   
-  Mostly irrelevant in the grand scheme of things, but tabs offer greater flexibility than spaces in most cases, and may provide benefits to accessibility. Spaces are not used for alignment for similar reasons. 4-space tabs are used to easily make it clear when indentation is getting excessive and refactoring is needed.
+  Mostly irrelevant in the grand scheme of things, but tabs offer greater flexibility than spaces in most cases, and may provide benefits to accessibility. Spaces are not used for alignment for similar reasons. 4-space tabs are used to highlight code complexity.
 
 * [19.8](https://github.com/airbnb/javascript#whitespace--padded-blocks) - Do not pad your blocks with blank lines
   
-  Vertical spacing is used within block bodies to display grouping and separation of concerns.
+  Vertical spacing is used within block bodies to display grouping and separation of concerns. Still, padding outside the block bodies is discouraged, as per this rule.
 
 * [20.2](https://github.com/airbnb/javascript#commas--dangling) - Additional trailing comma
   
@@ -151,16 +150,16 @@ The following are style choices that diverge to some extent, however small, from
 
 * [23.4](https://github.com/airbnb/javascript#naming--leading-underscore) - Do not use trailing or leading underscores
   
-  Members intended to be left alone (in effect private), are denoted with a single leading underscore. In certain applications, such as `@qtxr/url`, `WeakMap`s are used where available to provide de facto private members.
+  Members intended to be left alone (in effect private), are denoted with a single leading underscore. In certain applications, such as `@qtxr/url`, `WeakMap`s are still used where available to provide de facto private members.
 
 * [23.6](https://github.com/airbnb/javascript#naming--filename-matches-export) - A base filename should exactly match the name of its default export
   
-  Files are always named in `kebab-case`. Classes are converted from `PascalCase` to `kebab-case` letter by letter.
+  Files are always named in `kebab-case`. Names are converted from `PascalCase` (classes) or `camelCase` (functions, etc.) to `kebab-case` letter by letter.
 
 * [24.2](https://github.com/airbnb/javascript#accessors--no-getters-setters24.2) - Do not use JavaScript getters/setters as they cause unexpected side effects and are harder to test, maintain, and reason about
   
-  Getters/setters are used sparsely, and purposefully. They should be used primarily for operations that run in constant time, and have minimal side effects, if any. Internally facing API code should avoid using them as much as possible.
+  Getters/setters are used sparsely, and purposefully, for externally facing APIs. They should be used primarily for operations that run in constant time, and have minimal side effects, if any. Internally facing API code should avoid using them as much as possible both for performance reasons and potential issues with internal reflection in code paths, where getter/setter calls are being made left and right in a potentially uncontrollable fashion.
 
 * [29.1](https://github.com/airbnb/javascript#standard-library--isnan) / [29.2](https://github.com/airbnb/javascript#standard-library--isfinite) - The Standard Library contains utilities that are functionally broken but remain for legacy reasons
   
-  To avoid issues with backwards compatibility, it is often easier to add a `typeof` check along with use of `isNaN` / `isFinite` instead of supplying a polyfill or creating a small utility function.
+  To avoid issues with backwards compatibility, it is often easier to add a `typeof` check along with use of `isNaN` / `isFinite` instead of supplying a polyfill or creating a small utility function. While not scalable, these methods are rarely used, and so usually creating something more robust is not needed.
