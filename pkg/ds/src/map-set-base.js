@@ -1,4 +1,5 @@
 import {
+	del,
 	alias,
 	isObj,
 	hasOwn,
@@ -123,20 +124,19 @@ export default class MapSetBase {
 
 		if (map == "object") {
 			this.insertions.delete(this.maps.object[key[this.key]][2]);
-			delete this.maps.object[key[this.key]];
-			delete key[this.key];
-			return true;
+			deleteKey(this.maps.object, key[this.key]);
+			return deleteKey(key, this.key);
 		}
 
 		this.insertions.delete(this.maps[map][key][2]);
-		return delete this.maps[map][key];
+		return deleteKey(this.maps[map], key);
 	}
 
 	// Complexity: O(n) to clear all object references
 	clear() {
 		const ob = this.maps.object;
 		for (let k in ob)
-			delete ob[k][this.key];
+			deleteKey(ob[k], this.key);
 
 		this.maps = {
 			strSym: {},
@@ -190,6 +190,10 @@ alias(MapSetBase.prototype, {
 	entries: SYM_ITER_KEY,
 	add: "set"
 });
+
+function deleteKey(target, key) {
+	return del(target, key, err => err == "no-config");
+}
 
 function getInsertion(map, key) {
 	const mapName = getMapName(map, key);
