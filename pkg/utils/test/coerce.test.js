@@ -1,49 +1,49 @@
 import {
-	coerceToObj,
-	coerceToObjArrResolvable,
+	coerceObj,
+	coerceObjArrResolvable,
 	coerceNum
 } from "../src/coerce";
 
-describe("coerceToObj", () => {
+describe("coerceObj", () => {
 	const obj = {},
 		arr = [];
 
 	it("ignores the source if the input data is an object", () => {
-		expect(coerceToObj(obj, [])).toBe(obj);
-		expect(coerceToObj(arr, {})).toBe(arr);
-		expect(coerceToObj(obj, null)).toBe(obj);
-		expect(coerceToObj(arr, null)).toBe(arr);
+		expect(coerceObj(obj, [])).toBe(obj);
+		expect(coerceObj(arr, {})).toBe(arr);
+		expect(coerceObj(obj, null)).toBe(obj);
+		expect(coerceObj(arr, null)).toBe(arr);
 	});
 
 	it("creates a new object of the correct type from the source object", () => {
-		expect(coerceToObj(null, [])).toStrictEqual([]);
-		expect(coerceToObj(null, {})).toStrictEqual({});
+		expect(coerceObj(null, [])).toStrictEqual([]);
+		expect(coerceObj(null, {})).toStrictEqual({});
 	});
 
 	it("creates a new plain object if no appropriate arguments are supplied", () => {
-		expect(coerceToObj(null, null)).toStrictEqual({});
+		expect(coerceObj(null, null)).toStrictEqual({});
 	});
 });
 
-describe("coerceToObjArrResolvable", () => {
+describe("coerceObjArrResolvable", () => {
 	const obj = {},
 		arr = [];
 
 	it("ignores the source if the input data is an object", () => {
-		expect(coerceToObjArrResolvable(obj, [])).toBe(obj);
-		expect(coerceToObjArrResolvable(arr, {})).toBe(arr);
-		expect(coerceToObjArrResolvable(obj, null)).toBe(obj);
-		expect(coerceToObjArrResolvable(arr, null)).toBe(arr);
+		expect(coerceObjArrResolvable(obj, [])).toBe(obj);
+		expect(coerceObjArrResolvable(arr, {})).toBe(arr);
+		expect(coerceObjArrResolvable(obj, null)).toBe(obj);
+		expect(coerceObjArrResolvable(arr, null)).toBe(arr);
 	});
 
 	it("creates a new object of the correct type from the source object", () => {
-		expect(coerceToObjArrResolvable(null, new Set())).toStrictEqual([]);
-		expect(coerceToObjArrResolvable(null, [])).toStrictEqual([]);
-		expect(coerceToObjArrResolvable(null, {})).toStrictEqual({});
+		expect(coerceObjArrResolvable(null, new Set())).toStrictEqual([]);
+		expect(coerceObjArrResolvable(null, [])).toStrictEqual([]);
+		expect(coerceObjArrResolvable(null, {})).toStrictEqual({});
 	});
 
 	it("creates a new plain object if no appropriate arguments are supplied", () => {
-		expect(coerceToObjArrResolvable(null, null)).toStrictEqual({});
+		expect(coerceObjArrResolvable(null, null)).toStrictEqual({});
 	});
 });
 

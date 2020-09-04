@@ -87,11 +87,16 @@ export { default as serialize } from "./src/serialize";
 export { default as set } from "./src/set";
 export { default as splitArgStr } from "./src/split-arg-str";
 export { default as splitPath } from "./src/split-path";
-export { default as type } from "./src/lazy/type";
 
-// Backwards compatibility
-export { default as queryObj } from "./src/query";
+// Aliases for backwards compatibility
+export { coerceObj as coerceToObj } from "./src/coerce";
+export { coerceObjArrResolvable as coerceToObjArrResolvable } from "./src/coerce";
 export { default as queryMatch } from "./src/match-query";
+export { mapObj as objToArr } from "./src/obj";
+export { mergePresets as applyPresets } from "./src/presets";
+export { default as queryObj } from "./src/query";
 
-// Lazy functions
+// Lazy
 export * from "./src/lazy/is";
+
+export { default as type } from "./src/lazy/type";

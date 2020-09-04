@@ -4,11 +4,11 @@ import {
 	isArrResolvable
 } from "./is";
 
-function coerceToObj(val, source) {
+function coerceObj(val, source) {
 	return isObj(val) ? val : (isArrayLike(source) ? [] : {});
 }
 
-function coerceToObjArrResolvable(val, source) {
+function coerceObjArrResolvable(val, source) {
 	return isObj(val) ? val : (isArrResolvable(source) ? [] : {});
 }
 
@@ -17,7 +17,7 @@ function coerceNum(num, def) {
 }
 
 export {
-	coerceToObj,
-	coerceToObjArrResolvable,
+	coerceObj,
+	coerceObjArrResolvable,
 	coerceNum
 };

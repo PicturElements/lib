@@ -88,6 +88,5 @@ function mergePresets(data, presets, config = {}) {
 export {
 	composePresets,
 	addPreset,
-	mergePresets as applyPresets,
 	mergePresets
 };

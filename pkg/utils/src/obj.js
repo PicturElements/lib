@@ -17,20 +17,20 @@ import get from "./get";
 
 // allowNonexistent - inject property values for
 // properties that don't exist on the object
-const objToArrParamSignature = [
+const mapObjParamSignature = [
 	{ name: "obj", type: "object", required: true},
 	{ name: "order", type: Array },
 	{ name: "processor", type: "function", default: value => value },
 	{ name: "allowNonexistent", type: "boolean", default: true }
 ];
 
-function objToArr(...args) {
+function mapObj(...args) {
 	let {
 		obj,
 		order,
 		processor,
 		allowNonexistent
-	} = resolveArgs(args, objToArrParamSignature);
+	} = resolveArgs(args, mapObjParamSignature);
 
 	order = order || obj._order;
 
@@ -423,8 +423,26 @@ function extend(target, key, value, fallback) {
 	return true;
 }
 
+// Deletes a property from a target. Contrary to the delete operator, this function only
+// returns whether the deletion was succesful or could happen at all
+// Optionally supplies handlers to handle failed checks
+const DEF_DEL_HANDLER = _ => false;
+
+function del(target, key, handler = DEF_DEL_HANDLER) {
+	if (!target || typeof target != "object")
+		return handler("no-object");
+
+	if (!hasOwn(target, key))
+		return handler("no-key");
+
+	if (Object.isSealed(target) || Object.isFrozen(target))
+		return handler("no-config");
+
+	return delete target[key];
+}
+
 export {
-	objToArr,
+	mapObj,
 	keys,
 	getDirectory,
 	getDirectoryMeta,
@@ -443,5 +461,6 @@ export {
 	reassign,
 	alias,
 	aliasOwn,
-	extend
+	extend,
+	del
 };
