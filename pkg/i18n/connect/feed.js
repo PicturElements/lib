@@ -1,6 +1,5 @@
 import feed from "../../../runtime/feed";
-import * as exp from "../";
-import I18NManager from "../";
+import I18NManager, * as exp from "../";
 
 feed(exp, "I18NManager");
 
