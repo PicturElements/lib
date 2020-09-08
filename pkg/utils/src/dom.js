@@ -385,7 +385,7 @@ function joinClsHelper(list, cls, callArgs) {
 				value: true
 			});
 		}
-	} else if (isPrimitive(cls)) {
+	} else if (cls != null && isPrimitive(cls)) {
 		appendToken(list, {
 			key: String(cls),
 			value: true
