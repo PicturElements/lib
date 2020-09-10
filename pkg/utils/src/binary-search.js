@@ -95,9 +95,31 @@ function mkStandardBinaryComparator(val) {
 // hintIndex:	index to compare first in the array. The index must be in the array
 //				or this value will be ignored. If this index doesn't match exactly,
 //				with proximity 0, the index will be used as the first search pivot
+const FIND_CLOSEST_OPTIONS_TEMPLATES = composeOptionsTemplates({
+	upper: true,
+	lower: true,
+	bounded: {
+		upper: true,
+		lower: true
+	},
+	reverse: true,
+	upperReverse: {
+		upper: true,
+		reverse: true
+	},
+	lowerReverse: {
+		lower: true,
+		reverse: true
+	},
+	boundedReverse: {
+		upper: true,
+		lower: true,
+		reverse: true
+	}
+});
 
 function findClosest(arr, comparator, options) {
-	options = createOptionsObject(options, optionsTemplates);
+	options = createOptionsObject(options, FIND_CLOSEST_OPTIONS_TEMPLATES);
 
 	let steps = 0;
 
@@ -186,29 +208,6 @@ function findClosest(arr, comparator, options) {
 		pivot = Math.floor((start + end) / 2);
 	}
 }
-
-const optionsTemplates = composeOptionsTemplates({
-	upper: true,
-	lower: true,
-	bounded: {
-		upper: true,
-		lower: true
-	},
-	reverse: true,
-	upperReverse: {
-		upper: true,
-		reverse: true
-	},
-	lowerReverse: {
-		lower: true,
-		reverse: true
-	},
-	boundedReverse: {
-		upper: true,
-		lower: true,
-		reverse: true
-	},
-});
 
 export {
 	binarySearch,

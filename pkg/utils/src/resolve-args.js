@@ -83,9 +83,13 @@ import {
 // mode if no data for the parameter name is found. Note that the argument will be named
 // after the parameter name, and not the input key
 // 'alias' / 'aliases' can be used interchangeably, but 'aliases' receives precedence
+const OPTIONS_TEMPLATES = composeOptionsTemplates({
+	allowSingleSource: true,
+	returnArgList: true
+});
 
 export default function resolveArgs(args, signature, options) {
-	options = createOptionsObject(options, optionsTemplates);
+	options = createOptionsObject(options, OPTIONS_TEMPLATES);
 
 	if (!isArrayLike(args))
 		throw new Error("Failed to resolve arguments: no arguments supplied");
@@ -182,7 +186,7 @@ export default function resolveArgs(args, signature, options) {
 resolveArgs.wrap = (func, signature, options) => {
 	options = Object.assign(
 		{},
-		createOptionsObject(options, optionsTemplates),
+		createOptionsObject(options, OPTIONS_TEMPLATES),
 		{
 			returnArgList: true
 		}
@@ -219,8 +223,3 @@ function resolveArg(source, sgn) {
 
 	return null;
 }
-
-const optionsTemplates = composeOptionsTemplates({
-	allowSingleSource: true,
-	returnArgList: true
-});

@@ -2,22 +2,22 @@
 import combine from "./combine";
 import hasOwn from "./has-own";
 
-const affixes = combine([
+const AFFIXES = combine([
 	["", "@"],		// prefix: typing
 	["", "!", "?"]	// postfix: strict, lazy
 ]);
 
-const variationsCache = {};
+const VARIATIONS_CACHE = {};
 
 export default function getPropStrVariations(key) {
-	if (hasOwn(variationsCache, key))
-		return variationsCache[key];
+	if (hasOwn(VARIATIONS_CACHE, key))
+		return VARIATIONS_CACHE[key];
 
 	const variations = [];
 
-	for (let i = 0, l = affixes.length; i < l; i++)
-		variations.push(affixes[i][0] + key + affixes[i][1]);
+	for (let i = 0, l = AFFIXES.length; i < l; i++)
+		variations.push(AFFIXES[i][0] + key + AFFIXES[i][1]);
 
-	variationsCache[key] = variations;
+	VARIATIONS_CACHE[key] = variations;
 	return variations;
 }

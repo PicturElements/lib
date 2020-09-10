@@ -1,7 +1,7 @@
 import { sym } from "./sym";
 import hasOwn from "./has-own";
 
-const memoizeKey = sym("memoize");
+const MEMOIZE_KEY = sym("memoize");
 
 export default function memoize(func, ...args) {
 	let key = "",
@@ -26,13 +26,13 @@ export default function memoize(func, ...args) {
 		}
 	}
 
-	if (hasOwn(func, memoizeKey)) {
-		if (hasOwn(func[memoizeKey], key))
-			return func[memoizeKey][key];
+	if (hasOwn(func, MEMOIZE_KEY)) {
+		if (hasOwn(func[MEMOIZE_KEY], key))
+			return func[MEMOIZE_KEY][key];
 	} else
-		func[memoizeKey] = {};
+		func[MEMOIZE_KEY] = {};
 
 	const val = func(...args);
-	func[memoizeKey][key] = val;
+	func[MEMOIZE_KEY][key] = val;
 	return val;
 }

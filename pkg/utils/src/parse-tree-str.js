@@ -1,4 +1,4 @@
-const wellFormedIndentRegex = /^([\t ]?)\1*$/;
+const WELL_FORMED_INDENT_REGEX = /^([\t ]?)\1*$/;
 
 export default function parseTreeStr(str, options = {}) {
 	const structRegex = /^([\t ]*)(.+?)\s*$/gm,
@@ -32,7 +32,7 @@ export default function parseTreeStr(str, options = {}) {
 		if (!ex[2])
 			continue;
 
-		if (!wellFormedIndentRegex.test(ex[1]) || (ex[1] && indentChar && indentChar != ex[1][0]))
+		if (!WELL_FORMED_INDENT_REGEX.test(ex[1]) || (ex[1] && indentChar && indentChar != ex[1][0]))
 			throw new SyntaxError(`Mixed indent (line ${line})`);
 
 		if (nextIndent < minIndent)

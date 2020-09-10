@@ -9,9 +9,20 @@ import {
 // automatically add an object or array to extend the data
 // structure. Otherwise it just returns undefined or the default value
 // context returns the accessed object and the parent
+const OPTIONS_TEMPLATES = composeOptionsTemplates({
+	autoBuild: true,
+	context: true,
+	trace: true,
+	info: true,
+	traceContext: {
+		trace: true,
+		context: true,
+	},
+	own: true
+});
 
 export default function get(data, path, def, options = {}) {
-	options = createOptionsObject(options, optionsTemplates);
+	options = createOptionsObject(options, OPTIONS_TEMPLATES);
 
 	const split = Array.isArray(path) ? path : splitPath(path),
 		trace = [],
@@ -86,15 +97,3 @@ export default function get(data, path, def, options = {}) {
 
 	return data;
 }
-
-const optionsTemplates = composeOptionsTemplates({
-	autoBuild: true,
-	context: true,
-	trace: true,
-	info: true,
-	traceContext: {
-		trace: true,
-		context: true,
-	},
-	own: true
-});

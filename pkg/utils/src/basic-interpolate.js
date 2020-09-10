@@ -2,7 +2,7 @@ import splitPath from "./split-path";
 import get from "./get";
 import { resolveVal } from "./resolve-val";
 
-const splitRegex = new RegExp(`\\$${splitPath.regexSources.match}`, "gi");
+const SPLIT_REGEX = new RegExp(`\\$${splitPath.regexSources.match}`, "gi");
 
 export default function basicInterpolate(str, data, def) {
 	if (typeof str != "string")
@@ -10,7 +10,13 @@ export default function basicInterpolate(str, data, def) {
 
 	const defUndefined = def === undefined;
 
-	return str.replace(splitRegex, (_, accessor) => {
-		return get(data, accessor, defUndefined ? `$${accessor}` : resolveVal(def, accessor));
+	return str.replace(SPLIT_REGEX, (_, accessor) => {
+		return get(
+			data,
+			accessor,
+			defUndefined ?
+				`$${accessor}` :
+				resolveVal(def, accessor)
+		);
 	});
 }

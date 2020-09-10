@@ -13,8 +13,15 @@ import {
 
 const REF_MAP = new QNDMap();
 
+const OPTIONS_TEMPLATES = composeOptionsTemplates({
+	cloneInstances: true,
+	shallow: true,
+	cloneSymbols: true,
+	circular: true
+});
+
 export default function clone(obj, options) {
-	options = createOptionsObject(options, optionsTemplates);
+	options = createOptionsObject(options, OPTIONS_TEMPLATES);
 	const depth = options.shallow ?
 		0 :
 		(hasOwn(options, "depth") ?
@@ -72,10 +79,3 @@ export default function clone(obj, options) {
 
 	return cl(obj, 0);
 }
-
-const optionsTemplates = composeOptionsTemplates({
-	cloneInstances: true,
-	shallow: true,
-	cloneSymbols: true,
-	circular: true
-});

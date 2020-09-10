@@ -13,10 +13,10 @@ function apply(thisVal, func, ...args) {
 		return func.apply(thisVal, args);
 }
 
-const fixedBindKey = sym("fixedBind key");
+const FIXED_BIND_KEY = sym("fixedBind key");
 function bind(func, ...args) {
 	if (typeof func == "function")
-		return func[fixedBindKey] ? func : func.bind(...args);
+		return func[FIXED_BIND_KEY] ? func : func.bind(...args);
 
 	console.error("Supplied bind target is not a function");
 	return null;
@@ -25,24 +25,24 @@ function bind(func, ...args) {
 function fixedBind(func, ...args) {
 	if (typeof func == "function") {
 		const bound = bind(func, ...args);
-		bound[fixedBindKey] = true;
+		bound[FIXED_BIND_KEY] = true;
 	}
 
 	console.error("Supplied bind target is not a function");
 	return null;
 }
 
-const deepBindOriginalKey = sym("deepBind original key");
+const DEEP_BIND_ORIGINAL_KEY = sym("deepBind original key");
 
 // Warning: mutates the target object, but keeps an original copy
 function deepBind(struct, thisVal, options) {
 	forEachDeep(struct, (e, k, o) => {
 		if (typeof e == "function") {
-			const original = e[deepBindOriginalKey] || e,
+			const original = e[DEEP_BIND_ORIGINAL_KEY] || e,
 				tVal = resolveVal(thisVal, e, k, o);
 
 			o[k] = bind(original, tVal);
-			o[k][deepBindOriginalKey] = original;
+			o[k][DEEP_BIND_ORIGINAL_KEY] = original;
 		}
 	}, options);
 }

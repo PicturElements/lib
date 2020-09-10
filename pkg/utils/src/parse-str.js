@@ -1,7 +1,7 @@
 import parseStrStr from "./parse-str-str";
 import hasOwn from "./has-own";
 
-const kwLiterals = {
+const KW_LITERALS = {
 	true: true,
 	false: false,
 	NaN: NaN,
@@ -10,15 +10,15 @@ const kwLiterals = {
 	undefined: undefined
 };
 
-const symbolParseRegex = /^Symbol(?:.(.*?))?\((.*)\)$/;
+const SYM_PARESE_REGEX = /^Symbol(?:.(.*?))?\((.*)\)$/;
 
 export default function parseStr(str) {
 	if (typeof str != "string")
 		return str;
 
 	// Parse keyword literals (booleans, null, undefined, etc)
-	if (hasOwn(kwLiterals, str))
-		return kwLiterals[str];
+	if (hasOwn(KW_LITERALS, str))
+		return KW_LITERALS[str];
 	// Parse numbers
 	if (str && !isNaN(Number(str)))
 		return Number(str);
@@ -31,7 +31,7 @@ export default function parseStr(str) {
 	// Parse strings and symbols, starting off with a naive (and fast) char check
 	switch (firstChar) {
 		case "S": {
-			const sEx = symbolParseRegex.exec(str);
+			const sEx = SYM_PARESE_REGEX.exec(str);
 			if (sEx) {
 				if (sEx[1])
 					return Symbol[sEx[1]](parseStr(sEx[2]) || sEx[2]);

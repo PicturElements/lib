@@ -88,23 +88,23 @@ function hashObject(value) {
 }
 
 // Very basic rolling hash implementation
-const p = 1721,
-	m = 137438953447;
+const P = 1721,
+	M = 137438953447;
 
 // The maximum size of a UTF-16 code unit is 16 bits, 65535,
 // which means that the maximum value the modulo variable may
 // have is given by the following:
 // hash + codePoint * power < 2**53 - 1
 // Assume hash, codePoint, and power have the maximum size...
-// m + codePoint * m < 2**53 - 1
-// (codePoint + 1) * m < 2**53 - 1
-// 2**16 * m < 2**53 - 1
-// m = 137438953471
-// Then find the closest prime smaller than m, and this is
+// M + codePoint * M < 2**53 - 1
+// (codePoint + 1) * M < 2**53 - 1
+// 2**16 * M < 2**53 - 1
+// M = 137438953471
+// Then find the closest prime smaller than M, and this is
 // the biggest safe number that will never yield a number larger
 // than 2**53 - 1 in the hashing process
 // 137438953447 is the largest prime less than 137438953471
-// Note that this assumes that p is never larger than 2**16 - 1
+// Note that this assumes that P is never larger than 2**16 - 1
 
 // Caching is done to save processing on long strings,
 // and as JS's hashing for string keys is much more performant,
@@ -112,13 +112,13 @@ const p = 1721,
 // Without caching:	~203598ms (3m 23s)
 // With caching		~25ms
 // for the first chapter of Moby Dick (12310) characters
-const hashCache = Object.create(null),
-	reducedHashCache = Object.create(null);
+const HASH_CACHE = Object.create(null),
+	REDUCED_HASH_CACHE = Object.create(null);
 
 function hashString(str, reduce) {
 	return reduce ?
-		reducedHashCache[str] || hashStringHelper(str, true, reducedHashCache) :
-		hashCache[str] || hashStringHelper(str, false, hashCache);
+		REDUCED_HASH_CACHE[str] || hashStringHelper(str, true, REDUCED_HASH_CACHE) :
+		HASH_CACHE[str] || hashStringHelper(str, false, HASH_CACHE);
 }
 
 function hashStringHelper(str, reduce, cache) {
@@ -126,8 +126,8 @@ function hashStringHelper(str, reduce, cache) {
 		power = 1;
 
 	for (let i = 0, l = str.length; i < l; i++) {
-		hash = (hash + str.charCodeAt(i) * power) % m;
-		power = (power * p) % m;
+		hash = (hash + str.charCodeAt(i) * power) % M;
+		power = (power * P) % M;
 	}
 
 	if (reduce)
@@ -180,7 +180,7 @@ function test(iter = 1e6, strLen = 20, saveAllCollisions = false) {
 	console.log(
 `Uniques: ${uniques}
 Collisions: ${collisions}
-Expected collisions: ${(uniques**2 / m) / 2}`);
+Expected collisions: ${(uniques**2 / M) / 2}`);
 }
 
 function randUTF16Str(length) {

@@ -6,7 +6,7 @@ import {
 import hasOwn from "./has-own";
 import supports from "./internal/supports";
 
-const argSeparatorCache = {};
+const ARG_SEPARATOR_CACHE = {};
 
 export default function splitArgStr(str, argSeparator = ",") {
 	const args = [];
@@ -19,15 +19,15 @@ export default function splitArgStr(str, argSeparator = ",") {
 	if (useRegexArgSep) {
 		const key = argSeparator.toString();
 
-		if (hasOwn(argSeparatorCache, key))
-			argSeparator = argSeparatorCache[key];
+		if (hasOwn(ARG_SEPARATOR_CACHE, key))
+			argSeparator = ARG_SEPARATOR_CACHE[key];
 		else {
 			if (supports.regex.sticky)
 				argSeparator = injectRegexFlags(argSeparator, "y", true);
 			else
 				argSeparator = injectRegexFlags(argSeparator, "g", true);
 
-			argSeparatorCache[key] = argSeparator;
+			ARG_SEPARATOR_CACHE[key] = argSeparator;
 		}
 	} else if (typeof argSeparator != "string") {
 		console.warn(`Argument separator with is invalid: type ${typeof argSeparator}`);
@@ -36,10 +36,10 @@ export default function splitArgStr(str, argSeparator = ",") {
 		console.warn(`Argument separator is invalid: empty string`);
 		argSeparator = "";
 	} else if (argSeparator.length > 1) {
-		if (hasOwn(argSeparatorCache, argSeparator))
-			argSeparator = argSeparatorCache[argSeparator];
+		if (hasOwn(ARG_SEPARATOR_CACHE, argSeparator))
+			argSeparator = ARG_SEPARATOR_CACHE[argSeparator];
 		else
-			argSeparator = argSeparatorCache[argSeparator] = new RegExp(cleanRegex(argSeparator), "gi");
+			argSeparator = ARG_SEPARATOR_CACHE[argSeparator] = new RegExp(cleanRegex(argSeparator), "gi");
 
 		useRegexArgSep = true;
 	}

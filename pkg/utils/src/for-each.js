@@ -99,19 +99,34 @@ import {
 
 const CACHE_STORE = new VolatileMap();
 
+const OPTIONS_TEMPLATES = composeOptionsTemplates({
+	reverse: true,
+	iterable: true,
+	isMapLike: true,
+	isSetLike: true,
+	flipKV: true,
+	noFlipKV: {
+		flipKV: false
+	},
+	sparse: true,
+	symbols: true,
+	overSymbols: true,
+	cacheKeys: 100
+});
+
 export default function forEach(src, callback, options) {
-	if (!jmpObj.callDepth) {
-		jmpObj.aborted = false;
+	if (!JMP_OBJ.callDepth) {
+		JMP_OBJ.aborted = false;
 		// Resetting this should only be needed when
 		// a BREAK / CONTINUE getter has been invoked
-		jmpObj.active = false;
+		JMP_OBJ.active = false;
 	}
 
-	if (src === null || src === undefined || typeof callback != "function" || jmpObj.active)
+	if (src === null || src === undefined || typeof callback != "function" || JMP_OBJ.active)
 		return forEach;
 
-	options = createOptionsObject(options || forEach._options, optionsTemplates);
-	jmpObj.callDepth++;
+	options = createOptionsObject(options || forEach._options, OPTIONS_TEMPLATES);
+	JMP_OBJ.callDepth++;
 	forEach._options = null;
 
 	const {
@@ -263,7 +278,7 @@ export default function forEach(src, callback, options) {
 		for (let i = 0, l = syms.length; i < l; i++) {
 			const sym = syms[i];
 
-			if (callback(src[sym], sym, src) == jmpT) {
+			if (callback(src[sym], sym, src) == JMP_T) {
 				if (shouldContinue(options))
 					continue;
 				return brk(options);
@@ -271,9 +286,9 @@ export default function forEach(src, callback, options) {
 		}
 	}
 
-	jmpObj.callDepth--;
-	jmpObj.active = false;
-	jmpObj.aborted = false;
+	JMP_OBJ.callDepth--;
+	JMP_OBJ.active = false;
+	JMP_OBJ.aborted = false;
 	return forEach;
 }
 
@@ -293,14 +308,14 @@ forEach.o = opt => {
 };
 
 forEach.done = func => {
-	if (!jmpObj.aborted && typeof func == "function")
+	if (!JMP_OBJ.aborted && typeof func == "function")
 		func.call(null);
 
 	return forEach;
 };
 
 forEach.exit = function(func) {
-	if (jmpObj.aborted && typeof func == "function")
+	if (JMP_OBJ.aborted && typeof func == "function")
 		func.call(null);
 
 	return forEach;
@@ -308,20 +323,20 @@ forEach.exit = function(func) {
 
 forEach._JMP_TOKEN = depthOrLabel => {
 	if (typeof depthOrLabel == "number") {
-		jmpObj.label = null;
-		jmpObj.depth = depthOrLabel;
+		JMP_OBJ.label = null;
+		JMP_OBJ.depth = depthOrLabel;
 	} else {
-		jmpObj.label = depthOrLabel;
-		jmpObj.depth = Infinity;
+		JMP_OBJ.label = depthOrLabel;
+		JMP_OBJ.depth = Infinity;
 	}
 
-	return jmpT;
+	return JMP_T;
 };
 
-const jmpT = forEach._JMP_TOKEN;
+const JMP_T = forEach._JMP_TOKEN;
 
-jmpT.done = forEach.done;
-jmpT.exit = forEach.exit;
+JMP_T.done = forEach.done;
+JMP_T.exit = forEach.exit;
 
 forEach._JMP_OBJ = {
 	depth: Infinity,
@@ -332,47 +347,47 @@ forEach._JMP_OBJ = {
 	aborted: true
 };
 
-const jmpObj = forEach._JMP_OBJ;
+const JMP_OBJ = forEach._JMP_OBJ;
 
 Object.defineProperties(forEach, {
 	BREAK: {
 		get() {
-			jmpObj.depth = 1;
-			jmpObj.label = null;
-			jmpObj.mode = "break";
-			jmpObj.active = true;
-			jmpObj.aborted = true;
-			return jmpT;
+			JMP_OBJ.depth = 1;
+			JMP_OBJ.label = null;
+			JMP_OBJ.mode = "break";
+			JMP_OBJ.active = true;
+			JMP_OBJ.aborted = true;
+			return JMP_T;
 		}
 	},
 	BREAK_ALL: {
 		get() {
-			jmpObj.depth = Infinity;
-			jmpObj.label = null;
-			jmpObj.mode = "break";
-			jmpObj.active = true;
-			jmpObj.aborted = true;
-			return jmpT;
+			JMP_OBJ.depth = Infinity;
+			JMP_OBJ.label = null;
+			JMP_OBJ.mode = "break";
+			JMP_OBJ.active = true;
+			JMP_OBJ.aborted = true;
+			return JMP_T;
 		}
 	},
 	CONTINUE: {
 		get() {
-			jmpObj.depth = 1;
-			jmpObj.label = null;
-			jmpObj.mode = "continue";
-			jmpObj.active = true;
-			jmpObj.aborted = true;
-			return jmpT;
+			JMP_OBJ.depth = 1;
+			JMP_OBJ.label = null;
+			JMP_OBJ.mode = "continue";
+			JMP_OBJ.active = true;
+			JMP_OBJ.aborted = true;
+			return JMP_T;
 		}
 	},
 	CONTINUE_ALL: {
 		get() {
-			jmpObj.depth = Infinity;
-			jmpObj.label = null;
-			jmpObj.mode = "continue";
-			jmpObj.active = true;
-			jmpObj.aborted = true;
-			return jmpT;
+			JMP_OBJ.depth = Infinity;
+			JMP_OBJ.label = null;
+			JMP_OBJ.mode = "continue";
+			JMP_OBJ.active = true;
+			JMP_OBJ.aborted = true;
+			return JMP_T;
 		}
 	}
 });
@@ -382,30 +397,30 @@ function invokeCallback(callback, src, k, symbols, checkExistence) {
 		return false;
 
 	callback(src[k], k, src);
-	return jmpObj.active;
+	return JMP_OBJ.active;
 }
 
 function invokeCallbackVK(callback, src, vk) {
 	callback(vk[0], vk[1], src);
-	return jmpObj.active;
+	return JMP_OBJ.active;
 }
 
 function invokeCallbackChar(callback, src, k, char) {
 	callback(char, k, src);
-	return jmpObj.active;
+	return JMP_OBJ.active;
 }
 
 function shouldContinue(options) {
-	if (jmpObj.mode !== "continue")
+	if (JMP_OBJ.mode !== "continue")
 		return false;
 
-	if (jmpObj.depth == 1) {
-		jmpObj.active = false;
+	if (JMP_OBJ.depth == 1) {
+		JMP_OBJ.active = false;
 		return true;
 	}
 
-	if (jmpObj.label !== null && options.label == jmpObj.label) {
-		jmpObj.active = false;
+	if (JMP_OBJ.label !== null && options.label == JMP_OBJ.label) {
+		JMP_OBJ.active = false;
 		return true;
 	}
 
@@ -416,34 +431,19 @@ function shouldContinue(options) {
 // this function implicitly invalidates tokens by returning
 // forEach instead of the token
 function brk(options) {
-	jmpObj.callDepth--;
+	JMP_OBJ.callDepth--;
 
-	if (--jmpObj.depth <= 0 || !jmpObj.callDepth) {
-		jmpObj.active = false;
-		jmpObj.aborted = true;
+	if (--JMP_OBJ.depth <= 0 || !JMP_OBJ.callDepth) {
+		JMP_OBJ.active = false;
+		JMP_OBJ.aborted = true;
 		return forEach;
 	}
 
-	if (jmpObj.label !== null && options.label == jmpObj.label) {
-		jmpObj.active = false;
-		jmpObj.aborted = true;
+	if (JMP_OBJ.label !== null && options.label == JMP_OBJ.label) {
+		JMP_OBJ.active = false;
+		JMP_OBJ.aborted = true;
 		return forEach;
 	}
 
-	return jmpT;
+	return JMP_T;
 }
-
-const optionsTemplates = composeOptionsTemplates({
-	reverse: true,
-	iterable: true,
-	isMapLike: true,
-	isSetLike: true,
-	flipKV: true,
-	noFlipKV: {
-		flipKV: false
-	},
-	sparse: true,
-	symbols: true,
-	overSymbols: true,
-	cacheKeys: 100
-});

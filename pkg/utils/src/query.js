@@ -12,8 +12,31 @@ import {
 	createOptionsObject
 } from "./internal/options";
 
+const OPTIONS_TEMPLATES = composeOptionsTemplates({
+	// For matchValue
+	plain: true,
+	deepEquality: true,
+	// For matchType
+	strictConstructor: true,
+	noStrictConstructor: {
+		strictConstructor: false
+	},
+	falseDefault: {
+		defaultMatch: false
+	},
+	trueDefault: {
+		defaultMatch: true
+	},
+	// For query
+	deep: true,
+	lazy: true,
+	typed: true,
+	bundle: true,
+	noNullish: true
+});
+
 export default function query(list, q, options) {
-	options = createOptionsObject(options, optionsTemplates);
+	options = createOptionsObject(options, OPTIONS_TEMPLATES);
 
 	if (!isArrayLike(list) || !q || typeof q != "object") {
 		return {
@@ -124,26 +147,3 @@ export default function query(list, q, options) {
 		matchCounts
 	};
 }
-
-const optionsTemplates = composeOptionsTemplates({
-	// For matchValue
-	plain: true,
-	deepEquality: true,
-	// For matchType
-	strictConstructor: true,
-	noStrictConstructor: {
-		strictConstructor: false
-	},
-	falseDefault: {
-		defaultMatch: false
-	},
-	trueDefault: {
-		defaultMatch: true
-	},
-	// For query
-	deep: true,
-	lazy: true,
-	typed: true,
-	bundle: true,
-	noNullish: true
-});

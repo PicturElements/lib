@@ -1,12 +1,12 @@
 import { unescape } from "./str-replace";
 
-const stringLiteralRegex = /^(?:(["'`])((?:[^\\]|\\.)*?)\1)$/;
+const STR_LITERAL_REGEX = /^(?:(["'`])((?:[^\\]|\\.)*?)\1)$/;
 
 export default function parseStrStr(str) {
 	if (typeof str != "string")
 		return null;
 
-	const ex = stringLiteralRegex.exec(str);
+	const ex = STR_LITERAL_REGEX.exec(str);
 	if (!ex)
 		return null;
 

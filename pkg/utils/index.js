@@ -36,6 +36,8 @@ export { default as combine } from "./src/combine";
 export { default as concatMut } from "./src/concat-mut";
 export { default as equals } from "./src/equals";
 export { default as filterMut } from "./src/filter-mut";
+export { default as find } from "./src/find";
+export { default as findIndex } from "./src/find-index";
 export { default as forEach } from "./src/for-each";
 export { default as forEachDeep } from "./src/for-each-deep";
 export { default as forEachNoPrivate } from "./src/for-each-no-private";
@@ -46,6 +48,7 @@ export { default as getPropStrCombinations } from "./src/get-prop-str-combinatio
 export { default as hasOwn } from "./src/has-own";
 export { default as hash } from "./src/hash";
 export { default as immutate } from "./src/immutate";
+export { default as indexOf } from "./src/index-of";
 export { default as infill } from "./src/infill";
 export { default as injectSchema } from "./src/inject-schema";
 export { default as inject } from "./src/inject";

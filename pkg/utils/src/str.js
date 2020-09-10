@@ -335,7 +335,7 @@ const DISTANCE_WEIGHTS = {
 	transposition: 1
 };
 
-const distanceOptionsTemplates = composeOptionsTemplates({
+const DISTANCE_OPTIONS_TEMPLATES = composeOptionsTemplates({
 	substitution: {
 		ops: {
 			substitution: true
@@ -389,7 +389,7 @@ function distance(a = "", b = "", options = {}) {
 	if (a == b)
 		return 0;
 
-	options = createOptionsObject(options, distanceOptionsTemplates);
+	options = createOptionsObject(options, DISTANCE_OPTIONS_TEMPLATES);
 
 	const ops = options.ops || DISTANCE_OPS,
 		weights = options.weights || DISTANCE_WEIGHTS,

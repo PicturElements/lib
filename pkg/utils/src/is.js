@@ -6,7 +6,7 @@ import hasOwn from "./has-own";
 import getFunctionName from "./get-function-name";
 import type from "./lazy/type";
 
-const docAll = typeof document == "undefined" ? [] : document.all;
+const DOC_ALL = typeof document == "undefined" ? [] : document.all;
 
 function isDirectInstanceof(obj, constr) {
 	return obj !== null && obj !== undefined && obj.constructor == constr;
@@ -54,9 +54,9 @@ function isConstructor(val) {
 // this function attempts to apply some heuristics to input, so functions
 // must not be defined using arrow notation, should not return anything,
 // and the constructor must begin with a capital letter
-const handler = { construct: _ => ({}) },
-	nonConstructibleRegex = /^(?:\([^)]*\)|[\w\s]+)=>|return[^\n;]+;[\s\n]*}/,
-	constructibleRegex = /^\s*class/;
+const HANDLER = { construct: _ => ({}) },
+	NON_CONSTRUCTIBLE_REGEX = /^(?:\([^)]*\)|[\w\s]+)=>|return[^\n;]+;[\s\n]*}/,
+	CONSTRUCTIBLE_REGEX = /^\s*class/;
 
 function isProbableConstructor(val) {
 	// Remove any definite false values
@@ -69,7 +69,7 @@ function isProbableConstructor(val) {
 
 	if (typeof Proxy != "undefined") {
 		try {
-			new (new Proxy(val, handler))();
+			new (new Proxy(val, HANDLER))();
 		} catch {
 			// Definitely not constructible if there's no [[Construct]] internal method
 			return false;
@@ -79,12 +79,12 @@ function isProbableConstructor(val) {
 	const constrStr = val.toString();
 
 	// Test for functions that are definitely constructible
-	if (constructibleRegex.test(constrStr))
+	if (CONSTRUCTIBLE_REGEX.test(constrStr))
 		return true;
 
 	// If the function is defined using fat arrow notation
 	// or returns anything, it's most likely not a constructor
-	if (nonConstructibleRegex.test(constrStr))
+	if (NON_CONSTRUCTIBLE_REGEX.test(constrStr))
 		return false;
 
 	return isUpperCase(getFunctionName(val)[0]);
@@ -102,7 +102,7 @@ function isNonConstructible(val) {
 }
 
 function isPrimitive(val) {
-	if (!val && val !== docAll)
+	if (!val && val !== DOC_ALL)
 		return true;
 
 	switch (typeof val) {
@@ -131,7 +131,7 @@ const isSymbol = typeof Symbol == "undefined" ? candidate => {
 };
 
 const isIterable = typeof Symbol == "undefined" ? candidate => {
-	if (candidate === docAll || typeof candidate == "string")
+	if (candidate === DOC_ALL || typeof candidate == "string")
 		return true;
 
 	if (candidate == null || typeof candidate != "object")
@@ -139,7 +139,7 @@ const isIterable = typeof Symbol == "undefined" ? candidate => {
 
 	return SYM_ITER_KEY in candidate;
 } : candidate => {
-	if (candidate === docAll || typeof candidate == "string")
+	if (candidate === DOC_ALL || typeof candidate == "string")
 		return true;
 
 	if (candidate == null || typeof candidate != "object")
@@ -150,7 +150,7 @@ const isIterable = typeof Symbol == "undefined" ? candidate => {
 
 function isArrayLike(candidate) {
 	// Common array-likes
-	if (Array.isArray(candidate) || typeof candidate == "string" || candidate === docAll)
+	if (Array.isArray(candidate) || typeof candidate == "string" || candidate === DOC_ALL)
 		return true;
 
 	// Non-objects or objects without a numerical length property

@@ -5,7 +5,7 @@ import {
 	isObj,
 	isArrayLike
 } from "./is";
-import { coerceToObj } from "./coerce";
+import { coerceObj } from "./coerce";
 import hasOwn from "./has-own";
 import mkAccessor from "./mk-accessor";
 import {
@@ -13,8 +13,34 @@ import {
 	createOptionsObject
 } from "./internal/options";
 
+const OPTIONS_TEMPLATES = composeOptionsTemplates({
+	// For matchValue
+	plain: true,
+	deepEquality: true,
+	// For matchType
+	strictConstructor: true,
+	noStrictConstructor: {
+		strictConstructor: false
+	},
+	falseDefault: {
+		defaultMatch: false
+	},
+	trueDefault: {
+		defaultMatch: true
+	},
+	// For matchQuery
+	deep: true,
+	lazy: true,
+	typed: true,
+	noNullish: true,
+	logReturnedMatch: true,
+	returnMatchMap: true,
+	throwOnStrictMismatch: true
+});
+
 export default function matchQuery(value, query, options) {
-	options = createOptionsObject(options, optionsTemplates);
+	options = createOptionsObject(options, OPTIONS_TEMPLATES);
+
 	const guard = typeof options.guard == "function" ? options.guard : null,
 		guardMatch = hasOwn(options, "guardMatch") ? options.guardMatch : true,
 		nullishMatch = hasOwn(options, "nullishMatch") ? options.nullishMatch : true;
@@ -70,7 +96,7 @@ export default function matchQuery(value, query, options) {
 			if (options.deep && isObj(q[srcKey]) && !isArrayLike(q[srcKey])) {
 				if (matchRuntime) {
 					const currentMatchMap = matchRuntime.matchMap;
-					matchRuntime.matchMap[key] = coerceToObj(null, q[srcKey]);
+					matchRuntime.matchMap[key] = coerceObj(null, q[srcKey]);
 					matchRuntime.matchMap = matchRuntime.matchMap[key];
 					matchRuntime.accessor.push(srcKey);
 					matched = match(v[key], q[srcKey], matchRuntime);
@@ -115,7 +141,7 @@ export default function matchQuery(value, query, options) {
 	};
 
 	if (options.returnMatchMap) {
-		const rootMatchMap = coerceToObj(null, query),
+		const rootMatchMap = coerceObj(null, query),
 			matchRuntime = {
 				matchMap: rootMatchMap,
 				rootMatchMap,
@@ -134,28 +160,3 @@ export default function matchQuery(value, query, options) {
 matchQuery.type = (...typedef) => {
 	console.log("matchQuery typedefs have been deprecated");
 };
-
-const optionsTemplates = composeOptionsTemplates({
-	// For matchValue
-	plain: true,
-	deepEquality: true,
-	// For matchType
-	strictConstructor: true,
-	noStrictConstructor: {
-		strictConstructor: false
-	},
-	falseDefault: {
-		defaultMatch: false
-	},
-	trueDefault: {
-		defaultMatch: true
-	},
-	// For matchQuery
-	deep: true,
-	lazy: true,
-	typed: true,
-	noNullish: true,
-	logReturnedMatch: true,
-	returnMatchMap: true,
-	throwOnStrictMismatch: true
-});

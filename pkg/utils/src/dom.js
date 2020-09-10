@@ -59,7 +59,7 @@ function hasAncestorBySelector(elem, selectorOrElem, maxDepth = Infinity) {
 			return false;
 
 		if (searchBySelector) {
-			if (elem.nodeType == 1 && elem.matches(selectorOrElem))
+			if (elem.nodeType == Node.ELEMENT_NODE && elem.matches(selectorOrElem))
 				return true;
 		} else if (elem == selectorOrElem)
 			return true;
@@ -207,14 +207,14 @@ function parseStyle(style, allowFallthrough = false) {
 	return joinStyle(style);
 }
 
-const styleRegex = /([a-z-]+)\s*:\s*([^;]+)\s*(?:;|$)/gi;
+const STYLE_REGEX = /([a-z-]+)\s*:\s*([^;]+)\s*(?:;|$)/gi;
 
 function parseStyleStr(list, str) {
 	if (typeof str != "string")
 		return list;
 
 	while (true) {
-		const ex = styleRegex.exec(str);
+		const ex = STYLE_REGEX.exec(str);
 		if (!ex)
 			break;
 

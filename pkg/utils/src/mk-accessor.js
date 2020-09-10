@@ -1,7 +1,7 @@
 import { cleanPath } from "./str-replace";
 import splitPath from "./split-path";
 
-const abnormalRegex = splitPath.regexes.abnormalPropertyChars;
+const ABNORMAL_REGEX = splitPath.regexes.abnormalPropertyChars;
 
 export default function mkAccessor(path) {
 	if (!Array.isArray(path))
@@ -17,7 +17,7 @@ export default function mkAccessor(path) {
 
 		if (!isNaN(component) && component != "Infinity" && component != "-Infinity")
 			accessor += `[${cleanPath(component)}]`;
-		else if (abnormalRegex.test(component))
+		else if (ABNORMAL_REGEX.test(component))
 			accessor += `[${cleanPath(component)}]`;
 		else
 			accessor += accessor ? `.${component}` : component;

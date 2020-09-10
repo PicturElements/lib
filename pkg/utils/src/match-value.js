@@ -4,8 +4,13 @@ import {
 	createOptionsObject
 } from "./internal/options";
 
+const OPTIONS_TEMPLATES = composeOptionsTemplates({
+	plain: true,
+	deepEquality: true
+});
+
 export default function matchValue(val, matcher, options) {
-	options = createOptionsObject(options, optionsTemplates);
+	options = createOptionsObject(options, OPTIONS_TEMPLATES);
 
 	if (val == null)
 		return false;
@@ -34,8 +39,3 @@ function plainMatch(val, matcher, options) {
 
 	return equals(val, matcher);
 }
-
-const optionsTemplates = composeOptionsTemplates({
-	plain: true,
-	deepEquality: true
-});

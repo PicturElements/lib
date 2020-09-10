@@ -1,6 +1,7 @@
-const startTime = Date.now();
+const START_TIME = Date.now();
+
 const getTime = typeof performance == "undefined" || typeof performance.now == "undefined" ? (offs = 0) => {
-	return Date.now() - startTime - offs;
+	return Date.now() - START_TIME - offs;
 } : (offs = 0) => {
 	return performance.now() - offs;
 };

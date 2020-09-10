@@ -7,7 +7,7 @@ import hasOwn from "./has-own";
 // This library assumes only ASCII A-Z letters are being
 // used when differentiating between upper/lower case
 
-const splitters = {
+const SPLITTERS = {
 	camel: str => matchAll(str, /[A-Z][^A-Z\s]*|[^A-Z\s]+/g),
 	snake: str => splitClean(str, /_+/g),
 	constant: str => splitClean(str, /_+/g),
@@ -15,11 +15,11 @@ const splitters = {
 	kebab: str => splitClean(str, /-+/g),
 	pascalKebab: str => splitClean(str, /-+/g),
 	title: str => splitClean(str, /\s+/g),
-	data(str) {
+	data: str => {
 		str = str.toLowerCase().replace(/^data-/, "");
 		return splitClean(str, /-(?=[a-z])/g);
 	},
-	any(str) {
+	any: str => {
 		const separatorSplit = splitClean(str, /[-_\s]+/g),
 			split = [];
 
@@ -32,8 +32,8 @@ const splitters = {
 	}
 };
 
-const joiners = {
-	camel(split) {
+const JOINERS = {
+	camel: split => {
 		let out = split[0].toLowerCase();
 
 		for (let i = 1, l = split.length; i < l; i++)
@@ -41,7 +41,7 @@ const joiners = {
 
 		return out;
 	},
-	snake(split) {
+	snake: split => {
 		let out = split[0].toLowerCase();
 
 		for (let i = 1, l = split.length; i < l; i++)
@@ -49,7 +49,7 @@ const joiners = {
 
 		return out;
 	},
-	constant(split) {
+	constant: split => {
 		let out = split[0].toUpperCase();
 
 		for (let i = 1, l = split.length; i < l; i++)
@@ -57,7 +57,7 @@ const joiners = {
 
 		return out;
 	},
-	pascal(split) {
+	pascal: split => {
 		let out = "";
 
 		for (let i = 0, l = split.length; i < l; i++)
@@ -65,7 +65,7 @@ const joiners = {
 
 		return out;
 	},
-	kebab(split) {
+	kebab: split => {
 		let out = split[0].toLowerCase();
 
 		for (let i = 1, l = split.length; i < l; i++)
@@ -73,7 +73,7 @@ const joiners = {
 
 		return out;
 	},
-	pascalKebab(split) {
+	pascalKebab: split => {
 		let out = "";
 
 		for (let i = 0, l = split.length; i < l; i++) {
@@ -85,7 +85,7 @@ const joiners = {
 
 		return out;
 	},
-	title(split) {
+	title: split => {
 		let out = "";
 
 		for (let i = 0, l = split.length; i < l; i++) {
@@ -97,7 +97,7 @@ const joiners = {
 
 		return out;
 	},
-	data(split) {
+	data: split => {
 		let out = "data";
 
 		for (let i = 0, l = split.length; i < l; i++)
@@ -119,7 +119,7 @@ casing.session = {
 };
 
 casing.from = type => {
-	if (!hasOwn(splitters, type)) {
+	if (!hasOwn(SPLITTERS, type)) {
 		console.error(`No casing splitter for type '${type}'`);
 		return casing;
 	}
@@ -129,14 +129,14 @@ casing.from = type => {
 };
 
 casing.to = type => {
-	if (!hasOwn(joiners, type)) {
+	if (!hasOwn(JOINERS, type)) {
 		console.error(`No casing joiner for type '${type}'`);
 		return "";
 	}
 
 	const str = casing.session.str,
-		splitter = splitters[casing.session.from] || splitters.any,
-		joiner = joiners[type];
+		splitter = SPLITTERS[casing.session.from] || SPLITTERS.any,
+		joiner = JOINERS[type];
 
 	resetCasingSession();
 
@@ -159,7 +159,7 @@ casing.define = (type, config = {}) => {
 		return casing;
 	}
 
-	if (hasOwn(splitters, type)) {
+	if (hasOwn(SPLITTERS, type)) {
 		console.error(`Cannot define casing transform: type '${type}' is already defined`);
 		return casing;
 	}
@@ -179,8 +179,8 @@ casing.define = (type, config = {}) => {
 		return casing;
 	}
 
-	splitters[type] = config.split;
-	joiners[type] = config.join;
+	SPLITTERS[type] = config.split;
+	JOINERS[type] = config.join;
 
 	Object.defineProperty(casing.from, type, {
 		get:  _ => casing.from(type)
@@ -201,8 +201,8 @@ function resetCasingSession() {
 	const splitterDescriptors = {},
 		joinerDescriptors = {};
 
-	for (const k in splitters) {
-		if (!hasOwn(splitters, k))
+	for (const k in SPLITTERS) {
+		if (!hasOwn(SPLITTERS, k))
 			continue;
 
 		splitterDescriptors[k] = {
@@ -210,8 +210,8 @@ function resetCasingSession() {
 		};
 	}
 
-	for (const k in joiners) {
-		if (!hasOwn(joiners, k))
+	for (const k in JOINERS) {
+		if (!hasOwn(JOINERS, k))
 			continue;
 
 		joinerDescriptors[k] = {

@@ -17,7 +17,7 @@ import get from "./get";
 
 // allowNonexistent - inject property values for
 // properties that don't exist on the object
-const mapObjParamSignature = [
+const MAP_OBJ_PARAMS = [
 	{ name: "obj", type: "object", required: true},
 	{ name: "order", type: Array },
 	{ name: "processor", type: "function", default: value => value },
@@ -30,7 +30,7 @@ function mapObj(...args) {
 		order,
 		processor,
 		allowNonexistent
-	} = resolveArgs(args, mapObjParamSignature);
+	} = resolveArgs(args, MAP_OBJ_PARAMS);
 
 	order = order || obj._order;
 
@@ -72,9 +72,9 @@ const keys = typeof Symbol != "undefined" ?
 		return out;
 	};
 
-const isDirSym = sym("isDir"),
-	dirPathSym = sym("dirPath"),
-	parentDirSym = sym("parentDir");
+const IS_DIR_SYM = sym("isDir"),
+	DIR_PATH_SYM = sym("dirPath"),
+	PARENT_DIR_SYM = sym("parentDir");
 
 function getDirectory(root, path = "", returnRestPath = false) {
 	path = splitPath(path);
@@ -95,7 +95,7 @@ function getDirectory(root, path = "", returnRestPath = false) {
 			restPath.push(key);
 		else if (!hasOwn(dir, key)) {
 			const subdir = {};
-			setDirMeta(subdir, key, dir[dirPathSym], dir);
+			setDirMeta(subdir, key, dir[DIR_PATH_SYM], dir);
 			dir[key] = subdir;
 			dir = subdir;
 		} else {
@@ -125,20 +125,20 @@ function getDirectoryMeta(dir) {
 	dir = dir || {};
 
 	return {
-		isDirectory: dir[isDirSym] || false,
-		path: dir[dirPathSym] || "",
-		parent: dir[parentDirSym] || null
+		isDirectory: dir[IS_DIR_SYM] || false,
+		path: dir[DIR_PATH_SYM] || "",
+		parent: dir[PARENT_DIR_SYM] || null
 	};
 }
 
 function setDirMeta(dir, name = "", path = "", parent = null) {
-	setSymbol(dir, isDirSym, true);
-	setSymbol(dir, dirPathSym, path ? `${path}.${name}` : name);
-	setSymbol(dir, parentDirSym, parent);
+	setSymbol(dir, IS_DIR_SYM, true);
+	setSymbol(dir, DIR_PATH_SYM, path ? `${path}.${name}` : name);
+	setSymbol(dir, PARENT_DIR_SYM, parent);
 }
 
 function isDir(candidate) {
-	return Boolean(candidate) && hasOwn(candidate, isDirSym);
+	return Boolean(candidate) && hasOwn(candidate, IS_DIR_SYM);
 }
 
 // NEVER edit these for backwards compatibility

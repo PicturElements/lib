@@ -1,4 +1,4 @@
-import { coerceToObj } from "./coerce";
+import { coerceObj } from "./coerce";
 import {
 	isObj,
 	isArrayLike,
@@ -28,8 +28,26 @@ import {
 
 const REF_SET = new QNDSet();
 
+const OPTIONS_TEMPLATES = composeOptionsTemplates({
+	clone: true,
+	cloneTarget: true,
+	cloneExtender: true,
+	injectDataset: {
+		cloneExtender: true,
+		override: true,
+	},
+	injectSymbols: true,
+	override: true,
+	noUndef: true,
+	shallow: true,
+	preserveInstances: true,
+	strictSchema: true,
+	circular: true,
+	restrictiveTarget: true
+});
+
 export default function inject(target, extender, options) {
-	options = createOptionsObject(options, optionsTemplates);
+	options = createOptionsObject(options, OPTIONS_TEMPLATES);
 
 	if (options.clone || options.cloneTarget)
 		target = clone(target, options);
@@ -52,8 +70,8 @@ export default function inject(target, extender, options) {
 
 	const inj = (targ, ext, runtime) => {
 		const srcTarg = targ;
-		targ = coerceToObj(targ, ext);
-		ext = coerceToObj(ext);
+		targ = coerceObj(targ, ext);
+		ext = coerceObj(ext);
 
 		if (options.circular)
 			REF_SET.add(ext);
@@ -106,7 +124,7 @@ export default function inject(target, extender, options) {
 			if (typeof ignore[key] == "function") {
 				if (ignore[key](ext[key], key, ext))
 					return;
-			} else
+			} else if (ignore[key])
 				return;
 		}
 
@@ -163,21 +181,3 @@ export default function inject(target, extender, options) {
 		rt
 	);
 }
-
-const optionsTemplates = composeOptionsTemplates({
-	clone: true,
-	cloneTarget: true,
-	cloneExtender: true,
-	injectDataset: {
-		cloneExtender: true,
-		override: true,
-	},
-	injectSymbols: true,
-	override: true,
-	noUndef: true,
-	shallow: true,
-	preserveInstances: true,
-	strictSchema: true,
-	circular: true,
-	restrictiveTarget: true
-});

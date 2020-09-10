@@ -6,6 +6,7 @@ import {
 } from "./internal/options";
 
 const DISALLOWED_NODES = { svg: 1, use: 1, defs: 1 };
+
 const ATTRIBUTES = "alignment-baseline:auto;baseline-shift:0px;color;color-interpolation:srgb;color-rendering:auto;direction:ltr;display:inline;dominant-baseline:auto;fill:/black|rgb\\(0, 0, 0\\)/;fill-opacity:1;fill-rule:nonzero;font-variant:normal;image-rendering:auto;line-height:normal;marker:none;marker-start:none;marker-mid:none;marker-end:none;opacity:1;overflow:visible;paint-order:normal;pointer-events:auto;shape-rendering:auto;stop-color:/black|rgb\\(0, 0, 0\\)/;stop-opacity:1;stroke:none;stroke-dasharray:none;stroke-dashoffset:0px;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-width:1px;text-anchor:start;text-decoration:/^none/;text-rendering:auto;vector-effect:none;visibility:visible;white-space:normal;writing-mode:horizontal-tb"
 	.split(";")
 	.map(kv => {
@@ -17,7 +18,7 @@ const ATTRIBUTES = "alignment-baseline:auto;baseline-shift:0px;color;color-inter
 		return [key, value];
 	});
 
-const optionsTemplates = composeOptionsTemplates({
+const OPTIONS_TEMPLATES = composeOptionsTemplates({
 	injectStyle: true,
 	"2x": { scale: 2 },
 	"3x": { scale: 2 },
@@ -29,7 +30,7 @@ const optionsTemplates = composeOptionsTemplates({
 });
 
 export default function rasterize(node, options = {}) {
-	options = createOptionsObject(options, optionsTemplates);
+	options = createOptionsObject(options, OPTIONS_TEMPLATES);
 
 	return new Promise(resolve => {
 		if (!(node instanceof SVGElement))

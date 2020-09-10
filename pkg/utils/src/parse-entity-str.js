@@ -1,5 +1,5 @@
-const entityCache = Object.create(null),
-	entityResolveElem = document.createElement("div");
+const ENTITY_CACHE = Object.create(null),
+	ENTITY_RESOLVE_ELEM = document.createElement("div");
 
 // This function is quite ugly, but is roughly twice as performant
 // as equivalent strategies like setting and reading innerHTML on an
@@ -14,14 +14,14 @@ export default function parseEntityStr(str) {
 		if (matchMode == 1)
 			outStr += String.fromCharCode(code);
 		else {
-			const item = entityCache[match];
+			const item = ENTITY_CACHE[match];
 
 			if (item)
 				outStr += item;
 			else {
-				entityResolveElem.innerHTML = match;
-				const resolved = entityResolveElem.textContent;
-				entityCache[match] = resolved;
+				ENTITY_RESOLVE_ELEM.innerHTML = match;
+				const resolved = ENTITY_RESOLVE_ELEM.textContent;
+				ENTITY_CACHE[match] = resolved;
 				outStr += resolved;
 			}
 		}

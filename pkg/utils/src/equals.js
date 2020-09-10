@@ -14,8 +14,13 @@ let eqRuntime = {
 
 const REF_SET = new QNDSet();
 
+const OPTIONS_TEMPLATES = composeOptionsTemplates({
+	lazy: true,
+	circular: true
+});
+
 function equals(valA, valB, options) {
-	eqRuntime = createOptionsObject(options, optionsTemplates);
+	eqRuntime = createOptionsObject(options, OPTIONS_TEMPLATES);
 	return eq(valA, valB);
 }
 
@@ -113,10 +118,5 @@ function eqObject(a, b) {
 
 	return true;
 }
-
-const optionsTemplates = composeOptionsTemplates({
-	lazy: true,
-	circular: true
-});
 
 export default equals;

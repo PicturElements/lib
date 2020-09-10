@@ -6,7 +6,7 @@ import hasOwn from "../has-own";
 // It's recommended that these functions never face public APIs, but rather
 // are called through separate, specific abstractions (see: options.js, presets.js)
 
-const blank = Object.freeze({});
+const BLANK = Object.freeze({});
 
 function composeMergerTemplates(...templates) {
 	const templatesOut = Object.create(null);
@@ -67,7 +67,7 @@ function mergeObject(
 		case "string":
 			return templates[mergerPrecursor] || tryBundle(mergerPrecursor, templates, type) || (
 				logMergeError(error, mergerPrecursor, templates, type) ||
-				blank
+				BLANK
 			);
 
 		case "object":
@@ -76,10 +76,10 @@ function mergeObject(
 
 			return mergerPrecursor ?
 				mergerPrecursor :
-				blank;
+				BLANK;
 
 		default:
-			return blank;
+			return BLANK;
 	}
 }
 

@@ -6,15 +6,30 @@ import {
 	composeOptionsTemplates
 } from "./internal/options";
 
-const globRegex = /\\([^\\/])|(\?|\*\*|\*)|\[(!)?([^\\/]*?)\]|([$^()[\]/\\{}.*+?|])/g,
-	globCache = {},
-	boundaryCache = {};
+const GLOB_REGEX = /\\([^\\/])|(\?|\*\*|\*)|\[(!)?([^\\/]*?)\]|([$^()[\]/\\{}.*+?|])/g,
+	GLOB_CACHE = {},
+	BOUNDARY_CACHE = {};
+	
+const OPTIONS_TEMPLATES = composeOptionsTemplates({
+	noMatchStart: true,
+	noMatchEnd: true,
+	noMatchFull: true,
+	g: {
+		flags: "g"
+	},
+	i: {
+		flags: "i"
+	},
+	gi: {
+		flags: "gi"
+	}
+});
 
 function compileGlob(glob, options) {
 	if (typeof glob != "string")
 		return null;
 
-	options = createOptionsObject(options, optionsTemplates);
+	options = createOptionsObject(options, OPTIONS_TEMPLATES);
 
 	const matchStart = !options.noMatchStart && !options.noMatchFull,
 		matchEnd = !options.noMatchEnd && !options.noMatchFull,
@@ -22,21 +37,21 @@ function compileGlob(glob, options) {
 		flags = options.flags || "",
 		globKey = `${glob}@${flags}/${+matchStart}${+matchEnd}@@${boundaryPrecursor}`;
 
-	if (hasOwn(globCache, globKey))
-		return globCache[globKey];
+	if (hasOwn(GLOB_CACHE, globKey))
+		return GLOB_CACHE[globKey];
 
-	if (!hasOwn(boundaryCache, boundaryPrecursor)) {
+	if (!hasOwn(BOUNDARY_CACHE, boundaryPrecursor)) {
 		// First escape properly, then clean that for regex construction
 		const regexStr = cleanRegex(escape(boundaryPrecursor));
-		boundaryCache[boundaryPrecursor] = regexStr ?
+		BOUNDARY_CACHE[boundaryPrecursor] = regexStr ?
 			`[^${regexStr}]` :
 			".";
 	}
 
-	const boundary = boundaryCache[boundaryPrecursor];
+	const boundary = BOUNDARY_CACHE[boundaryPrecursor];
 
 	let isGlob = false,
-		regex = glob.replace(globRegex, (
+		regex = glob.replace(GLOB_REGEX, (
 			match,
 			escaped,
 			wildcard,
@@ -77,24 +92,9 @@ function compileGlob(glob, options) {
 		regex: new RegExp(regex, flags),
 		isGlob
 	};
-	globCache[globKey] = parsed;
+	GLOB_CACHE[globKey] = parsed;
 	return parsed;
 }
-
-const optionsTemplates = composeOptionsTemplates({
-	noMatchStart: true,
-	noMatchEnd: true,
-	noMatchFull: true,
-	g: {
-		flags: "g"
-	},
-	i: {
-		flags: "i"
-	},
-	gi: {
-		flags: "gi"
-	}
-});
 
 function matchGlob(str, glob, options) {
 	if (typeof str != "string" || typeof glob != "string")

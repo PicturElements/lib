@@ -10,7 +10,7 @@ import {
 	createOptionsObject
 } from "./internal/options";
 
-const typesCache = {
+const TYPES_CACHE = {
 	// typeof keys
 	undefined: "undefined",
 	boolean: "boolean",
@@ -28,12 +28,25 @@ const typesCache = {
 	any: val => true
 };
 
+const OPTIONS_TEMPLATES = composeOptionsTemplates({
+	strictConstructor: true,
+	noStrictConstructor: {
+		strictConstructor: false
+	},
+	falseDefault: {
+		defaultMatch: false
+	},
+	trueDefault: {
+		defaultMatch: true
+	}
+});
+
 export default function matchType(val, type, options, forceFalseDefault = false) {
-	options = createOptionsObject(options, optionsTemplates);
+	options = createOptionsObject(options, OPTIONS_TEMPLATES);
 
 	if (typeof type == "string") {
-		if (hasOwn(typesCache, type))
-			type = typesCache[type];
+		if (hasOwn(TYPES_CACHE, type))
+			type = TYPES_CACHE[type];
 		else
 			type = mkTypeChecker(type);
 
@@ -97,11 +110,11 @@ function mkTypeChecker(signature) {
 		const typeId = typeIds[i],
 			paramName = getParamName(i);
 
-		if (hasOwn(typesCache, typeId)) {
-			if (typeof typesCache[typeId] == "function") {
+		if (hasOwn(TYPES_CACHE, typeId)) {
+			if (typeof TYPES_CACHE[typeId] == "function") {
 				expensiveTerms.push(`${paramName}(_val)`);
 				expensiveParams.push(paramName);
-				expensiveArgs.push(typesCache[typeId]);
+				expensiveArgs.push(TYPES_CACHE[typeId]);
 			} else
 				terms.push(`typeof _val == "${typeId}"`);
 			continue;
@@ -120,7 +133,7 @@ function mkTypeChecker(signature) {
 	const body = `return ${terms.concat(expensiveTerms).join(" || ")};`,
 		checker = Function(...params, ...expensiveParams, "_val", body).bind(null, ...args, ...expensiveArgs);
 
-	typesCache[signature] = checker;
+	TYPES_CACHE[signature] = checker;
 	return checker;
 }
 
@@ -138,16 +151,3 @@ function getParamName(idx) {
 
 	return name;
 }
-
-const optionsTemplates = composeOptionsTemplates({
-	strictConstructor: true,
-	noStrictConstructor: {
-		strictConstructor: false
-	},
-	falseDefault: {
-		defaultMatch: false
-	},
-	trueDefault: {
-		defaultMatch: true
-	}
-});

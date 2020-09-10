@@ -1,4 +1,4 @@
-const funcNameFindRegex = /function[\s\n]+([^(\s\n]+)/;
+const FUNC_NAME_FIND_REGEX = /function[\s\n]+([^(\s\n]+)/;
 
 export default function getFunctionName(func) {
 	if (typeof func != "function")
@@ -14,7 +14,7 @@ export default function getFunctionName(func) {
 	if (stringified[0] == "[")
 		return stringified.slice(8, -1);
 	else {
-		const ex = funcNameFindRegex.exec(stringified);
+		const ex = FUNC_NAME_FIND_REGEX.exec(stringified);
 		if (ex)
 			return ex[1];
 	}

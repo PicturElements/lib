@@ -64,8 +64,8 @@ export default function infill(target, source, optionsOrRuntime) {
 	return target;
 }
 
-const parseModifierRegex = /^@([\w_$-]+?)(?:\s*?(?:::(.+))|:(.+))?$/,
-	modifierParamIdentifierRegex = /([\w_$-]+?)\s*:\s*(.+)/g;
+const PARSE_MODIFIER_REGEX = /^@([\w_$-]+?)(?:\s*?(?:::(.+))|:(.+))?$/,
+	MODIFIER_PARAM_IDENTIFIER_REGEX = /([\w_$-]+?)\s*:\s*(.+)/g;
 
 function parseDFModifier(modifier) {
 	const modifierOut = {
@@ -73,7 +73,7 @@ function parseDFModifier(modifier) {
 		params: {}
 	};
 
-	const ex = parseModifierRegex.exec(modifier);
+	const ex = PARSE_MODIFIER_REGEX.exec(modifier);
 
 	if (!ex)
 		return modifierOut;
@@ -86,7 +86,7 @@ function parseDFModifier(modifier) {
 
 		for (let i = 0, l = args.length; i < l; i++) {
 			const arg = args[i],
-				iEx = modifierParamIdentifierRegex.exec(arg);
+				iEx = MODIFIER_PARAM_IDENTIFIER_REGEX.exec(arg);
 
 			if (!iEx)
 				console.error(`Invalid parameter identifier (at '${arg}')`);

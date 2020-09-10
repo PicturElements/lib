@@ -8,9 +8,15 @@ import {
 	createOptionsObject
 } from "./internal/options";
 
+const OPTIONS_TEMPLATES = composeOptionsTemplates({
+	cloneInstances: true,
+	shallow: true,
+	cloneSymbols: true
+});
+
 // Faster but slightly less feature rich clone function
 export default function cloneFast(obj, options) {
-	options = createOptionsObject(options, optionsTemplates);
+	options = createOptionsObject(options, OPTIONS_TEMPLATES);
 	const depth = options.shallow ?
 		0 :
 		(hasOwn(options, "depth") ? options.depth : Infinity);
@@ -57,9 +63,3 @@ export default function cloneFast(obj, options) {
 
 	return cl(obj, 0);
 }
-
-const optionsTemplates = composeOptionsTemplates({
-	cloneInstances: true,
-	shallow: true,
-	cloneSymbols: true
-});
