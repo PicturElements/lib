@@ -18,15 +18,15 @@ const datePeriods = {
 
 const langStdLib = {
 	day(a, accessor) {		// Suggested accessor: day
-		const data = a.manager.get(accessor) || [];
+		const data = a.manager.getOfType(accessor, Array)([]);
 		return data[a.store.date.getDay()];
 	},
 	month(a, accessor) {	// Suggested accessor: month
-		const data = a.manager.get(accessor) || [];
+		const data = a.manager.getOfType(accessor, Array)([]);
 		return data[a.store.date.getMonth()];
 	},
 	ampm(a, accessor) {		// Suggested accessor: meridiem
-		const data = a.manager.get(accessor) || ["AM", "PM"];
+		const data = a.manager.getOfType(accessor, Array)(["AM", "PM"]);
 		return data[Math.floor(a.store.date.getHours() / 12)];
 	},
 	meridiem(a) {

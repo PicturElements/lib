@@ -3,9 +3,9 @@ import {
 	splitPath,
 	sym,
 	isObj,
+	isObject,
 	hasOwn,
 	lookup,
-	repeat,
 	unescape,
 	filterMut,
 	matchType,
@@ -206,40 +206,43 @@ const COERCE_MAP = {
 
 const UNARY_OPS = {
 	"!": "NOT",
-	"~": "bitwise NOT"
+	"~": "BITWISE_NOT"
 };
 
 const UNARY_CONVERTIBLE_OPS = {
-	"+": "casting",
-	"-": "inversion"
+	"+": "CAST",
+	"-": "INVERT"
 };
 
 const BINARY_OPS = {
-	"|": "bitwise OR",
+	"|": "BITWISE_OR",
 	"||": "OR",
-	"&": "bitwise AND",
+	"&": "BITWISE_AND",
 	"&&": "AND",
-	"^": "bitwise XOR",
-	">": "greater than",
-	"<": "less than",
-	"==": "equal",
-	"===": "strict equal",
-	"!=": "not equal",
-	"!==": "strict not equal",
-	">=": "greater than or equal to",
-	"<=": "less than or equal to",
-	"<<": "left shift",
-	">>": "sign-propagating right shift",
-	">>>": "zero-fill right shift",
-	"+": "addition",
-	"-": "subtraction",
-	"*": "multiplication",
-	"/": "division",
-	"//": "floor division",
-	"**": "power",
-	"??": "null coalesce",
-	"%": "modulo"
+	"^": "BITWISE_XOR",
+	">": "GREATER_THAN",
+	"<": "LESS_THAN",
+	"==": "EQUAL",
+	"===": "STRICT_EQUAL",
+	"!=": "NOT_EQUAL",
+	"!==": "STRICT_NOT_EQUAL",
+	">=": "GREATER_THAN_OR_EQUAL",
+	"<=": "LESS_THAN_OR_EQUAL",
+	"<<": "LEFT_SHIFT",
+	">>": "RIGHT_SHIFT",
+	">>>": "ZERO_FILL_RIGHT_SHIFT",
+	"+": "ADDITION",
+	"-": "SUBTRACTION",
+	"*": "MULTIPLICATION",
+	"/": "DIVISION",
+	"//": "FLOOR_DIVISION",
+	"**": "EXPONENTIALIZATION",
+	"??": "NULLISH_COALESCING",
+	"%": "MODULO"
 };
+
+const OP_DATA = {};
+const OP_DATA_LIST = [];
 
 const OP_PRECEDENCE = [
 	lookup("&&"),
@@ -261,7 +264,7 @@ const OP_PRECEDENCE = [
 const FORMAT_CAPTURING_GROUPS = [
 	"comment",
 	"literal",					// Literal string, which may contain custom grammars
-	null,						// CG2 is a string matcher group and is not used
+	"quote",					// Beginning of string
 	"evaluator",				// Evaluator (basis for selectors, computed accessor terms, and interpolators)
 	"evaluatorCoercion",		// Evaluator coercion tags
 	"evaluatorSpecies",			// Evaluator species ("[" for selector / computed accessor term, "#{" / "${" for interpolator)
@@ -270,8 +273,8 @@ const FORMAT_CAPTURING_GROUPS = [
 	"selectorTermLabel",		// Label to assign to selector term (@lbl:)
 	"opener",					// Opener (format reference, variable, group, interpolator)
 	"steps",					// Steps to go up in ref trace
-	"terminator",				// Terminator (format reference, group, interpolator, selector term, selector head)
 	"operator",					// Operator (boolean, bitwise, arithmetic)
+	"terminator",				// Terminator (format reference, group, interpolator, selector term, selector head)
 	"separator"					// Separates parameter nodes
 ];
 
@@ -299,7 +302,7 @@ function parseFormat(format, parseMeta = {}) {
 // Additional processing will be done by processAST, most notably constructing
 // and verifying expressions, arguments, literals, and accessors
 function parse(format, currentStack) {
-	const formatRegex = /(\/\*(?:.|\s)*?\*\/)|((?:[^\\\s(){}[\]$%#@"'`,<>&|!?~^+\-/*=]|\\[#$]{|\\.)+)|(["'`])(?:\\.|.)*?\3|((?:@([bnis]))?(\[|#{|\${))|((]|})\s*{(?:@((?:[a-z0-9_[\].-]|\\.)+):\s?)?)|([%$(])(\.*)|([)}\]])|(?:(\|\|?|&&?|={2,3}|!==?|>>>?|<<|[<>]=?|[!~^]|[+-]|\*{1,2}|\/{1,2}|\?{2}|%))|(,)/gi,
+	const formatRegex = /(\/\*(?:.|\s)*?\*\/)|((?:[^\\\s(){}[\]$%#@"'`,<>&|!?~^+\-/*=]|\\[#$]{|\\.)+)|(["'`])(?:\\.|.)*?\3|((?:@([bnis]))?(\[|#{|\${))|((]|})\s*{(?:@((?:[a-z0-9_[\].-]|\\.)+):\s?)?)|((?:%(?=(?:[^\s[\]]|\[.*\])+%))|[$(])(\.*)|(?:(\|\|?|&&?|={2,3}|!==?|>>>?|<<|[<>]=?|[!~^]|[+-]|\*{1,2}|\/{1,2}|\?{2}|%))|([%)}\]])|(,)/gi,
 		outStruct = [],
 		structStack = currentStack || [],
 		stackLen = structStack.length;
@@ -393,6 +396,7 @@ function parse(format, currentStack) {
 
 		const { label, capture } = getCapturingData(ex),
 			match = ex[0];
+		let len = match.length;
 
 		switch (label) {
 			// comment - /*comment*/
@@ -414,6 +418,16 @@ function parse(format, currentStack) {
 				} else
 					push(capture);
 
+				break;
+			}
+
+			case "quote": {
+				if (structStack.length == stackLen) {
+					push(match[0]);
+					formatRegex.lastIndex = ex.index + 1;
+					len = 1;
+				} else
+					push(match);
 				break;
 			}
 
@@ -583,11 +597,6 @@ function parse(format, currentStack) {
 					}
 
 					case "(": {
-						if (!isAllowedChildNode("group", structStack)) {
-							push(match);
-							break;
-						}
-
 						const variable = getParentNodeByType("variable", structStack);
 						if (variable && variable.accessor.length) {
 							popStruct(variable);
@@ -595,6 +604,11 @@ function parse(format, currentStack) {
 							variable.builtAccessor = true;
 							variable.invoking = true;
 							struct = variable.args;
+							break;
+						}
+
+						if (!isAllowedChildNode("group", structStack)) {
+							push(match);
 							break;
 						}
 
@@ -637,6 +651,14 @@ function parse(format, currentStack) {
 			}
 
 			case "operator": {
+				if (capture == "%") {
+					const node = getParentNode(structStack);
+					if (node && node.type == "fmtRef") {
+						popStruct(node);
+						break;
+					}
+				}
+
 				if (!isAllowedChildNode("operator", structStack)) {
 					push(match);
 					break;
@@ -645,17 +667,17 @@ function parse(format, currentStack) {
 				const op = mkNode({
 					type: "operator",
 					value: capture,
-					name: null,
+					opId: null,
 					unary: false
 				}, ex);
 
 				if (hasOwn(UNARY_OPS, capture)) {
 					op.unary = true;
-					op.name = UNARY_OPS[capture];
+					op.opId = UNARY_OPS[capture];
 				}
 
 				if (hasOwn(BINARY_OPS, capture))
-					op.name = BINARY_OPS[capture];
+					op.opId = BINARY_OPS[capture];
 
 				push(op);
 				break;
@@ -682,7 +704,7 @@ function parse(format, currentStack) {
 				push(match);
 		}
 
-		ptr += match.length;
+		ptr += len;
 	}
 
 	if (ptr < format.length)
@@ -1093,7 +1115,7 @@ function pASTCleanExpr(expr) {
 			if (!node.unary && i != nextOpIdx) {
 				if (hasOwn(UNARY_CONVERTIBLE_OPS, node.value)) {
 					node.unary = true;
-					node.name = UNARY_CONVERTIBLE_OPS[node.value];
+					node.opId = UNARY_CONVERTIBLE_OPS[node.value];
 				} else
 					throwSyntaxError(node, "Invalid boolean expression: unexpected binary operator");
 			} else {
@@ -1272,10 +1294,10 @@ function resolveFormat(parsedFormat, meta = {}) {
 				return resolveRef(store, node, meta, resolveArray(node.args, resolveNode, meta));
 
 			case "interpolator":
-				return resolveCoerceExpr(node, resolveNode);
+				return resolveCoerceExpr(node, resolveNode, meta.evaluator, meta);
 
 			case "computedAccessorTerm":
-				return resolveExpr(node.expr, resolveNode);
+				return resolveExpr(node.expr, resolveNode, meta.evaluator, meta);
 
 			case "customGrammar":
 				return node.resolve(meta, node);
@@ -1296,7 +1318,7 @@ function resolveFormat(parsedFormat, meta = {}) {
 				const fTrace = meta.formatTrace;
 				meta.formatTrace = resolveRefTrace(fTrace, node, meta, [], resolveNode);
 
-				const parsed = parseFormat(meta.formatTrace.data),
+				const parsed = parseFormat(meta.formatTrace.data, meta.parseMeta),
 					resolved = resolve(parsed);
 
 				meta.formatTrace = fTrace;
@@ -1304,7 +1326,7 @@ function resolveFormat(parsedFormat, meta = {}) {
 			}
 
 			case "selector": {
-				const exprVal = resolveCoerceExpr(node, resolveNode);
+				const exprVal = resolveCoerceExpr(node, resolveNode, meta.evaluator, meta);
 				let term = null;
 
 				switch (typeof exprVal) {
@@ -1342,8 +1364,8 @@ function resolveArray(arr, resolver = resolveFormat, meta = {}) {
 	return out;
 }
 
-function resolveCoerceExpr(node, resolver = resolveFormat, meta = {}) {
-	const resolved = resolveExpr(node.expr, resolver, meta);
+function resolveCoerceExpr(node, resolver = resolveFormat, evaluator = evalExpr, meta = {}) {
+	const resolved = resolveExpr(node.expr, resolver, evaluator, meta);
 
 	switch (node.coerce) {
 		case "boolean":
@@ -1368,21 +1390,118 @@ function resolveCoerceExpr(node, resolver = resolveFormat, meta = {}) {
 	return resolved;
 }
 
-function resolveExpr(expr, resolver = resolveFormat, meta = {}) {
+// TODO: create polyfillable operators to reduce hardcoding
+function mkExpressionEvaluator(overloads = {}) {
+	const outOverloads = {};
+	let cases = "";
+
+	for (let i = 0, l = OP_DATA_LIST.length; i < l; i++) {
+		const op = OP_DATA_LIST[i];
+		let ol = overloads[op.opId] || overloads[op.operator],
+			caseCode = "";
+
+		if (op == OP_DATA.AND)
+			caseCode += "rt.sCircOp = \"AND\";\n\t\t\t";
+		if (op == OP_DATA.OR)
+			caseCode += "rt.sCircOp = \"OR\";\n\t\t\t";
+
+		if (!op.unique && hasOwn(overloads, op.operator))
+			throw new Error(`Invalid overload: ambiguous operator '${op.operator}'`);
+
+		if (ol) {
+			if (typeof ol == "function" || isObject(ol))
+				ol = [ol];
+
+			if (!Array.isArray(ol) )
+				throw new TypeError("Invalid overload: overload must be either a function or condition object, or an array of those");
+
+			const outOverload = ol.slice();
+
+			if (typeof outOverload[outOverload.length - 1] != "function") {
+				let catchAll = null;
+
+				if (op.unary)
+					catchAll = Function("t", `return ${op.operator}t`);
+				else if (op == OP_DATA.FLOOR_DIVISION)
+					catchAll = (l, r) => Math.floor(l / r);
+				else if (op == OP_DATA.EXPONENTIALIZATION)
+					catchAll = (l, r) => Math.pow(l, r);
+				else if (op == OP_DATA.NULLISH_COALESCING) {
+					catchAll = l => l == null;
+				} else
+					catchAll = Function("l", "r", `return l ${op.operator} r`);
+
+				outOverload.push(catchAll);
+			}
+
+			outOverloads[op.opId] = outOverload;
+
+			if (op.unary)
+				caseCode += `return olu(ev(rt), O.${op.opId});`;
+			else if (op == OP_DATA.NULLISH_COALESCING) {
+				caseCode += `if (olb(rt.val, null, O.${op.opId}))
+				return ev(rt);
+
+			rt.idx++;
+			return rt.val;`;
+			} else
+				caseCode += `return olb(rt.val, ev(rt), O.${op.opId});`;
+		} else if (op.unary)
+			caseCode += `return ${op.operator}ev(rt);`;
+		else if (op == OP_DATA.FLOOR_DIVISION)
+			caseCode += "return Math.floor(rt.val / ev(rt))";
+		else if (op == OP_DATA.EXPONENTIALIZATION)
+			caseCode += "return Math.pow(rt.val, ev(rt))";
+		else if (op == OP_DATA.NULLISH_COALESCING) {
+			caseCode += `if (rt.val == null)
+				return ev(rt);
+
+			rt.idx++;
+			return rt.val;`;
+		} else
+			caseCode += `return rt.val ${op.operator} ev(rt);`;
+
+		cases += `
+		case "${op.opId}":
+			${caseCode}
+		`;
+	}
+
+	const code = `
+function ev(rt) {
+	var term = rt.expr[rt.idx++];
+
+	if (term.type == "group")
+		return res(term.children, rt.resolver, rt.evaluator, rt.meta);
+
+	if (term.type != "operator")
+		return rt.resolver(term, rt.meta);
+
+	switch (term.opId) {${cases}}
+}
+
+return ev;
+	`;
+
+	return Function("res", "O", "olu", "olb", code)(resolveExpr, outOverloads, overloadUnary, overloadBinary);
+}
+
+function resolveExpr(expr, resolver = resolveFormat, evaluator = evalExpr, meta = {}) {
 	const rt = {
 		idx: 0,
 		sCircOp: null,
 		val: null,
 		expr,
 		resolver,
+		evaluator,
 		meta
 	};
 
 	const len = expr.length;
-	rt.val = evalTape(rt);
+	rt.val = rt.evaluator(rt);
 
 	while (rt.idx < len) {
-		const nextVal = evalTape(rt);
+		const nextVal = rt.evaluator(rt);
 
 		if (rt.sCircOp && ((rt.sCircOp == "AND" && !rt.val) || (rt.sCircOp == "OR" && rt.val)))
 			return rt.val;
@@ -1393,120 +1512,23 @@ function resolveExpr(expr, resolver = resolveFormat, meta = {}) {
 	return rt.val;
 }
 
-const ADD_OVERLOAD = [
-	// Python-esque list concatenation
-	{
-		left: Array,
-		right: Array,
-		run: (l, r) => l.concat(r)
-	},
-	(l, r) => l + r
-];
+let evalExpr = _ => {};
 
-const MUL_OVERLOAD = [
-	// Python-esque string repetition
-	{
-		left: "string",
-		right: "number",
-		run: (l, r) => repeat(l, r)
-	},
-	// ...and list repetition
-	{
-		left: Array,
-		right: "number",
-		run: (l, r) => {
-			const out = [],
-				len = l.length;
+function overloadUnary(term, conditions, def) {
+	for (let i = 0, l = conditions.length; i < l; i++) {
+		const condition = conditions[i];
 
-			while (r--) {
-				for (let i = 0; i < len; i++)
-					out.push(l[i]);
-			}
+		if (typeof condition == "function")
+			return condition(term);
 
-			return out;
-		}
-	},
-	(l, r) => l * r
-];
-
-function evalTape(rt) {
-	const term = rt.expr[rt.idx++];
-
-	if (term.type == "group")
-		return resolveExpr(term.children, rt.resolver);
-
-	if (term.type != "operator")
-		return rt.resolver(term, rt.meta);
-
-	switch (term.value) {
-		case "!":
-			return !evalTape(rt);
-		case "~":
-			return ~evalTape(rt);
-		case "|":
-			return rt.val | evalTape(rt);
-		case "||":
-			rt.sCircOp = "OR";
-			return rt.val || evalTape(rt);
-		case "&":
-			return rt.val & evalTape(rt);
-		case "&&":
-			rt.sCircOp = "AND";
-			return rt.val && evalTape(rt);
-		case "^":
-			return rt.val ^ evalTape(rt);
-		case ">":
-			return rt.val > evalTape(rt);
-		case "<":
-			return rt.val < evalTape(rt);
-		case "==":
-			return rt.val == evalTape(rt);
-		case "===":
-			return rt.val === evalTape(rt);
-		case "!=":
-			return rt.val != evalTape(rt);
-		case "!==":
-			return rt.val !== evalTape(rt);
-		case ">=":
-			return rt.val >= evalTape(rt);
-		case "<=":
-			return rt.val <= evalTape(rt);
-		case "<<":
-			return rt.val << evalTape(rt);
-		case ">>":
-			return rt.val >> evalTape(rt);
-		case ">>>":
-			return rt.val >>> evalTape(rt);
-		case "+":
-			if (term.unary)
-				return +evalTape(rt);
-
-			return overload(rt.val, evalTape(rt), ADD_OVERLOAD);
-		case "-":
-			if (term.unary)
-				return -evalTape(rt);
-
-			return rt.val - evalTape(rt);
-		case "*":
-			return overload(rt.val, evalTape(rt), MUL_OVERLOAD);
-		case "/":
-			return rt.val / evalTape(rt);
-		case "//":
-			return Math.floor(rt.val / evalTape(rt));
-		case "**":
-			return Math.pow(rt.val, evalTape(rt));
-		case "??":
-			if (rt.val == null)
-				return evalTape(rt);
-
-			rt.idx++;
-			return rt.val;
-		case "%":
-			return rt.val % evalTape(rt);
+		if (matchType(term, condition.term))
+			return condition.run(term);
 	}
+
+	return def;
 }
 
-function overload(left, right, conditions, def) {
+function overloadBinary(left, right, conditions, def) {
 	for (let i = 0, l = conditions.length; i < l; i++) {
 		const condition = conditions[i];
 
@@ -1519,7 +1541,7 @@ function overload(left, right, conditions, def) {
 		if (lml && rmr)
 			return condition.run(left, right);
 
-		if (condition.swappable === false)
+		if (condition.reversible === false)
 			continue;
 
 		const lmr = matchType(left, condition.right),
@@ -1571,9 +1593,9 @@ function resolveGet(store, nodeOrAccessor, meta, resolver = resolveFormat) {
 		if (nodeOrAccessor.type != "variable") {
 			accessor = nodeOrAccessor.value;
 			useResolvedKeys = false;
-		} else if (nodeOrAccessor.staticAccessor) {
+		} else {
 			accessor = nodeOrAccessor.accessor;
-			useResolvedKeys = false;
+			useResolvedKeys = !nodeOrAccessor.staticAccessor;
 		}
 	}
 
@@ -1708,6 +1730,48 @@ function passVars(vars, extraVars) {
 	return Object.assign({}, vars, extraVars);
 }
 
+(_ => {
+	const add = (opId, value) => {
+		value.opId = opId;
+		OP_DATA[opId] = value;
+		OP_DATA_LIST.push(value);
+	};
+
+	for (const k in UNARY_OPS) {
+		if (hasOwn(UNARY_OPS, k)) {
+			add(UNARY_OPS[k], {
+				operator: k,
+				unary: true
+			});
+		}
+	}
+
+	for (const k in UNARY_CONVERTIBLE_OPS) {
+		if (hasOwn(UNARY_CONVERTIBLE_OPS, k)) {
+			add(UNARY_CONVERTIBLE_OPS[k], {
+				operator: k,
+				unary: true
+			});
+		}
+	}
+
+	for (const k in BINARY_OPS) {
+		if (hasOwn(BINARY_OPS, k)) {
+			add(BINARY_OPS[k], {
+				operator: k,
+				unary: false
+			});
+		}
+	}
+
+	for (let i = 0, l = OP_DATA_LIST.length; i < l; i++) {
+		const op = OP_DATA_LIST[i];
+		op.unique = hasOwn(UNARY_OPS, op.operator) + hasOwn(UNARY_CONVERTIBLE_OPS, op.operator) + hasOwn(BINARY_OPS, op.operator) == 1;
+	}
+
+	evalExpr = mkExpressionEvaluator();
+})();
+
 export {
 	parseFormat,
 	resolveFormat,
@@ -1718,5 +1782,6 @@ export {
 	resolveRef,
 	resolveRefCaller,
 	resolveRefTrace,
-	passVars
+	passVars,
+	mkExpressionEvaluator
 };

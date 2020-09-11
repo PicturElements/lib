@@ -11,7 +11,7 @@ const DATE_FORMATTER_REGEX = /^([a-z]*)([A-Z]*)$/,
 		S: "second"
 	};
 
-const customGrammars = [
+export default [
 	{
 		name: "date-formatter",
 		regex: /\b([yldhms])\1+?\b/gi,
@@ -46,18 +46,12 @@ function getDateFormatterUnitValue(dateOrValue, cls) {
 		return 0;
 
 	switch (cls) {
-		case "year":
-			return dateOrValue.getFullYear();
-		case "month":
-			return dateOrValue.getMonth() + 1;
-		case "day":
-			return dateOrValue.getDate();
-		case "hour":
-			return dateOrValue.getHours();
-		case "minute":
-			return dateOrValue.getMinutes();
-		case "second":
-			return dateOrValue.getSeconds();
+		case "year": return dateOrValue.getFullYear();
+		case "month": return dateOrValue.getMonth() + 1;
+		case "day": return dateOrValue.getDate();
+		case "hour": return dateOrValue.getHours();
+		case "minute": return dateOrValue.getMinutes();
+		case "second": return dateOrValue.getSeconds();
 	}
 
 	return 0;
@@ -101,7 +95,6 @@ function processDateFormatter(dateOrValue, formatter, getter) {
 	return formatter;
 }
 
-export default customGrammars;
 export {
 	processDateFormatter
 };
