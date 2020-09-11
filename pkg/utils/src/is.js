@@ -5,6 +5,7 @@ import {
 import hasOwn from "./has-own";
 import getFunctionName from "./get-function-name";
 import type from "./lazy/type";
+import splitPath from "./split-path";
 
 const DOC_ALL = typeof document == "undefined" ? [] : document.all;
 
@@ -285,6 +286,13 @@ function isStandardPropertyDescriptor(descriptor) {
 	return descriptor.writable && descriptor.enumerable && descriptor.configurable;
 }
 
+function isPath(candidate) {
+	if (typeof candidate != "string")
+		return false;
+
+	return splitPath.regexes.matchFull.test(candidate);
+}
+
 export {
 	isDirectInstanceof,
 	isNativeSimpleObject,
@@ -312,5 +320,6 @@ export {
 	isEmptyString,
 	isThenable,
 	isTaggedTemplateArgs,
-	isStandardPropertyDescriptor
+	isStandardPropertyDescriptor,
+	isPath
 };

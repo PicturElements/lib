@@ -2,10 +2,10 @@ import { unescape } from "./str-replace";
 import hasOwn from "./has-own";
 
 const REGEX_SOURCES = {
-	// /[$a-z0-9_-]+|\[(?:(["'`])((?:[^\\]|\\.)*?)\1|((?:[^\\\]]*|\\.)+?))\]"/gi
+	// /[$a-z0-9_-]+|\[(?:(["'`])((?:[^\\]|\\.)*?)\1|((?:[^\\\]]*|\\.)+?))\]/gi
 	path: "[$:a-z0-9_-]+|\\[(?:([\"'`])((?:[^\\\\]|\\\\.)*?)\\1|((?:[^\\\\\\]]*|\\\\.)+?))\\]",
-	// /([$a-z0-9_-]+(?:\.[$a-z0-9_-]+?|\[(?:(["'`])(?:[^\\]|\\.)*?\2|(?:[^\\\]]*|\\.)+?)\])*)/gi
-	match: "([$:a-z0-9_-]+(?:\\.[$a-z0-9_-]+|\\[(?:([\"'`])(?:[^\\\\]|\\\\.)*?\\2|(?:[^\\\\\\]]*|\\\\.)+?)\\])*)",
+	// /([$a-z0-9_-]+(?:\.[$a-z0-9_-]+?|\[(?:(["'`])(?:[^\\]|\\.)*?\2|(?:[^\\\]]|\\.)+?)\])*)/gi
+	match: "([$:a-z0-9_-]+(?:\\.[$a-z0-9_-]+|\\[(?:([\"'`])(?:[^\\\\]|\\\\.)*?\\2|(?:[^\\\\\\]]|\\\\.)+?)\\])*)",
 	// /[$a-z0-9_-]/gi
 	normalPropertyChars: "[$:a-z0-9_-]",
 	// /[^$a-z0-9_-]/
@@ -15,14 +15,10 @@ const REGEX_SOURCES = {
 const REGEXES = {
 	path: new RegExp(REGEX_SOURCES.path, "gi"),
 	match: new RegExp(REGEX_SOURCES.match, "gi"),
+	matchFull: new RegExp(`^${REGEX_SOURCES.match}$`, "i"),
 	normalPropertyChars: new RegExp(REGEX_SOURCES.normalPropertyChars, "gi"),
 	abnormalPropertyChars: new RegExp(REGEX_SOURCES.abnormalPropertyChars, "i")
 };
-
-// /\[((?:[^\\[\]]*(?:\\.)?)*)\]|\.?((?:[^\\[\].]*(?:\\.)?)*)/g
-// /\[(["'`]?)((?:[^\\[\]]|\\.)*?)\1\]|\.?((?:[^\\[\].]*(?:\\.)?)*)/g
-// /\[((["'`])(?:[^\\]|\\.)+?\2|(?:[^\\[\]]|\\.)+?)\]|(?:^|\.)((?:[^\\[.]|\\.)+)/g
-// /(?:^|\.)((?:[^\\[.]|\\.)+)|\[(?:(["'`])((?:[^\\]|\\.)+?)\2|((?:[^\\[\]]|\\.)+?))\]/g
 
 // REGEXES.path capturing groups:
 // 1: String quote character (within bracket notation)

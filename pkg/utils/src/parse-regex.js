@@ -211,9 +211,46 @@ export default function parseRegex(source, flags = "") {
 		}
 
 		switch (char) {
-			case "\\":
+			case "\\": {
+				const nextChar = source[ptr + 1];
+
+				// Word boundaries
+				if (nextChar == "b" || nextChar == "B") {
+					appendToken(
+						mkToken(nextChar == "b" ? T.WORD_BOUNDARY : T.NON_WORD_BOUNDARY)
+					);
+					ptr += 2;
+					break;
+				}
+
+				// Backrefs
+				let refId = 0,
+					refIdLen = 0;
+				for (let i = 0; i < 3 && ptr + i + 1 < len; i++) {
+					const c = source[ptr + i + 1],
+						digit = c.charCodeAt(0) - 48;
+
+					if (digit < 0 || digit > 9)
+						break;
+
+					refId = refId * 10 + digit;
+					refIdLen++;
+				}
+
+				if (refId && refId <= groups.length) {
+					appendToken(
+						mkTokenWithData(T.BACKREF, {
+							id: refId,
+							group: groups[refId - 1]
+						})
+					);
+					ptr += refIdLen + 1;
+					break;
+				}
+				
 				consumeNextLiteralChar();
 				break;
+			}
 
 			case "(": {
 				let groupSignature = source.substring(ptr + 1, ptr + 3),
@@ -383,47 +420,8 @@ export default function parseRegex(source, flags = "") {
 				ptr++;
 				break;
 
-			default: {
-				if (char == "\\") {
-					const nextChar = source[ptr + 1];
-
-					// Word boundaries
-					if (nextChar == "b" || nextChar == "B") {
-						appendToken(
-							mkToken(nextChar == "b" ? T.WORD_BOUNDARY : T.NON_WORD_BOUNDARY)
-						);
-						ptr += 2;
-						break;
-					}
-
-					// Backrefs
-					let refId = 0,
-						refIdLen = 0;
-					for (let i = 0; i < 3 && ptr + i + 1 < len; i++) {
-						const c = source[ptr + i + 1],
-							digit = c.charCodeAt(0) - 48;
-
-						if (digit < 0 || digit > 9)
-							break;
-
-						refId = refId * 10 + digit;
-						refIdLen++;
-					}
-
-					if (refId && refId <= groups.length) {
-						appendToken(
-							mkTokenWithData(T.BACKREF, {
-								id: refId,
-								group: groups[refId - 1]
-							})
-						);
-						ptr += refIdLen + 1;
-						break;
-					}
-				}
-
+			default:
 				consumeNextLiteralChar();
-			}
 		}
 	}
 
