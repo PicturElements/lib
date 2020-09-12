@@ -154,7 +154,11 @@ export default class I18NBranch extends Hookable {
 		return new I18NBranch(this.manager, this, path);
 	}
 
-	// Utils
+	// Utilities
+	isEmpty(value) {
+		return this.owner.isEmpty(value);
+	}
+
 	mkPath(accessor) {
 		return mkPath(
 			this.path,

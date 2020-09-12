@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/i18n",
-  "version": "3.5.1",
+  "version": "3.5.2",
   "description": "Compact, powerful, fast, and intuitive internationali(z|s)ation library",
   "main": "index.js",
   "scripts": {
@@ -37,7 +37,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 39,
+    "pushes": 40,
     "expose": {
       "scripts": [
         "connect/feed.js"
