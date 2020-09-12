@@ -89,6 +89,10 @@ $date-time-params: (
 			}
 		}
 
+		.drop-dropdown-scroll {
+			justify-content: center;
+		}
+
 		&.error {
 			&:not(.open) .drop-expando-box {
 				background: $error-background;
@@ -97,6 +101,7 @@ $date-time-params: (
 			}
 		}
 
+		// Mobile styling
 		&.mobi {
 			.drop-dropdown {
 				padding-bottom: 0;

@@ -45,6 +45,7 @@
 						v-for="button in action.buttons"
 						:class="button.class"
 						tabindex="-1"
+						type="button"
 						@click="button.act") {{ button.label }}
 </template>
 

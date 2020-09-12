@@ -4,6 +4,8 @@
 		:class="classes"
 		:adaptive="true"
 		:scrollTargets="['.year-scroll', { node: '.drop-dropdown-scroll', tolerance: 10 }]"
+		:aria-invalid="err"
+		ref="drop"
 		@collapse="collapse"
 		@key="key")
 		template(#expando-box="rt")
@@ -19,12 +21,16 @@
 				:input="input"
 				:dropRuntime="rt"
 				:eagerCollapse="res(eagerCollapse)"
+				ref="selector"
 				@displaydatachange="dd => dateDisplayData = dd"
 				@trigger="trigger")
 </template>
 
 <script>
-	import { set } from "@qtxr/utils";
+	import {
+		set,
+		hasAncestor
+	} from "@qtxr/utils";
 	import EVT from "@qtxr/evt";
 	import { Date as DateInput } from "@qtxr/form";
 	import mixin from "../mixin";
@@ -74,6 +80,86 @@
 			collapse(evt) {
 				this.dateDisplayData.resetDisplay();
 			},
+			move(evt, direction) {
+				const el = this.$refs.drop.$el,
+					target = this.getFocusNode();
+
+				if (!target)
+					return false;
+
+				const grid = target.parentNode.parentNode,
+					bounded = grid.classList.contains("bounded");
+				let newTarget = null;
+
+				if (direction == "home") {
+					if (bounded && (evt.ctrlKey || evt.metaKey))
+						newTarget = grid.querySelector(".bordered-row .bordered-cell:not(:disabled)");
+					else
+						newTarget = target.parentNode.querySelector(".bordered-cell:not(:disabled)");
+				} else if (direction == "end") {
+					let nodes = null;
+
+					if (bounded && (evt.ctrlKey || evt.metaKey))
+						nodes = grid.querySelectorAll(".bordered-row:last-child .bordered-cell:not(:disabled)");
+					else
+						nodes = target.parentNode.querySelectorAll(".bordered-cell:not(:disabled)");
+
+					newTarget = nodes[nodes.length - 1];
+				} else if (!this.focusInView())
+					newTarget = target;
+				else if (direction == "left")
+					newTarget = target.previousElementSibling;
+				else if (direction == "right")
+					newTarget = target.nextElementSibling;
+				else {
+					const row = direction == "up" ?
+						target.parentNode.previousElementSibling :
+						target.parentNode.nextElementSibling;
+
+					if (!row)
+						return false;
+
+					newTarget = row.children[this.getElemIndex(target)];
+				}
+
+				if (!newTarget || newTarget.disabled)
+					return false;
+
+				newTarget.focus();
+				return true;
+			},
+			getElemIndex(elem) {
+				let idx = 0;
+
+				while (elem = elem.previousElementSibling)
+					idx++;
+
+				return idx;
+			},
+			focusInView() {
+				const wrapper = this.$refs.selector.$el.querySelector(".date-selector-cards");
+				if (!wrapper)
+					return false;
+
+				return hasAncestor(document.activeElement, wrapper);
+			},
+			getFocusNode() {
+				const el = this.$refs.drop.$el,
+					selectors = [
+						".date-selector-card.active .bordered-cell:focus",
+						".date-selector-card.active .bordered-cell.active",
+						".date-selector-card.active .bordered-cell.current-year:not(:disabled)",
+						".date-selector-card.active .bordered-cell:not(:disabled)"
+					];
+				
+				for (let i = 0, l = selectors.length; i < l; i++) {
+					const node = el.querySelector(selectors[i]);
+					if (node)
+						return node;
+				}
+
+				return null;
+			},
 			key(evt, key, runtime) {
 				switch (key) {
 					case "enter":
@@ -83,14 +169,22 @@
 						}
 						break;
 
-					case "left":
-						this.dateDisplayData.setActiveIdx(-1);
-						evt.preventDefault();
+					case "space":
+						if (!this.focusInView) {
+							const node = this.getFocusNode();
+							if (node)
+								node.focus();
+						}
 						break;
 
+					case "up":
+					case "down":
+					case "left":
 					case "right":
-						this.dateDisplayData.setActiveIdx(1);
-						evt.preventDefault();
+					case "home":
+					case "end":
+						if (this.move(evt, key))
+							evt.preventDefault();
 						break;
 				}
 			}

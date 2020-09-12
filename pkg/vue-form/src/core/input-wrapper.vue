@@ -191,9 +191,9 @@
 		template(#label="d")
 			slot(:name="`${name}-label`" v-bind="d")
 				slot(name="radio-label" v-bind="d")
-		template(#custom-content="d")
-			slot(:name="`${name}-custom-content`" v-bind="d")
-				slot(name="radio-custom-content" v-bind="d")
+		template(#description="d")
+			slot(:name="`${name}-description`" v-bind="d")
+				slot(name="radio-description" v-bind="d")
 
 	TextArea(
 		v-else-if="is('textarea')"
@@ -212,22 +212,22 @@
 </template>
 
 <script>
-	import Checkbox from "./inputs/checkbox.vue";
-	import Coordinates from "./inputs/coordinates.vue";
-	import Count from "./inputs/count.vue";
-	import Date from "./inputs/date.vue";
-	import DateTime from "./inputs/date-time.vue";
-	import Dropdown from "./inputs/dropdown.vue";
-	import Formatted from "./inputs/formatted.vue";
-	import List from "./inputs/list.vue";
-	import Media from "./inputs/media.vue";
-	import Multi from "./inputs/multi.vue";
-	import Radio from "./inputs/radio.vue";
-	import TextInput from "./inputs/text.vue";
-	import TextArea from "./inputs/textarea.vue";
-	import Time from "./inputs/time.vue";
+	import Checkbox from "../inputs/checkbox.vue";
+	import Coordinates from "../inputs/coordinates.vue";
+	import Count from "../inputs/count.vue";
+	import Date from "../inputs/date.vue";
+	import DateTime from "../inputs/date-time.vue";
+	import Dropdown from "../inputs/dropdown.vue";
+	import Formatted from "../inputs/formatted.vue";
+	import List from "../inputs/list.vue";
+	import Media from "../inputs/media.vue";
+	import Multi from "../inputs/multi.vue";
+	import Radio from "../inputs/radio.vue";
+	import TextInput from "../inputs/text.vue";
+	import TextArea from "../inputs/textarea.vue";
+	import Time from "../inputs/time.vue";
 
-	import utilMixin from "./util-mixin";
+	import utilMixin from "../util-mixin";
 
 	export default {
 		name: "InputWrapper",

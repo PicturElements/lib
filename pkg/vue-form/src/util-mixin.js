@@ -114,6 +114,9 @@ export default {
 		classes() {
 			return this.cl();
 		},
+		err() {
+			return this.validationState == "error";
+		},
 		dis() {
 			return this.disabled == "boolean" ?
 				this.disabled :
@@ -135,12 +138,16 @@ export default {
 		},
 		inpProps() {
 			return {
+				id: this.input.uid,
+				required: this.res(this.input.required),
 				disabled: this.dis,
 				readonly: this.ro
 			};
 		},
 		inpPropsFull() {
 			return {
+				id: this.input.uid,
+				required: this.res(this.input.required),
 				disabled: this.dis,
 				readonly: this.ro,
 				autocomplete: this.ac,

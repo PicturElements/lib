@@ -1,5 +1,8 @@
 <template lang="pug">
-	.input-block(:class="classes")
+	.input-block(
+		:is="blockTag"
+		:class="classes"
+		role="form")
 		template(v-for="(block, idx) in blocks")
 			InputBlock(
 				v-if="block.isInputBlock"
@@ -14,10 +17,17 @@
 				v-else-if="block.input.visible"
 				:class="jc(block.class.box, `input-box-${block.input.type || 'text'}`)"
 				:data-name="block.input.name")
-				p.title(
+				label.title(
 					v-if="block.title"
-					:class="jc({ required: block.input.required }, block.class.title)")
+					:id="block.input.uid + '-title'"
+					:class="jc({ required: block.input.required }, block.class.title)"
+					:for="block.input.uid")
 						| {{ res(block, block.title) }}
+				label.aria-title(
+					v-else
+					:id="block.input.uid + '-title'"
+					:for="block.input.uid")
+						| {{ block.input.dict('label') || block.input.name }}
 				slot(:name="`${block.input.name}-pre-content`" v-bind="bind(block)")
 					slot(name="pre-content" v-bind="bind(block)")
 				InputWrapper(
@@ -38,7 +48,7 @@
 
 <script>
 	import InputWrapper from "./input-wrapper.vue";
-	import utilMixin from "./util-mixin";
+	import utilMixin from "../util-mixin";
 
 	export default {
 		name: "InputBlock",
@@ -71,6 +81,14 @@
 			}
 		},
 		computed: {
+			blockTag() {
+				const ua = (window.navigator && navigator.userAgent) || "",
+					usesDumbBrowser = ua.indexOf("Safari") != -1 && ua.indexOf("Chrome") == -1;
+
+				return !this.root || usesDumbBrowser ?
+					"div" :
+					"form";
+			},
 			inputMeta() {
 				return {
 					mobileQuery: this.mobileQuery
@@ -106,7 +124,8 @@
 			mobileQuery: {
 				type: String,
 				default: "(max-aspect-ratio: 1/1) and (max-width: 700px)"
-			}
+			},
+			root: Boolean
 		}
 	};
 </script>

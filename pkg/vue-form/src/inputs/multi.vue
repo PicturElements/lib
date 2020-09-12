@@ -6,21 +6,22 @@
 		:flushDropdown="true"
 		:flushWidth="res(flushWidth)"
 		:gap="res(gap)"
+		:aria-invalid="err"
 		scrollTarget=".options-scroller"
 		@expand="expand"
 		@collapse="collapse"
 		@assets="assets => dropAssets = assets")
 		template(#expando-box="rt")
-			.selection-box
+			ul.selection-box
 				template(v-if="$scopedSlots['selection-option']")
 					template(v-for="(option, idx) in input.optionsContext.selection")
 						slot(
 							name="selection-option"
 							v-bind="bindOption(option)")
-				.default-selection-option(
+				li.default-selection-option(
 					v-else
 					v-for="(option, idx) in input.optionsContext.selection")
-					span.selection-option.value
+					.selection-option.value
 						slot(
 							name="selection-option-value"
 							v-bind="bindOption(option)")

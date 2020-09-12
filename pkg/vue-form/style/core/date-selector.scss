@@ -346,6 +346,12 @@ $date-selector-params: (
 
 		.bordered-cell {
 			position: relative;
+			appearance: none;
+			background: transparent;
+			border: none;
+			outline: none;
+			color: inherit;
+			font: inherit;
 			cursor: pointer;
 
 			+ .bordered-cell {
@@ -366,6 +372,13 @@ $date-selector-params: (
 				pointer-events: none;
 			}
 
+			&:focus {
+				.cell-focus {
+					border-color: $highlight;
+					opacity: 0.7;
+				}
+			}
+
 			.cell-highlight {
 				position: absolute;
 				top: -$cell-padding;
@@ -378,11 +391,30 @@ $date-selector-params: (
 				z-index: 9;
 			}
 
+			.cell-focus {
+				position: absolute;
+				top: 2px;
+				bottom: 2px;
+				left: 2px;
+				right: 2px;
+				border-radius: 2px;
+				box-sizing: border-box;
+				border: 2px solid transparent;
+				z-index: 10;
+			}
+
 			&.active {
 				color: $highlight-complement;
 
 				.cell-highlight {
 					background: $highlight;
+				}
+
+				&:focus {
+					.cell-focus {
+						border-color: $highlight-complement;
+						opacity: 1;
+					}
 				}
 			}
 

@@ -78,7 +78,7 @@ $multi-params: (
 				border: $error-border;
 
 				.selection-box {
-					&:empty:before {
+					&:empty:after {
 						background: $error-color;
 						color: $error-background;
 					}
@@ -96,6 +96,8 @@ $multi-params: (
 			display: flex;
 			position: relative;
 			flex-wrap: wrap;
+			list-style: none;
+			margin: 0;
 			min-height: $selection-item-height + 2 * $selection-item-spacing;
 			padding: $selection-item-spacing 0 0 $selection-item-spacing;
 			overflow: auto;

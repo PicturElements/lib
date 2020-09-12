@@ -161,18 +161,23 @@
 				const dLen = this.dialsData[this.activeDialsIdx].dials.length,
 					idx = Math.min(this.activeIndices[this.activeDialsIdx], dLen);
 
-				if (relative)
-					this.activeIndices[this.activeDialsIdx] = cap ? ((dLen + (idx % dLen) + newIdx) % dLen) : (idx + newIdx);
-				else
-					this.activeIndices[this.activeDialsIdx] = cap ? Math.min(Math.max(idx, 0), dLen - 1) : newIdx;
+				if (relative) {
+					this.activeIndices[this.activeDialsIdx] = cap ?
+						((dLen + (idx % dLen) + newIdx) % dLen) :
+						(idx + newIdx);
+				} else {
+					this.activeIndices[this.activeDialsIdx] = cap ?
+						Math.min(Math.max(idx, 0), dLen - 1) :
+						newIdx;
+				}
 
-				this.updates++;
+				this.emitDisplayData();
 			},
 			resetDisplay() {
 				for (let i = 0, l = this.activeIndices.length; i < l; i++)
 					this.activeIndices[i] = this.dialsData[i].defaultIdx;
 
-				this.updates++;
+				this.emitDisplayData();
 			}
 		},
 		props: {

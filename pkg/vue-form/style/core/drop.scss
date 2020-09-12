@@ -35,8 +35,8 @@ $drop-params: (
 			.drop-dropdown {
 				visibility: hidden;
 				position: fixed;
-				top: 0;
-				left: 0;
+				top: -1000px;
+				left: -1000px;
 				pointer-events: none;
 				z-index: -100000;
 			}

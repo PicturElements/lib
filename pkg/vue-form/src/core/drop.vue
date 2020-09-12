@@ -4,26 +4,45 @@
 		ref="wrapper")
 		button.mobi-focus(
 			:disabled="disabled"
-			:tabindex="expanded ? -1 : 0"
+			:tabindex="expanded ? -1 : null"
+			:aria-labelledby="input.uid + '-title'"
+			:aria-haspopup="!ro"
+			:aria-expanded="expanded"
+			:aria-controls="input.uid + '-dropdown'"
+			:aria-label="expanded ? input.dict('close') : input.dict('open')"
+			:aria-readonly="ro"
+			role="button"
+			type="button"
 			@click="expand")
-		textarea.focus-probe(
+		button.focus-probe(
+			:is="probeTag"
 			:disabled="disabled"
-			:tabindex="expanded ? -1 : 0"
+			:tabindex="expanded ? -1 : null"
+			:aria-labelledby="input.uid + '-title'"
+			:aria-haspopup="!ro"
+			:aria-expanded="expanded"
+			:aria-controls="input.uid + '-dropdown'"
+			:aria-label="expanded ? input.dict('close') : input.dict('open')"
+			:aria-readonly="ro"
+			role="button"
+			type="button"
+			ref="focusProbe"
 			@focus="focus"
 			@blur="blur"
-			@click="expand"
-			ref="focusProbe")
+			@click="expand")
 		.collapse-target(@click="collapse")
 		.drop-expando-box(ref="expando")
 			slot(
 				name="expando-box"
 				v-bind="runtime")
 		.drop-dropdown(
+			:id="input.uid + '-dropdown'"
 			:style="dropdownStyle"
+			ref="dropdown"
 			@mousedown="handleAdaptiveFocusDown"
 			@wheel="handleWheel"
-			@focusout="handleFocusOut"
-			ref="dropdown")
+			@focusin="handleFocusIn"
+			@focusout="handleFocusOut")
 			slot(name="content" v-bind="runtime")
 				.drop-dropdown-scroll
 					slot(v-bind="runtime")
@@ -114,6 +133,7 @@
 				this.expanded = false;
 				this.dropdownDirection = null;
 				this.focusData.target = null;
+				this.focusData.adaptiveBlurTarget = null;
 				this.focusData.focusWeight = 0;
 				this.setTimeout(_ => this.focusData.blurWeight = 0, 50);
 				this.$emit("collapse", this.runtime);
@@ -155,12 +175,16 @@
 					this.applyFocus();
 			},
 			handleRequestedBlur() {
-				const nodeInScope = hasAncestor(document.activeElement, this.$refs.dropdown);
+				const nodeInScope = hasAncestor(document.activeElement, this.$refs.dropdown),
+					nodeIsRemoved = this.nodeIsRemoved(this.focusData.target);
 
-				if (this.focusData.focusWeight >= this.focusData.blurWeight && this.adaptive && nodeInScope)
+				if (this.adaptive && nodeInScope && this.focusData.focusWeight >= this.focusData.blurWeight)
 					this.handleAdaptiveFocusTarget(document.activeElement);
 				else {
-					if (this.focusData.blurWeight > this.focusData.focusWeight || !nodeInScope)
+					// Special case: node has been removed from DOM altogether
+					if (nodeIsRemoved)
+						this.applyFocus();
+					else if (this.adaptive || this.focusData.blurWeight > this.focusData.focusWeight || !nodeInScope)
 						this.collapse();
 					else if (nodeInScope)
 						this.applyFocus();
@@ -172,6 +196,7 @@
 
 				if (this.adaptive && hasAncestor(evt.target, this.$refs.dropdown)) {
 					this.focusData.focusWeight = this.focusData.blurWeight + 1;
+
 					requestFrame(_ => {
 						this.focusData.focusWeight = 0;
 						this.handleAdaptiveFocusTarget(evt.target);
@@ -185,7 +210,7 @@
 				if (hasAncestor(ae, dropdown))
 					this.setAdaptiveBlurTarget(ae);
 				else
-					this.applyFocus();
+					this.applyFocus(target);
 			},
 			handleWheel(evt) {
 				const targets = this.getScrollTargets(),
@@ -235,6 +260,13 @@
 
 					break;
 				}
+			},
+			handleFocusIn(evt) {
+				if (!this.adaptive)
+					return;
+
+				this.focusData.target = evt.target;
+				this.focusData.adaptiveBlurTarget = evt.target;
 			},
 			handleFocusOut(evt) {
 				if (!this.adaptive || !this.focusData.adaptiveBlurTarget)
@@ -388,6 +420,15 @@
 
 				return true;
 			},
+			nodeIsRemoved(node) {
+				if (node.isConnected === false)
+					return true;
+
+				if (!hasAncestor(node, this.$refs.wrapper))
+					return true;
+
+				return false;
+			},
 			getScrollTargets() {
 				if (!this.scrollTarget && !this.scrollTargets)
 					return [];
@@ -462,6 +503,14 @@
 			}
 		},
 		computed: {
+			probeTag() {
+				const ua = (window.navigator && navigator.userAgent) || "",
+					usesDumbBrowser = ua.indexOf("Safari") != -1 && ua.indexOf("Chrome") == -1;
+
+				return usesDumbBrowser ?
+					"textarea" :
+					"button";
+			},
 			runtime() {
 				return {
 					...this.assets,

@@ -21,24 +21,24 @@ $radio-params: (
 		position: relative;
 		user-select: none;
 
-		.radio-section {
-			+ .radio-section {
+		.section {
+			+ .section {
 				margin-top: 5px;
 			}
 
-			&.active .radio-option {
+			&.checked .option {
 				&:before {
 					visibility: visible;
 				}
 			}
 
-			.radio-top {
+			.top {
 				display: flex;
 				align-items: center;
 			}
 		}
 
-		.radio-option {
+		.option {
 			position: relative;
 			width: 1.8em;
 			height: 1.8em;
@@ -75,8 +75,12 @@ $radio-params: (
 			cursor: pointer;
 		}
 
+		.description {
+			cursor: pointer;
+		}
+
 		&.error {
-			.radio-option:not(:active) {
+			.option:not(:active) {
 				background: $error-background;
 				border: $error-border;
 			}

@@ -83,6 +83,10 @@ $time-params: (
 			padding: 10px;
 		}
 
+		.drop-dropdown-scroll {
+			justify-content: center;
+		}
+
 		&.error {
 			&:not(.open) .drop-expando-box {
 				background: $error-background;
@@ -94,7 +98,6 @@ $time-params: (
 		// Mobile styling
 		&.mobi {
 			.drop-dropdown-scroll {
-				justify-content: center;
 				padding: 10px 0;
 			}
 		}

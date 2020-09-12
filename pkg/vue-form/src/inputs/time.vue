@@ -4,6 +4,7 @@
 		:class="classes"
 		:adaptive="true"
 		:scrollTarget="{ node: '.drop-dropdown-scroll', tolerance: 100 }"
+		:aria-invalid="err"
 		@collapse="collapse"
 		@key="key")
 		template(#expando-box="rt")

@@ -1,7 +1,8 @@
 <template lang="pug">
 	InputBlock.v-form(
 		:blocks="blocks"
-		:mobileQuery="mobileQuery")
+		:mobileQuery="mobileQuery"
+		:root="true")
 		template(
 			v-for="(_, name) in $scopedSlots"
 			#[name]="d")
@@ -17,7 +18,7 @@
 <script>
 	import Form from "@qtxr/form";
 
-	import InputBlock from "./input-block";
+	import InputBlock from "./core/input-block";
 	import utilMixin from "./util-mixin";
 
 	export default {

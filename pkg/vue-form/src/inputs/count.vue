@@ -2,42 +2,50 @@
 	.input-wrapper.count.inp-count(:class="cl({ compact: res(input.compact) })")
 		template(v-if="res(compact)")
 			input(
-				type="tel"
 				v-bind="inpPropsFull"
 				:value="input.value"
+				:aria-invalid="err"
+				:inputmode="inputmode"
+				type="tel"
 				@keydown="keydown"
 				@change="change")
 			.vertical-count-buttons
 				button.count-btn.up(
-					tabindex="-1"
 					:disabled="inert"
+					tabindex="-1"
+					type="button"
 					@click="up")
 					slot(name="up-symbol")
 						template(v-if="symbols.up") {{ res(symbols.up) }}
 						.default-count-symbol.up(v-else)
 				.count-btn-sep
 				button.count-btn.down(
-					tabindex="-1"
 					:disabled="inert"
+					tabindex="-1"
+					type="button"
 					@click="down")
 					slot(name="down-symbol")
 						template(v-if="symbols.down") {{ res(symbols.down) }}
 						.default-count-symbol.down(v-else)
 		template(v-else)
 			button.count-btn.down(
-				tabindex="-1"
 				:disabled="inert"
+				tabindex="-1"
+				type="button"
 				@click="down")
 				slot(name="down-symbol") {{ res(symbols.down) || "-" }}
 			input(
-				type="tel"
 				v-bind="inpPropsFull"
 				:value="input.value"
+				:aria-invalid="err"
+				:inputmode="inputmode"
+				type="tel"
 				@keydown="keydown"
 				@change="change")
 			button.count-btn.up(
-				tabindex="-1"
 				:disabled="inert"
+				tabindex="-1"
+				type="button"
 				@click="up")
 				slot(name="up-symbol") {{ res(symbols.up) || "+" }}
 </template>
@@ -67,7 +75,7 @@
 					else
 						this.fitCount(ticks[idx]);
 				} else
-					this.fitCount(round(this.input.value + (this.input.step || 1), 8));
+					this.fitCount(round(this.input.value + (this.res(this.input.step) || 1), 8));
 			},
 			down() {
 				const ticks = this.input.ticks;
@@ -78,7 +86,7 @@
 
 					this.fitCount(ticks[idx]);
 				} else
-					this.fitCount(round(this.input.value - (this.input.step || 1), 8));
+					this.fitCount(round(this.input.value - (this.res(this.input.step) || 1), 8));
 			},
 			change(evt) {
 				this.fitCount(Number(evt.target.value) || 0);
@@ -89,6 +97,7 @@
 						this.up();
 						evt.preventDefault();
 						break;
+
 					case "down":
 						this.down();
 						evt.preventDefault();
@@ -116,6 +125,30 @@
 
 				if (!this.inert)
 					this.input.trigger(newCount);
+			}
+		},
+		computed: {
+			inputmode() {
+				const step = this.res(this.input.step) || 1,
+					ticks = this.res(this.input.ticks, 0);
+
+				if (Array.isArray(ticks)) {
+					// Don't mess around with huge arrays and return
+					// the safest and most universal option
+					if (ticks.length > 100)
+						return "decimal";
+
+					for (let i = 0, l = ticks.length; i < l; i++) {
+						if (ticks[i] % 1 != 0)
+							return "decimal";
+					}
+
+					return "numeric";
+				}
+
+				return step % 1 == 0 ?
+					"numeric" :
+					"decimal";
 			}
 		},
 		props: {

@@ -4,6 +4,7 @@
 		:class="classes"
 		:disabled="dis"
 		:adaptive="true"
+		:aria-invalid="err"
 		@collapse="collapse"
 		@key="key")
 		template(#expando-box="rt")

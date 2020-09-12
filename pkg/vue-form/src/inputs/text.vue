@@ -4,14 +4,18 @@
 			v-bind="inpPropsFull"
 			:value="input.value"
 			:type="res(input.type)"
+			:aria-invalid="err"
 			@keydown="check"
 			@input="trigger"
 			@paste="handlePattern")
-		.validation-msg(:class="validationMsg ? 'active' : null") {{ validationMsg }}
+		ValidationMsg(
+			:input="input"
+			:msg="validationMsg")
 </template>
 
 <script>
 	import { Text } from "@qtxr/form";
+	import ValidationMsg from "../core/validation-msg.vue";
 	import mixin from "../mixin";
 
 	export default {
@@ -30,6 +34,9 @@
 		props: {
 			input: Text,
 			placeholder: [String, Function]
+		},
+		components: {
+			ValidationMsg
 		}
 	}
 </script>

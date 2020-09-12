@@ -1,19 +1,33 @@
 <template lang="pug">
-	.input-wrapper.radio.inp-radio(:class="classes")
-		.radio-section(v-for="(option, idx) in options"
-			:class="{ active: idx == activeIndex }")
-			.radio-top
-				button.radio-option(
+	.input-wrapper.radio.inp-radio(
+		:class="classes"
+		:aria-invalid="err"
+		role="radiogroup")
+		.section(
+			v-for="(option, idx) in options"
+			:class="{ checked: idx == activeIndex }")
+			.top
+				button.option(
+					:class="{ description: !!$scopedSlots.description }"
 					:disabled="inert || optionIsDisabled(option)"
-					:class="{ custom: $scopedSlots['option'] }"
+					:aria-invalid="err"
+					:aria-labelledby="`${input.uid}-label-${idx}`"
+					:aria-checked="idx == activeIndex"
+					:aria-describedby="$scopedSlots.description ? `${input.uid}-description-${idx}` : null"
+					name="placeholder"
+					role="radio"
 					@click="trigger(option)")
 					slot(name="option" v-bind="bindOption(option)")
-				.label(@click="trigger(option)")
+				label.label(
+					:id="`${input.uid}-label-${idx}`"
+					@click="trigger(option)")
 					slot(name="label" v-bind="bindOption(option)")
 						| {{ getLabel(option) }}
-			.radio-custom-content-wrapper(v-if="$scopedSlots['custom-content']")
-				.radio-custom-content
-					slot(name="custom-content" v-bind="bindOption(option)")
+			.description-wrapper(v-if="$scopedSlots.description")
+				.description(
+					:id="`${input.uid}-description-${idx}`"
+					@click="trigger(option)")
+					slot(name="description" v-bind="bindOption(option)")
 </template>
 
 <script>

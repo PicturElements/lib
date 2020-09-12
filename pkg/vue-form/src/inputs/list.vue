@@ -1,5 +1,7 @@
 <template lang="pug">
-	.input-wrapper.list.inp-list(:class="cl({ 'has-focus': focusIdx > -1 })")
+	.input-wrapper.list.inp-list(
+		:class="cl({ 'has-focus': focusIdx > -1 })"
+		:aria-invalid="err")
 		button.list-row-add(
 			:disabled="addIsDisabled(0)"
 			@click="add(0)")

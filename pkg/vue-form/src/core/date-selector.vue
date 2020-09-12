@@ -6,48 +6,81 @@
 		.card-header
 			button.card-move.back.lag-blur(
 				:style="{ visibility: input.cards[activeCardsIdx].back == false ? 'hidden' : null }"
+				type="button"
 				@click="back(input.cards[activeCardsIdx])")
-			button.card-nav.lag-blur(@click="nextCard") {{ navLabel }}
+			button.card-nav.lag-blur(
+				:id="input.uid + '-nav-header'"
+				aria-live="polite"
+				type="button"
+				@click="nextCard") {{ navLabel }}
 			button.card-move.forwards.lag-blur(
 				:style="{ visibility: input.cards[activeCardsIdx].forwards == false ? 'hidden' : null }"
+				type="button"
 				@click="forwards(input.cards[activeCardsIdx])")
 		.date-selector-cards
 			template(v-for="(card, idx) in input.cards")
 				.date-selector-card(
 					v-if="card.guideSize || idx == activeCardsIdx"
-					:class="[ `${card.name}-card`, card.guideSize ? 'guide' : null ]"
-					:style="{ visibility: idx == activeCardsIdx ? 'visible' : 'hidden' }")
+					:class="[ `${card.name}-card`, card.guideSize ? 'guide' : null, idx == activeCardsIdx ? 'active' : null, card.name != 'year' ? 'bounded' : null]"
+					:style="{ visibility: idx == activeCardsIdx ? 'visible' : 'hidden' }"
+					:aria-labelledby="input.uid + '-nav-header'"
+					role="grid")
 					template(v-if="card.name == 'day'")
-						.calendar-labels
-							.calendar-label(v-for="label in getCalendarLabels(card)") {{ label }}
+						.calendar-labels(role="row")
+							.calendar-label(
+								v-for="labels in getCalendarLabels(card)"
+								:aria-label="labels.verboseLabel"
+								role="columnheader") {{ labels.label }}
 						template(v-for="row in getCalendarRows(card)")
-							.calendar-row.bordered-row(:class="row.class")
+							.calendar-row.bordered-row(
+								:class="row.class"
+								role="row")
 								template(v-for="cell in row.cells")
-									.calendar-cell.bordered-cell(
+									button.calendar-cell.bordered-cell(
 										:class="cell.class"
+										:aria-selected="cell.active"
+										:disabled="cell.disabled"
+										role="gridcell"
+										tabindex="-1"
+										type="button"
 										@click="cell.setDay")
 										.cell-highlight
+										.cell-focus
 										span {{ cell.value }}
 					template(v-else-if="card.name == 'month'")
 						template(v-for="row in getMonthRows(card)")
-							.month-row.bordered-row
+							.month-row.bordered-row(role="row")
 								template(v-for="cell in row")
-									.month-cell.bordered-cell(
+									button.month-cell.bordered-cell(
 										:class="cell.class"
+										:aria-selected="cell.active"
+										:aria-label="cell.label"
+										:disabled="cell.disabled"
+										role="gridcell"
+										tabindex="-1"
+										type="button"
 										@click="cell.setMonth")
 										.cell-highlight
+										.cell-focus
 										span {{ cell.value }}
 					template(v-else-if="card.name == 'year'")
 						.year-scroll(
+							role="rowgroup"
 							ref="yearScroll"
 							@scroll="handleYearScroll")
 							template(v-for="row in yearRows || getYearRows()")
-								.year-row.bordered-row
+								.year-row.bordered-row(role="row")
 									template(v-for="cell in row")
-										.year-cell.bordered-cell(
+										button.year-cell.bordered-cell(
 											:class="cell.class"
+											:aria-selected="cell.active"
+											:disabled="cell.disabled"
+											role="gridcell"
+											tabindex="-1"
+											type="button"
 											@click="cell.setYear")
 											.cell-highlight
+											.cell-focus
 											span {{ cell.value }}
 					template(v-else)
 						slot(
@@ -84,12 +117,16 @@
 			// Day card
 			getCalendarLabels(card) {
 				const labels = this.res(card.labels) || [],
+					verboseLabels = this.res(card.verboseLabels) || [],
 					labelsOut = [],
 					offset = this.res(card.dayOffset) || 0;
 
 				for (let i = 0; i < 7; i++) {
 					const idx = (7 + (offset + i) % 7) % 7;
-					labelsOut.push(labels[idx]);
+					labelsOut.push({
+						label: labels[idx],
+						verboseLabel: verboseLabels[idx]
+					});
 				}
 
 				return labelsOut;
@@ -148,7 +185,7 @@
 								isRange && (hash >= startHash && hash <= endHash),
 							isStart = isRange && activeStart,
 							isEnd = isRange && activeEnd,
-							isDisabled = hash < minDateHash || (maxDateHash > -1 && hash > maxDateHash);
+							disabled = hash < minDateHash || (maxDateHash > -1 && hash > maxDateHash);
 
 						if (active) {
 							if (aIdx == -1 && (j - i) < 6 && rows.length)
@@ -165,19 +202,21 @@
 
 						const cell = {
 							value,
+							active,
+							disabled: oob || disabled,
 							class: {
 								active,
+								disabled,
 								start: isStart,
 								end: isEnd,
 								today: j == day && isActiveMonth && !oob,
-								disabled: isDisabled,
-								"out-of-bounds": oob || isDisabled,
+								"out-of-bounds": oob || disabled,
 								"in-range": inRange,
 								"top-corner": j == i && lastActiveIdx > 0,
 								"bottom-corner": false
 							},
 							setDay: _ => {
-								if (isDisabled)
+								if (disabled)
 									return;
 
 								const d = new Date(ad.year, ad.month, j);
@@ -221,9 +260,11 @@
 					isRange = this.input.range,
 					node = isRange ? val[this.displayIdx] : val,
 					ad = this.getActiveDisplay(),
-					labels = this.res(card.labels),
+					labels = this.res(card.labels) || [],
+					verboseLabels = this.res(card.verboseLabels) || [],
 					minDateHash = this.hashDate(this.input.minDate, 2),
 					maxDateHash = this.hashDate(this.input.maxDate, 2),
+					currentMonth = new Date().getMonth(),
 					w = 4,
 					h = 3;
 
@@ -233,16 +274,21 @@
 					for (let j = 0; j < w; j++) {
 						const month = i * w + j,
 							monthHash = ad.year * 12 + month,
-							isDisabled = monthHash < minDateHash || (maxDateHash > -1 && monthHash > maxDateHash);
+							disabled = monthHash < minDateHash || (maxDateHash > -1 && monthHash > maxDateHash),
+							active = node.year == ad.year && node.month == month && node.monthSet;
 
 						const cell = {
 							value: labels[month],
+							label: verboseLabels[month],
+							active,
+							disabled,
 							class: {
-								active: node.year == ad.year && node.month == month && node.monthSet,
-								disabled: isDisabled
+								active,
+								disabled,
+								"current-month": currentMonth == month
 							},
 							setMonth: _ => {
-								if (isDisabled)
+								if (disabled)
 									return;
 
 								this.setMonth(month, card, node);
@@ -294,6 +340,7 @@
 					node = isRange ? val[this.displayIdx] : val,
 					minDateHash = this.hashDate(this.input.minDate, 1),
 					maxDateHash = this.hashDate(this.input.maxDate, 1),
+					currentYear = new Date().getFullYear(),
 					offset = Math.floor(options.offset / 4) * 4,
 					start = -(options.paddingStart || options.padding || 0),
 					end = 1 + (options.paddingEnd || options.padding || 0)
@@ -303,16 +350,20 @@
 
 					for (let j = 0; j < 4; j++) {
 						const year = offset + i * 4 + j,
-							isDisabled = year < minDateHash || (maxDateHash > -1 && year > maxDateHash);
+							active = node.year == year && node.yearSet,
+							disabled = year < minDateHash || (maxDateHash > -1 && year > maxDateHash);
 
 						const cell = {
 							value: year,
+							active,
+							disabled,
 							class: {
-								active: node.year == year && node.yearSet,
-								disabled: isDisabled
+								active,
+								disabled,
+								"current-year": currentYear == year
 							},
 							setYear: _ => {
-								if (isDisabled)
+								if (disabled)
 									return;
 
 								this.setYear(year, this.input.cards[this.activeCardsIdx], node);
@@ -532,7 +583,7 @@
 				let displayVal = value;
 
 				const card = cardData.card,
-					labels = this.res(card.labels),
+					labels = this.res(card.labels) || [],
 					candidateDispVal = this.res(card.display, value, labels);
 
 				if (candidateDispVal != null && String(candidateDispVal))
@@ -614,7 +665,7 @@
 
 				for (let i = idx; i < this.input.cards.length; i++) {
 					const card = this.input.cards[i],
-						labels = this.res(card.labels),
+						labels = this.res(card.labels) || [],
 						ad = this.getActiveDisplay(),
 						displayVal = this.res(card.display, ad[card.name], labels);
 

@@ -29,6 +29,13 @@ $options-params: (
 
 		.options-scroller {
 			overflow: auto;
+			list-style: none;
+			padding: 0;
+			margin: 0;
+		}
+
+		.options-wrapper .options-scroller {
+			overflow: hidden;
 		}
 
 		.option {
@@ -39,6 +46,7 @@ $options-params: (
 			height: $height;
 			padding: 0 $padding;
 			white-space: nowrap;
+			outline: none;
 
 			&.with-icon {
 				padding: 0 ($height + $padding) 0 $padding;

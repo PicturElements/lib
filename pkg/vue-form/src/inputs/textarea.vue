@@ -3,13 +3,17 @@
 		textarea(
 			v-bind="inpPropsFull"
 			:value="input.value"
+			:aria-invalid="err"
 			@keydown="check"
 			@input="trigger")
-		.validation-msg(:class="validationMsg ? 'active' : null") {{ validationMsg }}
+		ValidationMsg(
+			:input="input"
+			:msg="validationMsg")
 </template>
 
 <script>
 	import { TextArea } from "@qtxr/form";
+	import ValidationMsg from "../core/validation-msg.vue";
 	import mixin from "../mixin";
 
 	export default {
@@ -27,6 +31,9 @@
 		props: {
 			input: TextArea,
 			placeholder: [String, Function]
+		},
+		components: {
+			ValidationMsg
 		}
 	}
 </script>

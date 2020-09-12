@@ -1,6 +1,7 @@
 <template lang="pug">
 	.input-wrapper.coordinates.inp-coordinates(
-		:class="cl({ 'search-enabled': searchEnabled, 'coords-enabled': coordsEnabled })")
+		:class="cl({ 'search-enabled': searchEnabled, 'coords-enabled': coordsEnabled })"
+		:aria-invalid="err")
 		.map-wrapper
 			.pad-box-wrapper
 				.pad-box
@@ -20,6 +21,7 @@
 				button.run-btn(
 					:disabled="geolocationDenied || runningGeolocation || inert"
 					:class="{ active: runningGeolocation }"
+					type="button"
 					@click="runGeolocation")
 					svg.run-icon.geolocation-icon
 						slot(name="geolocation-icon" v-bind="bnd")
@@ -35,17 +37,21 @@
 				button.run-btn(
 					:disabled="!query || runningSearch || inert"
 					:class="{ active: runningSearch }"
+					type="button"
 					@click="runSearch")
 					svg.run-icon.search-icon
 						slot(name="search-icon" v-bind="bnd")
 							svg(viewBox="0 0 10 10")
 								circle(cx="6" cy="4" r="3.5")
 								path(d="M3.5 6.5 l-2.5 2.5")
-		.validation-msg(:class="validationMsg ? 'active' : null") {{ validationMsg }}
+		ValidationMsg(
+			:input="input"
+			:msg="validationMsg")
 </template>
 
 <script>
 	import { Coordinates } from "@qtxr/form";
+	import ValidationMsg from "../core/validation-msg.vue";
 	import EVT from "@qtxr/evt";
 	import mixin from "../mixin";
 
@@ -151,10 +157,6 @@
 				return this.runningSearch || this.runningGeolocation;
 			}
 		},
-		props: {
-			input: Coordinates,
-			placeholder: [String, Function]
-		},
 		watch: {
 			"input.value"(val) {
 				if (!this.initialized)
@@ -176,6 +178,13 @@
 
 				this.marker.setDraggable(!disabled);
 			}
+		},
+		props: {
+			input: Coordinates,
+			placeholder: [String, Function]
+		},
+		components: {
+			ValidationMsg
 		},
 		mounted() {
 			if (typeof google == "undefined" || !google.maps)

@@ -7,18 +7,25 @@
 			slot(name="empty" v-bind="bind({ query: context.state.query })")
 				.empty No results found
 		.intermediate-padding(v-else-if="!context.state.fetches && context.state.loading")
-		.options-scroller(
+		ul.options-scroller(
 			v-else
 			ref="scroller")
 			template(
 				v-for="(option, idx) in context.options"
 				v-if="option.visible")
-				.nested-option(
+				li.nested-option(
 					v-if="option.type == 'context'"
-					:class="{ expanded: option.expanded }")
-					.option.expando.with-icon(
+					:class="{ expanded: option.expanded }"
+					tabindex="-1")
+					button.option.expando.with-icon(
 						:class="{ expanded: option.expanded, pointer: hasPointer(idx) }"
-						@click="toggleExpand(option)")
+						:aria-expanded="option.expanded"
+						:aria-controls="option.uid + '-dropdown'"
+						aria-haspopup="true"
+						tabindex="-1"
+						type="button"
+						@click="toggleExpand(option, idx)"
+						@keydown="guardExpand($event, option, idx)")
 						.option-inner
 							slot(
 								:name="getOptionSlotName(context)"
@@ -29,21 +36,26 @@
 								.default-icon.chevron(:class="{ flip: option.expanded }")
 					Options(
 						v-if="option.expanded"
+						:id="option.uid + '-dropdown'"
 						:input="input"
 						:context="option.context"
 						:ptr="passPointer(idx)"
 						:depth="depth + 1"
 						:behavior="behavior"
-						@trigger="emitTrigger")
+						@trigger="emitTrigger"
+						@setpointer="acc => setPointer(acc, idx)"
+						@invoke="args => invokeRoot(...args)")
 						template(
 							v-for="(_, name) in $scopedSlots"
 							#[name]="d")
 							slot(
 								:name="name"
 								v-bind="d")
-				.option(
+				li.option(
 					v-else
 					:class="{ selected: option.selected, pointer: hasPointer(idx) }"
+					:aria-selected="option.selected"
+					tabindex="-1"
 					@click="dispatch(option)")
 					.option-inner
 						slot(
@@ -69,6 +81,7 @@
 			};
 		},
 		methods: {
+			// Form interfacing
 			dispatch(option) {
 				if (this.behavior.toggleOption) {
 					if (option.selected)
@@ -86,14 +99,28 @@
 				option.deselect();
 				this.emitTrigger(option);
 			},
-			toggleExpand(option) {
+			toggleExpand(option, idx) {
 				if (option.expanded)
 					option.expanded = false;
 				else {
 					option.context.search();
 					option.expanded = true;
 				}
+
+				this.setPointer([], idx);
 			},
+			guardExpand(evt, option, idx) {
+				if (EVT.getKey(evt) == "enter") {
+					evt.stopPropagation();
+					if (!option.expanded)
+						this.invokeRoot("scrollToPointer");
+				}
+			},
+			emitTrigger(option) {
+				this.$emit("trigger", option);
+			},
+
+			// Render utilities
 			getLabel(option) {
 				option = option.value;
 				const label = (option && option.hasOwnProperty("label")) ?
@@ -110,6 +137,9 @@
 
 				return typeof value == "object" ? "" : value;
 			},
+			getOptionSlotName(context) {
+				return `${context.config.name}-option`;
+			},
 			bindOption(option) {
 				return this.bind({
 					fullOption: option,
@@ -120,12 +150,24 @@
 					dispatch: _ => this.dispatch(option)
 				});
 			},
-			emitTrigger(option) {
-				this.$emit("trigger", option);
+			hasPointer(idx) {
+				const ptr = this.pointer || this.ptr;
+
+				if (this.depth != ptr.length - 1)
+					return false;
+
+				return idx == ptr[this.depth];
 			},
-			getOptionSlotName(context) {
-				return `${context.config.name}-option`;
+			passPointer(idx) {
+				const ptr = this.pointer || this.ptr;
+
+				if (ptr[this.depth] != idx)
+					return [-1];
+
+				return ptr;
 			},
+
+			// Root level methods: pointer
 			incrementPointer() {
 				const ptr = this.pointer;
 
@@ -185,7 +227,7 @@
 				};
 
 				apply(this.input.optionsContext.options, null, 0);
-				this.scrollToPointer();
+				this.focusPointer();
 				this.$emit("pointermove", {
 					pointer: this.pointer,
 					mode: "increment"
@@ -248,19 +290,11 @@
 				};
 
 				apply(this.input.optionsContext.options, null, 0);
-				this.scrollToPointer();
+				this.focusPointer();
 				this.$emit("pointermove", {
 					pointer: this.pointer,
 					mode: "decrement"
 				});
-			},
-			hasVisibleOptions(options) {
-				for (let i = 0, l = options.length; i < l; i++) {
-					if (options[i].visible)
-						return true;
-				}
-
-				return false;
 			},
 			getNextPointerIndex(options, idx) {
 				return this.getPointerIndex(options, idx, "increment");
@@ -273,27 +307,6 @@
 			},
 			getLastPointerIndex(options) {
 				return this.getPointerIndex(options, options.length, "decrement");
-			},
-			scrollToPointer() {
-				requestFrame(_ => this.scrollTo(".option.pointer"));
-			},
-			scrollTo(nodeOrSelector) {
-				const scroller = this.$refs.scroller;
-				let node = nodeOrSelector;
-				if (!scroller)
-					return;
-
-				if (typeof nodeOrSelector == "string")
-					node = scroller.querySelector(nodeOrSelector);
-
-				if (!node)
-					return;
-
-				const sbcr = scroller.getBoundingClientRect(),
-					nbcr = node.getBoundingClientRect(),
-					delta = nbcr.top - (sbcr.top + ((sbcr.height - nbcr.height) / 2));
-
-				scroller.scrollTop += delta;
 			},
 			getPointerIndex(options, idx, mode) {
 				if (mode == "increment") {
@@ -331,21 +344,65 @@
 				else
 					this.dispatch(option);
 			},
-			hasPointer(idx) {
-				const ptr = this.pointer || this.ptr;
+			hasVisibleOptions(options) {
+				for (let i = 0, l = options.length; i < l; i++) {
+					if (options[i].visible)
+						return true;
+				}
 
-				if (this.depth != ptr.length - 1)
-					return false;
-
-				return idx == ptr[this.depth];
+				return false;
 			},
-			passPointer(idx) {
-				const ptr = this.pointer || this.ptr;
 
-				if (ptr[this.depth] != idx)
-					return [-1];
+			// Root level methods: scroll/focus
+			scrollToPointer() {
+				requestFrame(_ => this.scrollTo(".option.pointer"));
+			},
+			focusPointer() {
+				requestFrame(_ => this.focus(".option.pointer"));
+			},
+			scrollTo(nodeOrSelector) {
+				const scroller = this.$refs.scroller;
+				let node = nodeOrSelector;
+				if (!scroller)
+					return null;
 
-				return ptr;
+				if (typeof nodeOrSelector == "string")
+					node = scroller.querySelector(nodeOrSelector);
+
+				if (!node)
+					return null;
+
+				const sbcr = scroller.getBoundingClientRect(),
+					nbcr = node.getBoundingClientRect(),
+					delta = nbcr.top - (sbcr.top + ((sbcr.height - nbcr.height) / 2));
+
+				scroller.scrollTop += delta;
+				return node;
+			},
+			focus(nodeOrSelector) {
+				const node = this.scrollTo(nodeOrSelector);
+				if (node)
+					node.focus();
+			},
+
+			// Inter-component communication
+			setPointer(acc, idx) {
+				acc.push(idx);
+
+				if (this.depth)
+					this.$emit("setpointer", acc);
+				else {
+					acc.reverse();
+					this.pointer = acc;
+				}
+			},
+			invokeRoot(...args) {
+				if (this.depth)
+					this.$emit("invoke", args);
+				else {
+					const [method, ...a] = args;
+					this[method](...a);
+				}
 			}
 		},
 		watch: {

@@ -71,6 +71,10 @@ $date-params: (
 			padding: 10px;
 		}
 
+		.drop-dropdown-scroll {
+			justify-content: center;
+		}
+
 		&.error {
 			&:not(.open) .drop-expando-box {
 				background: $error-background;

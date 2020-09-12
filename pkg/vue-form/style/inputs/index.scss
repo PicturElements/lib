@@ -6,6 +6,7 @@
 @use "../core/options.scss" as *;
 @use "../core/search-input-box.scss" as *;
 @use "../core/time-selector.scss" as *;
+@use "../core/validation-msg.scss" as *;
 
 // Input styling
 @use "./base.scss" as *;
@@ -35,6 +36,7 @@
 	@include options(compose-args($core-theme, $options-params, "base", "options")...);
 	@include search-input-box(compose-args($core-theme, $search-input-box-params, "base", "search-input-box")...);
 	@include time-selector(compose-args($core-theme, $time-selector-params, "base", "time-selector")...);
+	@include validation-msg(compose-args($core-theme, $validation-msg-params, "base", "validation-msg")...);
 
 	// Input style
 	@include base(compose-args($theme, $base-params, "base")...);

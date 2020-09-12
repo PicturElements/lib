@@ -6,6 +6,7 @@
 		:flushDropdown="true"
 		:flushWidth="res(flushWidth)"
 		:gap="res(gap)"
+		:aria-invalid="err"
 		scrollTarget=".options-scroller"
 		@expand="expand"
 		@collapse="collapse"
@@ -32,16 +33,16 @@
 				input.search-input(
 					:class="{ 'pseudo-disabled': searchDisabled }"
 					v-model="query"
-					v-bind="inpProps"
+					ref="searchInput"
 					@keydown="guardInput"
-					@input="triggerSearch"
-					ref="searchInput")
+					@input="triggerSearch")
 				button.search-refresh(
 					v-if="!noRefresh"
 					:class="{ go: input.noAutoSearch && query !== input.optionsContext.state.lastQuery }"
 					:disabled="searchDisabled"
-					@click="search(true)"
-					tabindex="-1")
+					tabindex="-1"
+					type="button"
+					@click="search(true)")
 			Options(
 				:input="input"
 				:context="input.optionsContext"
