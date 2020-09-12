@@ -3,7 +3,7 @@ import Input, {
 	REFRESH,
 	MERGE_INJECT
 } from "./input";
-import OptionsContext from "../assets/options-context";
+import OptionsContext from "../core/options-context";
 
 export default class Multi extends Input {
 	constructor(name, options, form) {

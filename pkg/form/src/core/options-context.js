@@ -1,5 +1,6 @@
 import { Hookable } from "@qtxr/bc";
 import {
+	uid,
 	get,
 	hasOwn,
 	inject,
@@ -49,6 +50,7 @@ import Input from "../inputs/input";
 //									the parent node is rendered. Note that this will also trigger search
 //
 // Processed option structure
+// uid			string				Unique option identifier
 // type			string				The option type. "leaf" for normal options, "context" for OptionsContext option
 // context		OptionsContext		The closest OptionsContext instance. For leaf nodes, it's the parent instance,
 //									and for context nodes it's the corresponding OptionsContext instance
@@ -106,7 +108,11 @@ export default class OptionsContext extends Hookable {
 
 		this.input = input;
 		this.config = config.inherit !== false && parent ?
-			inject(config, parent.config) :
+			inject(config, parent.config, {
+				ignore: {
+					options: true
+				}
+			}) :
 			config;
 		this.globalConfig = globalConfig;
 
@@ -314,7 +320,8 @@ export default class OptionsContext extends Hookable {
 
 				if (this.config.nest !== false && isContextConfig(option)) {
 					option.type = "context";
-					option.context = new OptionsContext(this.input, option, this.globalConfig, this);
+					const { _, ...opt } = option;
+					option.context = new OptionsContext(this.input, opt, this.globalConfig, this);
 
 					if (option.context.config.expanded || inquisitive) {
 						pendingSearches.push(
@@ -326,6 +333,7 @@ export default class OptionsContext extends Hookable {
 					option.context = this;
 				}
 
+				option.uid = uid(12);
 				option.visible = true;
 				option.hash = this.config.hash(option.value);
 				option.owner = this;

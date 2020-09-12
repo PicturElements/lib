@@ -5,7 +5,7 @@ export default class Count extends Input {
 		super(name, options, form, {
 			min: "number",
 			max: "number",
-			step: "number",
+			step: "number|function",
 			ticks: "Array|function"
 		});
 	}

@@ -1,8 +1,10 @@
 export * from "./src/inputs/input";
-export * from "./src/templates";
+export * from "./src/assets/templates";
 
 export { default } from "./src/form";
-export { default as InputBlock } from "./src/input-block";
+export { default as InputBlock } from "./src/core/input-block";
+
+export { default as Input } from "./src/inputs/input";
 
 export { default as Checkbox } from "./src/inputs/checkbox";
 export { default as Coordinates } from "./src/inputs/coordinates";
@@ -18,4 +20,4 @@ export { default as Radio } from "./src/inputs/radio";
 export { default as Text } from "./src/inputs/text";
 export { default as TextArea } from "./src/inputs/textarea";
 export { default as Time } from "./src/inputs/time";
-export { default as templates } from "./src/templates";
+export { default as templates } from "./src/assets/templates";

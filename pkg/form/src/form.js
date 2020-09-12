@@ -29,9 +29,9 @@ import {
 	KeyedLinkedList
 } from "@qtxr/ds";
 
-import templates from "./templates";
-import InputGroupProxy from "./input-group-proxy";
-import InputBlock from "./input-block";
+import templates from "./assets/templates";
+import InputGroupProxy from "./core/input-group-proxy";
+import InputBlock from "./core/input-block";
 
 // Inputs
 import {
@@ -79,7 +79,8 @@ export default class Form extends Hookable {
 		const masterPreset = {
 			hooks: {},
 			options: {},
-			meta: {}
+			meta: {},
+			dictionary: {}
 		};
 
 		for (let i = 0, l = optionsAndPresets.length; i < l; i++) {
@@ -102,7 +103,8 @@ export default class Form extends Hookable {
 				inject(masterPreset, {
 					hooks: resolveVal(preset.hooks, this.mkRuntime()) || {},
 					options: resolveVal(preset.options, this.mkRuntime()) || {},
-					meta: resolveVal(preset.meta, this.mkRuntime()) || {}
+					meta: resolveVal(preset.meta, this.mkRuntime()) || {},
+					dictionary: resolveVal(preset.dictionary, this.mkRuntime()) || {}
 				}, "override");
 			} else if (isObject(item))
 				inject(masterPreset.options, item, "override");
@@ -333,9 +335,6 @@ export default class Form extends Hookable {
 				foundNames[name] = true;
 			} else if (this.options.noDuplicateNames)
 				throw new Error(`Cannot connect: duplicate inputs by name "${name}". To support multiple inputs with the same name, use the 'noDuplicateNames' option`);
-
-			/*if (sourceValues && hasOwn(sourceValues, name))
-				options.value = sourceValues[name];*/
 
 			options.sourceValues = sourceValues;
 			options.input = this.connect(nData, options);
@@ -1029,6 +1028,11 @@ export default class Form extends Hookable {
 		return this;
 	}
 
+	static setDictionary(dictionary) {
+		this.dictionary = dictionary || null;
+		return this;
+	}
+
 	// DEPRECATED: use connectRows instead
 	connectAll(inputs) {
 		for (const k in inputs) {
@@ -1076,9 +1080,17 @@ Form.comparators = {
 	deep: equals
 };
 
+// Global dictionary
+Form.dictionary = null;
+
 function isPreset(candidate) {
 	if (typeof candidate == "string")
 		return true;
 
-	return isObject(candidate) && (hasOwn(candidate, "hooks") || hasOwn(candidate, "options") || hasOwn(candidate, "meta"));
+	return isObject(candidate) && (
+		hasOwn(candidate, "hooks") ||
+		hasOwn(candidate, "options") ||
+		hasOwn(candidate, "meta") ||
+		hasOwn(candidate, "dictionary")
+	);
 }

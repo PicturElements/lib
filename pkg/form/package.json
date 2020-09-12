@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/form",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "description": "Flexible, pluggable, and modular form library",
   "main": "index.js",
   "scripts": {
@@ -25,10 +25,10 @@
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/form#readme",
   "dependencies": {
     "@qtxr/bc": "^1.5.1",
-    "@qtxr/ds": "^1.4.3",
+    "@qtxr/ds": "^1.4.5",
     "@qtxr/evt": "^1.2.4",
     "@qtxr/uc": "^1.7.2",
-    "@qtxr/utils": "^1.61.3"
+    "@qtxr/utils": "^1.66.0"
   },
   "devDependencies": {},
   "files": [
@@ -36,7 +36,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 78,
+    "pushes": 79,
     "expose": {
       "scripts": [
         "connect/feed.js"

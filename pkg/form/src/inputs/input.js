@@ -1,5 +1,6 @@
 import {
 	sym,
+	uid,
 	get,
 	set,
 	isObj,
@@ -27,6 +28,8 @@ import {
 	Formalizer,
 	FormalizerCell
 } from "@qtxr/uc";
+
+import dictionary from "../assets/dictionary";
 
 const CHECK = sym("check"),
 	TRIGGER = sym("trigger"),
@@ -58,6 +61,7 @@ const INIT_OPTIONS_SCHEMA = {
 	format: "string",
 	bare: "boolean",
 	sourceValues: "any",
+	dictionary: "object|function",
 
 	source: "string|function",
 	checkKey: "Object|string|function|RegExp",
@@ -101,6 +105,7 @@ export default class Input extends Hookable {
 		this.required = true;
 		this.type = "text";
 		this.nullable = false;
+		this.uid = uid(12);
 
 		// State
 		this.instantiated = false;
@@ -583,6 +588,23 @@ export default class Input extends Hookable {
 			return value(this.mkRuntime(), ...args);
 
 		return value;
+	}
+
+	dict(accessor, ...args) {
+		const sources = [
+			this.dictionary,
+			this.form.dictionary,
+			this.form.constructor.dictionary,
+			dictionary
+		];
+
+		for (let i = 0, l = sources.length; i < l; i++) {
+			const val = resolveDictValue(this, sources[i], accessor, args);
+			if (val != null)
+				return val;
+		}
+
+		return null;
 	}
 
 	callHooks(partitionName, ...args) {
@@ -1285,6 +1307,22 @@ function resolveValue(value) {
 		return value.data;
 
 	return value;
+}
+
+function resolveDictValue(input, source, accessor, args) {
+	const dict = input.res(source, ...args);
+	if (!dict)
+		return null;
+
+	// @qtxr/i18n-like sources
+	if (typeof dict.format == "function" && typeof dict.isEmpty == "function") {
+		const val = dict.format(accessor);
+		return dict.isEmpty(val) ?
+			null :
+			val;
+	}
+
+	return get(dict, accessor, null);
 }
 
 function cmp(input, a, b, smartResolve = false) {

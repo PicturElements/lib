@@ -3,7 +3,7 @@ import Input, {
 	REFRESH,
 	DISPATCH_VALUE
 } from "./input";
-import OptionsContext from "../assets/options-context";
+import OptionsContext from "../core/options-context";
 
 export default class Dropdown extends Input {
 	constructor(name, options, form) {

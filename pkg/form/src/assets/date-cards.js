@@ -5,16 +5,14 @@ import {
 	resolveVal
 } from "@qtxr/utils";
 
-const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-	WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
 const DATE_CARDS = {
 	day: {
 		name: "day",
 		accessor: "day",
 		defaultCard: false,
 		dayOffset: 1,
-		labels: runtime => resolveVal(runtime.input.dayLabels, runtime) || WEEKDAY_LABELS,
+		labels: runtime => resolveVal(runtime.input.dayLabels, runtime) || runtime.input.dict("days"),
+		verboseLabels: runtime => resolveVal(runtime.input.verboseDayLabels, runtime) || runtime.input.dict("verboseDays"),
 		display: (runtime, subVal, labels) => subVal,
 		back: null,
 		forwards: null,
@@ -26,7 +24,8 @@ const DATE_CARDS = {
 		name: "month",
 		accessor: "month",
 		defaultCard: false,
-		labels: runtime => resolveVal(runtime.input.monthLabels, runtime) || MONTH_LABELS,
+		labels: runtime => resolveVal(runtime.input.monthLabels, runtime) || runtime.input.dict("months"),
+		verboseLabels: runtime => resolveVal(runtime.input.verboseMonthLabels, runtime) || runtime.input.dict("verboseMonths"),
 		display: (runtime, subVal, labels) => labels[subVal],
 		back: null,
 		forwards: null,
@@ -39,6 +38,7 @@ const DATE_CARDS = {
 		accessor: "year",
 		defaultCard: false,
 		labels: null,
+		verboseLabels: null,
 		display: (runtime, subVal, labels) => subVal,
 		back: false,
 		forwards: false,
