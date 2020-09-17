@@ -13,7 +13,7 @@ import {
 	createOptionsObject
 } from "./internal/options";
 
-// Resolves arguments using a simple "lacuna" algorithm:
+// Resolves arguments using a simple pattern matching algorithm:
 // It steps through the parameter signature array and tries to match the next
 // argument with the type provided from the parameter object
 // It matches as follows:
@@ -22,8 +22,8 @@ import {
 // If the type is an array the argument is tested for any match of the array's types
 // If the type is unspecified there is a match by default
 //
-// If it matches, the current argument is set as a named argument
-// If it doesn't match, the default value provided by the parameter argument is
+// In the case of a match, the current value is set as a named argument
+// Else, the default value provided by the parameter argument is
 // set as the named argument and the next parameter is tested for a match, unless
 // the argument is nullish. In this case it's treated as an empty argument
 // and the next argument is lined up for matching
@@ -34,13 +34,15 @@ import {
 // that takes arguments on the form (number, string, number, string)
 // won't accept (number, number, string string) fully
 // In this case, resolveArgs would resolve the first number, fail to match the first string,
-// resovlve the second number, and finally resolve the first string in the arguments
+// resolve the second number, and finally resolve the first string in the arguments
 // The second argument string would become a rest argument
 // { num1: num1, num2: num2, str1: str1, str2: --, rest: [str2] }
 //
-// resolveArgs options:
+// resolveArgs flags:
 // allowSingleSource
 // returnArgList
+// omitRest
+// meta
 //
 // allowSingleSource:
 // If this flag is truthy and the first argument is an object, resolveArgs will
@@ -49,8 +51,14 @@ import {
 // parameter can match an object, as the arguments then become ambiguous
 //
 // returnArgList:
-// resolveArgs returns an array of all arguments in the order specified by the signature
-// Rest arguments are appended to the end of the array
+// If this flag is truthy, resolveArgs returns an array of all arguments in the order
+// specified by the signature. Rest arguments are appended to the end of the array
+//
+// omitRest:
+// If this flag is truthy, rest arguments are dropped from the resolved arguments
+//
+// meta:
+// If this flag is truthy, the resolved data will be wrapped in a meta object
 //
 // Signature parameter options:
 // name: string
@@ -59,6 +67,7 @@ import {
 // coalesce: boolean
 // resolve: function
 // alias / aliases: string | string[]
+// noClone: boolean
 //
 // name:
 // Parameter name
@@ -83,9 +92,15 @@ import {
 // mode if no data for the parameter name is found. Note that the argument will be named
 // after the parameter name, and not the input key
 // 'alias' / 'aliases' can be used interchangeably, but 'aliases' receives precedence
+//
+// noClone
+// If truthy, default parameters will not be cloned
+
 const OPTIONS_TEMPLATES = composeOptionsTemplates({
 	allowSingleSource: true,
-	returnArgList: true
+	returnArgList: true,
+	omitRest: true,
+	meta: true
 });
 
 export default function resolveArgs(args, signature, options) {
@@ -95,11 +110,38 @@ export default function resolveArgs(args, signature, options) {
 		throw new Error("Failed to resolve arguments: no arguments supplied");
 
 	if (!Array.isArray(signature))
-		throw new Error("Failed to resolve arguments: no signature specified");
+		throw new Error("Failed to resolve arguments: no parameter signature specified");
 
-	const argsOut = options.returnArgList ? [] : {
-			rest: []
-		},
+	const res = !options.meta ?
+		value => value :
+		(value, sgn) => ({
+			name: sgn.name,
+			value,
+			sgn
+		});
+
+	const resNamed = (value, name) => ({
+		name,
+		value,
+		sgn: null
+	});
+
+	const ensureCoalesce = (key, sgn) => {
+		if (!hasOwn(argsOut, key))
+			argsOut[key] = res([], sgn);
+	};
+
+	const coalesce = (key, value, sgn) => {
+		if (!hasOwn(argsOut, key))
+			argsOut[key] = res([], sgn);
+
+		if (options.meta)
+			argsOut[key].value.push(value);
+		else
+			argsOut[key].push(value);
+	};
+
+	const argsOut = options.returnArgList ? [] : {},
 		aLen = args.length,
 		sLen = signature.length;
 	let argPtr = 0,
@@ -123,17 +165,16 @@ export default function resolveArgs(args, signature, options) {
 				sgn.name;
 
 		if (sgn.coalesce && argPtr >= args.length) {
-			argsOut[key] = argsOut[key] || [];
+			ensureCoalesce(key, sgn);
 			break;
 		}
 
 		if (arg != null && matchType(arg, sgn.type)) {
 			if (sgn.coalesce) {
-				argsOut[key] = argsOut[key] || [];
-				argsOut[key].push(arg);
+				coalesce(key, arg, sgn);
 				i--;
 			} else
-				argsOut[key] = arg;
+				argsOut[key] = res(arg, sgn);
 
 			argPtr++;
 		} else {
@@ -142,11 +183,10 @@ export default function resolveArgs(args, signature, options) {
 
 				if (matchType(resolved, sgn.type)) {
 					if (sgn.coalesce) {
-						argsOut[key] = argsOut[key] || [];
-						argsOut[key].push(resolved);
+						coalesce(key, resolved, sgn);
 						i--;
 					} else
-						argsOut[key] = resolved;
+						argsOut[key] = res(resolved, sgn);
 
 					argPtr++;
 					continue;
@@ -154,14 +194,19 @@ export default function resolveArgs(args, signature, options) {
 			}
 
 			if (sgn.coalesce && (argsOut[key] || !sgn.required)) {
-				argsOut[key] = argsOut[key] || [];
+				ensureCoalesce(key, sgn);
 				continue;
 			}
 
 			if (arg == null)
 				argPtr++;
 
-			argsOut[key] = isObj(def) ? clone(def) : def;
+			argsOut[key] = res(
+				isObj(def) && !sgn.noClone ?
+					clone(def) :
+					def,
+				sgn
+			);
 
 			if (sgn.required) {
 				const err = new Error(`(resolveArgs) Failed to resolve arguments: '${sgn.name}' is a required parameter\n\n${genFuncParamsStr("fn", signature, true)}\n`);
@@ -175,10 +220,26 @@ export default function resolveArgs(args, signature, options) {
 	if (useSingleSource)
 		argPtr = 1;
 
-	const rest = options.returnArgList ? argsOut : argsOut.rest;
+	if (options.omitRest)
+		return argsOut;
 
-	while (argPtr < aLen)
-		rest.push(args[argPtr++]);
+	if (!options.returnArgList) {
+		argsOut.rest = options.meta ?
+			resNamed([], "rest") :
+			[];
+	}
+
+	const rest = options.returnArgList ?
+		argsOut :
+		argsOut.rest.value || argsOut.rest;
+
+	if (options.returnArgList && options.meta) {
+		while (argPtr < aLen)
+			rest.push(resNamed(args[argPtr++], "rest"));
+	} else {
+		while (argPtr < aLen)
+			rest.push(args[argPtr++]);
+	}
 
 	return argsOut;
 }

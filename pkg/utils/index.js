@@ -1,5 +1,6 @@
 export * from "./src/arr";
 export * from "./src/binary-search";
+export * from "./src/class";
 export * from "./src/coerce";
 export * from "./src/convert";
 export * from "./src/dom";
@@ -90,6 +91,7 @@ export { default as serialize } from "./src/serialize";
 export { default as set } from "./src/set";
 export { default as splitArgStr } from "./src/split-arg-str";
 export { default as splitPath } from "./src/split-path";
+export { default as supports } from "./src/supports";
 
 // Aliases for backwards compatibility
 export { coerceObj as coerceToObj } from "./src/coerce";

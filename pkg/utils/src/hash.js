@@ -1,5 +1,8 @@
 import forEach from "./for-each";
 
+const FN_TO_STR = Function.prototype.toString,
+	NUM_TO_STR = Number.prototype.toString;
+
 // Basic hashing function optimized for structure
 // preservation and decent performance
 export default function hash(value, reduce = false) {
@@ -34,7 +37,7 @@ function runHash(value) {
 		case "string":
 			return `str:${hashString(value)}`;
 		case "function":
-			return `fun:${hashString(value.toString())}`;
+			return `fun:${hashString(FN_TO_STR.call(value))}`;
 		case "object":
 			return hashObject(value);
 	}
@@ -131,7 +134,7 @@ function hashStringHelper(str, reduce, cache) {
 	}
 
 	if (reduce)
-		return (cache[str] = `${hash.toString(36)}/${str.length}`);
+		return (cache[str] = `${NUM_TO_STR.call(hash, 36)}/${str.length}`);
 
 	return (cache[str] = `${hash}/${str.length}`);
 }

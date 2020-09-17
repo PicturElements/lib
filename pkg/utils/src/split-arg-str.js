@@ -3,8 +3,8 @@ import {
 	injectRegexFlags,
 	stickyExec
 } from "./regex";
+import supports from "./supports";
 import hasOwn from "./has-own";
-import supports from "./internal/supports";
 
 const ARG_SEPARATOR_CACHE = {};
 
@@ -17,7 +17,7 @@ export default function splitArgStr(str, argSeparator = ",") {
 		lastChar = null;
 
 	if (useRegexArgSep) {
-		const key = argSeparator.toString();
+		const key = String(argSeparator);
 
 		if (hasOwn(ARG_SEPARATOR_CACHE, key))
 			argSeparator = ARG_SEPARATOR_CACHE[key];

@@ -24,7 +24,7 @@ const TYPES_CACHE = {
 	int: val => typeof val == "number" && !isNaN(val) && isFinite(val) && val % 1 == 0,
 	uint: val => typeof val == "number" && !isNaN(val) && isFinite(val) && val % 1 == 0 && val >= 0,
 	nullish: val => val == null,
-	constructor: val => isConstructor(val),
+	constructor: isConstructor,
 	any: val => true
 };
 
@@ -117,6 +117,7 @@ function mkTypeChecker(signature) {
 				expensiveArgs.push(TYPES_CACHE[typeId]);
 			} else
 				terms.push(`typeof _val == "${typeId}"`);
+
 			continue;
 		}
 
@@ -131,7 +132,12 @@ function mkTypeChecker(signature) {
 	}
 
 	const body = `return ${terms.concat(expensiveTerms).join(" || ")};`,
-		checker = Function(...params, ...expensiveParams, "_val", body).bind(null, ...args, ...expensiveArgs);
+		checker = Function(
+			...params,
+			...expensiveParams,
+			"_val",
+			body
+		).bind(null, ...args, ...expensiveArgs);
 
 	TYPES_CACHE[signature] = checker;
 	return checker;

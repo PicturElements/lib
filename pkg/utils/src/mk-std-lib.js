@@ -1,7 +1,11 @@
 import { sym } from "./sym";
-import { isStandardPropertyDescriptor } from "./is";
+import {
+	isObject,
+	isStandardPropertyDescriptor
+} from "./is";
 import hasOwn from "./has-own";
 import resolveArgs from "./resolve-args";
+import { mkClass } from "./class";
 
 // Standard library collecting function. Leverages the prototype chain to prevent
 // needlessly having to Object.assign new clean objects every time
@@ -50,7 +54,13 @@ export default function mkStdLib(...args) {
 }
 
 function mkNamedStdLibImpl(name) {
-	const impl = Function("assign", `return function ${name}() { assign(this, arguments); }`)(assign);
+	const impl = mkClass({
+		name,
+		constructor(...args) {
+			assign(this, args);
+		}
+	});
+
 	impl[NAME_SYM] = name;
 	return impl;
 }
@@ -73,8 +83,8 @@ function assign(target, sources) {
 	for (let i = 0, l = sources.length; i < l; i++) {
 		const source = sources[i];
 
-		// Unlike to Object.assign, don't accept non-object lib values
-		if (!source || source.constructor != Object)
+		// Unlike Object.assign, don't accept non-object lib values
+		if (!isObject(source))
 			continue;
 
 		for (const k in source) {

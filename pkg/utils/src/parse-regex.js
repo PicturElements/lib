@@ -54,8 +54,8 @@ export default function parseRegex(source, flags = "") {
 	if (typeof flags != "string")
 		flags = "";
 
-	const err = msg => {
-		const e = SyntaxError(`\n\nparser@${ptr + 1}\n${msg}%end%`);
+	const err = (msg, col = ptr) => {
+		const e = SyntaxError(`\n\nparser@${col + 1}\n${msg}%end%`);
 		e.stack = e.stack.split("%end%")[0];
 		throw e;
 	};
@@ -137,10 +137,11 @@ export default function parseRegex(source, flags = "") {
 		const parsed = parseEscapeSequence(source, ptr, {
 			codepoint: flagLookup.has("u")
 		});
-		ptr += parsed.length;
 
 		if (parsed.error)
 			err(parsed.error);
+		
+		ptr += parsed.length;
 
 		if (!picky || (parsed.type != "none" && parsed.type != "raw"))
 			return parsed.character;
@@ -149,12 +150,76 @@ export default function parseRegex(source, flags = "") {
 	};
 
 	const consumeNextLiteralChar = _ => {
-		if (currentToken.type == T.LITERAL && !currentToken.quantify)
+		if (currentToken.type == T.LITERAL && !currentToken.quantify) {
 			currentToken.value += consumeChar();
-		else {
+			currentToken.end = currentToken.start + currentToken.value.length - 1;
+		} else {
 			const literal = appendToken(mkToken(T.LITERAL));
 			literal.value = consumeChar();
+			literal.end = literal.start + literal.value.length - 1;
 		}
+	};
+
+	const consumeRangedQuantifier = _ => {
+		let min = 0,
+			max = 0,
+			dec = 0,
+			count = 0,
+			consumed = 0,
+			visited = 0;
+
+		if (ptr + 1 == len)
+			visited = 1;
+
+		for (let i = ptr + 1; i < len; i++) {
+			const c = source[i],
+				digit = c.charCodeAt(0) - 48;
+
+			visited++;
+
+			if (c == "}") {
+				if (!count && !consumed)
+					break;
+
+				if (!count) {
+					min = dec;
+					max = dec;
+				} else if (dec)
+					max = dec;
+
+				if (min > max)
+					err("Quantifier range out of order");
+
+				const newPtr = addQuantifier(min, max, i);
+				ptr = newPtr + i - ptr + 1;
+				visited = 0;
+				break;
+			}
+
+			if (c == "," && !count) {
+				if (!consumed)
+					break;
+
+				min = dec;
+				max = Infinity;
+				dec = 0;
+				consumed = 0;
+				count++;
+				continue;
+			}
+
+			if (digit < 0 || digit > 9)
+				break;
+
+			dec = dec * 10 + digit;
+			consumed++;
+		}
+
+		if (visited && flagLookup.has("u"))
+			err("Unescaped '{' not valid with unicode flag enabled unless in valid range quantifier");
+
+		for (let i = 0; i < visited; i++)
+			consumeNextLiteralChar();
 	};
 
 	const addQuantifier = (min, max, p = ptr) => {
@@ -183,19 +248,22 @@ export default function parseRegex(source, flags = "") {
 			lazy
 		};
 
-		if (lazy)
-			ptr++;
+		return lazy ?
+			ptr + 1 :
+			ptr;
 	};
 
 	const len = source.length,
 		groups = [],
+		backrefs = [],
 		flagLookup = lookup(flags, "");
 	let ptr = 0,
 		program = mkTokenWithData(T.PROGRAM, {
 			children: [],
 			source,
 			flags,
-			flagLookup
+			flagLookup,
+			groups
 		}),
 		parentToken = program,
 		currentToken = program,
@@ -226,7 +294,7 @@ export default function parseRegex(source, flags = "") {
 				// Backrefs
 				let refId = 0,
 					refIdLen = 0;
-				for (let i = 0; i < 3 && ptr + i + 1 < len; i++) {
+				for (let i = 0; ptr + i + 1 < len; i++) {
 					const c = source[ptr + i + 1],
 						digit = c.charCodeAt(0) - 48;
 
@@ -237,13 +305,22 @@ export default function parseRegex(source, flags = "") {
 					refIdLen++;
 				}
 
-				if (refId && refId <= groups.length) {
-					appendToken(
+				if (refId) {
+					const token = appendToken(
 						mkTokenWithData(T.BACKREF, {
 							id: refId,
-							group: groups[refId - 1]
+							group: null,
+							end: ptr + refIdLen
 						})
 					);
+
+					backrefs.push({
+						token,
+						id: refId,
+						idx: parentToken.children.length - 1,
+						parent: parentToken
+					});
+
 					ptr += refIdLen + 1;
 					break;
 				}
@@ -321,88 +398,26 @@ export default function parseRegex(source, flags = "") {
 					popToken();
 					pushToken(mkTokenWithData(T.ALTERNATION_TERM, []));
 				}
+
 				ptr++;
 				break;
 
 			// Quantifiers
 			case "+":
-				addQuantifier(1, Infinity);
-				ptr++;
+				ptr = addQuantifier(1, Infinity) + 1;
 				break;
 
 			case "*":
-				addQuantifier(0, Infinity);
-				ptr++;
+				ptr = addQuantifier(0, Infinity) + 1;
 				break;
 
 			case "?":
-				addQuantifier(0, 1);
-				ptr++;
+				ptr = addQuantifier(0, 1) + 1;
 				break;
 
-			case "{": {
-				let min = 0,
-					max = 0,
-					dec = 0,
-					count = 0,
-					consumed = 0,
-					visited = 0;
-
-				if (ptr + 1 == len)
-					visited = 1;
-
-				for (let i = ptr + 1; i < len; i++) {
-					const c = source[i],
-						digit = c.charCodeAt(0) - 48;
-
-					visited++;
-
-					if (c == "}") {
-						if (!count && !consumed)
-							break;
-
-						if (!count) {
-							min = dec;
-							max = dec;
-						} else if (dec)
-							max = dec;
-
-						if (min > max)
-							err("Quantifier range out of order");
-
-						addQuantifier(min, max, i);
-						ptr += (i - ptr + 1);
-						visited = 0;
-						break;
-					}
-
-					if (c == "," && !count) {
-						if (!consumed)
-							break;
-
-						min = dec;
-						max = Infinity;
-						dec = 0;
-						consumed = 0;
-						count++;
-						continue;
-					}
-
-					if (digit < 0 || digit > 9)
-						break;
-
-					dec = dec * 10 + digit;
-					consumed++;
-				}
-
-				if (visited && flagLookup.has("u"))
-					err("Unescaped '{' not valid with unicode flag enabled unless in valid range quantifier");
-
-				for (let i = 0; i < visited; i++)
-					consumeNextLiteralChar();
-
+			case "{":
+				consumeRangedQuantifier();
 				break;
-			}
 
 			// Assertions, special characters
 			case "^":
@@ -426,6 +441,49 @@ export default function parseRegex(source, flags = "") {
 	}
 
 	ptr--;
+
+	// Resolve backrefs
+	for (let i = backrefs.length - 1; i >= 0; i--) {
+		const backref = backrefs[i];
+
+		if (backref.id <= groups.length)
+			backref.token.group = groups[backref.id - 1];
+		else {
+			const parsed = parseEscapeSequence(`\\${backref.id}`, null, {
+				codepoint: flagLookup.has("u")
+			});
+	
+			if (parsed.error)
+				err(parsed.error, backref.token.start);
+
+			const str = parsed.character + String(backref.id).slice(parsed.length - 1),
+				tokens = backref.parent.children,
+				prevToken = tokens[backref.idx - 1],
+				nextToken = tokens[backref.idx + 1],
+				prevIsLiteral = Boolean(prevToken) && prevToken.type == T.LITERAL,
+				nextIsLiteral = Boolean(nextToken) && nextToken.type == T.LITERAL;
+
+			if (prevIsLiteral && nextIsLiteral) {
+				prevToken.value += str + nextToken.value;
+				prevToken.end = nextToken.end;
+				tokens.splice(backref.idx, 2);
+			} else if (prevIsLiteral) {
+				prevToken.value += str;
+				nextToken.end = backref.token.end;
+				tokens.splice(backref.idx, 1);
+			} else if (nextIsLiteral) {
+				nextToken.value = str + nextToken.value;
+				nextToken.start = backref.token.start;
+				tokens.splice(backref.idx, 1);
+			} else {
+				const literal = mkToken(T.LITERAL);
+				literal.value = str;
+				literal.start = backref.token.start;
+				literal.end = backref.token.end;
+				tokens[backref.idx] = literal;
+			}
+		}
+	}
 
 	while (stack.length) {
 		const token = popToken();

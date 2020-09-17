@@ -7,7 +7,9 @@ import getFunctionName from "./get-function-name";
 import type from "./lazy/type";
 import splitPath from "./split-path";
 
-const DOC_ALL = typeof document == "undefined" ? [] : document.all;
+const DOC_ALL = typeof document == "undefined" ? [] : document.all,
+	FN_TO_STR = Function.prototype.toString,
+	OBJ_TO_STR = Object.prototype.toString;
 
 function isDirectInstanceof(obj, constr) {
 	return obj !== null && obj !== undefined && obj.constructor == constr;
@@ -39,7 +41,7 @@ function isObject(val) {
 }
 
 function isObjectLike(val) {
-	return Object.prototype.toString.call(val) == "[object Object]";
+	return OBJ_TO_STR.call(val) == "[object Object]";
 }
 
 function isInstance(val) {
@@ -77,7 +79,7 @@ function isProbableConstructor(val) {
 		}
 	}
 
-	const constrStr = val.toString();
+	const constrStr = FN_TO_STR.call(val);
 
 	// Test for functions that are definitely constructible
 	if (CONSTRUCTIBLE_REGEX.test(constrStr))
@@ -194,7 +196,7 @@ function isNativeFunction(candidate) {
 	if (typeof candidate != "function")
 		return false;
 
-	const funcStr = candidate.toString();
+	const funcStr = FN_TO_STR.call(candidate);
 	let foundOpenBrace = false;
 
 	if (funcStr.length > 500)
@@ -293,6 +295,13 @@ function isPath(candidate) {
 	return splitPath.regexes.matchFull.test(candidate);
 }
 
+function isValidIdentifier(candidate) {
+	if (typeof candidate != "string")
+		return false;
+
+	return /^[a-z$_][\w$_]*$/i.test(candidate);
+}
+
 export {
 	isDirectInstanceof,
 	isNativeSimpleObject,
@@ -303,6 +312,7 @@ export {
 	isConstructor,
 	isProbableConstructor,
 	isNativeConstructor,
+	isNonConstructible,
 	isPrimitive,
 	isValidObjectKey,
 	isSymbol,
@@ -321,5 +331,6 @@ export {
 	isThenable,
 	isTaggedTemplateArgs,
 	isStandardPropertyDescriptor,
-	isPath
+	isPath,
+	isValidIdentifier
 };

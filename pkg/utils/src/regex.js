@@ -1,8 +1,9 @@
-import supports from "./internal/supports";
+import supports from "./supports";
 import hasOwn from "./has-own";
 
 const FLAGS = [],
-	FLAGS_MAP = {};
+	FLAGS_MAP = {},
+	RX_TO_STR = RegExp.prototype.toString;
 
 "global:g|ignoreCase:i|multiline:m|dotAll:s|unicode:u|sticky:y".split("|").forEach(s => {
 	const vk = s.split(":");
@@ -92,7 +93,7 @@ function injectRegexFlags(rxOrSource, flags = "", instantiate = false) {
 const getRegexFlags = supports.regex.flags ?
 	rx => rx.flags :
 	rx => {
-		const stringified = rx.toString();
+		const stringified = RX_TO_STR.call(rx);
 
 		for (let i = stringified.length - 1; i > 0; i--) {
 			if (stringified[i] == "/")
@@ -103,7 +104,7 @@ const getRegexFlags = supports.regex.flags ?
 const getRegexSource = supports.regex.source ?
 	rx => rx.source :
 	rx => {
-		const stringified = rx.toString();
+		const stringified = RX_TO_STR.call(rx);
 
 		for (let i = stringified.length - 1; i > 0; i--) {
 			if (stringified[i] == "/")
