@@ -641,10 +641,18 @@ function genDom(nodes, options = {}) {
 		indentStr = minified ?
 			"" :
 			(typeof options.indent == "string" ? options.indent : "\t"),
-		processAttribute = typeof options.processAttribute == "function" ? options.processAttribute : null,
-		processAttributes = typeof options.processAttributes == "function" ? options.processAttributes : null,
-		processType = typeof options.processType == "function" ? options.processType : null,
-		processTag = typeof options.processTag == "function" ? options.processTag : null;
+		processAttribute = typeof options.processAttribute == "function" ?
+			options.processAttribute :
+			null,
+		processAttributes = typeof options.processAttributes == "function" ?
+			options.processAttributes :
+			null,
+		processType = typeof options.processType == "function" ?
+			options.processType :
+			null,
+		processTag = typeof options.processTag == "function" ?
+			options.processTag :
+			null;
 
 	if (!nodes.length)
 		return root;
@@ -1430,13 +1438,16 @@ function parseAttributes(node, meta = null) {
 		if (!ex)
 			break;
 
-		const value = ex[2] === undefined ? true : parseStr(ex[2]),
-			{
-				type,
-				key,
-				matched,
-				context
-			} = resolveAttributeMeta(ex[1], meta);
+		const value = ex[2] === undefined ?
+			true :
+			parseStr(ex[2]);
+
+		const {
+			type,
+			key,
+			matched,
+			context
+		} = resolveAttributeMeta(ex[1], meta);
 
 		if (type == "style") {
 			setAttribute(

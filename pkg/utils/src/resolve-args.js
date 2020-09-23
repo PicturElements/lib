@@ -1,11 +1,11 @@
-import matchType from "./match-type";
-import clone from "./clone";
 import { genFuncParamsStr } from "./ts-str";
 import {
 	isObj,
 	isObject,
 	isArrayLike
 } from "./is";
+import matchType from "./match-type";
+import clone from "./clone";
 import getFunctionName from "./get-function-name";
 import hasOwn from "./has-own";
 import {

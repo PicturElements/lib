@@ -179,7 +179,10 @@ export default function getRegexMetrics(source, flags = "") {
 						res.max += node.quantify.max;
 						res.complexity *= (node.quantify.max - node.quantify.min + 1);
 					} else {
-						const len = node.type == T.LITERAL ? node.value.length : 1;
+						const len = node.type == T.LITERAL ?
+							node.value.length :
+							1;
+
 						res.min += len;
 						res.max += len;
 					}
@@ -212,9 +215,15 @@ export default function getRegexMetrics(source, flags = "") {
 
 function mkCharSet(set, ast) {
 	const insensitive = ast.flagLookup.has("i"),
-		pos = set.positive ? mkCharacterSet(set.positive, insensitive) : null,
-		neg = set.negative ? mkCharacterSet("^" + set.negative, insensitive) : null,
-		oneg = set.override != null ? mkCharacterSet("^" + set.override, insensitive) : null;
+		pos = set.positive ?
+			mkCharacterSet(set.positive, insensitive) :
+			null,
+		neg = set.negative ?
+			mkCharacterSet("^" + set.negative, insensitive) :
+			null,
+		oneg = set.override != null ?
+			mkCharacterSet("^" + set.override, insensitive) :
+			null;
 
 	// Verbose for third party clarity
 	if (oneg) {

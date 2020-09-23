@@ -15,7 +15,10 @@ function binarySearch(arr, comparator, reverse = false) {
 
 	while (true) {
 		if (start >= end) {
-			const si = end >= 0 ? comparator(arr[start], start, arr) : direction;
+			const si = end >= 0 ?
+				comparator(arr[start], start, arr) :
+				direction;
+
 			return si > 0 ? start - direction : start;
 		}
 

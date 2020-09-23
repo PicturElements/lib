@@ -5,7 +5,7 @@ import { QNDSet } from "./internal/poly";
 import forEach from "./for-each";
 
 function nub(arr) {
-	const set = new QNDSet(arr),
+	const set = new QNDSet(map(arr, v => v)),
 		out = [];
 
 	forEach(set, v => out.push(v));

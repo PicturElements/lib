@@ -127,29 +127,29 @@ function isValidObjectKey(key) {
 	return false;
 }
 
-const isSymbol = typeof Symbol == "undefined" ? candidate => {
-	return typeof candidate == "string" && candidate.indexOf(POLYFILL_PREFIXES.symbol) == 0;
-} : candidate => {
-	return typeof candidate == "symbol";
-};
+const isSymbol = typeof Symbol == "undefined" ?
+	candidate => typeof candidate == "string" && candidate.indexOf(POLYFILL_PREFIXES.symbol) == 0 :
+	candidate => typeof candidate == "symbol";
 
-const isIterable = typeof Symbol == "undefined" ? candidate => {
-	if (candidate === DOC_ALL || typeof candidate == "string")
-		return true;
+const isIterable = typeof Symbol == "undefined" ?
+	candidate => {
+		if (candidate === DOC_ALL || typeof candidate == "string")
+			return true;
 
-	if (candidate == null || typeof candidate != "object")
-		return false;
+		if (candidate == null || typeof candidate != "object")
+			return false;
 
-	return SYM_ITER_KEY in candidate;
-} : candidate => {
-	if (candidate === DOC_ALL || typeof candidate == "string")
-		return true;
+		return SYM_ITER_KEY in candidate;
+	} :
+	candidate => {
+		if (candidate === DOC_ALL || typeof candidate == "string")
+			return true;
 
-	if (candidate == null || typeof candidate != "object")
-		return false;
+		if (candidate == null || typeof candidate != "object")
+			return false;
 
-	return Symbol.iterator in candidate;
-};
+		return Symbol.iterator in candidate;
+	};
 
 function isArrayLike(candidate) {
 	// Common array-likes

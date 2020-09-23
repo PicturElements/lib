@@ -24,13 +24,19 @@ const OPTIONS_TEMPLATES = composeOptionsTemplates({
 export default function get(data, path, def, options = {}) {
 	options = createOptionsObject(options, OPTIONS_TEMPLATES);
 
-	const split = Array.isArray(path) ? path : splitPath(path),
+	const split = Array.isArray(path) ?
+			path :
+			splitPath(path),
 		trace = [],
 		nodeTrace = [],
+		resolve = typeof options.resolve == "function" ?
+			options.resolve :
+			null,
 		resolveKey = typeof options.resolveKey == "function" ?
 			options.resolveKey :
 			null;
-	let parent = data,
+	let d = data,
+		parent = data,
 		childKey = null,
 		match = true,
 		built = false,
@@ -39,45 +45,65 @@ export default function get(data, path, def, options = {}) {
 	const useBundledOutput = options.context || options.trace || options.info;
 
 	for (let i = options.pathOffset || 0, l = split.length; i < l; i++) {
-		const key = resolveKey ?
-			resolveKey(split[i], i, split, data) :
-			split[i];
+		let key;
 
-		if (!data || key === undefined || ((data[key] === undefined || options.own) && !hasOwn(data, key))) {
+		if (resolveKey)
+			key = resolveKey(split[i], i, split, d);
+		else if (resolve) {
+			const resolved = resolve(split[i], i, split, d);
+
+			if (typeof resolved == "string")
+				key = resolved;
+			else if (Array.isArray(resolved)) {
+				if (resolved.length > 1)
+					([key, d] = resolved);
+				else if (resolved.length == 1)
+					key = resolved[0];
+			} else if (resolved) {
+				if (hasOwn(resolved, "key"))
+					key = resolved.key;
+				if (hasOwn(resolved, "data"))
+					d = resolved.data;
+			} else
+				key = split[i];
+		} else
+			key = split[i];
+
+		if (!d || key === undefined || ((d[key] === undefined || options.own) && !hasOwn(d, key))) {
 			match = false;
 
 			if (useBundledOutput) {
-				if (!data)
+				if (!d)
 					error = "no-data";
 				else if (key === undefined)
 					error = "no-key";
-				else if (data[key] === undefined && !hasOwn(data, key))
+				else if (d[key] === undefined && !hasOwn(d, key))
 					error = "no-value";
-				else if (options.own && !hasOwn(data, key))
+				else if (options.own && !hasOwn(d, key))
 					error = "proto-access";
 			}
 
 			if (options.autoBuild) {
-				data[key] = split[i + 1] != null && !isNaN(split[i + 1]) ? [] : {};
+				d[key] = split[i + 1] != null && !isNaN(split[i + 1]) ? [] : {};
 				built = true;
 			} else {
-				data = def;
+				d = def;
 				break;
 			}
 		}
 
 		if (options.trace) {
 			trace.push(key);
-			nodeTrace.push(data);
+			nodeTrace.push(d);
 		}
 
-		parent = data;
+		parent = d;
 		childKey = key;
-		data = data[key];
+		d = d[key];
 	}
 
 	if (useBundledOutput) {
-		data = {
+		d = {
 			data,
 			match,
 			built,
@@ -86,14 +112,14 @@ export default function get(data, path, def, options = {}) {
 	}
 
 	if (options.context) {
-		data.context = parent;
-		data.key = childKey;
+		d.context = parent;
+		d.key = childKey;
 	}
 
 	if (options.trace) {
-		data.trace = trace;
-		data.nodeTrace = nodeTrace;
+		d.trace = trace;
+		d.nodeTrace = nodeTrace;
 	}
 
-	return data;
+	return d;
 }

@@ -109,8 +109,11 @@ export default function matchQuery(value, query, options) {
 					matchType(v[key], q[srcKey], options) :
 					matchValue(v[key], q[srcKey], options);
 
-				if (matchRuntime)
-					matchRuntime.matchMap[key] = options.logReturnedMatch ? lazy || matched : matched;
+				if (matchRuntime) {
+					matchRuntime.matchMap[key] = options.logReturnedMatch ?
+						lazy || matched :
+						matched;
+				}
 			}
 
 			if (!lazy && !matched) {

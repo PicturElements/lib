@@ -19,7 +19,6 @@ import { startsWith } from "./str";
 
 const ctx = resolveInlineRefs.ctx;
 
-// Parses a subset of pug (no control flow)
 export default function parseHtmlStr(...source) {
 	return parseDom(
 		parseHtmlCore,

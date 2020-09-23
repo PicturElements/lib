@@ -1,15 +1,17 @@
-import supports from "./supports";
-import hasOwn from "./has-own";
-import resolveArgs from "./resolve-args";
-import getFunctionName from "./get-function-name";
-import { sym } from "./sym";
-import { untab } from "./str";
 import {
 	isObject,
 	isValidIdentifier,
 	isNativeConstructor,
 	isNativeFunction
 } from "./is";
+import { sym } from "./sym";
+import { untab } from "./str";
+import { anyOf } from "./obj";
+import supports from "./supports";
+import hasOwn from "./has-own";
+import resolveArgs from "./resolve-args";
+import getFunctionName from "./get-function-name";
+import forEach from "./for-each";
 
 const CLASS_CONFIG = sym("class config"),
 	HAS_NATIVE_CONSTRUCTOR = sym("has native constructor");
@@ -19,16 +21,17 @@ const mkClass = supports.keywords.class ?
 		const c = mkConfig(nameOrConfig, configOrConstructor),
 			constr = hasOwn(c, "constructor") ?
 				c.constructor :
-				null;
+				null,
+			superC = anyOf(c)("super", "extends");
 		let cls = null;
 
 		if (!isValidIdentifier(c.name))
 			throw new Error(`Cannot make class: invalid class name '${c.name}'`);
 
-		if (c.super) {
-			const sup = isObject(c.super) ?
-				mkClass(c.super) :
-				c.super;
+		if (superC) {
+			const sup = isObject(superC) ?
+				mkClass(superC) :
+				superC;
 			let n = getFunctionName(sup);
 
 			if (n == "config" || n == "constr" || n == "resArgs" || n == "resSuperArgs")
@@ -77,7 +80,8 @@ const mkClass = supports.keywords.class ?
 		const c = mkConfig(nameOrConfig, configOrConstructor),
 			constr = hasOwn(c, "constructor") ?
 				c.constructor :
-				null;
+				null,
+			superC = anyOf(c)("super", "extends");
 		let cls = null;
 
 		if (!isValidIdentifier(c.name))
@@ -85,10 +89,10 @@ const mkClass = supports.keywords.class ?
 
 		const newCheck = `if (!this || !(this instanceof ${c.name})) throw new TypeError("constructor ${c.name} cannot be invoked without 'new'");`;
 
-		if (c.super) {
-			const sup = isObject(c.super) ?
-					mkClass(c.super) :
-					c.super,
+		if (superC) {
+			const sup = isObject(superC) ?
+					mkClass(superC) :
+					superC,
 				hasNativeC = hasNativeConstructor(sup),
 				wrappedSuper = wrapConstructor(sup),
 				thisRef = hasNativeC ?
@@ -227,20 +231,17 @@ function collect(source, mode = "descriptor", acc = {}) {
 		for (let i = 0, l = source.length; i < l; i++)
 			collect(source[i], acc);
 	} else if (isObject(source)) {
-		for (const k in source) {
-			if (!hasOwn(source, k))
-				continue;
-
+		forEach(source, (value, key) => {
 			switch (mode) {
 				case "descriptor":
-					acc[k] = Object.getOwnPropertyDescriptor(source, k);
+					acc[key] = Object.getOwnPropertyDescriptor(source, key);
 					break;
 
 				case "raw":
-					acc[k] = source[k];
+					acc[key] = value;
 					break;
 			}
-		}
+		}, "overSymbols");
 	}
 
 	return acc;

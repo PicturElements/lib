@@ -1,3 +1,4 @@
+import { firstChar } from "./str";
 import parseStrStr from "./parse-str-str";
 import hasOwn from "./has-own";
 
@@ -10,7 +11,7 @@ const KW_LITERALS = {
 	undefined: undefined
 };
 
-const SYM_PARESE_REGEX = /^Symbol(?:.(.*?))?\((.*)\)$/;
+const SYM_PARESE_REGEX = /^\s*Symbol(?:.(.*?))?\((.*)\)\s*$/;
 
 export default function parseStr(str) {
 	if (typeof str != "string")
@@ -23,18 +24,14 @@ export default function parseStr(str) {
 	if (str && !isNaN(Number(str)))
 		return Number(str);
 
-	// Every major whitespace character has an ASCII code below or equal to
-	// 32, so by checking that range of characters, we can close down the
-	// search space significantly and increase performance
-	const firstChar = (str.charCodeAt(0) <= 32 && /\s/.test(str[0])) ? str.trim()[0] : str[0];
-
 	// Parse strings and symbols, starting off with a naive (and fast) char check
-	switch (firstChar) {
+	switch (firstChar(str)) {
 		case "S": {
 			const sEx = SYM_PARESE_REGEX.exec(str);
 			if (sEx) {
 				if (sEx[1])
 					return Symbol[sEx[1]](parseStr(sEx[2]) || sEx[2]);
+
 				return Symbol(parseStr(sEx[2]) || sEx[2]);
 			}
 		}

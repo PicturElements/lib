@@ -284,9 +284,13 @@ export default function parseRegex(source, flags = "") {
 
 				// Word boundaries
 				if (nextChar == "b" || nextChar == "B") {
-					appendToken(
-						mkToken(nextChar == "b" ? T.WORD_BOUNDARY : T.NON_WORD_BOUNDARY)
+					const token = mkToken(
+						nextChar == "b" ?
+							T.WORD_BOUNDARY :
+							T.NON_WORD_BOUNDARY
 					);
+
+					appendToken(token);
 					ptr += 2;
 					break;
 				}

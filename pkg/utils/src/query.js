@@ -46,7 +46,9 @@ export default function query(list, q, options) {
 		};
 	}
 
-	const guard = typeof options.guard == "function" ? options.guard : null,
+	const guard = typeof options.guard == "function" ?
+			options.guard :
+			null,
 		keys = objKeys(q),
 		keyLen = keys.length;
 
@@ -75,7 +77,9 @@ export default function query(list, q, options) {
 		lazy = (options.lazy && !strict) || (!options.lazy && lazy);
 
 		const typed = options.typed ^ typeModifier,
-			srcArr = iterations ? matches : list,
+			srcArr = iterations ?
+				matches :
+				list,
 			matchesBuffer = [],
 			indicesBuffer = [],
 			matchCountsBuffer = [];

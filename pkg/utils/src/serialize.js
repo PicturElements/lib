@@ -19,31 +19,39 @@ export default function serialize(data, optionsOrIndentStr = {}, args = null) {
 		options = {
 			indentStr: optionsOrIndentStr
 		};
-	}
+	} else
+		optionsOrIndentStr = optionsOrIndentStr || {};
 
 	const indentStr = setStr(options.indentStr, "\t"),
-		startIndent = typeof options.indent == "number" ? options.indent || 0 : 0,
-		quoteChar = typeof options.quote == "string" && !options.jsonCompatible ? options.quote : "\"",
+		startIndent = typeof options.indent == "number" ?
+			options.indent || 0 :
+			0,
+		quoteChar = typeof options.quote == "string" && !options.jsonCompatible ?
+			options.quote :
+			"\"",
+		optionalReplacer = typeof options.replace == "function" ?
+			options.replace :
+			null,
 		bareString = options.bareString && !options.jsonCompatible,
-		optionalReplacer = typeof options.replace == "function" ? options.replace : null,
-		compact = Boolean(options.compact),
-		replace = (key, item, wrap) => {
-			if (key == circularIdKey)
-				return;
+		compact = Boolean(options.compact);
 
-			if (optionalReplacer)
-				item = optionalReplacer(key, item, wrap);
+	const replace = (key, item, wrap) => {
+		if (key == circularIdKey)
+			return;
 
-			if (isObject(item)) {
-				if (hasOwn(item, circularRefKey))
-					return wrap("raw", "[circular]");
+		if (optionalReplacer)
+			item = optionalReplacer(key, item, wrap);
 
-				if (hasOwn(item, circularIsKey))
-					return item.data;
-			}
+		if (isObject(item)) {
+			if (hasOwn(item, circularRefKey))
+				return wrap("raw", "[circular]");
 
-			return item;
-		};
+			if (hasOwn(item, circularIsKey))
+				return item.data;
+		}
+
+		return item;
+	};
 
 	let fieldSpacing = " ",
 		arrSpacing = " ",
@@ -70,7 +78,7 @@ export default function serialize(data, optionsOrIndentStr = {}, args = null) {
 
 	const srz = (key, item, indent = 0, preventReplace = false, preventBareString = false) => {
 		if (replace && !preventReplace)
-			item = replace(key, item, wrapItem, indent);
+			item = replace(key, item, serialize.wrap, indent);
 
 		if (isObject(item) && hasOwn(item, WRAPPED_SYM)) {
 			switch (item[WRAPPED_SYM]) {
@@ -85,7 +93,9 @@ export default function serialize(data, optionsOrIndentStr = {}, args = null) {
 				return bareString && !preventBareString ? item : `"${item}"`;
 
 			case "number":
-				return isNaN(item) || !isFinite(item) ? "null": String(item);
+				return options.jsonCompatible && (isNaN(item) || !isFinite(item)) ?
+					"null" :
+					String(item);
 
 			case "boolean":
 				return String(item);
@@ -95,8 +105,7 @@ export default function serialize(data, optionsOrIndentStr = {}, args = null) {
 					return "null";
 
 				if (Array.isArray(item)) {
-					const out = [],
-						indentSeq = repeat(indentStr, indent + 1);
+					const out = [];
 					let flat = true;
 
 					for (let i = 0, l = item.length; i < l; i++) {
@@ -112,18 +121,21 @@ export default function serialize(data, optionsOrIndentStr = {}, args = null) {
 					if (flat || compact)
 						return "[" + arrBoundarySpacing + out.join("," + arrSpacing) + arrBoundarySpacing + "]";
 
+					const indentSeq = repeat(indentStr, indent + 1);
 					return `[\n${indentSeq}${out.join(`,\n${indentSeq}`)}\n${repeat(indentStr, indent)}]`;
 				}
 
 				if (isObject(item) || !options.jsonCompatible) {
 					const out = [],
-						indt = compact ? "" : repeat(indentStr, indent + 1);
+						indentSeq = compact ?
+							"" :
+							repeat(indentStr, indent + 1);
 
 					for (const k in item) {
 						const serialized = srz(k, item[k], indent + 1, preventReplace, true);
 
 						if (serialized !== undefined)
-							out.push(indt + quoteChar + k + quoteChar + ":" + fieldSpacing + serialized);
+							out.push(indentSeq + quoteChar + k + quoteChar + ":" + fieldSpacing + serialized);
 					}
 
 					if (!out.length)
@@ -191,7 +203,7 @@ export default function serialize(data, optionsOrIndentStr = {}, args = null) {
 	}
 }
 
-function wrapItem(type, data) {
+serialize.wrap = (type, data) => {
 	if (typeof type != "string")
 		throw new TypeError("Cannot wrap: provided type is not a string");
 
@@ -199,7 +211,7 @@ function wrapItem(type, data) {
 		[WRAPPED_SYM]: type,
 		data
 	};
-}
+};
 
 function setStr(candidate, def) {
 	if (typeof candidate == "string")

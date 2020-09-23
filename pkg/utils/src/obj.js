@@ -12,6 +12,7 @@ import {
 import splitPath from "./split-path";
 import hasOwn from "./has-own";
 import resolveArgs from "./resolve-args";
+import matchType from "./match-type";
 import map from "./map";
 import get from "./get";
 
@@ -441,6 +442,46 @@ function del(target, key, handler = DEF_DEL_HANDLER) {
 	return delete target[key];
 }
 
+function resolveKey(source, ...keys) {
+	return resolveKeyCore(source, null, keys);
+}
+
+function resolveKeyForType(source, type, ...keys) {
+	return resolveKeyCore(source, type, keys);
+}
+
+function resolveKeyCore(source, type, keys) {
+	if (!source)
+		return null;
+
+	for (let i = 0, l = keys.length; i < l; i++) {
+		const key = keys[i];
+
+		if (Array.isArray(key)) {
+			const k = resolveKeyCore(source, type, key);
+			if (k)
+				return k;
+
+			continue;
+		}
+
+		if (hasOwn(source, key) && (type === null || matchType(source[key], type)))
+			return key;
+	}
+
+	return null;
+}
+
+function anyOf(source, type = null) {
+	return (...args) => {
+		const key = resolveKeyCore(source, type, args);
+		if (key == null)
+			return null;
+
+		return source[key];
+	};
+}
+
 export {
 	mapObj,
 	keys,
@@ -462,5 +503,9 @@ export {
 	alias,
 	aliasOwn,
 	extend,
-	del
+	del,
+	resolveKey,
+	resolveKeyForType,
+	resolveKeyCore,
+	anyOf
 };

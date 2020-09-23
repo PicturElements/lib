@@ -4,15 +4,25 @@ import {
 	isWhitespace,
 	isTaggedTemplateArgs
 } from "./is";
-import serialize from "./serialize";
-import repeat from "./repeat";
 import {
 	composeOptionsTemplates,
 	createOptionsObject,
 	optionize
 } from "./internal/options";
 import { BASE_62 } from "./internal/constants";
+import serialize from "./serialize";
+import repeat from "./repeat";
 import hasOwn from "./has-own";
+
+const TRIM_START = typeof String.prototype.trimStart == "undefined" ?
+	String.prototype.trim :
+	String.prototype.trimStart;
+
+const TRIM_END = typeof String.prototype.trimEnd == "undefined" ?
+	String.prototype.trim :
+	String.prototype.trimEnd;
+
+const CHAR_CODE_AT = String.prototype.charCodeAt;
 
 function padStart(str, length = 2, padChar = " ") {
 	str = String(str);
@@ -32,6 +42,19 @@ function padEnd(str, length = 2, padChar = " ") {
 		return str + repeat(padChar, pad);
 
 	return str;
+}
+
+function firstChar(str) {
+	return CHAR_CODE_AT.call(str, 0) <= 32 ?
+		TRIM_START.call(str)[0] :
+		str[0];
+}
+
+function lastChar(str) {
+	if (CHAR_CODE_AT.call(str, str.length - 1) <= 32)
+		str = TRIM_END.call(str);
+
+	return str[str.length - 1];
 }
 
 function tab(str, tabbing = "", steps = 1) {
@@ -687,9 +710,9 @@ const codePointAt = String.prototype.codePointAt ?
 		if (idx < 0 || idx >= str.length)
 			return NaN;
 
-		const high = str.charCodeAt(idx);
+		const high = CHAR_CODE_AT.call(str, idx);
 		if (high >= 0xd800 && high <= 0xdbff && idx < str.length - 1) {
-			const low = str.charCodeAt(idx + 1);
+			const low = CHAR_CODE_AT.call(str, idx + 1);
 
 			if (low >= 0xdc00 && low <= 0xdfff)
 				return ((high - 0xd800) << 10) + (low - 0xdc00) + 0x10000;
@@ -702,6 +725,8 @@ export {
 	repeat,
 	padStart,
 	padEnd,
+	firstChar,
+	lastChar,
 	tab,
 	untab,
 	spliceStr,

@@ -11,9 +11,6 @@ const KEYWORD_ESCAPES = {
 };
 
 export default function parseEscapeSequence(source, offset = 0, options = {}) {
-	const len = source.length;
-	let length = 0;
-
 	if (typeof offset != "number") {
 		options = offset;
 		offset = 0;
@@ -21,6 +18,9 @@ export default function parseEscapeSequence(source, offset = 0, options = {}) {
 
 	if (!options || typeof options != "object")
 		options = {};
+
+	const len = source.length;
+	let length = 0;
 
 	if (source[offset] != "\\" || source.length < offset + 1) {
 		return {

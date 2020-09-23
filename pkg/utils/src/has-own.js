@@ -19,7 +19,9 @@ const defaultHasOwn = (obj, k, allowSymbols = true) => {
 	return !!allowSymbols || typeof k != "symbol";
 };
 
-const hasOwn = typeof Symbol == "undefined" ? polyfillHasOwn : defaultHasOwn;
+const hasOwn = typeof Symbol == "undefined" ?
+	polyfillHasOwn :
+	defaultHasOwn;
 hasOwn.polyfill = polyfillHasOwn;
 
 export default hasOwn;

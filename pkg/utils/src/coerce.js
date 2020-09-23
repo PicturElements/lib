@@ -5,15 +5,21 @@ import {
 } from "./is";
 
 function coerceObj(val, source) {
-	return isObj(val) ? val : (isArrayLike(source) ? [] : {});
+	return isObj(val) ?
+		val :
+		(isArrayLike(source) ? [] : {});
 }
 
 function coerceObjArrResolvable(val, source) {
-	return isObj(val) ? val : (isArrResolvable(source) ? [] : {});
+	return isObj(val) ?
+		val :
+		(isArrResolvable(source) ? [] : {});
 }
 
 function coerceNum(num, def) {
-	return typeof num == "number" && !isNaN(num) ? num : def;
+	return typeof num == "number" && !isNaN(num) ?
+		num :
+		def;
 }
 
 export {

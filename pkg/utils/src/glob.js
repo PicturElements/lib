@@ -33,7 +33,9 @@ function compileGlob(glob, options) {
 
 	const matchStart = !options.noMatchStart && !options.noMatchFull,
 		matchEnd = !options.noMatchEnd && !options.noMatchFull,
-		boundaryPrecursor = typeof options.boundary == "string" ? options.boundary : "\\/",
+		boundaryPrecursor = typeof options.boundary == "string" ?
+			options.boundary :
+			"\\/",
 		flags = options.flags || "",
 		globKey = `${glob}@${flags}/${+matchStart}${+matchEnd}@@${boundaryPrecursor}`;
 

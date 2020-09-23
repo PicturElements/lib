@@ -25,8 +25,8 @@ function roundCustom(val, reference) {
 }
 
 function roundToLen(num, length) {
-	length = typeof length == "number" ? length : 4;
 	const sign = num < 0 ? "-" : "";
+	length = typeof length == "number" ? length : 4;
 	num = Math.abs(num);
 
 	const numInt = "" + Math.floor(num),

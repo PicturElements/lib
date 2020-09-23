@@ -8,9 +8,13 @@ const NUM_TO_STR = Number.prototype.toString;
 function sym(prefix) {
 	keySeed += (Math.floor(Math.random() * 1e6) + 1e6);
 	const postfix = NUM_TO_STR.call(keySeed, 36),
-		key = prefix ? `${prefix}:${postfix}` : postfix;
+		key = prefix ?
+			`${prefix}:${postfix}` :
+			postfix;
 
-	return typeof Symbol == "undefined" ? `${POLYFILL_PREFIXES.symbol}${key}` : Symbol(key);
+	return typeof Symbol == "undefined" ?
+		`${POLYFILL_PREFIXES.symbol}${key}` :
+		Symbol(key);
 }
 
 const setSymbol = typeof Symbol == "undefined" ?
