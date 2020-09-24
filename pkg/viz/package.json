@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/viz",
-  "version": "1.0.15",
+  "version": "1.0.16",
   "description": "Flexible charting engine",
   "main": "index.js",
   "scripts": {
@@ -25,11 +25,11 @@
   },
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/viz#readme",
   "dependencies": {
-    "@qtxr/anim": "^2.0.4",
-    "@qtxr/evt": "^1.2.4",
-    "@qtxr/i18n": "^3.4.4",
-    "@qtxr/uc": "^1.7.2",
-    "@qtxr/utils": "^1.60.3"
+    "@qtxr/anim": "^2.0.5",
+    "@qtxr/evt": "^1.2.5",
+    "@qtxr/i18n": "^3.5.3",
+    "@qtxr/uc": "^1.7.3",
+    "@qtxr/utils": "^1.68.1"
   },
   "devDependencies": {},
   "files": [
@@ -38,7 +38,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 17,
+    "pushes": 18,
     "expose": {
       "scripts": [
         "connect/feed.js"
