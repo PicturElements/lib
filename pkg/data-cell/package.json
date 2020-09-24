@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/data-cell",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "description": "Interface for abstracting data fetching, manipulation, and state",
   "main": "index.js",
   "scripts": {
@@ -24,9 +24,9 @@
   },
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/data-cell#readme",
   "dependencies": {
-    "@qtxr/bc": "^1.5.1",
-    "@qtxr/request": "^3.8.6",
-    "@qtxr/utils": "^1.63.0"
+    "@qtxr/bc": "^1.5.2",
+    "@qtxr/request": "^3.8.7",
+    "@qtxr/utils": "^1.68.1"
   },
   "devDependencies": {},
   "files": [
@@ -34,7 +34,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 47,
+    "pushes": 48,
     "expose": {
       "scripts": [
         "connect/feed.js"
