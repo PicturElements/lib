@@ -1,4 +1,4 @@
-import { hasOwn } from "@qrxr/utils";
+import { hasOwn } from "@qtxr/utils";
 import Color from "@qtxr/color";
 import BasicInterpolator from "./basic-interpolator";
 import DiscreteInterpolator from "./discrete-interpolator";

@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/interpolate",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Universal interpolation library",
   "main": "index.js",
   "scripts": {
@@ -34,7 +34,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 9,
+    "pushes": 10,
     "expose": {
       "scripts": [
         "connect/feed.js"
