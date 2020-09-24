@@ -54,7 +54,10 @@ import hasOwn from "./has-own";
 // closed:
 // The chainable object is a closed system. As such, runtime handling can be optimized
 
-const ACCESS_TOKEN = {};
+const ACCESS_TOKEN = Object.freeze({ description: "tells pinger to access property" }),
+	SKIP_SELF_ACCESS = Object.freeze({ description: "tells pinger to skip property access" }),
+	ACCESS_TOKEN_ARGS = [ACCESS_TOKEN];
+
 const OPTIONS_TEMPLATES = composeOptionsTemplates({
 	closed: true
 });
@@ -74,7 +77,8 @@ export default function mkChainable(name, struct, options) {
 				init: { type: "function", default: null },
 				invoke: { type: "function", default: null },
 				access: { type: "function", default: null },
-				passive: { type: "boolean", default: false }
+				passive: { type: "boolean", default: false },
+				defer: { type: "boolean", default: false }
 			},
 			scopes: {
 				branch: ["b"],
@@ -84,9 +88,14 @@ export default function mkChainable(name, struct, options) {
 			groupKey: "group",
 			defaultScope: "branch",
 			init: {
-				leaf: (n, f, scope) => {
-					n.invoke = scope.name == "branch" ? f : null;
-					n.access = scope.name == "branch" ? null : f;
+				step: ensureDeferrable,
+				leaf: (n, node, scope) => {
+					ensureDeferrable(n);
+					if (typeof node != "function")
+						return;
+
+					n.invoke = scope.name == "branch" ? node : null;
+					n.access = scope.name == "branch" ? null : node;
 				}
 			}
 		},
@@ -103,12 +112,17 @@ export default function mkChainable(name, struct, options) {
 	if (options.closed) {
 		store = {
 			initialized: true,
+			deferNode: null,
 			runtime: {}
 		};
 
 		pingInit = (node, out) => (...args) => {
 			store.initialized = false;
+			store.deferNode = null;
 			store.runtime = {};
+
+			if (args[0] != ACCESS_TOKEN || args[1] != SKIP_SELF_ACCESS)
+				runPing(node, store, ACCESS_TOKEN_ARGS);
 			runPing(node, store, args);
 			return out;
 		};
@@ -129,10 +143,13 @@ export default function mkChainable(name, struct, options) {
 		pingInit = (node, out) => (...args) => {
 			const frame = {
 				initialized: false,
+				deferNode: null,
 				runtime: {}
 			};
 			store.stack.push(frame);
 
+			if (args[0] != ACCESS_TOKEN || args[1] != SKIP_SELF_ACCESS)
+				runPing(node, store, ACCESS_TOKEN_ARGS);
 			runPing(node, frame, args);
 			return out;
 		};
@@ -150,13 +167,21 @@ export default function mkChainable(name, struct, options) {
 	}
 
 	const runPing = (node, frame, args) => {
-		if (node.runtime)
-			frame.runtime = node.runtime(frame.runtime, ...args) || frame.runtime;
+		if (frame.deferNode) {
+			if (node.uid != frame.deferNode.uid || args[0] == ACCESS_TOKEN) {
+				applyPingPre(frame.deferNode, frame, []);
+				frame.deferNode.access(frame.runtime);
+			}
 
-		if (node.init && !frame.initialized) {
-			frame.initialized = true;
-			frame.runtime = node.init(frame.runtime, ...args) || frame.runtime;
+			frame.deferNode = null;
 		}
+
+		if (node.defer && args[0] == ACCESS_TOKEN) {
+			frame.deferNode = node;
+			return;
+		}
+
+		applyPingPre(node, frame, args);
 
 		if (args[0] == ACCESS_TOKEN) {
 			if (node.access)
@@ -167,8 +192,16 @@ export default function mkChainable(name, struct, options) {
 		
 		if (node.invoke)
 			return node.invoke(frame.runtime, ...args);
+	};
 
-		return;
+	const applyPingPre = (node, frame, args) => {
+		if (node.runtime)
+			frame.runtime = node.runtime(frame.runtime, ...args) || frame.runtime;
+
+		if (node.init && !frame.initialized) {
+			frame.initialized = true;
+			frame.runtime = node.init(frame.runtime, ...args) || frame.runtime;
+		}
 	};
 
 	const getPinger = node => {
@@ -178,6 +211,15 @@ export default function mkChainable(name, struct, options) {
 		return node.uid == struct.uid ?
 			pingInit :
 			pingStep;
+	};
+
+	const getPingerType = node => {
+		if (node.type == "leaf")
+			return "terminate";
+
+		return node.uid == struct.uid ?
+			"init" :
+			"step";
 	};
 
 	const getName = node => {
@@ -236,7 +278,10 @@ export default function mkChainable(name, struct, options) {
 				resolved;
 
 		if (useCached) {
-			getterPartition.targets.push(resolved);
+			getterPartition.targets.push({
+				resolved,
+				type: getPingerType(uNode)
+			});
 
 			return {
 				resolved,
@@ -289,8 +334,12 @@ export default function mkChainable(name, struct, options) {
 				getterPartition.data.push(constructed);
 			}
 
-			if (branchPassive.length)
-				getterPartition.targets.push(resolved);
+			if (branchPassive.length) {
+				getterPartition.targets.push({
+					resolved,
+					type: getPingerType(uNode)
+				});
+			}
 		}
 
 		return {
@@ -309,7 +358,7 @@ export default function mkChainable(name, struct, options) {
 			continue;
 
 		for (let b = 0, l2 = partition.targets.length; b < l2; b++) {
-			const target = partition.targets[b],
+			const { resolved, type } = partition.targets[b],
 				getters = {};
 
 			for (let c = 0, l3 = partition.data.length; c < l3; c++) {
@@ -321,24 +370,25 @@ export default function mkChainable(name, struct, options) {
 						get: constructed.resolved
 					};
 	
-				if (typeof target == "function") {
+				if (typeof resolved == "function") {
 					if (!constructed.node.passive || typeof constructed.resolved != "function") {
 						descriptor.get = _ => {
-							target(ACCESS_TOKEN);
+							resolved(ACCESS_TOKEN);
 							return constructed.resolved;
 						};
-					} else {
+					} else if (type == "init") {
 						descriptor.get = _ => {
-							target(ACCESS_TOKEN);
+							resolved(ACCESS_TOKEN, SKIP_SELF_ACCESS);
 							return constructed.resolved(ACCESS_TOKEN);
 						};
-					}
+					} else
+						descriptor.get = _ => constructed.resolved(ACCESS_TOKEN);
 				}
 	
 				getters[name] = descriptor;
 			}
 
-			Object.defineProperties(target, getters);
+			Object.defineProperties(resolved, getters);
 		}
 	}
 
@@ -351,7 +401,7 @@ export default function mkChainable(name, struct, options) {
 			getters[name] = {
 				enumerable: true,
 				configurable: false,
-				get: _ => cnstr.resolved(ACCESS_TOKEN)[name]
+				get: _ => cnstr.resolved(ACCESS_TOKEN, SKIP_SELF_ACCESS)[name]
 			};
 		}
 
@@ -359,4 +409,12 @@ export default function mkChainable(name, struct, options) {
 	}
 
 	return cnstr.resolved;
+}
+
+function ensureDeferrable(node) {
+	if (!node.defer)
+		return;
+
+	if (!node.branchPassive.length || node.passive || node.type != "step")
+		node.defer = false;
 }
