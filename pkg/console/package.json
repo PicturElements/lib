@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/console",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "On-screen console for (mobile) debugging",
   "main": "index.js",
   "scripts": {
@@ -25,8 +25,8 @@
   },
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/console#readme",
   "dependencies": {
-    "@qtxr/bc": "^1.5.1",
-    "@qtxr/utils": "^1.58.1"
+    "@qtxr/bc": "^1.5.2",
+    "@qtxr/utils": "^1.68.1"
   },
   "devDependencies": {},
   "files": [
@@ -34,7 +34,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 3,
+    "pushes": 4,
     "expose": {
       "scripts": [
         "connect/feed.js"
