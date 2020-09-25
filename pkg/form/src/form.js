@@ -7,17 +7,19 @@ import {
 	hasOwn,
 	keys,
 	alias,
+	anyOf,
 	equals,
 	inject,
 	mkPath,
 	forEach,
+	mkSuper,
 	mkClass,
 	isObject,
-	joinClass,
 	partition,
 	resolveVal,
 	resolveArgs,
 	requestFrame,
+	constructorOf,
 	composePresets,
 	addPreset,
 	mergePresets,
@@ -44,7 +46,8 @@ import Input, {
 	TRIGGER,
 	SELF_TRIGGER,
 	TRIGGER_VALIDATE,
-	EXTRACT, SYMBOLS
+	EXTRACT,
+	SYMBOLS
 } from "./inputs/input";
 import AbstractInput from "./inputs/abstract-input";
 
@@ -68,6 +71,8 @@ const LINK_ROWS_PARAMS = [
 	{ name: "target", type: "object|function", default: null },
 	{ name: "async", type: "boolean", default: false }
 ];
+
+const CLASS_RESOLVE_REGEX = /(\w+):\s*((?:[\w-._]+|\s+(?!\w+:))+)/g;
 
 export default class Form extends Hookable {
 	constructor(...optionsAndPresets) {
@@ -239,7 +244,7 @@ export default class Form extends Hookable {
 				const block = struct[i],
 					blockIdx = i;
 
-				if (!depth || !block.isInputBlock)
+				if (!block.isInputBlock)
 					continue;
 
 				let buffer = [],
@@ -280,7 +285,7 @@ export default class Form extends Hookable {
 
 			struct.type = getBlockType(struct, parentStruct, depth);
 
-			for (let i = 0, l = struct.length; i < l; i++) {
+			for (let i = 0; i < struct.length; i++) {
 				if (struct[i].isInputBlock) {
 					resolveBlockLayout(struct[i], struct, depth + 1);
 					if (!struct[i].length) {
@@ -302,7 +307,7 @@ export default class Form extends Hookable {
 			// treat it as an object containing inputs
 			if (!depth && isObject(row) && Form.resolveInputName(row) == null) {
 				return map(row, c => {
-					const block = connect(c, new InputBlock(), depth);
+					const block = connect(c);
 					resolveBlockLayout(block);
 					return block;
 				});
@@ -311,14 +316,16 @@ export default class Form extends Hookable {
 			// Rows
 			if (Array.isArray(row)) {
 				const block = new InputBlock();
+				let newDepth = depth + 1;
 
-				if (!struct)
+				if (!struct) {
 					struct = block;
-				else
+					newDepth = depth;
+				} else
 					struct.push(block);
 
 				for (let i = 0, l = row.length; i < l; i++)
-					connect(row[i], block, depth + 1);
+					connect(row[i], block, newDepth);
 
 				return struct;
 			}
@@ -334,10 +341,12 @@ export default class Form extends Hookable {
 					delete this.inputs[name];
 
 				foundNames[name] = true;
-			} else if (nData.fromPath)
-				throw new Error(`Cannot connect: duplicate inputs with path "${nData.raw}". To support multiple inputs with the same path, use the 'noDuplicateNames' option`);
-			else
-				throw new Error(`Cannot connect: duplicate inputs by name "${name}". To support multiple inputs with the same name, use the 'noDuplicateNames' option`);
+			} else if (this.options.noDuplicateNames) {
+				if (nData.fromPath)
+					throw new Error(`Cannot connect: duplicate inputs with path "${nData.raw}". To support multiple inputs with the same path, use the 'noDuplicateNames' option`);
+				else
+					throw new Error(`Cannot connect: duplicate inputs by name "${name}". To support multiple inputs with the same name, use the 'noDuplicateNames' option`);
+			}
 
 			options.sourceValues = sourceValues;
 			options.input = this.connect(nData, options);
@@ -792,11 +801,21 @@ export default class Form extends Hookable {
 				const key = groupOptionsKeys[i];
 
 				switch (key) {
-					case "class":
-						forEach(groupOptions.class, (c, k) => {
-							options.class[k] = joinClass(c, options.class[k]);
-						});
+					case "classes": {
+						const { classes, keys } = groupOptions.classes,
+							{ classes: targetClasses, keys: targetKeys } = options.classes;
+
+						for (let i = 0, l = keys.length; i < l; i++) {
+							const key = keys[i];
+
+							if (!hasOwn(targetClasses, key)) {
+								targetClasses[key] = classes[key].slice();
+								targetKeys.push(key);
+							} else
+								targetClasses[key] = targetClasses[key].concat(classes[key]);
+						}
 						break;
+					}
 
 					case "path":
 						if (hasOwn(options, "path"))
@@ -882,14 +901,64 @@ export default class Form extends Hookable {
 		} else
 			resolved = this.resolveOptions(options);
 
-		if (resolved.classes)
-			resolved.class = resolved.classes;
-
-		resolved.class = typeof resolved.class == "string" ?
-			{ input: resolved.class } :
-			resolved.class || {};
-
+		resolved.classes = Form.resolveClasses(resolved.classes || resolved.class);
 		return resolved;
+	}
+
+	static resolveClasses(classes) {
+		if (classes && classes.isResolvedClasses)
+			return classes;
+
+		const out = {
+			classes: {},
+			keys: [],
+			isResolvedClasses: true
+		};
+
+		const add = (key, data) => {
+			if (!hasOwn(out.classes, key)) {
+				out.classes[key] = [];
+				out.keys.push(key);
+			}
+
+			if (data)
+				out.classes[key].push(data);
+		};
+
+		if (isObject(classes)) {
+			for (const k in classes) {
+				if (hasOwn(classes, k))
+					add(k, classes[k]);
+			}
+		} else if (Array.isArray(classes)) {
+			for (let i = 0, l = classes.length; i < l; i++) {
+				const item = classes[i],
+					partition = anyOf(item, "string")("name", "partition"),
+					data = anyOf(item)("class", "classes", "value", "data");
+
+				if (partition && data)
+					add(partition, data);
+				else
+					add("input", item);
+			} 
+		} else if (classes != null && typeof classes != "symbol") {
+			const cls = String(classes);
+			let found = false;
+
+			while (true) {
+				const ex = CLASS_RESOLVE_REGEX.exec(cls);
+				if (!ex)
+					break;
+
+				found = true;
+				add(ex[1], ex[2].trim());
+			}
+
+			if (!found)
+				add("input", cls.trim());
+		}
+
+		return out;
 	}
 
 	static resolveInputName(nameOrConfig) {
@@ -1019,67 +1088,86 @@ export default class Form extends Hookable {
 		});
 	}
 
-	static defineInput(name, config) {
+	static defineInput(name, configOrConstructor) {
 		if (!name || typeof name != "string") {
 			console.warn("Cannot define input: name must be a truthy string");
 			return null;
 		}
 
-		if (!isObject(config)) {
-			console.warn(`Cannot define input '${name}': invalid partition target`);
+		let constr;
+
+		if (typeof configOrConstructor == "function") {
+			if (!constructorOf(configOrConstructor, AbstractInput)) {
+				console.warn(`Cannot define input '${name}': constructor must construct an instance of AbstractInput`);
+				return null;
+			}
+
+			constr = configOrConstructor;
+		} else if (isObject(configOrConstructor)) {
+			const config = configOrConstructor,
+				providedConstructor = hasOwn(config, "constructor") && typeof config.constructor == "function" ?
+					config.constructor :
+					null;
+
+			const proto = {
+				finishInit() {
+					const sup = Object.getPrototypeOf(Object.getPrototypeOf(this));
+					sup.finishSetup.call(this);
+
+					if (hasOwn(config, "finishInit") && typeof config.finishInit == "function")
+						config.finishInit.call(this);
+
+					sup.initValue.call(this);
+				}
+			};
+
+			const aliases = {};
+
+			for (const k in config) {
+				if (hasOwn(config, k) && hasOwn(SYMBOLS, k)) {
+					proto[SYMBOLS[k]] = config[k];
+					aliases[k] = SYMBOLS[k];
+				}
+			}
+
+			constr = mkClass({
+				name: config.name || "CustomAbstractInput",
+				constructor(...args) {
+					mkSuper(this, {
+						tiered: true,
+						bindAlways: true,
+						aliases,
+						bindTo: "super"
+					});
+
+					if (providedConstructor)
+						providedConstructor.apply(this, args);
+
+					this.finishInit();
+				},
+				parameters: [
+					{ name: "name", type: "string", required: true },
+					{ name: "options", type: Object, required: true },
+					{ name: "form", type: Form, required: true }
+				],
+				proto,
+				super: AbstractInput,
+				superResolveArgs: ([n, o, f]) => [n, o, f, config.schema]
+			});
+		} else {
+			console.warn(`Cannot define input '${name}': must be provided a configuration object, or a constructor constructing an instance of AbstractInput`);
 			return null;
 		}
-
-		const constr = hasOwn(config, "constructor") && typeof config.constructor == "function" ?
-			config.constructor :
-			null;
-
-		const proto = {
-			finishInit() {
-				const sup = Object.getPrototypeOf(Object.getPrototypeOf(this));
-				sup.finishSetup.call(this);
-
-				if (hasOwn(config, "finishInit") && typeof config.finishInit == "function")
-					config.finishInit.call(this);
-
-				sup.initValue.call(this);
-			}
-		};
-
-		for (const k in config) {
-			if (hasOwn(config, k) && hasOwn(SYMBOLS, k))
-				proto[SYMBOLS[k]] = config[k];
-		}
-
-		const cls = mkClass({
-			name: config.name || "CustomAbstractInput",
-			constructor(...args) {
-				this.super = mkSuper(this);
-
-				if (constr)
-					constr.apply(this, args);
-
-				this.finishInit();
-			},
-			parameters: [
-				{ name: "name", type: "string", required: true },
-				{ name: "options", type: Object, required: true },
-				{ name: "form", type: Form, required: true }
-			],
-			proto,
-			super: AbstractInput,
-			superResolveArgs: ([n, o, f]) => [n, o, f, config.schema]
-		});
 
 		return this.define({
 			type: "input",
 			target: Form.inputTypes,
 			name,
-			data: cls,
+			data: constr,
 			returnData: true,
 			apply: _ => {
 				Form.inputTypes[name] = name;
-				Form.inputConstructors[name] = cls;
+				Form.inputConstructors[name] = constr;
 			}
 		});
 	}
@@ -1207,48 +1295,4 @@ function isResolvableInput(candidate) {
 		return true;
 
 	return false;
-}
-
-function mkSuper(inst) {
-	const proto = Object.getPrototypeOf(Object.getPrototypeOf(inst)),
-		proxy = {},
-		getters = {},
-		assigned = {};
-	let p = proto;
-
-	while (p) {
-		const names = Object.getOwnPropertyNames(p);
-
-		for (let i = 0, l = names.length; i < l; i++) {
-			const name = names[i],
-				localProto = p;
-
-			if (hasOwn(assigned, name))
-				continue;
-
-			getters[name] = {
-				enumerable: true,
-				configurable: false,
-				get() {
-					const descriptor = Object.getOwnPropertyDescriptor(localProto, name);
-					if (descriptor && hasOwn(descriptor, "get"))
-						return proto[name];
-
-					const value = proto[name];
-
-					if (typeof value == "function")
-						return value.bind(inst);
-					
-					return value;
-				}
-			};
-
-			assigned[name] = true;
-		}
-
-		p = Object.getPrototypeOf(p);
-	}
-
-	Object.defineProperties(proxy, getters);
-	return proxy;
 }

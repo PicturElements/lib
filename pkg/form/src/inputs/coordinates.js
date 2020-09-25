@@ -204,8 +204,6 @@ function parseCoordinate(str) {
 	return coordData;
 }
 
-window.parseCoordinate = parseCoordinate;
-
 function constructCoordinateStr(coordData) {
 	const constr = d => {
 		let out = d.prefix,
