@@ -4,6 +4,7 @@
 		:aria-invalid="err")
 		button.list-row-add(
 			:disabled="addIsDisabled(0)"
+			type="button"
 			@click="add(0)")
 			.list-add-click-target
 			.list-row-add-icon
@@ -21,7 +22,9 @@
 							slot(
 								name="actions-pre"
 								v-bind="bindForm(form)")
-							button.row-action.delete(@click="remove(idx)")
+							button.row-action.delete(
+								type="button"
+								@click="remove(idx)")
 								slot(
 									name="delete-icon"
 									v-bind="bindForm(form)")
@@ -29,6 +32,7 @@
 									.row-action-symbol.default-row-action-icon.delete(v-else)
 							button.row-action.move.up(
 								v-if="res(input.rearrangeable) !== false && idx > 0"
+								type="button"
 								@click="moveUp(idx)")
 								slot(
 									name="up-icon"
@@ -37,6 +41,7 @@
 									.row-action-symbol.default-row-action-icon.up(v-else)
 							button.row-action.move.down(
 								v-if="res(input.rearrangeable) !== false && idx < input.value.length - 1"
+								type="button"
 								@click="moveDown(idx)")
 								slot(
 									name="down-icon"
@@ -48,6 +53,7 @@
 								v-bind="bindForm(form)")
 			button.list-row-add(
 				:disabled="addIsDisabled(idx + 1)"
+				type="button"
 				@click="add(idx + 1)")
 				.list-add-click-target
 				.list-row-add-icon

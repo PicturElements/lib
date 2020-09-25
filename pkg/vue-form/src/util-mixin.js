@@ -2,7 +2,8 @@ import {
 	get,
 	hasOwn,
 	isObject,
-	joinClass
+	joinClass,
+	joinClassAsArray
 } from "@qtxr/utils";
 
 export default {
@@ -23,6 +24,50 @@ export default {
 				if (isObject(props))
 					Object.assign(outProps, props);
 			}
+		},
+		resolveClasses(classes, key = null, returnAsArray = true) {
+			if (!isObject(classes)) {
+				returnAsArray = key;
+				key = classes;
+				classes = this.meta.classes;
+			}
+
+			if (typeof key != "string") {
+				returnAsArray = key;
+				key = null;
+			}
+
+			if (!isObject(classes))
+				return returnAsArray ? [] : {};
+
+			const joiner = returnAsArray ?
+				joinClassAsArray :
+				joinClass;
+
+			if (key) {
+				if (classes.isResolvedClasses)
+					return joiner(classes.classes[key]);
+
+				return joiner(classes[key]);
+			}
+			
+			if (classes.isResolvedClasses) {
+				const out = {};
+
+				for (let i = 0, l = classes.keys.length; i < l; i++)
+					out[classes.keys[i]] = joiner(classes.classes[classes.keys[i]]);
+
+				return out;
+			}
+
+			const out = {};
+
+			for (const k in classes) {
+				if (hasOwn(classes, k))
+					out[k] = joiner(classes);
+			}
+
+			return out;
 		},
 		mkRuntime(...sources) {
 			const input = this.input,

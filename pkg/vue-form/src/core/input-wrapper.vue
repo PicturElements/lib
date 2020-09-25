@@ -1,6 +1,14 @@
 <template lang="pug">
+	AbstractInput(
+		v-if="isAbstract"
+		v-bind="props")
+		template(v-slot="d")
+			slot(:name="`${name}-content`" v-bind="d")
+				slot(name="abstract-content" v-bind="d")
+					loool
+
 	Checkbox(
-		v-if="is('checkbox')"
+		v-else-if="is('checkbox')"
 		v-bind="props"
 		:label="c.label")
 		template(#icon="d")
@@ -212,6 +220,9 @@
 </template>
 
 <script>
+	import { AbstractInput as AbstractConstuctor } from "@qtxr/form";
+
+	import AbstractInput from "../inputs/abstract-input.vue";
 	import Checkbox from "../inputs/checkbox.vue";
 	import Coordinates from "../inputs/coordinates.vue";
 	import Count from "../inputs/count.vue";
@@ -269,9 +280,13 @@
 			},
 			name() {
 				return this.c.input.name;
+			},
+			isAbstract() {
+				return this.c.input instanceof AbstractConstuctor;
 			}
 		},
 		components: {
+			AbstractInput,
 			Checkbox,
 			Coordinates,
 			Count,

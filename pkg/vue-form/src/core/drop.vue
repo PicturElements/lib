@@ -505,7 +505,7 @@
 		computed: {
 			probeTag() {
 				const ua = (window.navigator && navigator.userAgent) || "",
-					usesDumbBrowser = ua.indexOf("Safari") != -1 && ua.indexOf("Chrome") == -1;
+					usesDumbBrowser = (ua.indexOf("Safari") != -1 || ua.indexOf("Firefox") != -1) && ua.indexOf("Chrome") == -1;
 
 				return usesDumbBrowser ?
 					"textarea" :

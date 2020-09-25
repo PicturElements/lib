@@ -2,7 +2,7 @@
 	.input-block(
 		:is="blockTag"
 		:class="classes"
-		role="form")
+		:role="root ? 'form' : null")
 		template(v-for="(block, idx) in blocks")
 			InputBlock(
 				v-if="block.isInputBlock"
@@ -15,12 +15,12 @@
 					slot(:name="name" v-bind="d")
 			.input-box(
 				v-else-if="block.input.visible"
-				:class="jc(block.class.box, `input-box-${block.input.type || 'text'}`)"
+				:class="jc(resolveClasses(block.classes, 'box'), `input-box-${block.input.type || 'text'}`)"
 				:data-name="block.input.name")
 				label.title(
 					v-if="block.title"
 					:id="block.input.uid + '-title'"
-					:class="jc({ required: block.input.required }, block.class.title)"
+					:class="jc({ required: block.input.required }, resolveClasses(block.classes, 'title'))"
 					:for="block.input.uid")
 						| {{ res(block, block.title) }}
 				label.aria-title(
@@ -31,9 +31,9 @@
 				slot(:name="`${block.input.name}-pre-content`" v-bind="bind(block)")
 					slot(name="pre-content" v-bind="bind(block)")
 				InputWrapper(
-					:class="block.class.input"
+					:class="resolveClasses(block.classes, 'input')"
 					:cell="block"
-					:meta="inputMeta"
+					:meta="getMeta(block)"
 					:verifiedVisibility="true"
 					:disabled="block.input.disabled"
 					:readonly="block.input.readonly"
@@ -76,6 +76,12 @@
 			bind(block) {
 				return this.mkRuntime(block);
 			},
+			getMeta(block) {
+				return {
+					mobileQuery: this.mobileQuery,
+					classes: block.classes
+				};
+			},
 			mkOrder(idx) {
 				return this.order.concat(idx);
 			}
@@ -88,11 +94,6 @@
 				return !this.root || usesDumbBrowser ?
 					"div" :
 					"form";
-			},
-			inputMeta() {
-				return {
-					mobileQuery: this.mobileQuery
-				}
 			},
 			classes() {
 				const classes = [];
