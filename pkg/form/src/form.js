@@ -11,12 +11,12 @@ import {
 	inject,
 	mkPath,
 	forEach,
+	mkClass,
 	isObject,
 	joinClass,
 	partition,
 	resolveVal,
 	resolveArgs,
-	splitClean,
 	requestFrame,
 	composePresets,
 	addPreset,
@@ -44,8 +44,9 @@ import Input, {
 	TRIGGER,
 	SELF_TRIGGER,
 	TRIGGER_VALIDATE,
-	EXTRACT
+	EXTRACT, SYMBOLS
 } from "./inputs/input";
+import AbstractInput from "./inputs/abstract-input";
 
 let id = 0;
 
@@ -203,7 +204,7 @@ export default class Form extends Hookable {
 		return inp;
 	}
 
-	connectRows(rows, sourceValues = {}) {
+	connectRowsNew(rows, sourceValues = {}) {
 		const foundNames = {};
 
 		const hasBlocks = cells => {
@@ -294,35 +295,35 @@ export default class Form extends Hookable {
 		const connect = (row, struct = null, depth = 0) => {
 			if (isObject(row) && hasOwn(row, "group"))
 				row = Form.resolveGroup(row);
+			if (!depth && isResolvableInput(row))
+				row = [row];
 
 			// If no name can be inferred from an object,
 			// treat it as an object containing inputs
 			if (!depth && isObject(row) && Form.resolveInputName(row) == null) {
 				return map(row, c => {
-					const block = connect(c);
+					const block = connect(c, new InputBlock(), depth);
 					resolveBlockLayout(block);
 					return block;
 				});
 			}
 
-			// Handle row data
+			// Rows
 			if (Array.isArray(row)) {
 				const block = new InputBlock();
-				let newDepth = depth + 1;
 
-				if (!struct) {
+				if (!struct)
 					struct = block;
-					newDepth = 0;
-				} else
+				else
 					struct.push(block);
 
 				for (let i = 0, l = row.length; i < l; i++)
-					connect(row[i], block, newDepth);
+					connect(row[i], block, depth + 1);
 
 				return struct;
 			}
 
-			// Handle input options data
+			// Input options data
 			const options = Form.resolveInputOptions(row),
 				nData = Form.resolveInputName(options),
 				name = nData && nData.name;
@@ -333,7 +334,9 @@ export default class Form extends Hookable {
 					delete this.inputs[name];
 
 				foundNames[name] = true;
-			} else if (this.options.noDuplicateNames)
+			} else if (nData.fromPath)
+				throw new Error(`Cannot connect: duplicate inputs with path "${nData.raw}". To support multiple inputs with the same path, use the 'noDuplicateNames' option`);
+			else
 				throw new Error(`Cannot connect: duplicate inputs by name "${name}". To support multiple inputs with the same name, use the 'noDuplicateNames' option`);
 
 			options.sourceValues = sourceValues;
@@ -776,6 +779,7 @@ export default class Form extends Hookable {
 		const inject = (opts, depth = 0) => {
 			if (Array.isArray(opts)) {
 				const out = [];
+
 				for (let i = 0, l = opts.length; i < l; i++)
 					out.push(inject(opts[i], depth + 1));
 
@@ -820,6 +824,7 @@ export default class Form extends Hookable {
 
 		if (Array.isArray(groupOptions.group)) {
 			const out = [];
+			
 			for (let i = 0, l = groupOptions.group.length; i < l; i++)
 				out.push(inject(groupOptions.group[i], 0));
 
@@ -833,16 +838,47 @@ export default class Form extends Hookable {
 		let resolved = null;
 
 		if (typeof options == "string") {
-			const nameOptions = splitClean(options, /\s*:\s*/);
+			const [_, root, left, op, right] = /\s*(~?)([^#@:\s]*)\s*(?:([#@:]|\ba[st]\b)\s*([^\s]*)\s*)?/.exec(options);
+			let key,
+				ref,
+				id;
 
-			if (nameOptions.length > 1) {
-				resolved = this.resolveOptions(nameOptions[0]);
-				resolved.name = nameOptions[1];
-			} else {
-				resolved = {
-					name: nameOptions[0]
-				};
+			switch (op) {
+				case ":":
+				case "#":
+				case "as":
+					key = "name";
+					ref = left;
+					id = right;
+					break;
+
+				case "@":
+					key = "path";
+					ref = left;
+					id = right;
+					break;
+
+				default:
+					key = "name";
+					ref = null;
+					id = left;
 			}
+
+			if (!ref)
+				resolved = {};
+			else if (root || !hasOwn(Form.templates, ref)) {
+				if (!hasOwn(Form.inputTypes, ref)) {
+					console.error(`Form has no input by name '${ref}'`);
+					resolved = {};
+				} else {
+					resolved = {
+						type: Form.inputTypes[ref]
+					};
+				}
+			} else
+				resolved = this.resolveOptions(ref) || {};
+
+			resolved[key] = id;
 		} else
 			resolved = this.resolveOptions(options);
 
@@ -979,7 +1015,72 @@ export default class Form extends Hookable {
 			data: preset,
 			validate: isObject,
 			validationMsg: "supplied preset is not an object",
-			apply: _ => addPreset(Form.templates, name, preset)
+			apply: _ => addPreset(Form.presets, name, preset)
+		});
+	}
+
+	static defineInput(name, config) {
+		if (!name || typeof name != "string") {
+			console.warn("Cannot define input: name must be a truthy string");
+			return null;
+		}
+
+		if (!isObject(config)) {
+			console.warn(`Cannot define input '${name}': invalid partition target`);
+			return null;
+		}
+
+		const constr = hasOwn(config, "constructor") && typeof config.constructor == "function" ?
+			config.constructor :
+			null;
+
+		const proto = {
+			finishInit() {
+				const sup = Object.getPrototypeOf(Object.getPrototypeOf(this));
+				sup.finishSetup.call(this);
+
+				if (hasOwn(config, "finishInit") && typeof config.finishInit == "function")
+					config.finishInit.call(this);
+
+				sup.initValue.call(this);
+			}
+		};
+
+		for (const k in config) {
+			if (hasOwn(config, k) && hasOwn(SYMBOLS, k))
+				proto[SYMBOLS[k]] = config[k];
+		}
+
+		const cls = mkClass({
+			name: config.name || "CustomAbstractInput",
+			constructor(...args) {
+				this.super = mkSuper(this);
+
+				if (constr)
+					constr.apply(this, args);
+
+				this.finishInit();
+			},
+			parameters: [
+				{ name: "name", type: "string", required: true },
+				{ name: "options", type: Object, required: true },
+				{ name: "form", type: Form, required: true }
+			],
+			proto,
+			super: AbstractInput,
+			superResolveArgs: ([n, o, f]) => [n, o, f, config.schema]
+		});
+
+		return this.define({
+			type: "input",
+			target: Form.inputTypes,
+			name,
+			data: cls,
+			returnData: true,
+			apply: _ => {
+				Form.inputTypes[name] = name;
+				Form.inputConstructors[name] = cls;
+			}
 		});
 	}
 
@@ -991,12 +1092,13 @@ export default class Form extends Hookable {
 			data,
 			validate = null,
 			validationMsg = null,
-			apply = null
+			apply = null,
+			returnData = false
 		} = options;
 
 		const warn = msg => {
 			console.warn(msg);
-			return this;
+			return returnData ? null : this;
 		};
 
 		if (!type || typeof type != "string")
@@ -1025,7 +1127,7 @@ export default class Form extends Hookable {
 		else
 			target[name] = data;
 
-		return this;
+		return returnData ? data : this;
 	}
 
 	static setDictionary(dictionary) {
@@ -1052,6 +1154,8 @@ alias(Form.prototype, {
 	unhook: "off"
 });
 
+Form.inputTypes = inputTypes;
+Form.inputConstructors = inputConstructors;
 Form.templates = composePresets(templates);
 Form.presets = composePresets({
 	std: {
@@ -1093,4 +1197,58 @@ function isPreset(candidate) {
 		hasOwn(candidate, "meta") ||
 		hasOwn(candidate, "dictionary")
 	);
+}
+
+function isResolvableInput(candidate) {
+	if (typeof candidate == "string")
+		return true;
+
+	if (isObject(candidate) && Form.resolveInputName(candidate))
+		return true;
+
+	return false;
+}
+
+function mkSuper(inst) {
+	const proto = Object.getPrototypeOf(Object.getPrototypeOf(inst)),
+		proxy = {},
+		getters = {},
+		assigned = {};
+	let p = proto;
+
+	while (p) {
+		const names = Object.getOwnPropertyNames(p);
+
+		for (let i = 0, l = names.length; i < l; i++) {
+			const name = names[i],
+				localProto = p;
+
+			if (hasOwn(assigned, name))
+				continue;
+
+			getters[name] = {
+				enumerable: true,
+				configurable: false,
+				get() {
+					const descriptor = Object.getOwnPropertyDescriptor(localProto, name);
+					if (descriptor && hasOwn(descriptor, "get"))
+						return proto[name];
+
+					const value = proto[name];
+
+					if (typeof value == "function")
+						return value.bind(inst);
+					
+					return value;
+				}
+			};
+
+			assigned[name] = true;
+		}
+
+		p = Object.getPrototypeOf(p);
+	}
+
+	Object.defineProperties(proxy, getters);
+	return proxy;
 }

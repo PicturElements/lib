@@ -6,6 +6,7 @@ export { default as InputBlock } from "./src/core/input-block";
 
 export { default as Input } from "./src/inputs/input";
 
+export { default as AbstractInput } from "./src/inputs/abstract-input";
 export { default as Checkbox } from "./src/inputs/checkbox";
 export { default as Coordinates } from "./src/inputs/coordinates";
 export { default as Count } from "./src/inputs/count";

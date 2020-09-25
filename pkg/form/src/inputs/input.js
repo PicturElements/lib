@@ -51,6 +51,30 @@ const CHECK = sym("check"),
 	DISPATCH_CHANGED = sym("dispatchChanged"),
 	DISPATCH_VALID = sym("setValid");
 
+const SYMBOL_DATA = [
+	[CHECK, "CHECK", "check"],
+	[TRIGGER, "TRIGGER", "trigger"],
+	[SELF_TRIGGER, "SELF_TRIGGER", "selfTrigger"],
+	[VALIDATE, "VALIDATE", "validate"],
+	[SELF_VALIDATE, "SELF_VALIDATE", "selfValidate"],
+	[TRIGGER_VALIDATE, "TRIGGER_VALIDATE", "triggerValidate"],
+	[UPDATE, "UPDATE", "update"],
+	[REFRESH, "REFRESH", "refresh"],
+	[INJECT, "INJECT", "inject"],
+	[MERGE_INJECT, "MERGE_INJECT", "mergeInject"],
+	[OVERRIDE_INJECT, "OVERRIDE_INJECT", "overrideInject"],
+	[EXTRACT, "EXTRACT", "extract"],
+	[SELF_EXTRACT, "SELF_EXTRACT", "selfExtract"],
+	[DISPATCH_VALUE, "DISPATCH_VALUE", "dispatchValue"],
+	[DISPATCH_SET, "DISPATCH_SET", "dispatchSet"],
+	[DISPATCH_CHANGE, "DISPATCH_CHANGE", "dispatchChange"],
+	[DISPATCH_CHANGESTATECHANGE, "DISPATCH_CHANGESTATECHANGE", "dispatchChangestatechange"],
+	[DISPATCH_CHANGED, "DISPATCH_CHANGED", "dispatchChanged"],
+	[DISPATCH_VALID, "DISPATCH_VALID", "setValid"]
+];
+
+const SYMBOLS = {};
+
 const ROOT_HOOK_REGEX = /^(?:@|on)(.+)$/;
 
 const INIT_OPTIONS_SCHEMA = {
@@ -1346,7 +1370,22 @@ function resolveCmp(a, b, accessor, smartResolve = false) {
 	];
 }
 
+(_ => {
+	for (let i = 0, l = SYMBOL_DATA.length; i < l; i++) {
+		const [symbol, ...names] = SYMBOL_DATA[i];
+
+		SYMBOLS[symbol] = symbol;
+
+		for (let j = 0, l2 = names.length; j < l2; j++)
+			SYMBOLS[names[j]] = symbol;
+	}
+})();
+
 export {
+	// Symbol collections
+	SYMBOL_DATA,
+	SYMBOLS,
+	// Raw symbols
 	CHECK,
 	TRIGGER,
 	SELF_TRIGGER,
