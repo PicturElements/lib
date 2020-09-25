@@ -104,7 +104,7 @@ export default function get(data, path, def, options = {}) {
 
 	if (useBundledOutput) {
 		d = {
-			data,
+			data: d,
 			match,
 			built,
 			error

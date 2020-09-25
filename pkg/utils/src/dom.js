@@ -377,7 +377,7 @@ function joinClsHelper(list, cls, callArgs) {
 		for (let i = 0, l = cls.length; i < l; i++)
 			joinClsHelper(list, cls[i], callArgs);
 	} else if (typeof cls == "string") {
-		const split = splitClean(cls);
+		const split = splitClean(cls, /\s+|\./);
 
 		for (let i = 0, l = split.length; i < l; i++) {
 			appendToken(list, {
