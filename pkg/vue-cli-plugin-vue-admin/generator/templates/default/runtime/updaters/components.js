@@ -10,8 +10,8 @@ const {
 const invalidIdentifierCharRegex = /^\d|[^\w$]/g;
 
 const prefix =
-`// This is an automatically generated file
-// Do not edit as changes won't persist on rebuild
+`// This is an automatically generated file.
+// Do not edit as changes won't persist on rebuild.
 
 import { get } from "@qtxr/utils";
 
@@ -77,7 +77,7 @@ function injectComponents(comps, scopes = []) {
 
 			if (!isComponent(comp))
 				throw new Error(\`Failed to resolve component '\${k}' at '\${tComps[k]}' in \${targetComponentName}\`);
-
+		
 			outComps[k] = comp;
 		}
 
@@ -104,7 +104,7 @@ module.exports = async function genComponents() {
 		files = {
 			aaa: serialize.rawReplaceKey("...vueAdminComponents")
 		};
-
+	
 	await traverseFileTree({
 		cwd: path.join(__dirname, "../../components"),
 		path: ""
@@ -131,11 +131,8 @@ module.exports = async function genComponents() {
 
 	await writeFile(
 		path.join(__dirname, "../gen/components.js"),
-		prefix + imports.join("\n") + `
-
-const components = ${serialize(files, {
-	quote: ""
-})}` + suffix);
+		prefix + imports.join("\n") + `\n\nconst components = ${serialize(files)}` + suffix
+	);
 };
 
 function toDirCamelCase(pth) {
@@ -148,6 +145,6 @@ function toDirCamelCase(pth) {
 
 function toPascalCase(file) {
 	return file.split(/[_-]+/)
-		.map(s => s[0].toUpperCase() + s.substring(1))
+		.map(s => s[0].toUpperCase() + s.substr(1))
 		.join("");
 }

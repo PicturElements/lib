@@ -12,6 +12,13 @@ const admin = new VueAdmin(viewMap, {
 			credit: true
 		}
 	},
+	behavior: {
+		routing: {
+			sidebar: {
+				preExpand: true
+			}
+		}
+	},
 	dev: {
 		suppressWarnings: false
 	}
