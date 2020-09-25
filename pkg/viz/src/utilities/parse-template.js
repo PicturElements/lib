@@ -62,7 +62,7 @@ function parseSubTemplate(template, subTemplates) {
 		if (!ex)
 			throw new Error(`Failed to parse template: invalid formatting (line ${node.row})\n'${node.raw}'`);
 
-		const nodeData = parsePugStr(ex[3])[0];
+		const nodeData = parsePugStr(ex[3]);
 		let outNode = {
 			tag: nodeData && nodeData.tag,
 			attributes: nodeData && nodeData.attributes,
