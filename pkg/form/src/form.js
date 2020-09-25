@@ -204,7 +204,7 @@ export default class Form extends Hookable {
 		return inp;
 	}
 
-	connectRowsNew(rows, sourceValues = {}) {
+	connectRows(rows, sourceValues = {}) {
 		const foundNames = {};
 
 		const hasBlocks = cells => {
