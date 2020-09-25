@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/ds",
-  "version": "1.4.6",
+  "version": "1.4.7",
   "description": "Data structure implementations, and non-standard custom data structures",
   "main": "index.js",
   "scripts": {
@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/ds#readme",
   "dependencies": {
-    "@qtxr/utils": "^1.68.1"
+    "@qtxr/utils": "^1.69.0"
   },
   "devDependencies": {},
   "files": [
@@ -32,7 +32,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 15,
+    "pushes": 16,
     "expose": {
       "scripts": [
         "connect/feed.js"
