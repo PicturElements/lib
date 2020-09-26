@@ -16,6 +16,7 @@
 					:aria-describedby="$scopedSlots.description ? `${input.uid}-description-${idx}` : null"
 					name="placeholder"
 					role="radio"
+					type="button"
 					@click="trigger(option)")
 					slot(name="option" v-bind="bindOption(option)")
 				label.label(

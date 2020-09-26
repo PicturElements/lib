@@ -44,7 +44,8 @@
 					:class="{ go: input.noAutoSearch && query !== input.optionsContext.state.lastQuery }"
 					:disabled="searchDisabled"
 					@click="search(true)"
-					tabindex="-1")
+					tabindex="-1"
+					type="button")
 			Options(
 				:input="input"
 				:context="input.optionsContext"
