@@ -1,10 +1,11 @@
-import hasOwn from "./has-own";
 import {
 	getRegexSource,
 	joinRegexFlags
 } from "./regex";
+import { assign } from "./obj";
 import parseEscapeSequence from "./parse-escape-sequence";
 import lookup from "./lookup";
+import hasOwn from "./has-own";
 
 const T = {
 	PROGRAM: "program",
@@ -77,7 +78,7 @@ export default function parseRegex(source, flags = "") {
 			return token;
 		}
 
-		return Object.assign(token, data);
+		return assign(token, data);
 	};
 
 	const appendToken = token => {

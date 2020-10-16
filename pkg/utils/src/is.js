@@ -1,13 +1,20 @@
 import {
 	SYM_ITER_KEY,
 	POLYFILL_PREFIXES
-} from "./internal/constants";
-import hasOwn from "./has-own";
-import getFunctionName from "./get-function-name";
+} from "./data/constants";
+import {
+	KEYWORDS,
+	RESERVED_WORDS,
+	BAD_IDENTIFIERS
+} from "./data/lookups";
 import type from "./lazy/type";
+import hasOwn from "./has-own";
 import splitPath from "./split-path";
+import getFunctionName from "./get-function-name";
 
-const DOC_ALL = typeof document == "undefined" ? [] : document.all,
+const DOC_ALL = typeof document == "undefined" ?
+		[] :
+		document.all,
 	FN_TO_STR = Function.prototype.toString,
 	OBJ_TO_STR = Object.prototype.toString;
 
@@ -15,12 +22,14 @@ function isDirectInstanceof(obj, constr) {
 	return obj !== null && obj !== undefined && obj.constructor == constr;
 }
 
-// Checks if a value is a native simple object, i.e. a direct instance of Object or Array
-function isNativeSimpleObject(val) {
-	if (typeof val != "object" || val == null)
+// Checks if a value is a native simple object,
+// i.e. a direct instance of Object or Array,
+// or a null prototype object
+function isNativeSimpleObject(candidate) {
+	if (typeof candidate != "object" || candidate == null)
 		return false;
 
-	const proto = Object.getPrototypeOf(val);
+	const proto = Object.getPrototypeOf(candidate);
 	if (!proto)
 		return true;
 
@@ -28,58 +37,59 @@ function isNativeSimpleObject(val) {
 	return constr == Object || constr == Array;
 }
 
-function isObj(val) {
-	return val !== null && typeof val == "object";
+function isObj(candidate) {
+	return candidate !== null && typeof candidate == "object";
 }
 
-function isObject(val) {
-	if (!val || typeof val != "object")
+function isObject(candidate) {
+	if (!candidate || typeof candidate != "object")
 		return false;
 
-	const proto = Object.getPrototypeOf(val);
+	const proto = Object.getPrototypeOf(candidate);
 	return proto == null || proto == Object.prototype;
 }
 
-function isObjectLike(val) {
-	return OBJ_TO_STR.call(val) == "[object Object]";
+function isObjectLike(candidate) {
+	return OBJ_TO_STR.call(candidate) == "[object Object]";
 }
 
-function isInstance(val) {
-	return val !== null && val !== undefined && Object.getPrototypeOf(val) != Function.prototype;
+function isInstance(candidate) {
+	return candidate !== null && candidate !== undefined && Object.getPrototypeOf(candidate) != Function.prototype;
 }
 
-function isConstructor(val) {
-	return val !== null && val !== undefined && val.prototype != null && val.prototype.constructor == val;
+function isConstructor(candidate) {
+	return candidate !== null && candidate !== undefined && candidate.prototype != null && candidate.prototype.constructor == candidate;
 }
 
 // Basic and highly speculative measure of whether a supplied value
 // is a constructor. Because normal functions are technically constructible,
-// this function attempts to apply some heuristics to input, so functions
-// must not be defined using arrow notation, should not return anything,
-// and the constructor must begin with a capital letter
+// this function attempts to apply some heuristics to provided functions:
+// 1. must not be defined using arrow notation
+// 2. should not return anything
+// 3. name must begin with a capital letter
 const HANDLER = { construct: _ => ({}) },
 	NON_CONSTRUCTIBLE_REGEX = /^(?:\([^)]*\)|[\w\s]+)=>|return[^\n;]+;[\s\n]*}/,
 	CONSTRUCTIBLE_REGEX = /^\s*class/;
 
-function isProbableConstructor(val) {
+function isProbableConstructor(candidate) {
 	// Remove any definite false values
-	if (!isConstructor(val) || isNonConstructible(val))
+	if (!isConstructor(candidate) || isNonConstructible(candidate))
 		return false;
 
 	// Definitely true if the provided function is native
-	if (isNativeConstructor(val))
+	if (isNativeConstructor(candidate))
 		return true;
 
 	if (typeof Proxy != "undefined") {
 		try {
-			new (new Proxy(val, HANDLER))();
+			new (new Proxy(candidate, HANDLER))();
 		} catch {
 			// Definitely not constructible if there's no [[Construct]] internal method
 			return false;
 		}
 	}
 
-	const constrStr = FN_TO_STR.call(val);
+	const constrStr = FN_TO_STR.call(candidate);
 
 	// Test for functions that are definitely constructible
 	if (CONSTRUCTIBLE_REGEX.test(constrStr))
@@ -90,25 +100,25 @@ function isProbableConstructor(val) {
 	if (NON_CONSTRUCTIBLE_REGEX.test(constrStr))
 		return false;
 
-	return isUpperCase(getFunctionName(val)[0]);
+	return isUpperCase(getFunctionName(candidate)[0]);
 }
 
-function isNativeConstructor(val) {
-	if (type.getNativeCode(val))
+function isNativeConstructor(candidate) {
+	if (type.getNativeCode(candidate))
 		return true;
 
-	return isConstructor(val) && isNativeFunction(val) && isUpperCase(getFunctionName(val)[0]);
+	return isConstructor(candidate) && isNativeFunction(candidate) && isUpperCase(getFunctionName(candidate)[0]);
 }
 
-function isNonConstructible(val) {
-	return typeof Symbol != "undefined" && val == Symbol;
+function isNonConstructible(candidate) {
+	return typeof Symbol != "undefined" && candidate == Symbol;
 }
 
-function isPrimitive(val) {
-	if (!val && val !== DOC_ALL)
+function isPrimitive(candidate) {
+	if (!candidate && candidate !== DOC_ALL)
 		return true;
 
-	switch (typeof val) {
+	switch (typeof candidate) {
 		case "object":
 		case "function":
 			return false;
@@ -299,7 +309,45 @@ function isValidIdentifier(candidate) {
 	if (typeof candidate != "string")
 		return false;
 
+	if (KEYWORDS.has(candidate) || RESERVED_WORDS.has(candidate) || BAD_IDENTIFIERS.has(candidate))
+		return false;
+
 	return /^[a-z$_][\w$_]*$/i.test(candidate);
+}
+
+function isValidIdentifierDetailed(candidate) {
+	const response = {
+		valid: false,
+		error: null
+	};
+	
+	if (typeof candidate != "string") {
+		response.error = "not-string";
+		return response;
+	}
+
+	if (KEYWORDS.has(candidate)) {
+		response.error = "keyword";
+		return response;
+	}
+
+	if (RESERVED_WORDS.has(candidate)) {
+		response.error = "reserved-word";
+		return response;
+	}
+	
+	if (BAD_IDENTIFIERS.has(candidate)) {
+		response.error = "bad-identifier";
+		return response;
+	}
+	
+	if (!/^[a-z$_][\w$_]*$/i.test(candidate)) {
+		response.error = "syntax-error";
+		return response;
+	}
+	
+	response.valid = true;
+	return response;
 }
 
 export {
@@ -332,5 +380,6 @@ export {
 	isTaggedTemplateArgs,
 	isStandardPropertyDescriptor,
 	isPath,
-	isValidIdentifier
+	isValidIdentifier,
+	isValidIdentifierDetailed
 };

@@ -1,5 +1,5 @@
 import hasOwn from "../src/has-own";
-import { POLYFILL_PREFIXES } from "../src/internal/constants";
+import { POLYFILL_PREFIXES } from "../src/data/constants";
 
 const OBJ = {
 	a: 1,

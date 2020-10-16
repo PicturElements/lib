@@ -1,15 +1,25 @@
 import { resolveFunc } from "../func";
 
+class Null {}
+
 const isSetLike = resolveFunc(_ => {
-	return typeof Set == "undefined" ?
-		_ => false :
-		candidate => candidate instanceof Set;
+	const SetConstructor = typeof Set != "undefined" ? Set : Null,
+		WeakSetConstructor = typeof WeakSet != "undefined" ? WeakSet : Null;
+
+	return candidate => {
+		return candidate instanceof SetConstructor ||
+			candidate instanceof WeakSetConstructor;
+	};
 });
 
 const isMapLike = resolveFunc(_ => {
-	return typeof Map == "undefined" ?
-		_ => false :
-		candidate => candidate instanceof Map;
+	const MapConstructor = typeof Map != "undefined" ? Map : Null,
+		WeakMapConstructor = typeof WeakMap != "undefined" ? WeakMap : Null;
+
+	return candidate => {
+		return candidate instanceof MapConstructor ||
+			candidate instanceof WeakMapConstructor;
+	};
 });
 
 export {

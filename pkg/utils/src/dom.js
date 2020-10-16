@@ -1,10 +1,12 @@
-import concatMut from "./concat-mut";
-import parseStr from "./parse-str";
-import forEach from "./for-each";
-import casing from "./casing";
-import serialize from "./serialize";
-import hasOwn from "./has-own";
-import parseEntityStr from "./parse-entity-str";
+import {
+	composeOptionsTemplates,
+	createOptionsObject
+} from "./internal/options";
+import {
+	VOID_TAGS,
+	BOOLEAN_ATTRS,
+	DOM_NAMESPACES
+} from "./data/lookups";
 import {
 	isObj,
 	isObject,
@@ -18,15 +20,14 @@ import {
 	mkStrMatcher,
 	compileTaggedTemplate
 } from "./str";
-import {
-	VOID_TAGS,
-	BOOLEAN_ATTRS,
-	DOM_NAMESPACES
-} from "./internal/constants";
-import {
-	composeOptionsTemplates,
-	createOptionsObject
-} from "./internal/options";
+import { assign } from "./obj";
+import casing from "./casing";
+import hasOwn from "./has-own";
+import forEach from "./for-each";
+import parseStr from "./parse-str";
+import serialize from "./serialize";
+import concatMut from "./concat-mut";
+import parseEntityStr from "./parse-entity-str";
 
 const NS_LEN = DOM_NAMESPACES.length,
 	DEF_NS = "http://www.w3.org/1999/xhtml";
@@ -1007,7 +1008,7 @@ function mkVNode(type, data) {
 		nodeData.void = false;
 	}
 
-	const node = Object.assign(nodeData, data);
+	const node = assign(nodeData, data);
 	node.tag = node.tag || DEFAULT_TAGS[type];
 	return node;
 }
@@ -1399,7 +1400,7 @@ function setAttribute(node, key, value) {
 			else if (attr.isParsedEvents)
 				extendEvents(attr, value);
 		} else if (isObject(attr) && isObject(value))
-			Object.assign(attr, value);
+			assign(attr, value);
 		else
 			attrs[key] = value;
 
@@ -1836,7 +1837,7 @@ function parseDom(parser, source, options) {
 	if (isObj(source[0]) && !isTagged)
 		return source[0];
 
-	options = Object.assign(
+	options = assign(
 		{},
 		createOptionsObject(options, PARSE_OPTIONS_TEMPLATES)
 	);
@@ -1845,7 +1846,7 @@ function parseDom(parser, source, options) {
 		options.attributePrefixes = mkStrMatcher(options.attributePrefixes);
 
 	if (options.compile) {
-		Object.assign(options, {
+		assign(options, {
 			ref: 15,
 			refPrefix: "ref_",
 			refSuffix: "",

@@ -1,11 +1,11 @@
-import { sym } from "./sym";
 import {
 	isObject,
 	isStandardPropertyDescriptor
 } from "./is";
+import { sym } from "./sym";
+import { mkClass } from "./class";
 import hasOwn from "./has-own";
 import resolveArgs from "./resolve-args";
-import { mkClass } from "./class";
 
 // Standard library collecting function. Leverages the prototype chain to prevent
 // needlessly having to Object.assign new clean objects every time

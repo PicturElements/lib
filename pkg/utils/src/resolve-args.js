@@ -1,17 +1,18 @@
-import { genFuncParamsStr } from "./ts-str";
 import {
 	isObj,
 	isObject,
 	isArrayLike
 } from "./is";
-import matchType from "./match-type";
-import clone from "./clone";
-import getFunctionName from "./get-function-name";
-import hasOwn from "./has-own";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./internal/options";
+import { assign } from "./obj";
+import { genFuncParamsStr } from "./typed-str";
+import clone from "./clone";
+import hasOwn from "./has-own";
+import matchType from "./match-type";
+import getFunctionName from "./get-function-name";
 
 // Resolves arguments using a simple pattern matching algorithm:
 // It steps through the parameter signature array and tries to match the next
@@ -245,7 +246,7 @@ export default function resolveArgs(args, signature, options) {
 }
 
 resolveArgs.wrap = (func, signature, options) => {
-	options = Object.assign(
+	options = assign(
 		{},
 		createOptionsObject(options, OPTIONS_TEMPLATES),
 		{

@@ -1,9 +1,9 @@
-import { serializeDom } from "./dom";
-import hasOwn from "./has-own";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./internal/options";
+import { serializeDom } from "./dom";
+import hasOwn from "./has-own";
 
 const DISALLOWED_NODES = { svg: 1, use: 1, defs: 1 };
 

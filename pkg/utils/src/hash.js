@@ -1,3 +1,4 @@
+import { create } from "./obj";
 import forEach from "./for-each";
 
 const FN_TO_STR = Function.prototype.toString,
@@ -115,8 +116,8 @@ const P = 1721,
 // Without caching:	~203598ms (3m 23s)
 // With caching		~25ms
 // for the first chapter of Moby Dick (12310) characters
-const HASH_CACHE = Object.create(null),
-	REDUCED_HASH_CACHE = Object.create(null);
+const HASH_CACHE = create(null),
+	REDUCED_HASH_CACHE = create(null);
 
 function hashString(str, reduce) {
 	return reduce ?

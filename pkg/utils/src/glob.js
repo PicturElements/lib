@@ -1,10 +1,10 @@
-import { escape } from "./str-replace";
-import { cleanRegex } from "./regex";
-import hasOwn from "./has-own";
 import {
 	createOptionsObject,
 	composeOptionsTemplates
 } from "./internal/options";
+import { escape } from "./str-replace";
+import { cleanRegex } from "./regex";
+import hasOwn from "./has-own";
 
 const GLOB_REGEX = /\\([^\\/])|(\?|\*\*|\*)|\[(!)?([^\\/]*?)\]|([$^()[\]/\\{}.*+?|])/g,
 	GLOB_CACHE = {},

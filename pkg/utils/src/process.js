@@ -1,5 +1,5 @@
-import inject from "./inject";
 import { isObject } from "./is";
+import inject from "./inject";
 import hasOwn from "./has-own";
 
 // Difference between hooks and processors

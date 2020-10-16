@@ -1,3 +1,4 @@
-export * from "../src/internal/constants";
 export * from "../src/internal/merge-obj";
 export * from "../src/internal/poly";
+
+export { default as VolatileMap } from "../src/internal/volatile-map";

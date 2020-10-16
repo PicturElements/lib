@@ -1,8 +1,8 @@
-import { coerceNum } from "./coerce";
 import {
 	log2,
 	log10
 } from "./math";
+import { coerceNum } from "./coerce";
 
 function fitNum(num, min, max) {
 	num = coerceNum(num, coerceNum(min, max));

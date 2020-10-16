@@ -1,9 +1,9 @@
-import splitPath from "./split-path";
-import hasOwn from "./has-own";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./internal/options";
+import splitPath from "./split-path";
+import hasOwn from "./has-own";
 
 // Gets data from object. If the autoBuild flag is truthy, it will
 // automatically add an object or array to extend the data

@@ -1,4 +1,5 @@
 import { padEnd } from "./str";
+import { assign } from "./obj";
 import hasOwn from "./has-own";
 
 const matrix = {};
@@ -878,7 +879,7 @@ matrix.print = (mx, options = {}) => {
 		resolve :
 		null;
 
-	const opts = Object.assign({}, options),
+	const opts = assign({}, options),
 		maxLengths = [];
 
 	opts.resolve = (e, i, j) => {

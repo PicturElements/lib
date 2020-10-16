@@ -1,5 +1,5 @@
-import get from "./get";
 import { isObj } from "./is";
+import get from "./get";
 
 const GET_OPTS = {
 	autoBuild: true,

@@ -1,13 +1,14 @@
-import forEach from "./for-each";
-import map from "./map";
 import {
 	isObj,
 	isObject
 } from "./is";
+import { assign } from "./obj";
+import map from "./map";
+import hasOwn from "./has-own";
+import forEach from "./for-each";
+import matchType from "./match-type";
 import parseStr from "./parse-str";
 import parseArgStr from "./parse-arg-str";
-import matchType from "./match-type";
-import hasOwn from "./has-own";
 
 // TODO: check where null should be a valid default value
 // TODO: fix lvl
@@ -46,7 +47,7 @@ export default function infill(target, source, optionsOrRuntime) {
 				parsedKey = parsed.params.arg || k;
 
 			if (hasOwn(runtime.modifiers, parsedName)) {
-				runtime.modifiers[parsedName](Object.assign({
+				runtime.modifiers[parsedName](assign({
 					target: target[parsedKey],
 					parentTarget: target,
 					source: source[k],
@@ -107,13 +108,13 @@ function tickRuntime(optionsOrRuntime) {
 		return optionsOrRuntime;
 	}
 
-	const runtime = Object.assign({
+	const runtime = assign({
 		isRuntime: true,
 		lvl: 0
 	}, optionsOrRuntime);
 
 	if (isObject(runtime.modifiers))
-		runtime.modifiers = Object.assign({}, STOCK_INFILL_MODIFIERS, runtime.modifiers);
+		runtime.modifiers = assign({}, STOCK_INFILL_MODIFIERS, runtime.modifiers);
 	else
 		runtime.modifiers = STOCK_INFILL_MODIFIERS;
 

@@ -1,17 +1,17 @@
 import {
+	composeOptionsTemplates,
+	createOptionsObject
+} from "./internal/options";
+import { PolyMap } from "./internal/poly";
+import {
 	isObj,
 	isArrResolvable,
 	isNativeSimpleObject
 } from "./is";
 import map from "./map";
 import hasOwn from "./has-own";
-import { QNDMap } from "./internal/poly";
-import {
-	composeOptionsTemplates,
-	createOptionsObject
-} from "./internal/options";
 
-const REF_MAP = new QNDMap();
+const REF_MAP = new PolyMap();
 
 const OPTIONS_TEMPLATES = composeOptionsTemplates({
 	cloneInstances: true,
@@ -29,7 +29,7 @@ export default function clone(obj, options) {
 			Infinity
 		);
 
-	const cl = (o, d) => {
+	const cl = (o, d, ignore) => {
 		if (!isObj(o))
 			return o;
 
@@ -45,31 +45,33 @@ export default function clone(obj, options) {
 		if (options.circular)
 			REF_MAP.set(o, objOut);
 
-		map(o, v => {
-			if (!isObj(v) || d >= depth)
-				return v;
+		map(
+			o,
+			(v, k) => {
+				if (isObj(ignore) && hasOwn(ignore, k) && !isObj(ignore[k])) {
+					if (typeof ignore[k] == "function") {
+						if (ignore[k](v, k, o))
+							return map.SKIP;
+					} else if (ignore[k])
+						return map.SKIP;
+				}
 
-			if (options.circular) {
-				const item = REF_MAP.get(v);
+				if (!isObj(v) || d >= depth)
+					return v;
 
-				if (item)
-					return item;
-			}
+				if (options.circular) {
+					const item = REF_MAP.get(v);
 
-			return cl(v, d + 1);
-		}, null, objOut);
+					if (item)
+						return item;
+				}
 
-		if (options.cloneSymbols && typeof Symbol != "undefined") {
-			const symbols = Object.getOwnPropertySymbols(o);
-
-			for (let i = 0, l = symbols.length; i < l; i++) {
-				const sym = symbols[i];
-
-				objOut[sym] = d < depth ?
-					cl(o[sym], d + 1) :
-					o[sym];
-			}
-		}
+				return cl(v, d + 1, );
+			}, {
+				overSymbols: options.cloneSymbols
+			},
+			objOut
+		);
 
 		if (options.circular)
 			REF_MAP.delete(o);
@@ -77,5 +79,5 @@ export default function clone(obj, options) {
 		return objOut;
 	};
 
-	return cl(obj, 0);
+	return cl(obj, 0, options.ignore);
 }

@@ -1,4 +1,6 @@
-const ENTITY_CACHE = Object.create(null),
+import { create } from "./obj";
+
+const ENTITY_CACHE = create(null),
 	ENTITY_RESOLVE_ELEM = document.createElement("div");
 
 // This function is quite ugly, but is roughly twice as performant

@@ -1,8 +1,8 @@
-import findIndex from "./find-index";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./internal/options";
+import findIndex from "./find-index";
 
 const ARR_INDEX_OF = Array.prototype.indexOf,
 	STR_INDEX_OF = String.prototype.indexOf;

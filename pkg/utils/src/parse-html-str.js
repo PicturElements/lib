@@ -1,4 +1,8 @@
-import filterMut from "./filter-mut";
+import { optionize } from "./internal/options";
+import {
+	isWhitespace,
+	isQuote
+} from "./is";
 import {
 	mkVNode,
 	parseDom,
@@ -9,13 +13,9 @@ import {
 	resolveAttribute,
 	resolveInlineRefs
 } from "./dom";
-import hasOwn from "./has-own";
-import { optionize } from "./internal/options";
-import {
-	isWhitespace,
-	isQuote
-} from "./is";
 import { startsWith } from "./str";
+import hasOwn from "./has-own";
+import filterMut from "./filter-mut";
 
 const ctx = resolveInlineRefs.ctx;
 

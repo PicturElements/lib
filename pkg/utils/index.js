@@ -1,7 +1,11 @@
+export * from "./src/data/constants";
+export * from "./src/data/lookups";
+
 export * from "./src/arr";
 export * from "./src/binary-search";
 export * from "./src/class";
 export * from "./src/coerce";
+export * from "./src/collection";
 export * from "./src/convert";
 export * from "./src/dom";
 export * from "./src/env";
@@ -25,9 +29,9 @@ export * from "./src/resolve-val";
 export * from "./src/sort";
 export * from "./src/str";
 export * from "./src/str-replace";
-export * from "./src/time";
-export * from "./src/ts-str";
 export * from "./src/sym";
+export * from "./src/time";
+export * from "./src/typed-str";
 
 export { default as basicInterpolate } from "./src/basic-interpolate";
 export { default as casing } from "./src/casing";
@@ -37,6 +41,7 @@ export { default as combine } from "./src/combine";
 export { default as concatMut } from "./src/concat-mut";
 export { default as equals } from "./src/equals";
 export { default as filterMut } from "./src/filter-mut";
+export { default as filter } from "./src/filter";
 export { default as find } from "./src/find";
 export { default as findIndex } from "./src/find-index";
 export { default as forEach } from "./src/for-each";

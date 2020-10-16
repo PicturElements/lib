@@ -1,7 +1,7 @@
+import hasOwn from "./has-own";
 import inject from "./inject";
 import parsePropStr from "./parse-prop-str";
 import getPropStrCombinations from "./get-prop-str-combinations";
-import hasOwn from "./has-own";
 
 // Based on inject.js, but before a value is set, any keys with
 // the same core value are removed from the object.

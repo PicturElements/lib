@@ -1,65 +1,116 @@
-import { isValidIdentifier } from "./is";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./internal/options";
+import { isValidIdentifier } from "./is";
+import { assign } from "./obj";
 import parseBranchedConfig from "./parse-branched-config";
 import hasOwn from "./has-own";
 
 // Utility for creating chainable functions
 // Usage:
 //
-// Node object:
-// runtime: function
-// invoke: function
-// branch: NodeObject | <string|NodeObject|function>[]
-// branchPassive: NodeObject | <string|NodeObject|function>[]
-// group: string
-// name: string
-// passive: boolean
+// NodeObject:
+// init				function
+// runtime			function
+// access			function
+// invoke			function
+// branch			NodeObject | <string|NodeObject|function>[]
+// branchPassive	NodeObject | <string|NodeObject|function>[]
+// group			string
+// name				string
+// passive			boolean
+// defer			boolean
+// withContext		boolean
 //
-// runtime:
-// Creates a runtime object for the chainable function if one is not already defined
+// init
+// Creates a runtime object if and only if one is not already defined
 //
-// invoke:
+// runtime
+// Creates a new runtime object
+// 
+// access
+// Performs an action when the corresponding step is accessed
+// The return value is not returned from the chain unless the handler
+// is located at a leaf step
+//
+// invoke
 // Performs an action with the current runtime and passed arguments
 // The return value is not returned from the chain unless the handler
-// is located at a leaf node
+// is located at a leaf step
 //
-// branch:
-// Defines chainable steps
+// branch
+// Defines chainable steps to be followed after the node is invoked
 // If an object, all non-key property entries are added as chainable steps
-// If an entry points at a string value, a lookup will be performed looking for
-// a group with the given name, or a step defined at a location defined by an accessor
-// If an array, the same will apply, but node objects defined within them must be named
 //
-// branchPassive:
+// branchPassive
 // Defines chainable steps available on the step without need for invocation
 // If a step is defined as passive, branch and branchPassive are interchangeable
 //
-// group:
-// Denotes a node object as a reusable group that can be referenced
+// group
+// Marks a node object as a reusable group that can be referenced.
 //
-// name:
-// Denotes a node object as a reusable node that can be referenced
+// name
+// Marks a node object as a reusable step that can be referenced. As the current
+// node object now has a name, it's defined as its own accessor namespace
 //
-// passive:
-// Marks a node as passive, meaning it cannot be invoked
+// passive
+// Marks a node as passive, meaning it cannot be invoked, only accessed
+//
+// defer
+// Marks a node object as deferrable, meaning it resolves a step as either
+// an access or an invocation. For example, in normal mode, a.b.c()
+// would be run like this: access b, access c, invoke c
+// In deferred mode, a.b.c() gets run as follows: access b, invoke c
+// Local version of the global option and thus applies to one node and its
+// direct descendants
+//
+// withContext
+// Callbacks are called with a context object, namely the internal node corresponding to
+// the current step. This node contains useful information such as the given name, which is
+// useful when a node is referenced and reused
+// Local version of the global option and thus applies to one node only
 //
 // -------
 //
 // Options:
 // closed
+// defer
+// withContext
 //
-// closed:
-// The chainable object is a closed system. As such, runtime handling can be optimized
+// closed
+// The chainable object is a closed system, that is, at no point does the
+// chain invoke iself. As such, runtime handling can be optimized
+//
+// defer
+// Marks a node object as deferrable, meaning it resolves a step as either
+// an access or an invocation. For example, in normal mode, a.b.c()
+// would be run like this: access b, access c, invoke c
+// In deferred mode, a.b.c() gets run as follows: access b, invoke c
+// Global version of the node object option and thus applies to all nodes
+//
+// withContext
+// Callbacks are called with a context object, namely the internal node corresponding to
+// the current step. This node contains useful information such as the given name, which is
+// useful when a node is referenced and reused. Global version of the node object option
+// and thus applies to all nodes
+//
+// -------
+//
+// Node parsing:
+// If an entry points at a string value, a lookup will be performed looking for
+// a group with the given name, or a step defined at a location defined by an accessor
+// If an array, the same will apply, but node objects defined within them must be named
 
 const ACCESS_TOKEN = Object.freeze({ description: "tells pinger to access property" }),
 	SKIP_SELF_ACCESS = Object.freeze({ description: "tells pinger to skip property access" }),
-	ACCESS_TOKEN_ARGS = [ACCESS_TOKEN];
+	ACCESS_TOKEN_ARGS = [ACCESS_TOKEN],
+	CALLBACKS = ["init", "runtime", "invoke", "access"];
 
 const OPTIONS_TEMPLATES = composeOptionsTemplates({
-	closed: true
+	closed: true,
+	defer: true,
+	withContext: true
 });
 
 export default function mkChainable(name, struct, options) {
@@ -69,6 +120,7 @@ export default function mkChainable(name, struct, options) {
 		name = null;
 	}
 
+	options = createOptionsObject(options, OPTIONS_TEMPLATES);
 	struct = parseBranchedConfig(
 		struct,
 		{
@@ -78,30 +130,35 @@ export default function mkChainable(name, struct, options) {
 				invoke: { type: "function", default: null },
 				access: { type: "function", default: null },
 				passive: { type: "boolean", default: false },
-				defer: { type: "boolean", default: false }
+				defer: { type: "boolean", default: options.defer || false },
+				withContext: { type: "boolean", default: options.withContext || false }
 			},
 			scopes: {
 				branch: ["b"],
-				branchPassive: ["bp", "p"],
+				branchPassive: ["bp", "p", "passive"],
 				group: ["g"]
 			},
 			groupKey: "group",
 			defaultScope: "branch",
+			extensionKey: "extends",
+			aliasKeys: ["alias", "aliases"],
 			init: {
-				step: ensureDeferrable,
+				step: decorateNode,
 				leaf: (n, node, scope) => {
-					ensureDeferrable(n);
-					if (typeof node != "function")
+					if (typeof node != "function") {
+						decorateNode(n);
 						return;
+					}
 
 					n.invoke = scope.name == "branch" ? node : null;
 					n.access = scope.name == "branch" ? null : node;
+
+					decorateNode(n);
 				}
 			}
 		},
-		msg => { throw new Error(`Cannot create chainable: ${msg}`); }
+		msg => `Cannot create chainable: ${msg}`
 	);
-	options = createOptionsObject(options, OPTIONS_TEMPLATES);
 
 	const getterQueue = [];
 	let store,
@@ -122,18 +179,18 @@ export default function mkChainable(name, struct, options) {
 			store.runtime = {};
 
 			if (args[0] != ACCESS_TOKEN || args[1] != SKIP_SELF_ACCESS)
-				runPing(node, store, ACCESS_TOKEN_ARGS);
-			runPing(node, store, args);
+				runPing(node, store, true, ACCESS_TOKEN_ARGS);
+			runPing(node, store, true, args);
 			return out;
 		};
 
 		pingStep = (node, out) => (...args) => {
-			runPing(node, store, args);
+			runPing(node, store, false, args);
 			return out;
 		};
 
 		pingTerminate = node => (...args) => {
-			return runPing(node, store, args);
+			return runPing(node, store, false, args);
 		};
 	} else {
 		store = {
@@ -149,49 +206,60 @@ export default function mkChainable(name, struct, options) {
 			store.stack.push(frame);
 
 			if (args[0] != ACCESS_TOKEN || args[1] != SKIP_SELF_ACCESS)
-				runPing(node, store, ACCESS_TOKEN_ARGS);
-			runPing(node, frame, args);
+				runPing(node, store, true, ACCESS_TOKEN_ARGS);
+			runPing(node, frame, true, args);
 			return out;
 		};
 
 		pingStep = (node, out) => (...args) => {
 			const frame = store.stack[store.stack.length - 1];
-			runPing(node, frame, args);
+			runPing(node, frame, false, args);
 			return out;
 		};
 
 		pingTerminate = node => (...args) => {
 			const frame = store.stack.pop();
-			return runPing(node, frame, args);
+			return runPing(node, frame, false, args);
 		};
 	}
 
-	const runPing = (node, frame, args) => {
+	const runPing = (node, frame, init, args) => {
 		if (frame.deferNode) {
 			if (node.uid != frame.deferNode.uid || args[0] == ACCESS_TOKEN) {
-				applyPingPre(frame.deferNode, frame, []);
-				frame.deferNode.access(frame.runtime);
+				const n = node.baseUid && node.baseUid == frame.deferNode.baseUid ?
+					node :
+					frame.deferNode;
+
+				applyPingPre(n, frame, []);
+
+				if (n.access)
+					n.access(frame.runtime);
 			}
 
 			frame.deferNode = null;
 		}
 
 		if (node.defer && args[0] == ACCESS_TOKEN) {
-			frame.deferNode = node;
+			frame.deferNode = init ?
+				node :
+				args[1] || node;
 			return;
 		}
 
-		applyPingPre(node, frame, args);
+		const n = args[1] == SKIP_SELF_ACCESS ?
+			node :
+			args[1] || node;
+
+		applyPingPre(n, frame, args);
 
 		if (args[0] == ACCESS_TOKEN) {
-			if (node.access)
-				return node.access(frame.runtime);
-
+			if (n.access)
+				return n.access(frame.runtime);
 			return;
 		}
 		
-		if (node.invoke)
-			return node.invoke(frame.runtime, ...args);
+		if (n.invoke)
+			return n.invoke(frame.runtime, ...args);
 	};
 
 	const applyPingPre = (node, frame, args) => {
@@ -230,16 +298,29 @@ export default function mkChainable(name, struct, options) {
 	};
 
 	const construct = node => {
+		const sourceNode = node;
 		let uNode,
 			useCached = false;
 
 		if (node.type == "wrapper") {
-			uNode = Object.assign({}, node.node);
+			uNode = assign({}, node.node);
 			uNode.name = node.referenceNode.name;
+			uNode.baseUid = uNode.uid;
 			uNode.uid = node.referenceNode.uid;
+			uNode.root = false;
 			node = node.node;
 		} else
-			uNode = Object.assign({}, node);
+			uNode = assign({}, node);
+
+		if (options.withContext) {
+			for (let i = 0, l = CALLBACKS.length; i < l; i++) {
+				const callback = uNode[CALLBACKS[i]];
+
+				uNode[CALLBACKS[i]] = callback ?
+					callback.bind(uNode, uNode) :
+					callback;
+			}
+		}
 
 		let junction = {},
 			getterPartition = {
@@ -253,12 +334,12 @@ export default function mkChainable(name, struct, options) {
 			getterPartition = node.cache.getterPartition;
 		} else
 			getterQueue.push(getterPartition);
-
-		const nodeName = name || node.name || "chain";
-		if (!isValidIdentifier(nodeName))
-			throw new Error(`Cannot create chainable: invalid name '${nodeName}'`);
 		
 		const resolve = n => {
+			let nodeName = name || n.name || "chain";
+			if (!isValidIdentifier(nodeName))
+				nodeName = `_${nodeName}`;
+
 			return Function(
 				"node",
 				"ping",
@@ -272,6 +353,7 @@ export default function mkChainable(name, struct, options) {
 			junction,
 			getterPartition
 		};
+
 		const resolved = resolve(uNode),
 			coreData = node.passive ?
 				junction :
@@ -280,31 +362,48 @@ export default function mkChainable(name, struct, options) {
 		if (useCached) {
 			getterPartition.targets.push({
 				resolved,
-				type: getPingerType(uNode)
+				type: getPingerType(uNode),
+				node: uNode
 			});
 
 			return {
 				resolved,
 				coreData,
-				node: uNode
+				node: uNode,
+				sourceNode
 			};
 		}
 
-		if (useCached || node.type == "leaf") {
+		if (node.type == "leaf") {
 			return {
 				resolved,
 				coreData,
-				node: uNode
+				node: uNode,
+				sourceNode
 			};
 		}
 
-		const branch = node.passive ?
-				node.branch.concat(node.branchPassive) :
-				node.branch,
-			branchGetters = {};
+		let branches,
+			passiveBranches;
+		const branchGetters = {};
 
-		for (let i = 0, l = branch.length; i < l; i++) {
-			const constructed = construct(branch[i]),
+		if (node.type == "reference") {
+			if (node.refValue.target == "group")
+				branches = node.refValue.value;
+			else
+				branches = [node.refValue.value];
+	
+			passiveBranches = [];
+		} else if (node.passive) {
+			branches = node.branch.concat(node.branchPassive);
+			passiveBranches = [];
+		} else {
+			branches = node.branch;
+			passiveBranches = node.branchPassive;
+		}
+
+		for (let i = 0, l = branches.length; i < l; i++) {
+			const constructed = construct(branches[i]),
 				descriptor = {
 					enumerable: true,
 					configurable: false,
@@ -313,13 +412,14 @@ export default function mkChainable(name, struct, options) {
 			if (hasOwn(branchGetters, constructed.node.name))
 				throw new Error(`Cannot create chainable: duplicate branch '${constructed.node.name}' in passive node`);
 
-			if (constructed.node.passive || i >= node.branch.length)
+			if (constructed.node.passive)
 				descriptor.get = _ => constructed.resolved(ACCESS_TOKEN);
 			else {
 				descriptor.get = _ => {
 					pingStep(constructed.node, constructed.resolved)(ACCESS_TOKEN);
 					return constructed.resolved;
 				};
+				getterPartition.data.push(constructed);
 			}
 
 			branchGetters[constructed.node.name] = descriptor;
@@ -328,16 +428,16 @@ export default function mkChainable(name, struct, options) {
 		Object.defineProperties(junction, branchGetters);
 
 		if (!node.passive) {
-			const branchPassive = node.branchPassive;
-			for (let i = 0, l = branchPassive.length; i < l; i++) {
-				const constructed = construct(branchPassive[i]);
+			for (let i = 0, l = passiveBranches.length; i < l; i++) {
+				const constructed = construct(passiveBranches[i]);
 				getterPartition.data.push(constructed);
 			}
 
-			if (branchPassive.length) {
+			if (passiveBranches.length) {
 				getterPartition.targets.push({
 					resolved,
-					type: getPingerType(uNode)
+					type: getPingerType(uNode),
+					node: uNode
 				});
 			}
 		}
@@ -345,7 +445,8 @@ export default function mkChainable(name, struct, options) {
 		return {
 			resolved,
 			coreData,
-			node: uNode
+			node: uNode,
+			sourceNode
 		};
 	};
 
@@ -358,12 +459,24 @@ export default function mkChainable(name, struct, options) {
 			continue;
 
 		for (let b = 0, l2 = partition.targets.length; b < l2; b++) {
-			const { resolved, type } = partition.targets[b],
+			const { resolved, type, node } = partition.targets[b],
 				getters = {};
 
 			for (let c = 0, l3 = partition.data.length; c < l3; c++) {
-				const constructed = partition.data[c],
-					name = constructed.node.name,
+				const constructed = partition.data[c];
+				let res = resolved;
+
+				if (constructed.node.baseUid && constructed.node.baseUid == node.uid) {
+					if (type == "init") {
+						res = (token, skip) => {
+							resolved(token, SKIP_SELF_ACCESS);
+							constructed.resolved(token, skip);
+						};
+					} else
+						res = constructed.resolved;
+				}
+
+				const name = constructed.node.name,
 					descriptor = {
 						enumerable: true,
 						configurable: false,
@@ -373,12 +486,12 @@ export default function mkChainable(name, struct, options) {
 				if (typeof resolved == "function") {
 					if (!constructed.node.passive || typeof constructed.resolved != "function") {
 						descriptor.get = _ => {
-							resolved(ACCESS_TOKEN);
+							res(ACCESS_TOKEN, constructed.node);
 							return constructed.resolved;
 						};
 					} else if (type == "init") {
 						descriptor.get = _ => {
-							resolved(ACCESS_TOKEN, SKIP_SELF_ACCESS);
+							res(ACCESS_TOKEN, SKIP_SELF_ACCESS);
 							return constructed.resolved(ACCESS_TOKEN);
 						};
 					} else
@@ -411,10 +524,20 @@ export default function mkChainable(name, struct, options) {
 	return cnstr.resolved;
 }
 
+function decorateNode(node) {
+	ensurePassive(node);
+	ensureDeferrable(node);
+}
+
+function ensurePassive(node) {
+	if (!node.invoke)
+		node.passive = true;
+}
+
 function ensureDeferrable(node) {
 	if (!node.defer)
 		return;
 
-	if (!node.branchPassive.length || node.passive || node.type != "step")
+	if (node.passive)
 		node.defer = false;
 }

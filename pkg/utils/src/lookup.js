@@ -1,6 +1,8 @@
+import { create } from "./internal/duplicates";
+
 class Lookup {
 	constructor() {
-		this.lookup = Object.create(null);
+		this.lookup = create(null);
 		this.length = 0;
 	}
 

@@ -1,4 +1,4 @@
-import filterMut from "./filter-mut";
+import { optionize } from "./internal/options";
 import {
 	mkVNode,
 	parseDom,
@@ -11,7 +11,7 @@ import {
 	resolveInlineRefs
 } from "./dom";
 import hasOwn from "./has-own";
-import { optionize } from "./internal/options";
+import filterMut from "./filter-mut";
 
 const ctx = resolveInlineRefs.ctx;
 

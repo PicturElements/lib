@@ -16,7 +16,8 @@ function createOptionsObject(optionsPrecursor, templates, error) {
 		templates,
 		error,
 		"option",
-		(targ, src) => inject(targ, src, "override")
+		(targ, src) => inject(targ, src, "override"),
+		true
 	);
 }
 
@@ -27,7 +28,8 @@ function createOptionsObjectWithDefault(optionsPrecursor, templates, def, error)
 		def,
 		error,
 		"option",
-		(targ, src) => inject(targ, src, "override")
+		(targ, src) => inject(targ, src, "override"),
+		true
 	);
 }
 

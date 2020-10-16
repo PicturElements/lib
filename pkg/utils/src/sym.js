@@ -1,6 +1,6 @@
-import { POLYFILL_PREFIXES } from "./internal/constants";
+import { isSymbol } from "./internal/duplicates";
+import { POLYFILL_PREFIXES } from "./data/constants";
 import hasOwn from "./has-own";
-import { isSymbol } from "util";
 
 let keySeed = 0;
 const NUM_TO_STR = Number.prototype.toString;

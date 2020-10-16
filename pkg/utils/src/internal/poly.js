@@ -1,7 +1,6 @@
-import { SYM_ITER_KEY } from "./constants";
+import { SYM_ITER_KEY } from "../data/constants";
 
-// Quick-and-dirty maps and sets
-// Will try to use performant native classes/polyfills, else will default to a quick-and-dirty
+// Will try to use performant native classes/polyfills, else will default to a basic
 // array-based implementation. Note that this implementation is meant to offer
 // only the basic API with suboptimal performance and edge case support in exchange
 // for terseness. Use a proper polyfill for optimal performance and browser compatibility
@@ -10,7 +9,7 @@ import { SYM_ITER_KEY } from "./constants";
 const NULL = Object.freeze({ NULL: true });
 const nIsNaN = v => typeof v == "number" && isNaN(v);
 
-class QNDBase {
+class PolyBase {
 	constructor() {
 		this._keys = [];
 		this._values = [];
@@ -106,8 +105,10 @@ class QNDBase {
 	}
 
 	forEach(callback) {
-		for (let i = 0, l = this._keys.length; i < l; i++)
-			callback(this._values[i], this._keys[i], this);
+		for (let i = 0, l = this._keys.length; i < l; i++) {
+			if (this._keys[i] != NULL)
+				callback(this._values[i], this._keys[i], this);
+		}
 	}
 
 	entries() {
@@ -123,8 +124,8 @@ class QNDBase {
 	}
 }
 
-const QNDMap = typeof Map != "undefined" ?
-	class QNDMap extends QNDBase {
+const PolyMap = typeof Map != "undefined" ?
+	class PolyMap extends PolyBase {
 		constructor(iterable) {
 			super();
 			if (Array.isArray(iterable))
@@ -139,11 +140,11 @@ const QNDMap = typeof Map != "undefined" ?
 	} :
 	Map;
 
-QNDMap.prototype.add = QNDMap.prototype.set;
-QNDMap.prototype[SYM_ITER_KEY] = QNDMap.prototype.entries;
+PolyMap.prototype.add = PolyMap.prototype.set;
+PolyMap.prototype[SYM_ITER_KEY] = PolyMap.prototype.entries;
 
-const QNDSet = typeof Set != "undefined" ?
-	class QNDSet extends QNDBase {
+const PolySet = typeof Set != "undefined" ?
+	class PolySet extends PolyBase {
 		constructor(iterable) {
 			super();
 			if (Array.isArray(iterable))
@@ -156,10 +157,10 @@ const QNDSet = typeof Set != "undefined" ?
 	} :
 	Set;
 
-QNDSet.prototype.set = QNDSet.prototype.add;
-QNDSet.prototype[SYM_ITER_KEY] = QNDSet.prototype.values;
+PolySet.prototype.set = PolySet.prototype.add;
+PolySet.prototype[SYM_ITER_KEY] = PolySet.prototype.values;
 
 export {
-	QNDMap,
-	QNDSet
+	PolyMap,
+	PolySet
 };

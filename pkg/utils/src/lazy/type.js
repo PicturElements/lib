@@ -22,7 +22,7 @@ const type = {
 			I8A = typeof Int8Array != "undefined" ? Int8Array : null,
 			UI8A = typeof Uint8Array != "undefined" ? Uint8Array : null,
 			UI8CA = typeof Uint8ClampedArray != "undefined" ? Uint8ClampedArray : null,
-			I16A = Int16Array != "undefined" ? Int16Array : null,
+			I16A = typeof Int16Array != "undefined" ? Int16Array : null,
 			UI16A = typeof Uint16Array != "undefined" ? Uint16Array : null,
 			I32A = typeof Int32Array != "undefined" ? Int32Array : null,
 			UI32A = typeof Uint32Array != "undefined" ? Uint32Array : null,

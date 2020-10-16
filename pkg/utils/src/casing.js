@@ -1,8 +1,8 @@
 import { matchAll } from "./regex";
 import { splitClean } from "./str";
 import { isObject } from "./is";
-import concatMut from "./concat-mut";
 import hasOwn from "./has-own";
+import concatMut from "./concat-mut";
 
 // This library assumes only ASCII A-Z letters are being
 // used when differentiating between upper/lower case

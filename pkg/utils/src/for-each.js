@@ -1,5 +1,10 @@
-import { SYM_ITER_KEY } from "./internal/constants";
 import VolatileMap from "./internal/volatile-map";
+import {
+	composeOptionsTemplates,
+	createOptionsObject
+} from "./internal/options";
+
+import { SYM_ITER_KEY } from "./data/constants";
 import {
 	isArrayLike,
 	isObject,
@@ -8,12 +13,11 @@ import {
 	isSetLike,
 	isMapLike
 } from "./lazy/is";
-import { keys } from "./obj";
-import hasOwn from "./has-own";
 import {
-	composeOptionsTemplates,
-	createOptionsObject
-} from "./internal/options";
+	keys,
+	assign
+} from "./obj";
+import hasOwn from "./has-own";
 
 // Polymorphic forEach
 // It efficiently handles the following:
@@ -295,7 +299,7 @@ export default function forEach(src, callback, options) {
 forEach._options = null;
 
 forEach.l = lbl => {
-	forEach._options = Object.assign({}, forEach._options, {
+	forEach._options = assign({}, forEach._options, {
 		label: lbl
 	});
 

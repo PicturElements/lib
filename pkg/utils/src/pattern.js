@@ -9,6 +9,7 @@ import { isObject } from "./is";
 import { spliceStr } from "./str";
 import { unescape } from "./str-replace";
 import { fitNum } from "./num";
+import { assign } from "./obj";
 import forEach from "./for-each";
 import hasOwn from "./has-own";
 import type from "./lazy/type";
@@ -120,7 +121,7 @@ function compilePatternMatcherGroup(configOrPatterns) {
 	if (Array.isArray(configOrPatterns))
 		group.patterns = configOrPatterns;
 	else
-		Object.assign(group, configOrPatterns);
+		assign(group, configOrPatterns);
 
 	const useObjectDefinition = isObject(group.patterns),
 		outPatterns = [],
@@ -130,7 +131,7 @@ function compilePatternMatcherGroup(configOrPatterns) {
 		let outPattern;
 
 		if (isObject(pattern)) {
-			outPattern = Object.assign({
+			outPattern = assign({
 				pattern: null,
 				match: null
 			}, pattern);

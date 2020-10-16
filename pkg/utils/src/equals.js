@@ -1,10 +1,10 @@
-import hasOwn from "./has-own";
-import { keys } from "./obj";
-import { QNDSet } from "./internal/poly";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./internal/options";
+import { PolySet } from "./internal/poly";
+import { keys } from "./obj";
+import hasOwn from "./has-own";
 
 let eqRuntime = {
 	inexSet: null,
@@ -12,7 +12,7 @@ let eqRuntime = {
 	circular: false
 };
 
-const REF_SET = new QNDSet();
+const REF_SET = new PolySet();
 
 const OPTIONS_TEMPLATES = composeOptionsTemplates({
 	lazy: true,

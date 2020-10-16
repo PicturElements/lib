@@ -1,7 +1,11 @@
-import forEachDeep from "./for-each-deep";
-import { resolveVal } from "./resolve-val";
+import {
+	isPrimitive,
+	isValidObjectKey
+} from "./internal/duplicates";
 import { sym } from "./sym";
+import { resolveVal } from "./resolve-val";
 import { getGlobalScope } from "./env";
+import forEachDeep from "./for-each-deep";
 
 function call(func, ...args) {
 	if (typeof func == "function")
@@ -62,27 +66,6 @@ function deepBind(struct, thisVal, options) {
 //
 // 3:	proxying (resolver)
 //		The function is merely wrapped in a proxy function
-
-// Clones from ./is to prevent circular dependencies
-function isPrimitive(val) {
-	switch (typeof val) {
-		case "object":
-		case "function":
-			return false;
-	}
-
-	return true;
-}
-
-function isValidObjectKey(key) {
-	switch (typeof key) {
-		case "string":
-		case "symbol":
-			return true;
-	}
-
-	return false;
-}
 
 function resolveFunc(resolverOrTarget, keyOrResolver, key = null) {
 	if (typeof resolverOrTarget == "function" && isValidObjectKey(keyOrResolver)) {

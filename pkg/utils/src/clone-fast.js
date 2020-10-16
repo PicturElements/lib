@@ -2,11 +2,11 @@ import {
 	isNativeSimpleObject,
 	isArrayLike
 } from "./is";
-import hasOwn from "./has-own";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./internal/options";
+import hasOwn from "./has-own";
 
 const OPTIONS_TEMPLATES = composeOptionsTemplates({
 	cloneInstances: true,

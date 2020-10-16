@@ -1,5 +1,5 @@
-import hasOwn from "./has-own";
 import { isObject } from "./is";
+import hasOwn from "./has-own";
 
 export default function partition(data, partitionMap, classifier, defaultPartition = "default") {
 	if (!isObject(partitionMap) || (!isObject(classifier) && typeof classifier != "function"))

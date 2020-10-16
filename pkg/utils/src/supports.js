@@ -63,7 +63,9 @@ function set(accessor, value) {
 	["constructs.unicodeEscape", "'\\u{a}'=='\\n'"],
 	["constructs.objectShorthand", "var a,o={a}"],
 	["constructs.objectMethod", "var o={m(){}}"],
-	["constructs.defaultParameter", "function f(a=0){}"]
+	["constructs.defaultParameter", "function f(a=0){}"],
+	// Features
+	["features.nullProto", "Object.create(null)"]
 ]
 	.forEach(([accessor, code]) => {
 		try {

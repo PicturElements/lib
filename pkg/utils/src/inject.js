@@ -1,17 +1,17 @@
-import { coerceObj } from "./coerce";
+import {
+	composeOptionsTemplates,
+	createOptionsObject
+} from "./internal/options";
+import { PolySet } from "./internal/poly";
 import {
 	isObj,
 	isArrayLike,
 	isNativeSimpleObject
 } from "./is";
+import { coerceObj } from "./coerce";
 import clone from "./clone";
 import hasOwn from "./has-own";
 import matchQuery from "./match-query";
-import { QNDSet } from "./internal/poly";
-import {
-	composeOptionsTemplates,
-	createOptionsObject
-} from "./internal/options";
 
 /*
 	OPTIONS = {
@@ -26,7 +26,7 @@ import {
 	}
 */
 
-const REF_SET = new QNDSet();
+const REF_SET = new PolySet();
 
 const OPTIONS_TEMPLATES = composeOptionsTemplates({
 	clone: true,
@@ -38,6 +38,7 @@ const OPTIONS_TEMPLATES = composeOptionsTemplates({
 	},
 	injectSymbols: true,
 	override: true,
+	overrideNullish: true,
 	noUndef: true,
 	shallow: true,
 	preserveInstances: true,
@@ -148,7 +149,7 @@ export default function inject(target, extender, options) {
 
 				runtime.schema = schema;
 				runtime.ignore = ignore;
-			} else if (!hasOwn(targ, key) || options.override)
+			} else if (!hasOwn(targ, key) || options.override || (val == null && options.overrideNullish))
 				val = ext[key];
 			else
 				return;

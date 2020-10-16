@@ -1,12 +1,12 @@
+import {
+	composeMergerTemplates,
+	addMergerTemplate
+} from "./internal/merge-obj";
 import { isObject } from "./is";
 import inject from "./inject";
 import serialize from "./serialize";
 import hasOwn from "./has-own";
 import clone from "./clone";
-import {
-	composeMergerTemplates,
-	addMergerTemplate
-} from "./internal/merge-obj";
 
 function composePresets(...templates) {
 	return composeMergerTemplates(...templates);

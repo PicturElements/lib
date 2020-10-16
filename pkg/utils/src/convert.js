@@ -1,4 +1,5 @@
 import { isObject } from "./is";
+import { assign } from "./obj";
 import hasOwn from "./has-own";
 
 // API:
@@ -57,7 +58,7 @@ function mkConverter(lookup) {
 }
 
 function fillInLookup(lookup) {
-	lookup = Object.assign({}, lookup);
+	lookup = assign({}, lookup);
 
 	for (const k in lookup) {
 		if (!hasOwn(lookup, k) || !isObject(lookup[k]))

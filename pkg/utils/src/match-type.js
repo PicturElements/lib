@@ -1,14 +1,14 @@
 import {
+	composeOptionsTemplates,
+	createOptionsObject
+} from "./internal/options";
+import {
 	isConstructor,
 	isNativeFunction,
 	isProbableConstructor
 } from "./is";
 import { getGlobalScope } from "./env";
 import hasOwn from "./has-own";
-import {
-	composeOptionsTemplates,
-	createOptionsObject
-} from "./internal/options";
 
 const TYPES_CACHE = {
 	// typeof keys

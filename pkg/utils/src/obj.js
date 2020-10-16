@@ -13,8 +13,66 @@ import splitPath from "./split-path";
 import hasOwn from "./has-own";
 import resolveArgs from "./resolve-args";
 import matchType from "./match-type";
+import supports from "./supports";
 import map from "./map";
 import get from "./get";
+
+const GET_OWN_PROPERTY_SYMBOLS = Object.getOwnPropertySymbols;
+
+// Ponyfills/convenience functions
+const keys = typeof Symbol != "undefined" ?
+	Object.keys :
+	o => {
+		if (o == null)
+			throw new TypeError("Cannot convert undefined or null to object");
+
+		const out = [];
+
+		for (let k in o) {
+			if (!hasOwn(o, k, false))
+				continue;
+
+			out.push(k);
+		}
+
+		return out;
+	};
+
+const create = supports.features.nullProto ?
+	Object.create :
+	(proto, props) => {
+		proto = proto == null ? {} : proto;
+		return Object.create(proto, props);
+	};
+
+const assign = Object.assign ?
+	Object.assign :
+	(target, ...sources) => {
+		if (target == null)
+			throw new TypeError("Cannot convert undefined or null to object");
+
+		const targ = Object(target);
+
+		for (let i = 0, l = sources.length; i < l; i++) {
+			const source = sources[i];
+			if (!isObject(source))
+				continue;
+
+			for (const k in source) {
+				if (hasOwn(source, k))
+					targ[k] = source[k];
+			}
+
+			if (GET_OWN_PROPERTY_SYMBOLS) {
+				const symbols = GET_OWN_PROPERTY_SYMBOLS(source);
+
+				for (let j = 0, l2 = symbols.length; j < l2; j++)
+					targ[symbols[j]] = source[symbols[j]];
+			}
+		}
+
+		return targ;
+	};
 
 // allowNonexistent - inject property values for
 // properties that don't exist on the object
@@ -54,24 +112,6 @@ function mapObj(...args) {
 
 	return out;
 }
-
-const keys = typeof Symbol != "undefined" ?
-	Object.keys :
-	o => {
-		if (o == null)
-			throw new TypeError("Cannot convert undefined or null to object");
-
-		const out = [];
-
-		for (let k in o) {
-			if (!hasOwn(o, k, false))
-				continue;
-
-			out.push(k);
-		}
-
-		return out;
-	};
 
 const IS_DIR_SYM = sym("isDir"),
 	DIR_PATH_SYM = sym("dirPath"),
@@ -483,8 +523,10 @@ function anyOf(source, type = null) {
 }
 
 export {
-	mapObj,
 	keys,
+	create,
+	assign,
+	mapObj,
 	getDirectory,
 	getDirectoryMeta,
 	uncirculate,

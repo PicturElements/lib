@@ -1,6 +1,6 @@
-import hasOwn from "./has-own";
 import { fromCodePoint } from "./str";
 import { isHexDigit } from "./is";
+import hasOwn from "./has-own";
 
 const KEYWORD_ESCAPES = {
 	n: "\n",

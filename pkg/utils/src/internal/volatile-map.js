@@ -1,7 +1,7 @@
-import { QNDMap } from "./poly";
+import { PolyMap } from "./poly";
 import { getTime } from "../time";
 
-export default class VolatileMap extends QNDMap {
+export default class VolatileMap extends PolyMap {
 	constructor(iterable) {
 		super(iterable);
 	}

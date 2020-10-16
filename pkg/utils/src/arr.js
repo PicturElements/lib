@@ -1,11 +1,11 @@
+import { PolySet } from "./internal/poly";
 import { isMapLike } from "./lazy/is";
 import map from "./map";
-import filterMut from "./filter-mut";
-import { QNDSet } from "./internal/poly";
 import forEach from "./for-each";
+import filterMut from "./filter-mut";
 
 function nub(arr) {
-	const set = new QNDSet(map(arr, v => v)),
+	const set = new PolySet(map(arr, v => v)),
 		out = [];
 
 	forEach(set, v => out.push(v));

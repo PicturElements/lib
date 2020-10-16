@@ -1,17 +1,17 @@
-import parsePropStr from "./parse-prop-str";
-import matchValue from "./match-value";
-import matchType from "./match-type";
+import {
+	composeOptionsTemplates,
+	createOptionsObject
+} from "./internal/options";
 import {
 	isObj,
 	isArrayLike
 } from "./is";
 import { coerceObj } from "./coerce";
 import hasOwn from "./has-own";
+import matchType from "./match-type";
+import matchValue from "./match-value";
 import mkAccessor from "./mk-accessor";
-import {
-	composeOptionsTemplates,
-	createOptionsObject
-} from "./internal/options";
+import parsePropStr from "./parse-prop-str";
 
 const OPTIONS_TEMPLATES = composeOptionsTemplates({
 	// For matchValue

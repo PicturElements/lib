@@ -1,10 +1,10 @@
 import {
+	stickyExec,
 	cleanRegex,
-	injectRegexFlags,
-	stickyExec
+	injectRegexFlags
 } from "./regex";
-import supports from "./supports";
 import hasOwn from "./has-own";
+import supports from "./supports";
 
 const ARG_SEPARATOR_CACHE = {};
 

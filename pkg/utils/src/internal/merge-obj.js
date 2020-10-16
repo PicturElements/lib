@@ -1,5 +1,9 @@
+import {
+	isObject,
+	create,
+	assign
+} from "./duplicates";
 import { getEnvType } from "../env";
-import { isObject } from "./duplicates";
 import hasOwn from "../has-own";
 
 // To reduce call overhead, functions in this file take a large number of arguments.
@@ -9,7 +13,7 @@ import hasOwn from "../has-own";
 const BLANK = Object.freeze({});
 
 function composeMergerTemplates(...templates) {
-	const templatesOut = Object.create(null);
+	const templatesOut = create(null);
 
 	for (let i = 0, l = templates.length; i < l; i++) {
 		const template = templates[i];
@@ -61,7 +65,8 @@ function mergeObject(
 	templates,
 	error,
 	type = "merge",
-	merger = Object.assign
+	merger = assign,
+	enclose = false
 ) {
 	switch (typeof mergerPrecursor) {
 		case "string":
@@ -72,11 +77,19 @@ function mergeObject(
 
 		case "object":
 			if (Array.isArray(mergerPrecursor))
-				return merge(mergerPrecursor, templates, error, type, merger);
+				return mergeArray(mergerPrecursor, templates, error, type, merger, enclose);
 
-			return mergerPrecursor ?
-				mergerPrecursor :
-				BLANK;
+			if (!mergerPrecursor)
+				return BLANK;
+
+			if (enclose && Object.getPrototypeOf(mergerPrecursor)) {
+				return assign(
+					create(null),
+					mergerPrecursor
+				);
+			}
+
+			return mergerPrecursor;
 
 		default:
 			return BLANK;
@@ -84,66 +97,78 @@ function mergeObject(
 }
 
 function mergeObjectWithDefault(
-	optionsPrecursor,
+	precursor,
 	templates,
 	def,
 	error,
 	type = "merge",
-	merger = Object.assign
+	merger = assign,
+	enclose = false
 ) {
-	switch (typeof optionsPrecursor) {
+	switch (typeof precursor) {
 		case "string":
-			return templates[optionsPrecursor] || tryBundle(optionsPrecursor, templates, type) || (
-				logMergeError(error, optionsPrecursor, templates, type) ||
-				mergeObject(def, templates, error, type)
+			return templates[precursor] || tryBundle(precursor, templates, type) || (
+				logMergeError(error, precursor, templates, type) ||
+				mergeObject(def, templates, error, type, merger, enclose)
 			);
 
 		case "object":
-			if (Array.isArray(optionsPrecursor))
-				return merge(optionsPrecursor, templates, error, type, merger);
+			if (Array.isArray(precursor))
+				return mergeArray(precursor, templates, error, type, merger, enclose);
 
-			return optionsPrecursor ?
-				optionsPrecursor :
-				mergeObject(def, templates, error, type);
+			return precursor ?
+				precursor :
+				mergeObject(def, templates, error, type, merger, enclose);
 
 		default:
-			return mergeObject(def, templates, error, type);
+			return mergeObject(def, templates, error, type, merger, enclose);
 	}
 }
 
-function tryBundle(optionsStr, templates, type = "merge") {
-	if (optionsStr.indexOf("|") == -1)
+function tryBundle(
+	refsStr,
+	templates,
+	type = "merge"
+) {
+	if (refsStr.indexOf("|") == -1)
 		return null;
 
-	const options = optionsStr.trim().split(/\s*\|\s*/),
+	const refs = refsStr.trim().split(/\s*\|\s*/),
 		template = {};
 
-	for (let i = 0, l = options.length; i < l; i++) {
-		const templ = templates[options[i]];
+	for (let i = 0, l = refs.length; i < l; i++) {
+		const templ = templates[refs[i]];
 
 		if (templ)
-			Object.assign(template, templ);
+			assign(template, templ);
 		else {
-			console.error(`Failed to bundle ${type} object '${options[i]}': no template with that name exists`);
+			console.error(`Failed to bundle ${type} object '${refs[i]}': no template with that name exists`);
 			return null;
 		}
 	}
 
-	templates[optionsStr] = Object.freeze(template);
-	return templates[optionsStr];
+	templates[refsStr] = Object.freeze(template);
+	return templates[refsStr];
 }
 
-function logMergeError(error, option, templates, type = "merge") {
-	console.error(error || `'${option}' is not a valid ${type} object`);
+function logMergeError(
+	error,
+	source,
+	templates,
+	type = "merge"
+) {
+	console.error(error || `'${source}' is not a valid ${type} object`);
 
 	if (getEnvType() != "window")
 		return;
 
-	console.groupCollapsed("Expand to view the currently supported options");
+	console.groupCollapsed("Expand to view all currently supported templates");
 	const keys = Object.keys(templates).sort();
 
 	for (let i = 0, l = keys.length; i < l; i++) {
 		const key = keys[i];
+		if (key.indexOf("|") != -1)
+			continue;
 
 		console.groupCollapsed(key);
 		console.log(templates[key]);
@@ -153,21 +178,76 @@ function logMergeError(error, option, templates, type = "merge") {
 	console.groupEnd();
 }
 
-function merge(
-	options,
+// Merges arrays into singular objects
+// Groups ref strings and bundles/caches the resulting object,
+// ignores invalid data, and combines resolved data if necessary
+function mergeArray(
+	sources,
 	templates,
 	error,
 	type = "merge",
-	merger = Object.assign
+	merger = assign,
+	enclose = false
 ) {
-	const template = Object.create(null);
+	const resolved = [];
+	let refsStr = "";
 
-	for (let i = 0, l = options.length; i < l; i++) {
-		const obj = mergeObject(options[i], templates, error, type);
-		merger(template, obj);
+	const traverse = arr => {
+		for (let i = 0, l = arr.length; i < l; i++) {
+			const source = arr[i];
+
+			if (typeof source == "string") {
+				refsStr += refsStr ?
+					`|${source}` :
+					source;
+			} else if (Array.isArray(source))
+				traverse(source);
+			else if (isObject(source)) {
+				if (refsStr) {
+					resolve(refsStr);
+					refsStr = "";
+				}
+
+				resolve(source);
+			}
+		}
+	};
+
+	const resolve = data => {
+		resolved.push(
+			mergeObject(
+				data,
+				templates,
+				error,
+				type,
+				merger,
+				false
+			)
+		);
+	};
+
+	traverse(sources);
+
+	if (refsStr)
+		resolve(refsStr);
+
+	if (resolved.length == 1)
+		return resolved[0];
+	if (!resolved.length)
+		return enclose ? BLANK : {};
+
+	const out = enclose ?
+		create(null) :
+		{};
+
+	for (let i = 0, l = resolved.length; i < l; i++) {
+		if (resolved[i])
+			merger(out, resolved[i]);
 	}
 
-	return Object.freeze(template);
+	return enclose ?
+		Object.freeze(out) :
+		out;
 }
 
 export {

@@ -1,8 +1,8 @@
-import equals from "./equals";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./internal/options";
+import equals from "./equals";
 
 const OPTIONS_TEMPLATES = composeOptionsTemplates({
 	plain: true,

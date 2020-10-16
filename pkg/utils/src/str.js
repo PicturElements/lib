@@ -1,15 +1,15 @@
-import { getWrappedRange } from "./range";
-import {
-	isObject,
-	isWhitespace,
-	isTaggedTemplateArgs
-} from "./is";
 import {
 	composeOptionsTemplates,
 	createOptionsObject,
 	optionize
 } from "./internal/options";
-import { BASE_62 } from "./internal/constants";
+import { BASE_62 } from "./data/constants";
+import {
+	isObject,
+	isWhitespace,
+	isTaggedTemplateArgs
+} from "./is";
+import { getWrappedRange } from "./range";
 import serialize from "./serialize";
 import repeat from "./repeat";
 import hasOwn from "./has-own";

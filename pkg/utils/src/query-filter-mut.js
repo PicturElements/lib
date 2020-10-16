@@ -1,9 +1,9 @@
-import matchQuery from "./match-query";
-import filterMut from "./filter-mut";
 import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./internal/options";
+import matchQuery from "./match-query";
+import filterMut from "./filter-mut";
 
 const OPTIONS_TEMPLATES = composeOptionsTemplates({
 	invert: true

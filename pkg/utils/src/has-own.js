@@ -1,4 +1,4 @@
-import { POLYFILL_PREFIXES } from "./internal/constants";
+import { POLYFILL_PREFIXES } from "./data/constants";
 
 const oHOP = Object.prototype.hasOwnProperty;
 

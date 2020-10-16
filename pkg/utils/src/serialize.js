@@ -1,14 +1,15 @@
-import { sym } from "./sym";
-import { isObject } from "./is";
-import repeat from "./repeat";
-import hasOwn from "./has-own";
 import {
+	assign,
 	uncirculate,
 	isCircular,
 	circularIdKey,
 	circularRefKey,
 	circularIsKey
 } from "./obj";
+import { sym } from "./sym";
+import { isObject } from "./is";
+import repeat from "./repeat";
+import hasOwn from "./has-own";
 
 const WRAPPED_SYM = sym("serialize wrapper");
 
@@ -167,7 +168,7 @@ export default function serialize(data, optionsOrIndentStr = {}, args = null) {
 						resolved = item(ctx, ...a);
 					else {
 						const arg = Array.isArray(a) ? a[0] : a;
-						resolved = item(Object.assign(ctx, arg));
+						resolved = item(assign(ctx, arg));
 					}
 
 					return srz(null, resolved, indent);

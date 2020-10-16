@@ -1,11 +1,11 @@
-import hasOwn from "./has-own";
-import parseSurrogatePair from "./parse-surrogate-pair";
-import parseEscapeSequence from "./parse-escape-sequence";
 import {
 	fromCodePoint,
 	codePointAt
 } from "./str";
 import { binarySearch } from "./binary-search";
+import hasOwn from "./has-own";
+import parseSurrogatePair from "./parse-surrogate-pair";
+import parseEscapeSequence from "./parse-escape-sequence";
 
 const CASE_MAP = [];
 const NEGATE_FUNCTIONS = {};

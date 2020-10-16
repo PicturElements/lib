@@ -8,14 +8,17 @@ import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./internal/options";
+import {
+	anyOf,
+	assign
+} from "./obj";
 import { sym } from "./sym";
 import { untab } from "./str";
-import { anyOf } from "./obj";
-import supports from "./supports";
 import hasOwn from "./has-own";
+import forEach from "./for-each";
+import supports from "./supports";
 import resolveArgs from "./resolve-args";
 import getFunctionName from "./get-function-name";
-import forEach from "./for-each";
 
 const CLASS_CONFIG = sym("class config"),
 	HAS_NATIVE_CONSTRUCTOR = sym("has native constructor");
@@ -154,7 +157,7 @@ function mkConfig(name, config) {
 		};
 	}
 
-	return Object.assign({
+	return assign({
 		name: name || ""
 	}, config);
 }

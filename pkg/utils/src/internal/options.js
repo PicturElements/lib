@@ -3,7 +3,10 @@ import {
 	mergeObject,
 	mergeObjectWithDefault
 } from "./merge-obj";
-import { isObject } from "./duplicates";
+import {
+	assign,
+	isObject
+} from "./duplicates";
 
 function composeOptionsTemplates(...templates) {
 	return composeMergerTemplates(...templates);
@@ -46,11 +49,11 @@ function createOptionizer(target, initializer, templates, merger) {
 	
 		if (target._options) {
 			if (override)
-				target._options = Object.assign(target._options, options);
+				target._options = assign(target._options, options);
 			else
-				target._options = Object.assign({}, options, target._options);
+				target._options = assign({}, options, target._options);
 		} else
-			target._options = Object.assign(init(options, override), options);
+			target._options = assign(init(options, override), options);
 	
 		return target;
 	};

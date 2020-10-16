@@ -1,18 +1,13 @@
 import lookup from "../lookup";
 
-const POLYFILL_PREFIXES = {
-	symIterator: "@Polyfill:SymbolIterator",
-	symbol: "@Polyfill:Symbol - "
-};
-
-const SYM_ITER_KEY = typeof Symbol == "undefined" ?
-	POLYFILL_PREFIXES.symIterator :
-	Symbol.iterator;
-
 // Whitespace characters (as recognized by the standard of String.prototype.trim)
-const WHITESPACE = lookup("\t\n\v\f\r \xa0\u2028\u2029\ufeff", "");
+const WHITESPACES = lookup("\t\n\v\f\r \xa0\u2028\u2029\ufeff", "");
 const VOID_TAGS = lookup("area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr");
 const BOOLEAN_ATTRS = lookup("allowfullscreen|allowpaymentrequest|async|autofocus|autoplay|checked|controls|default|disabled|formnovalidate|hidden|ismap|itemscope|loop|multiple|muted|nomodule|novalidate|open|playsinline|readonly|required|reversed|selected|truespeed");
+// https://mathiasbynens.be/notes/javascript-identifiers
+const KEYWORDS = lookup("break|case|catch|continue|debugger|default|delete|do|else|finally|for|function|if|in|instanceof|new|return|switch|this|throw|try|typeof|var|void|while|with");
+const RESERVED_WORDS = lookup("class|const|enum|export|extends|import|super|implements|interface|let|package|private|protected|public|static|yield");
+const BAD_IDENTIFIERS = lookup("undefined|null|true|false|NaN|Infinity");
 
 const DOM_NAMESPACES = [
 	{
@@ -27,18 +22,12 @@ const DOM_NAMESPACES = [
 	}
 ];
 
-const BASE_62 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-const BASE_64 = BASE_62 + "+/";
-const BASE_64_YT = BASE_62 + "-_";
-
 export {
-	POLYFILL_PREFIXES,
-	SYM_ITER_KEY,
-	WHITESPACE,
+	WHITESPACES,
 	VOID_TAGS,
 	BOOLEAN_ATTRS,
 	DOM_NAMESPACES,
-	BASE_62,
-	BASE_64,
-	BASE_64_YT
+	KEYWORDS,
+	RESERVED_WORDS,
+	BAD_IDENTIFIERS
 };
