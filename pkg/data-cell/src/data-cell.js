@@ -245,13 +245,7 @@ export default class DataCell extends Hookable {
 		// The mechanism provided by DataCell for this is with/use
 		this.pendingRuntime = null;
 
-		config = mergePresets(config, DataCell.presets, {
-			defaultKey: "default",
-			keys: ["preset", "presets"],
-			injectConfig: config.passive ?
-				PASSIVE_IGNORE :
-				null
-		});
+		config = DataCell.resolveConfig(config);
 
 		for (const k in config) {
 			if (!hasOwn(config, k))
@@ -935,6 +929,7 @@ export default class DataCell extends Hookable {
 
 	static resolveConfig(config) {
 		return mergePresets(config, DataCell.presets, {
+			defaultKey: "default",
 			keys: ["preset", "presets"],
 			injectConfig: config.passive ?
 				PASSIVE_IGNORE :
