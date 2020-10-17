@@ -14,7 +14,7 @@ The main focus of this repository is its collection of versatile packages. Being
 
 * **Performance**
   
-  *Code should be fast*. While cleanliness and the maintainability to which it is conducive is paramount, performance is a very important aspect that should not be taken lightly. At times, it may be necessary, or even encouraged, to sacrifice some cleanliness for performance. For instance, it can be seen how this applies to loop constructs in all libraries. While usually far a significant performance bottleneck, loop constructs are clear enough on their own to warrant their small performance benefit in exchange for some added mental overhead, warranted by the fact that library code is likely to be run much more often than application code. The closer to the silicon, the more lenient the demand for squeaky clean code. Overall, however, performance should be a complement to a clean codebase and not the other way around. Performance optimization should primarily be done through careful selection of appropriate algorithms, as well as in situ when written, assuming it is done in an unobtrusive manner. For instance, leveraging short-circuit evaluation is a relatively unobtrusive method of cutting clock cycles.
+  *Code should be fast*. While cleanliness and the maintainability to which it is conducive is paramount, performance is a very important aspect that should not be taken lightly. At times, it may be necessary, or even encouraged, to sacrifice some cleanliness for performance. For instance, it can be seen how this applies to loop constructs in all libraries. While usually far from a significant performance bottleneck, loop constructs are clear enough on their own to warrant their small performance benefit in exchange for some added mental overhead, warranted by the fact that library code is likely to be run much more often than application code. The closer to the silicon, the more lenient the demand for squeaky clean code. Overall, however, performance should be a complement to a clean codebase and not the other way around. Performance optimization should primarily be done through careful selection of appropriate algorithms, as well as in situ when written, assuming it is done in an unobtrusive manner. For instance, leveraging short-circuit evaluation is a relatively unobtrusive method of cutting clock cycles.
 
 * **Development Mindset**
   
@@ -22,7 +22,7 @@ The main focus of this repository is its collection of versatile packages. Being
 
 * **Code Style and Paradigms**
   
-  Largely, the code in this repository follows the recommended style guide as imposed by ESLint, and in great parts the [Airbnb](https://github.com/airbnb/javascript) and [Google](https://google.github.io/styleguide/jsguide.html) JavaScript style guides. There are a number of deviations from these style guides, which are documented in the [Style Choices](#user-content-style-choices) section.
+  Largely, the code in this repository follows the recommended style guide as imposed by ESLint, and in great parts the [Airbnb](https://github.com/airbnb/javascript) and [Google](https://google.github.io/styleguide/jsguide.html) JavaScript style guides. There are a number of deviations from these style guides, which are documented in the [Stylistic Choices](#user-content-stylistic-choices) section.
 
   Code should have high cohesion and loose coupling. When within a single library, and moreso a single file, coupling is often slightly tighter. This is primarily done to keep the code compact and DRY. Libraries themselves, however, must never be tightly coupled. When applicable, the dependency inversion principle should be applied. The benefits of this are twofold; firstly, it increases flexibility and testability, and secondly, it potentially reduces the inherent dependency tree and bundle size of the package itself.
 
@@ -32,18 +32,18 @@ The main focus of this repository is its collection of versatile packages. Being
 
 * **Testing**
   
-  Testing is primarily done with Jest, with simple unit testing being prioritized in most cases. All tests are put in the `/test` directory in each package.
+  Testing is primarily done with Jest, with simple unit testing being prioritized in most cases. Tests are put in the `/test` directory in each package.
 
 * **Building**
   
-  There are plans for adding a robust build step, although none are available at present.
+  There are plans for adding a robust multi-target build step, although none are available at present.
 
 ---
 
 ## Web Client
 Lib comes supplied with a basic web client. When run, a server is set up with a process that monitors changes, then builds and serves the libraries to the client. The pages for the individual packages can be found at `HOST/package-name`.
 
-Each library has a `/connect` directory. In it, the system looks for a `feed.js` file, which is used as the entry point for the public bundle. In it, a `feed` reference is provided. When called as a function, the library contents are exposed. Under the hood, this is collated into one output object. This output object, and its contents, are made globally available on the package page. Furthermore, it is possible to add individual references to the output using `feed.add`. Provided with a name and a resolver callback, any data can be added to the output. In addition to this, example usage can be provided using `feed.example`. Provided with an example name and a configuration object, usage samples can be run in the console. To view a sample usage of both these features, check out `@qtxr/i18n/connect/feed.js`.
+Each library has a `/connect` directory. In it, the system looks for a `feed.js` file, which is used as the entry point for the public bundle. In it, a `feed` reference is provided. When called as a function, passed library contents are exposed. Under the hood, this is collated into one output object. This output object, and its contents, are made globally available on the package page. Furthermore, it is possible to add individual references to the output using `feed.add`. Provided with a name and a resolver callback, any data can be added to the output. In addition to this, example usage can be provided using `feed.example`. Provided with an example name and a configuration object, usage samples can be run in the console. To view a sample usage of both these features, check out `@qtxr/i18n/connect/feed.js`.
 
 ---
 
@@ -64,7 +64,35 @@ Lib provides a basic command-line tool. This is made available as `ql` and `qlib
 
 ---
 
-## Style Choices
+## Behavioral Choices
+There are plenty of opportunities to impress a unique style to libraries as they are developed. The packages in this repository certainly do so. However, these special features always have a few things in common:
+
+1. They must be unobtrusive. A feature must never incur mental overhead or confusion. If that happens, the feature must either be revised to be more clear in vision, or removed altogether.
+2. They must be consistent. Features and behaviors are pervasive throughout the repository and its ecosystem. The developer should readily notice patterns in the systems, knowing that there are measured choices underpinning their design.
+
+* **Arguments Can be Resolved**
+  
+  Several libraries and utility functions utilize `@qtxr/utils/resolveArgs`. This function goes hand in hand with a fundamental principle that applies throughout the repository: supporting developer convenience and conveying intent. Functions that are intuitive and have a clear focus also have parameters that make logical sense from typing alone. At the same time, however, some functions may support enough arguments that calling them by plain arguments alone becomes cumbersome and nonidomatic in certain cases. That is why `resolveArgs` was created. Using this utility function, it is possible to create functions that accept plain arguments or singular argument objects, all while providing typing. The goal is to give the developer the option to call a function with arguments that make sense. Say, a function may accept arguments `a-d`. Assume that in some cases, `b-d` are irrelevant arguments. If so, it makes sense to call the function with a singular argument `a`, all the while calling it with an argument object could be considered needlessly verbose. In another case, `d` might be a required parameter. Instead of awkwardly padding arguments `b-c` with null values or similar, an argument object should be used instead. To further avoid confusion, arguments can be strictly enforced, throwing an error elaborating what caused the error and what correct function usage looks like, should malformed data be passed.
+
+* **Functions Should be Readily Configurable**
+  
+  Another central component in the API layer of many utilities and components is configurability, achieved by us of `@qtxr/utils/options`. If the behavior of a function can be altered by the caller, then the callee should support configuration on the forms `@qtxr/utils/options` supports. `@qtxr/utils/options` is a simple system that manages options generation and management. Options templates are created using `composeOptionsTemplates` by passing an object containing named options. If a property is not an object, the property key will be used as an option field, with the property value passed as the field value. For example, `{ circular: true }` becomes `{ circular: { circular: true } }`. This is particularly useful in situations where boolean flags are desired options. The templates emitted by `composeOptionsTemplates` are immutable to avoid tampering. Then, options are resolved using `createOptionsObject`. This function returns an options object, and for externally facing APIs, they are always frozen and lack prototypes. Since `composeOptionsTemplates` can only consume options to create a new object, other data is treated as follows:
+  
+  Strings are references to templates. `"circular"` becomes `{ circular: { circular: true } }`. It is also possible to group references like so: `"circular|otherRef"`. In this case, `otherRef` is an unknown template. To avoid any hard-to-track bugs arising from this, an error is logged to the concole whenever an unknown template is referenced. Together with this, a list of valid templates is logged for reference.
+
+  Arrays are considered as options containers. Internally, arrays are flattened before their contents get merged with the output object.
+
+* **null Before Errors**
+  
+  Almost exclusively, functions terminate. Errors are few and far between. The reasoning is straight-forward; errors must be caught. There is rarely a benefit to letting code crash under normal circumstances. Therefore, handling errors is an important aspect of any system. However, the libraries in this repository do not generally throw errors. Instead, they return `null`. The reason they do this is as follows; returning `null` signals that a function has terminated but explicitly without producing a useful result. Upon receiving such a value, the caller may decide on different routes of action, be it returning `null` itself, providing a sensible default value, or indeed throwing an error. The greatest benefit to this is that there is no need to wrap sections of code in try-catch blocks, giving the developer more fine-grained control over error handling. There is of course concern about a returned `null` value being ambiguous, both in terms of not giving a reason as to the source of error, as well as being a singular value without inherent concrete meaning within the JS runtime. However, these issues have been found to be rare, all but nonexistent, as functions should always have one responsibility and thus a single reason to fail. Furthermore, a function returning `null` is rare since the value lacks any general meaning other than the absence of a value.
+
+* **Errors Are Fatal**
+  
+  When errors are thrown, they are thrown for good reasons. They happen first and foremost when data is impossible to work with. Systems using the libraries found in this repository are expected to strictly enforce good typing in the program flow, either implicitly by strategically placed type checks, or explicitly using a language that supplies a typing system. Hence, errors are assumed to occur when something has gone very wrong within the program, to the point that proceeding is not feasible or downright detrimental. That being said, throwing errors is not discouraged in general. The developer is responsible for moderating what data to expect, and what quality data should be allowed to pass through the system.
+
+---
+
+## Stylistic Choices
 The following are style choices that diverge or differ to some extent, however small, from common style guides (in this case Airbnb). Code should never diverge too far from best practice formatting, but neither should the developer be held to a fixed set of rules. However menial the differences are to common style guides, the importance of applying a pragmatic mindset to code style is impressed on the developer, who is first and foremost responsible for producing a legible and elegant product. If in a certain case diverging from fixed rules means the code becomes more pleasant to read, this is preferred. Perhaps all of this goes without saying, but for transparency reasons, these are the main cases where rules have been found to be fuzzy:
 
 <details>
@@ -88,7 +116,7 @@ The following are style choices that diverge or differ to some extent, however s
     </b>
   </summary>
 
-  Object.assign or `@qtxr/utils/inject` are favored over spread, as it is slighty more explicit in most cases. However, mutating the original data is almost always heavily discouraged and is never done except for explicit extensions.
+  `@qtxr/utils/assign` or `@qtxr/utils/inject` are favored over spread, as it is slighty more explicit in most cases. However, mutating the original data is almost always heavily discouraged and is never done except for explicit extensions.
 </details>
 
 <details>
@@ -155,7 +183,7 @@ The following are style choices that diverge or differ to some extent, however s
   1. If it does not conform to the desired type, when throwing an error is not desired.
   2. To apply processing to it. When this is done, keeping track of types is a priority.
   
-  Argument modifications must happen at the start of a function or method, and must not include complex conditional modifications. In effect, the result of argument reassignments must leave the data in a state as if the function had been invoked with it in the first place. Once in the main function body, arguments must be regarded as constant and immutable, as this part of the function should remain ignorant of changes applied to its data. The exception is when a method is created with the explicit purpose of modifying a passed object (see: [7.12](https://github.com/airbnb/javascript#functions--mutate-params)).
+  Argument modifications must happen at the start of a function or method, and must not include complex conditional modifications. In effect, the result of argument reassignments must leave the data in a state as if the function had been invoked with it in the first place. Once in the main function body, arguments must be regarded as constant and immutable, as this part of the function should remain ignorant of changes applied to its data. The exception is when a function is created with the explicit purpose of modifying a passed object (see: [7.12](https://github.com/airbnb/javascript#functions--mutate-params)).
   
   At no point do processing in default parameters (see also: [7.8](https://github.com/airbnb/javascript#functions--default-side-effects)).
 </details>
@@ -278,18 +306,6 @@ The following are style choices that diverge or differ to some extent, however s
   </summary>
 
   Mostly irrelevant in the grand scheme of things, but tabs offer greater flexibility than spaces in most cases, and may provide benefits to accessibility. Spaces are not used for alignment for similar reasons. 4-space tabs are used throughout the repository.
-</details>
-
-<details>
-  <summary>
-    <b>
-      <a href="https://github.com/airbnb/javascript#whitespace--padded-blocks">19.8</a>
-      &nbsp;&nbsp;&nbsp;
-      Do not pad your blocks with blank lines
-    </b>
-  </summary>
-
-  Vertical spacing is used within block bodies to display grouping and separation of concerns. Still, padding outside the block bodies is discouraged, as per this rule.
 </details>
 
 <details>

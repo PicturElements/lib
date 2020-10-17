@@ -12,8 +12,13 @@ const STD_IO = { stdio: "inherit" };
 
 const commands = new Commander()
 	.cmd("install", async options => {
-		const [ pkgName, ...passedArgs ] = options.args,
-			pth = join(__dirname, "../../pkg", pkgName);
+		const [ pkgName, ...passedArgs ] = options.args;
+		if (!pkgName) {
+			error("Failed to install: no package name provided");
+			return false;
+		}
+
+		const pth = join(__dirname, "../../pkg", pkgName);
 
 		if (!await isValidPkgName(pkgName, "install"))
 			return false;
