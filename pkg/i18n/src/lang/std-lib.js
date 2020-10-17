@@ -7,7 +7,7 @@ import * as m from "@qtxr/utils/src/math";
 import { isGrammarNode } from "./";
 import { processDateFormatter } from "./custom-grammars";
 
-const datePeriods = {
+const DATE_PERIODS = {
 	year: 31557600,
 	month: 2628000,
 	day: 86400,
@@ -120,7 +120,7 @@ const langStdLib = {
 					formatter,
 					index: i,
 					argument: candidate,
-					period: datePeriods[formatter.class]
+					period: DATE_PERIODS[formatter.class]
 				} : null;
 			})
 			.filter(Boolean)

@@ -1,10 +1,10 @@
-const ietfRegex = /^([a-z]{2,3})(?:[_-]([a-z]{3}))?(?:[_-]([a-z]{4}))?(?:[_-]([a-z]{2}|[0-9]{3}))?$/,
-	subtagData = [
+const IETF_REGEX = /^([a-z]{2,3})(?:[_-]([a-z]{3}))?(?:[_-]([a-z]{4}))?(?:[_-]([a-z]{2}|[0-9]{3}))?$/,
+	SUBTAG_DATA = [
 		{ tag: "primary" },
 		{ tag: "extlang" },
 		{
 			tag: "script",
-			convert: str => str[0].toUpperCase() + str.substring(1)
+			convert: str => str[0].toUpperCase() + str.substring(1).toLowerCase()
 		},
 		{
 			tag: "region",
@@ -12,7 +12,7 @@ const ietfRegex = /^([a-z]{2,3})(?:[_-]([a-z]{3}))?(?:[_-]([a-z]{4}))?(?:[_-]([a
 		}
 	],
 	// primary, region, script, extlang
-	subtagPriority = [0, 3, 2, 1];
+	SUBTAG_PRIORITY = [0, 3, 2, 1];
 
 export default class IETF {
 	constructor(str) {
@@ -25,7 +25,7 @@ export default class IETF {
 			return this.reset();
 
 		str = str.toLowerCase();
-		const ex = ietfRegex.exec(str),
+		const ex = IETF_REGEX.exec(str),
 			value = [];
 
 		if (!ex)
@@ -33,8 +33,8 @@ export default class IETF {
 
 		this.valid = true;
 
-		for (let i = 0, l = subtagData.length; i < l; i++) {
-			const data = subtagData[i],
+		for (let i = 0, l = SUBTAG_DATA.length; i < l; i++) {
+			const data = SUBTAG_DATA[i],
 				subtag = data.tag,
 				capture = ex[i + 1];
 
@@ -56,8 +56,8 @@ export default class IETF {
 	}
 
 	reset() {
-		for (let i = 0, l = subtagData.length; i < l; i++)
-			this[subtagData[i].tag] = null;
+		for (let i = 0, l = SUBTAG_DATA.length; i < l; i++)
+			this[SUBTAG_DATA[i].tag] = null;
 
 		this.valid = false;
 		this.value = "";
@@ -69,7 +69,7 @@ export default class IETF {
 	}
 
 	equals(candidate) {
-		return Boolean(candidate instanceof IETF && this.toString() == candidate.toString());
+		return this.toString() && this.toString() == IETF.coerce(candidate).toString();
 	}
 
 	static findOptimalLocale(targetLocale, locales) {
@@ -95,8 +95,8 @@ export default class IETF {
 
 		let score = 0;
 
-		for (let i = 0, l = subtagPriority.length; i < l; i++) {
-			const subtag = subtagData[subtagPriority[i]].tag;
+		for (let i = 0, l = SUBTAG_PRIORITY.length; i < l; i++) {
+			const subtag = SUBTAG_DATA[SUBTAG_PRIORITY[i]].tag;
 
 			score *= 3;
 
