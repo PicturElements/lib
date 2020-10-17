@@ -4,7 +4,7 @@ import { SYM_ITER_KEY } from "../data/constants";
 // array-based implementation. Note that this implementation is meant to offer
 // only the basic API with suboptimal performance and edge case support in exchange
 // for terseness. Use a proper polyfill for optimal performance and browser compatibility
-// This is also why this is not exposed directly in public builds
+// These concerns are also why these classes are not exposed directly in public builds
 
 const NULL = Object.freeze({ NULL: true });
 const nIsNaN = v => typeof v == "number" && isNaN(v);

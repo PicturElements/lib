@@ -6,7 +6,7 @@ import {
 	findClosest,
 } from "../src/binary-search";
 
-const ARR_LEN = 5000,
+const ARR_LEN = 1000,
 	ARR_SAMPLES = ARR_LEN * 10,
 	MAX_STEPS = Math.ceil(Math.log2(ARR_LEN)),
 	SMALL_ARR_LEN = 11,

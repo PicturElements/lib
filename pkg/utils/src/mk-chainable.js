@@ -161,41 +161,38 @@ export default function mkChainable(name, struct, options) {
 	);
 
 	const getterQueue = [];
-	let store,
-		pingInit,
+	let pingInit,
 		pingStep,
 		pingTerminate;
 
 	if (options.closed) {
-		store = {
+		const frame = {
 			initialized: true,
 			deferNode: null,
 			runtime: {}
 		};
 
 		pingInit = (node, out) => (...args) => {
-			store.initialized = false;
-			store.deferNode = null;
-			store.runtime = {};
+			frame.initialized = false;
+			frame.deferNode = null;
+			frame.runtime = {};
 
 			if (args[0] != ACCESS_TOKEN || args[1] != SKIP_SELF_ACCESS)
-				runPing(node, store, true, ACCESS_TOKEN_ARGS);
-			runPing(node, store, true, args);
+				runPing(node, frame, true, ACCESS_TOKEN_ARGS);
+			runPing(node, frame, true, args);
 			return out;
 		};
 
 		pingStep = (node, out) => (...args) => {
-			runPing(node, store, false, args);
+			runPing(node, frame, false, args);
 			return out;
 		};
 
 		pingTerminate = node => (...args) => {
-			return runPing(node, store, false, args);
+			return runPing(node, frame, false, args);
 		};
 	} else {
-		store = {
-			stack: []
-		};
+		const stack = [];
 
 		pingInit = (node, out) => (...args) => {
 			const frame = {
@@ -203,27 +200,29 @@ export default function mkChainable(name, struct, options) {
 				deferNode: null,
 				runtime: {}
 			};
-			store.stack.push(frame);
+			stack.push(frame);
 
 			if (args[0] != ACCESS_TOKEN || args[1] != SKIP_SELF_ACCESS)
-				runPing(node, store, true, ACCESS_TOKEN_ARGS);
+				runPing(node, frame, true, ACCESS_TOKEN_ARGS);
 			runPing(node, frame, true, args);
 			return out;
 		};
 
 		pingStep = (node, out) => (...args) => {
-			const frame = store.stack[store.stack.length - 1];
+			const frame = stack[stack.length - 1];
 			runPing(node, frame, false, args);
 			return out;
 		};
 
 		pingTerminate = node => (...args) => {
-			const frame = store.stack.pop();
+			const frame = stack.pop();
 			return runPing(node, frame, false, args);
 		};
 	}
 
 	const runPing = (node, frame, init, args) => {
+		const hasInitDefer = frame.deferNode && init;
+
 		if (frame.deferNode) {
 			if (node.uid != frame.deferNode.uid || args[0] == ACCESS_TOKEN) {
 				const n = node.baseUid && node.baseUid == frame.deferNode.baseUid ?
@@ -240,7 +239,7 @@ export default function mkChainable(name, struct, options) {
 		}
 
 		if (node.defer && args[0] == ACCESS_TOKEN) {
-			frame.deferNode = init ?
+			frame.deferNode = init && !hasInitDefer ?
 				node :
 				args[1] || node;
 			return;
@@ -532,6 +531,8 @@ function decorateNode(node) {
 function ensurePassive(node) {
 	if (!node.invoke)
 		node.passive = true;
+	if (node.passive && node.invoke)
+		node.passive = false;
 }
 
 function ensureDeferrable(node) {

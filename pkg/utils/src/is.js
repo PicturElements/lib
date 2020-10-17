@@ -185,6 +185,27 @@ function isArrayLike(candidate) {
 	return candidate.length == 0 && Object.keys(candidate).length == 0;
 }
 
+const isTypedArray = typeof Int8Array == "undefined" ?
+	_ => false :
+	(_ => {
+		const TypedArray = Object.getPrototypeOf(Object.getPrototypeOf(new Int8Array())).constructor;
+		return candidate => candidate instanceof TypedArray;
+	})();
+
+const isBigIntArray = (_ => {
+	const BigInt64ArrayConstructor = typeof BigInt64Array != "undefined" ?
+			BigInt64Array :
+			class Null {},
+		BigUint64ArrayConstructor = typeof BigUint64Array != "undefined" ?
+			BigUint64Array :
+			class Null {};
+
+	return candidate => {
+		return candidate instanceof BigInt64ArrayConstructor ||
+			candidate instanceof BigUint64ArrayConstructor;
+	};
+})();
+
 function isArrResolvable(candidate) {
 	if (isArrayLike(candidate))
 		return true;
@@ -366,6 +387,8 @@ export {
 	isSymbol,
 	isIterable,
 	isArrayLike,
+	isTypedArray,
+	isBigIntArray,
 	isArrResolvable,
 	isEnv,
 	isNativeFunction,

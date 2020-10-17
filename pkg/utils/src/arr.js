@@ -1,5 +1,4 @@
 import { PolySet } from "./internal/poly";
-import { isMapLike } from "./lazy/is";
 import map from "./map";
 import forEach from "./for-each";
 import filterMut from "./filter-mut";
@@ -13,10 +12,7 @@ function nub(arr) {
 }
 
 function from(candidate) {
-	if (isMapLike(candidate))
-		return map(candidate, (v, k) => [k, v], null, []);
-	else
-		return map(candidate, null, null, []);
+	return map.from(candidate).to(Array) || [];
 }
 
 function remFromArr(arr, item, g = true) {

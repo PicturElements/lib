@@ -26,7 +26,7 @@ function setEntry(target, ...kv) {
 	return mkEntrySetter(target)(...kv);
 }
 
-function mkEntrySetter(target) {
+function mkEntrySetter(target, favorPush = false, preserveKv = false) {
 	if (!target)
 		return _ => null;
 
@@ -67,6 +67,19 @@ function mkEntrySetter(target) {
 	}
 
 	if (Array.isArray(target)) {
+		if (favorPush) {
+			return (...kv) => {
+				if (kv.length <= 1)
+					target.push(kv[0]);
+				else if (preserveKv)
+					target.push([kv[0], kv[1]]);
+				else
+					target.push(kv[1]);
+	
+				return target;
+			};
+		}
+
 		return (...kv) => {
 			if (kv.length > 1)
 				target[kv[0]] = kv[1];
