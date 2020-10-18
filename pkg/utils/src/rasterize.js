@@ -21,7 +21,7 @@ const ATTRIBUTES = "alignment-baseline:auto;baseline-shift:0px;color;color-inter
 const OPTIONS_TEMPLATES = composeOptionsTemplates({
 	injectStyle: true,
 	"2x": { scale: 2 },
-	"3x": { scale: 2 },
+	"3x": { scale: 3 },
 	jpg: { mime: "image/jpeg" },
 	jpeg: { mime: "image/jpeg" },
 	webp: { mime: "image/webp" },

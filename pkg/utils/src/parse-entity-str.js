@@ -1,7 +1,14 @@
 import { create } from "./obj";
 
 const ENTITY_CACHE = create(null),
-	ENTITY_RESOLVE_ELEM = document.createElement("div");
+	ENTITY_RESOLVE_ELEM = typeof document == "undefined" ?
+		{
+			set innerHTML(str) {
+				this.textContent = str;
+			},
+			textContent: null
+		} :
+		document.createElement("div");
 
 // This function is quite ugly, but is roughly twice as performant
 // as equivalent strategies like setting and reading innerHTML on an
