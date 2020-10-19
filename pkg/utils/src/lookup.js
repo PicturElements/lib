@@ -1,4 +1,8 @@
-import { create } from "./internal/duplicates";
+import {
+	hasOwn,
+	create,
+	isObject
+} from "./internal/duplicates";
 
 class Lookup {
 	constructor() {
@@ -33,14 +37,29 @@ class Lookup {
 	}
 }
 
-export default function lookup(arr = [], splitChar = "|") {
+export default function lookup(source = [], splitChar = "|", lazy = false) {
+	if (lazy && source instanceof Lookup)
+		return source;
+
 	const out = new Lookup();
 
-	if (typeof arr == "string")
-		arr = arr.split(splitChar);
+	if (isObject(source)) {
+		for (const k in source) {
+			if (hasOwn(source, k) && source[k])
+				out.add(k);
+		}
 
-	for (let i = arr.length - 1; i >= 0; i--)
-		out.add(arr[i]);
+		return out;
+	}
+
+	if (typeof source == "string")
+		source = source.split(splitChar);
+
+	if (!Array.isArray(source))
+		return out;
+
+	for (let i = source.length - 1; i >= 0; i--)
+		out.add(source[i]);
 
 	return out;
 }

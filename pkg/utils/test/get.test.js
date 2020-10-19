@@ -3,29 +3,30 @@ import mkAccessor from "../src/mk-accessor";
 import { isObj } from "../src/is";
 
 const getData = _ => ({
-		num: 42,
+	num: 42,
+	obj: {
+		str: "string"
+	},
+	arr: [
+		false,
+		NaN,
+		undefined,
+		null
+	],
+	nest: {
 		obj: {
-			str: "string"
-		},
-		arr: [
-			false,
-			NaN,
-			undefined,
-			null
-		],
-		nest: {
-			obj: {
-				arr: [
-					{
-						undef: undefined
-					}
-				],
-				"key with spaces": 42,
-				"key[with]brackets": 43
-			}
+			arr: [
+				{
+					undef: undefined
+				}
+			],
+			"key with spaces": 42,
+			"key[with]brackets": 43
 		}
-	}),
-	DATA = getData(),
+	}
+});
+
+const DATA = getData(),
 	ITEM_COUNT = 16;
 
 it("accesses all properties", () => {

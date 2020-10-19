@@ -13,6 +13,7 @@ import { getWrappedRange } from "./range";
 import serialize from "./serialize";
 import repeat from "./repeat";
 import hasOwn from "./has-own";
+import lookup from "./lookup";
 
 const TRIM_START = typeof String.prototype.trimStart == "undefined" ?
 	String.prototype.trim :
@@ -143,6 +144,59 @@ function untab(str, tabbing = null, trim = false) {
 	}
 
 	return split.join("\n");
+}
+
+const ESCAPE_DEFAULT_REGEX = /['"`\\]/g;
+
+function escape(str, regexOrExclude = null, exclude = null) {
+	let regex = ESCAPE_DEFAULT_REGEX;
+
+	if (regexOrExclude instanceof RegExp)
+		regex = regexOrExclude;
+	else if (regexOrExclude)
+		exclude = regexOrExclude;
+
+	if (typeof exclude == "function") {
+		return str.replace(regex, match => {
+			return exclude(match) ?
+				match :
+				`\\${match}`;
+		});
+	}
+
+	if (exclude) {
+		exclude = lookup(exclude, "", true);
+
+		return str.replace(regex, match => {
+			return exclude.has(match) ?
+				match :
+				`\\${match}`;
+		});
+	}
+
+	return str.replace(regex, match => `\\${match}`);
+}
+
+function unescape(str, exclude = null) {
+	if (typeof exclude == "function") {
+		return String(str).replace(/\\(.)/g, (match, char) => {
+			return exclude(char) ?
+				match :
+				char;
+		});
+	}
+
+	if (exclude) {
+		exclude = lookup(exclude, "", true);
+
+		return String(str).replace(/\\(.)/g, (match, char) => {
+			return exclude(char) ?
+				match :
+				char;
+		});
+	}
+
+	return String(str).replace(/\\(.)/g, "$1");
 }
 
 function spliceStr(str, from, to, replacement, relative = false) {
@@ -729,6 +783,8 @@ export {
 	lastChar,
 	tab,
 	untab,
+	escape,
+	unescape,
 	spliceStr,
 	trimStr,
 	splitClean,

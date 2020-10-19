@@ -36,7 +36,7 @@ const mkExpectRunner = (config, options) => {
 	};
 };
 
-describe("Correct construction and execution of chainable properties and methods", () => {
+describe("correct construction and execution of chainable properties and methods", () => {
 	const config = {
 		name: "root",
 		init,
@@ -105,11 +105,11 @@ describe("Correct construction and execution of chainable properties and methods
 
 	[
 		{
-			target: "Closed deferred form",
+			target: "closed deferred form",
 			options: "closed|defer|withContext"
 		},
 		{
-			target: "Open deferred form",
+			target: "open deferred form",
 			options: "defer|withContext"
 		}
 	].forEach(({ target, options }) => {
@@ -167,11 +167,11 @@ describe("Correct construction and execution of chainable properties and methods
 
 	[
 		{
-			target: "Closed non-deferred form",
+			target: "closed non-deferred form",
 			options: "closed|withContext"
 		},
 		{
-			target: "Open non-deferred form",
+			target: "open non-deferred form",
 			options: "withContext"
 		}
 	].forEach(({ target, options }) => {

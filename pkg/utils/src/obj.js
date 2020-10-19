@@ -9,7 +9,7 @@ import {
 	isArrResolvable,
 	isValidObjectKey
 } from "./is";
-import splitPath from "./split-path";
+import { splitPath } from "./path";
 import hasOwn from "./has-own";
 import resolveArgs from "./resolve-args";
 import matchType from "./match-type";

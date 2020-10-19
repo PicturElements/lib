@@ -5,9 +5,11 @@ import {
 	injectRegexFlags,
 	compileStickyCompatibleRegex
 } from "./regex";
+import {
+	unescape,
+	spliceStr
+} from "./str";
 import { isObject } from "./is";
-import { spliceStr } from "./str";
-import { unescape } from "./str-replace";
 import { fitNum } from "./num";
 import { assign } from "./obj";
 import forEach from "./for-each";

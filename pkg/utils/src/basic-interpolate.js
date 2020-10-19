@@ -1,6 +1,6 @@
 import { resolveVal } from "./resolve-val";
+import { splitPath } from "./path";
 import get from "./get";
-import splitPath from "./split-path";
 
 const SPLIT_REGEX = new RegExp(`\\$${splitPath.regexSources.match}`, "gi");
 

@@ -184,6 +184,69 @@ function matchAll(str, regex, captureOrCapturePriority = 0) {
 	}
 }
 
+function mkDisallowedWordsRegex(words) {
+	if (!Array.isArray(words))
+		words = [words];
+
+	const lookaheads = [],
+		lookaheadsLookup = {},
+		lookaheadsInitialLookup = {},
+		negations = [],
+		negationsLookup = {};
+
+	for (let i = 0, l = words.length; i < l; i++) {
+		const word = words[i];
+		if (typeof word != "string")
+			continue;
+
+		const head = word[0],
+			escapedHead = /\]|\\|-/.test(head) ?
+				"\\" + head :
+				head,
+			tail = word.slice(1);
+
+		if (!hasOwn(negationsLookup, head)) {
+			negations.push(escapedHead);
+			negationsLookup[head] = true;
+		}
+
+		if (!tail || hasOwn(lookaheadsLookup, word))
+			continue;
+
+		const lookahead = hasOwn(lookaheadsInitialLookup, head) ?
+			lookaheadsInitialLookup[head] :
+			{
+				head: cleanRegex(head),
+				content: ""
+			};
+
+		if (!hasOwn(lookaheadsInitialLookup, head)) {
+			lookaheads.push(lookahead);
+			lookaheadsInitialLookup[head] = lookahead;
+		}
+
+		if (lookahead.content)
+			lookahead.content += "|";
+
+		lookahead.content += cleanRegex(tail);
+	}
+
+	if (!negations.length)
+		return ".";
+
+	const negation = `[^${negations.join("")}]`;
+
+	if (!lookaheads.length)
+		return negation;
+
+	let lookaheadsContent = "";
+
+	for (let i = 0, l = lookaheads.length; i < l; i++)
+		lookaheadsContent += `${lookaheads[i].head}(?!${lookaheads[i].content})|`;
+
+	return `(?:${lookaheadsContent}${negation})`;
+}
+
 export {
 	compileRegex,
 	cleanRegex,
@@ -194,5 +257,6 @@ export {
 	getRegexSource,
 	stickyExec,
 	stickyTest,
-	matchAll
+	matchAll,
+	mkDisallowedWordsRegex
 };

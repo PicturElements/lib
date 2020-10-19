@@ -9,7 +9,6 @@ import {
 } from "./data/lookups";
 import type from "./lazy/type";
 import hasOwn from "./has-own";
-import splitPath from "./split-path";
 import getFunctionName from "./get-function-name";
 
 const DOC_ALL = typeof document == "undefined" ?
@@ -319,13 +318,6 @@ function isStandardPropertyDescriptor(descriptor) {
 	return descriptor.writable && descriptor.enumerable && descriptor.configurable;
 }
 
-function isPath(candidate) {
-	if (typeof candidate != "string")
-		return false;
-
-	return splitPath.regexes.matchFull.test(candidate);
-}
-
 function isValidIdentifier(candidate) {
 	if (typeof candidate != "string")
 		return false;
@@ -402,7 +394,6 @@ export {
 	isThenable,
 	isTaggedTemplateArgs,
 	isStandardPropertyDescriptor,
-	isPath,
 	isValidIdentifier,
 	isValidIdentifierDetailed
 };

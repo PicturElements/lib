@@ -2,7 +2,7 @@ import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./internal/options";
-import splitPath from "./split-path";
+import { splitPath } from "./path";
 import hasOwn from "./has-own";
 
 // Gets data from object. If the autoBuild flag is truthy, it will

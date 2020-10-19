@@ -2,11 +2,12 @@ import {
 	createOptionsObject,
 	composeOptionsTemplates
 } from "./internal/options";
-import { escape } from "./str-replace";
-import { cleanRegex } from "./regex";
+import { mkDisallowedWordsRegex } from "./regex";
+import { unescape } from "./str";
 import hasOwn from "./has-own";
 
-const GLOB_REGEX = /\\([^\\/])|(\?|\*\*|\*)|\[(!)?([^\\/]*?)\]|([$^()[\]/\\{}.*+?|])/g,
+const GLOB_REGEX = /\\([^\\/])|(\?|\*{1,2})|\[(?!])(!)?((?:[^\\/]|\\.)*?)\]|([$^()[\]/\\{}.*+?|])/g,
+	GLOB_COMPONENT_REGEX = /(?:[^\\]|^)(?:\?|\*{1,2}|\[(?!])(?:[^\\/]|\\.)*?\])/,
 	GLOB_CACHE = {},
 	BOUNDARY_CACHE = {};
 	
@@ -33,22 +34,20 @@ function compileGlob(glob, options) {
 
 	const matchStart = !options.noMatchStart && !options.noMatchFull,
 		matchEnd = !options.noMatchEnd && !options.noMatchFull,
-		boundaryPrecursor = typeof options.boundary == "string" ?
+		boundaryPrecursor = typeof options.boundary == "string" || Array.isArray(options.boundary) ?
 			options.boundary :
-			"\\/",
+			"/",
+		boundaryKey = Array.isArray(boundaryPrecursor) ?
+			boundaryPrecursor.join("//") :
+			boundaryPrecursor,
 		flags = options.flags || "",
-		globKey = `${glob}@${flags}/${+matchStart}${+matchEnd}@@${boundaryPrecursor}`;
+		globKey = `${glob}@${flags}/${Number(matchStart)}${Number(matchEnd)}@@${boundaryKey}`;
 
 	if (hasOwn(GLOB_CACHE, globKey))
 		return GLOB_CACHE[globKey];
 
-	if (!hasOwn(BOUNDARY_CACHE, boundaryPrecursor)) {
-		// First escape properly, then clean that for regex construction
-		const regexStr = cleanRegex(escape(boundaryPrecursor));
-		BOUNDARY_CACHE[boundaryPrecursor] = regexStr ?
-			`[^${regexStr}]` :
-			".";
-	}
+	if (!hasOwn(BOUNDARY_CACHE, boundaryKey))
+		BOUNDARY_CACHE[boundaryPrecursor] = mkDisallowedWordsRegex(boundaryPrecursor);
 
 	const boundary = BOUNDARY_CACHE[boundaryPrecursor];
 
@@ -79,6 +78,14 @@ function compileGlob(glob, options) {
 
 			if (charset) {
 				isGlob = true;
+
+				if (charset[0] == "^")
+					charset = "\\" + unescape(charset);
+				else
+					charset = unescape(charset);
+
+				charset = charset.replace(/]/, "\\]");
+
 				return `[${negate ? "^" : ""}${charset}]`;
 			}
 
@@ -92,20 +99,35 @@ function compileGlob(glob, options) {
 
 	const parsed = {
 		regex: new RegExp(regex, flags),
-		isGlob
+		isGlob,
+		isGlobCompileResult: true
 	};
 	GLOB_CACHE[globKey] = parsed;
 	return parsed;
 }
 
 function matchGlob(str, glob, options) {
-	if (typeof str != "string" || typeof glob != "string")
+	if (typeof str != "string")
+		return false;
+	
+	if (glob && glob.isGlobCompileResult && glob.regex instanceof RegExp)
+		return glob.regex.test(str);
+
+	if (typeof glob != "string")
 		return false;
 
 	return compileGlob(glob, options).regex.test(str);
 }
 
+function isGlob(candidate) {
+	if (typeof candidate != "string")
+		return false;
+
+	return GLOB_COMPONENT_REGEX.test(candidate);
+}
+
 export {
 	compileGlob,
-	matchGlob
+	matchGlob,
+	isGlob
 };

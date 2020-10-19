@@ -1,5 +1,7 @@
-import { cleanPath } from "./str-replace";
-import splitPath from "./split-path";
+import {
+	splitPath,
+	cleanPath
+} from "./path";
 
 const ABNORMAL_REGEX = splitPath.regexes.abnormalPropertyChars;
 
