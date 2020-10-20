@@ -223,7 +223,7 @@ function addProps(cls, config) {
 		if (!source)
 			return;
 
-		const props = collect(source, node);
+		const props = collect(source, node, detectDescriptors);
 		Object.defineProperties(target, props);
 	};
 
