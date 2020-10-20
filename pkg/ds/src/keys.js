@@ -22,7 +22,7 @@ export default class Keys {
 		let partition,
 			lookupValue = key;
 
-		if (isAny(key))
+		if (/^\*{1,2}$/.test(key))
 			partition = this.partitions.any;
 		else {
 			const compiled = compileGlob(key, compileConfig || this.compileConfig);
@@ -61,7 +61,6 @@ export default class Keys {
 		if (typeof key != "string")
 			return null;
 
-		// Super naive loop unrolling
 		if (this.partitions.plaintext.has(key))
 			return "plaintext";
 		if (this.partitions.glob.has(key))
@@ -79,9 +78,9 @@ export default class Keys {
 		if (this.partitions.plaintext.has(key))
 			callback(key, "plaintext");
 
-		this.partitions.glob.forEach((regex, key) => {
+		this.partitions.glob.forEach((regex, k) => {
 			if (regex.test(key))
-				callback(key, "glob");
+				callback(k, "glob");
 		});
 
 		this.partitions.any.forEach((_, key) => callback(key, "any"));
@@ -91,8 +90,3 @@ export default class Keys {
 }
 
 alias(Keys.prototype, "add", "set");
-
-const anyRegex = /^(?:\*)$/;
-function isAny(key) {
-	return anyRegex.test(key);
-}

@@ -44,7 +44,7 @@ import StatelessIterator from "./internal/stateless-iterator";
 // This data structure performs optimally with:
 // Sequential input
 
-const pbaConstructorParams = [
+const CONSTRUCTOR_PARAMS = [
 	{ name: "iterable", type: v => typeof v != "string" && isIterable(v), default: [] },
 	{ name: "hash", type: "string|function", default: null },
 	{ name: "comparator", type: "function", default: null },
@@ -58,7 +58,7 @@ export default class PartitionedBinaryArray extends Array {
 			hash,
 			comparator,
 			partitionSize
-		} = resolveArgs(args, pbaConstructorParams, "allowSingleSource");
+		} = resolveArgs(args, CONSTRUCTOR_PARAMS, "allowSingleSource");
 
 		super();
 		this.hashResolver = hash;
