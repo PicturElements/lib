@@ -2,7 +2,8 @@ import {
 	isObject,
 	isValidIdentifier,
 	isNativeConstructor,
-	isNativeFunction
+	isNativeFunction,
+	isDescriptorStrict
 } from "./is";
 import {
 	composeOptionsTemplates,
@@ -218,7 +219,7 @@ function resSuperArgs(inst, args, sup, config) {
 }
 
 function addProps(cls, config) {
-	const mount = (target, source, node = "descriptor") => {
+	const mount = (target, source, node = "descriptor", detectDescriptors = false,) => {
 		if (!source)
 			return;
 
@@ -226,22 +227,38 @@ function addProps(cls, config) {
 		Object.defineProperties(target, props);
 	};
 
-	mount(cls.prototype, config.proto || config.prototype);
-	mount(cls, config.static);
+	// Values / methods
+	mount(
+		cls.prototype,
+		config.proto || config.prototype,
+		"descriptor",
+		config.detectDescriptors
+	);
+	mount(
+		cls,
+		config.static,
+		"descriptor",
+		config.detectDescriptors
+	);
+
+	// Computed
 	mount(cls.prototype, config.computedProto || config.computed, "raw");
 	mount(cls, config.computedStatic, "raw");
+
 	cls[CLASS_CONFIG] = config;
 }
 
-function collect(source, mode = "descriptor", acc = {}) {
+function collect(source, mode = "descriptor", detectDescriptors = false, acc = {}) {
 	if (Array.isArray(source)) {
 		for (let i = 0, l = source.length; i < l; i++)
-			collect(source[i], acc);
+			collect(source[i], mode, detectDescriptors, acc);
 	} else if (isObject(source)) {
 		forEach(source, (value, key) => {
 			switch (mode) {
 				case "descriptor":
-					acc[key] = Object.getOwnPropertyDescriptor(source, key);
+					acc[key] = detectDescriptors && isDescriptorStrict(value) ?
+						value :
+						Object.getOwnPropertyDescriptor(source, key);
 					break;
 
 				case "raw":

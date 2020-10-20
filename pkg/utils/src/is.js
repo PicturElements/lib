@@ -311,11 +311,65 @@ function isTaggedTemplateArgs(args) {
 	return Boolean(firstArg && firstArg.raw) && Array.isArray(firstArg) && Array.isArray(firstArg.raw);
 }
 
-function isStandardPropertyDescriptor(descriptor) {
-	if (!descriptor || !hasOwn(descriptor, "value"))
+// Returns true if the provided data is a semantically valid
+// property descriptor that either contains a valid getter and/or setter,
+// or a value property
+function isDescriptor(candidate) {
+	if (!isObject(candidate))
 		return false;
 
-	return descriptor.writable && descriptor.enumerable && descriptor.configurable;
+	const hasGetter = hasOwn(candidate, "get"),
+		hasSetter = hasOwn(candidate, "set"),
+		hasValue = hasOwn(candidate, "value");
+
+	if ((hasOwn(candidate, "writable") || hasValue) && (hasGetter || hasSetter))
+		return false;
+
+	if (hasGetter && typeof candidate.get != "function")
+		return false;
+	if (hasSetter && typeof candidate.set != "function")
+		return false;
+
+	return hasGetter || hasSetter || hasValue;
+}
+
+const VALID_DESCRIPTOR_PROPERTIES = {
+	// Common keys
+	configurable: "boolean",
+	enumerable: "boolean",
+	// data descrptor keys
+	value: null,
+	writable: "boolean",
+	// accessor descriptor keys
+	get: "function",
+	set: "function"
+};
+
+// Same as isDescriptor, but with the provision that all keys
+// must be known keys as per the descriptor specification
+function isDescriptorStrict(candidate) {
+	if (!isDescriptor(candidate))
+		return false;
+
+	for (const k in candidate) {
+		if (!hasOwn(candidate, k))
+			continue;
+
+		if (!hasOwn(VALID_DESCRIPTOR_PROPERTIES, k))
+			return false;
+
+		if (VALID_DESCRIPTOR_PROPERTIES[k] && typeof candidate[k] != VALID_DESCRIPTOR_PROPERTIES[k])
+			return false;
+	}
+
+	return true;
+}
+
+function isStandardPropertyDescriptor(candidate) {
+	if (!candidate || !hasOwn(candidate, "value"))
+		return false;
+
+	return candidate.writable && candidate.enumerable && candidate.configurable;
 }
 
 function isValidIdentifier(candidate) {
@@ -393,6 +447,8 @@ export {
 	isEmptyString,
 	isThenable,
 	isTaggedTemplateArgs,
+	isDescriptor,
+	isDescriptorStrict,
 	isStandardPropertyDescriptor,
 	isValidIdentifier,
 	isValidIdentifierDetailed
