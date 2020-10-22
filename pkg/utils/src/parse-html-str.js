@@ -27,7 +27,7 @@ export default function parseHtmlStr(...source) {
 	);
 }
 
-optionize(parseHtmlStr, null, {
+optionize(parseHtmlStr, {
 	compile: true,				// Compile inline values (${xyz}) as part of the template 
 	resolve: true,				// Resolve getters at parse time
 	render: {					// Compile and resolve, producing a static asset

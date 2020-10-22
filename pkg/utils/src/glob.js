@@ -2,7 +2,10 @@ import {
 	createOptionsObject,
 	composeOptionsTemplates
 } from "./internal/options";
-import { mkDisallowedWordsRegex } from "./regex";
+import {
+	cleanRegex,
+	mkDisallowedWordsRegex
+} from "./regex";
 import { unescape } from "./str";
 import hasOwn from "./has-own";
 
@@ -15,6 +18,8 @@ const OPTIONS_TEMPLATES = composeOptionsTemplates({
 	noMatchStart: true,
 	noMatchEnd: true,
 	noMatchFull: true,
+	noGlobstar: true,
+	noCharset: true,
 	g: {
 		flags: "g"
 	},
@@ -34,6 +39,8 @@ function compileGlob(glob, options) {
 
 	const matchStart = !options.noMatchStart && !options.noMatchFull,
 		matchEnd = !options.noMatchEnd && !options.noMatchFull,
+		useGlobstar = !options.noGlobstar,
+		useCharset = !options.noCharset,
 		boundaryPrecursor = typeof options.boundary == "string" || Array.isArray(options.boundary) ?
 			options.boundary :
 			"/",
@@ -41,15 +48,16 @@ function compileGlob(glob, options) {
 			boundaryPrecursor.join("//") :
 			boundaryPrecursor,
 		flags = options.flags || "",
-		globKey = `${glob}@${flags}/${Number(matchStart)}${Number(matchEnd)}@@${boundaryKey}`;
+		cacheKey = `${glob}@${flags}/${Number(matchStart)}${Number(matchEnd)}${Number(useGlobstar)}${Number(useCharset)}@@${boundaryKey}`;
 
-	if (hasOwn(GLOB_CACHE, globKey))
-		return GLOB_CACHE[globKey];
+	if (hasOwn(GLOB_CACHE, cacheKey))
+		return GLOB_CACHE[cacheKey];
 
 	if (!hasOwn(BOUNDARY_CACHE, boundaryKey))
-		BOUNDARY_CACHE[boundaryPrecursor] = mkDisallowedWordsRegex(boundaryPrecursor);
+		BOUNDARY_CACHE[boundaryPrecursor] = mkDisallowedWordsRegex(boundaryPrecursor, true);
 
-	const boundary = BOUNDARY_CACHE[boundaryPrecursor];
+	const boundary = BOUNDARY_CACHE[boundaryPrecursor],
+		boundarySequence = `(?:${boundary}|\\\\.)*`;
 
 	let isGlob = false,
 		regex = glob.replace(GLOB_REGEX, (
@@ -70,13 +78,18 @@ function compileGlob(glob, options) {
 					case "?":
 						return boundary;
 					case "*":
-						return `${boundary}*`;
+						return boundarySequence;
 					case "**":
-						return ".*";
+						return useGlobstar ?
+							".*" :
+							boundarySequence;
 				}
 			}
 
 			if (charset) {
+				if (!useCharset)
+					return `\\[${cleanRegex(charset)}\\]`;
+
 				isGlob = true;
 
 				if (charset[0] == "^")
@@ -102,7 +115,7 @@ function compileGlob(glob, options) {
 		isGlob,
 		isGlobCompileResult: true
 	};
-	GLOB_CACHE[globKey] = parsed;
+	GLOB_CACHE[cacheKey] = parsed;
 	return parsed;
 }
 
@@ -126,8 +139,14 @@ function isGlob(candidate) {
 	return GLOB_COMPONENT_REGEX.test(candidate);
 }
 
+function globToRegex(glob, options) {
+	const compiled = compileGlob(glob, options);
+	return compiled && compiled.regex;
+}
+
 export {
 	compileGlob,
 	matchGlob,
-	isGlob
+	isGlob,
+	globToRegex
 };

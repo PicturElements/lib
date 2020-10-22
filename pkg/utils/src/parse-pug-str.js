@@ -24,7 +24,7 @@ export default function parsePugStr(...source) {
 	);
 }
 
-optionize(parsePugStr, null, {
+optionize(parsePugStr, {
 	compile: true,				// Compile inline values (${xyz}) as part of the template 
 	resolve: true,				// Resolve getters at parse time
 	render: {					// Compile and resolve, producing a static asset

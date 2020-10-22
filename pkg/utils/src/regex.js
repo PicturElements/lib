@@ -184,7 +184,7 @@ function matchAll(str, regex, captureOrCapturePriority = 0) {
 	}
 }
 
-function mkDisallowedWordsRegex(words) {
+function mkDisallowedWordsRegex(words, naked = false) {
 	if (!Array.isArray(words))
 		words = [words];
 
@@ -244,7 +244,9 @@ function mkDisallowedWordsRegex(words) {
 	for (let i = 0, l = lookaheads.length; i < l; i++)
 		lookaheadsContent += `${lookaheads[i].head}(?!${lookaheads[i].content})|`;
 
-	return `(?:${lookaheadsContent}${negation})`;
+	return naked ?
+		lookaheadsContent + negation :
+		`(?:${lookaheadsContent}${negation})`;
 }
 
 export {

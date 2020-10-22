@@ -103,6 +103,7 @@ export { coerceObj as coerceToObj } from "./src/coerce";
 export { coerceObjArrResolvable as coerceToObjArrResolvable } from "./src/coerce";
 export { default as queryMatch } from "./src/match-query";
 export { mapObj as objToArr } from "./src/obj";
+export { joinPath as mkPath } from "./src/path";
 export { mergePresets as applyPresets } from "./src/presets";
 export { default as queryObj } from "./src/query";
 
