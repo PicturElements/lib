@@ -1,6 +1,6 @@
 import { isObject } from "./is";
-import { uid } from "./str";
-import { assign } from "./obj";
+import { uid } from "./string";
+import { assign } from "./object";
 import get from "./get";
 import inject from "./inject";
 import hasOwn from "./has-own";

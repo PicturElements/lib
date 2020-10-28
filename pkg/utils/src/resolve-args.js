@@ -7,7 +7,7 @@ import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./internal/options";
-import { assign } from "./obj";
+import { assign } from "./object";
 import { genFuncParamsStr } from "./typed-str";
 import clone from "./clone";
 import hasOwn from "./has-own";

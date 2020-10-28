@@ -1,4 +1,4 @@
-import { create } from "./obj";
+import { LFUCache } from "./internal/cache";
 import forEach from "./for-each";
 
 const FN_TO_STR = Function.prototype.toString,
@@ -116,13 +116,13 @@ const P = 1721,
 // Without caching:	~203598ms (3m 23s)
 // With caching		~25ms
 // for the first chapter of Moby Dick (12310) characters
-const HASH_CACHE = create(null),
-	REDUCED_HASH_CACHE = create(null);
+const HASH_CACHE = new LFUCache(),
+	REDUCED_HASH_CACHE = new LFUCache();
 
 function hashString(str, reduce) {
 	return reduce ?
-		REDUCED_HASH_CACHE[str] || hashStringHelper(str, true, REDUCED_HASH_CACHE) :
-		HASH_CACHE[str] || hashStringHelper(str, false, HASH_CACHE);
+		REDUCED_HASH_CACHE.get(str) || hashStringHelper(str, true, REDUCED_HASH_CACHE) :
+		HASH_CACHE.get(str) || hashStringHelper(str, false, HASH_CACHE);
 }
 
 function hashStringHelper(str, reduce, cache) {
@@ -134,10 +134,12 @@ function hashStringHelper(str, reduce, cache) {
 		power = (power * P) % M;
 	}
 
-	if (reduce)
-		return (cache[str] = `${NUM_TO_STR.call(hash, 36)}/${str.length}`);
+	const outHash = reduce ?
+		`${NUM_TO_STR.call(hash, 36)}/${str.length}` :
+		`${hash}/${str.length}`;
 
-	return (cache[str] = `${hash}/${str.length}`);
+	cache.set(str, outHash);
+	return outHash;
 }
 
 /*

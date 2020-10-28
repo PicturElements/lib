@@ -10,18 +10,33 @@ function composeOptionsTemplates(...templates) {
 	return composeMergerTemplates(...templates);
 }
 
-function createOptionsObject(optionsPrecursor, templates, error) {
+function createOptionsObject(optionsPrecursor, templates, withRestOrError, error) {
+	let withRest = withRestOrError;
+
+	if (typeof withRest != "boolean") {
+		error = withRest;
+		withRest = false;
+	}
+
 	return mergeObject(
 		optionsPrecursor,
 		templates,
 		error,
 		"option",
 		(targ, src) => inject(targ, src, "override"),
-		true
+		true,
+		withRest
 	);
 }
 
-function createOptionsObjectWithDefault(optionsPrecursor, templates, def, error) {
+function createOptionsObjectWithDefault(optionsPrecursor, templates, def, withRestOrError, error) {
+	let withRest = withRestOrError;
+
+	if (typeof withRest != "boolean") {
+		error = withRest;
+		withRest = false;
+	}
+	
 	return mergeObjectWithDefault(
 		optionsPrecursor,
 		templates,
@@ -29,7 +44,8 @@ function createOptionsObjectWithDefault(optionsPrecursor, templates, def, error)
 		error,
 		"option",
 		(targ, src) => inject(targ, src, "override"),
-		true
+		true,
+		withRest
 	);
 }
 

@@ -1,5 +1,5 @@
 import { isObject } from "./is";
-import { assign } from "./obj";
+import { assign } from "./object";
 import hasOwn from "./has-own";
 
 // API:

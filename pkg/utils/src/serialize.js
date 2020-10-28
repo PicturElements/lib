@@ -5,8 +5,8 @@ import {
 	circularIdKey,
 	circularRefKey,
 	circularIsKey
-} from "./obj";
-import { sym } from "./sym";
+} from "./object";
+import { sym } from "./symbol";
 import { isObject } from "./is";
 import repeat from "./repeat";
 import hasOwn from "./has-own";

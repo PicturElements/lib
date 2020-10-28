@@ -1,7 +1,7 @@
 import {
 	fromCodePoint,
 	codePointAt
-} from "./str";
+} from "./string";
 import { binarySearch } from "./binary-search";
 import hasOwn from "./has-own";
 import parseSurrogatePair from "./parse-surrogate-pair";

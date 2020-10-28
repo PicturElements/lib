@@ -295,6 +295,20 @@ function isEmptyString(str) {
 	return !str.trim();
 }
 
+function isArrayKey(candidate) {
+	if (typeof candidate == "number")
+		return !isNaN(candidate) && isFinite(candidate) && candidate >= 0 && candidate % 1 == 0;
+
+	if (typeof candidate != "string")
+		return false;
+
+	const num = Number(candidate);
+	if (isNaN(num) || !isFinite(num))
+		return false;
+
+	return num >= 0 && num % 1 == 0 && !/[boxe.]/.test(candidate);
+}
+
 function isThenable(candidate) {
 	if (!candidate)
 		return false;
@@ -445,6 +459,7 @@ export {
 	isLowerCase,
 	isUpperCase,
 	isEmptyString,
+	isArrayKey,
 	isThenable,
 	isTaggedTemplateArgs,
 	isDescriptor,

@@ -1,4 +1,4 @@
-import { resolveFunc } from "../func";
+import { resolveFunc } from "../function";
 
 class Null {}
 

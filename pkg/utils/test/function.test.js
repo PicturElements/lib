@@ -2,7 +2,7 @@ import {
 	call,
 	apply,
 	deepBind
-} from "../src/func";
+} from "../src/function";
 
 describe("call", () => {
 	it("calls the function with the bound context value", () => {

@@ -1,3 +1,4 @@
+export * from "../src/internal/cache";
 export * from "../src/internal/merge-obj";
 export * from "../src/internal/poly";
 

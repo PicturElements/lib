@@ -12,22 +12,28 @@ function composeOptionsTemplates(...templates) {
 	return composeMergerTemplates(...templates);
 }
 
-function createOptionsObject(optionsPrecursor, templates, error = null) {
+function createOptionsObject(optionsPrecursor, templates, withRest = false) {
 	return mergeObject(
 		optionsPrecursor,
 		templates,
-		error,
-		"option"
+		null,
+		"option",
+		undefined,
+		false,
+		withRest
 	);
 }
 
-function createOptionsObjectWithDefault(optionsPrecursor, templates, def, error = null) {
+function createOptionsObjectWithDefault(optionsPrecursor, templates, def, withRest = false) {
 	return mergeObjectWithDefault(
 		optionsPrecursor,
 		templates,
 		def,
-		error,
-		"option"
+		null,
+		"option",
+		undefined,
+		false,
+		withRest
 	);
 }
 

@@ -1,6 +1,6 @@
-import { create } from "./obj";
+import { LFUCache } from "./internal/cache";
 
-const ENTITY_CACHE = create(null),
+const ENTITY_CACHE = new LFUCache(),
 	ENTITY_RESOLVE_ELEM = typeof document == "undefined" ?
 		{
 			set innerHTML(str) {
@@ -23,14 +23,14 @@ export default function parseEntityStr(str) {
 		if (matchMode == 1)
 			outStr += String.fromCharCode(code);
 		else {
-			const item = ENTITY_CACHE[match];
+			const item = ENTITY_CACHE.get(match);
 
 			if (item)
 				outStr += item;
 			else {
 				ENTITY_RESOLVE_ELEM.innerHTML = match;
 				const resolved = ENTITY_RESOLVE_ELEM.textContent;
-				ENTITY_CACHE[match] = resolved;
+				ENTITY_CACHE.set(match, resolved);
 				outStr += resolved;
 			}
 		}

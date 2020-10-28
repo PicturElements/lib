@@ -2,7 +2,7 @@ import {
 	isObj,
 	isObject
 } from "./is";
-import { assign } from "./obj";
+import { assign } from "./object";
 import map from "./map";
 import hasOwn from "./has-own";
 import forEach from "./for-each";

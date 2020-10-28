@@ -1,4 +1,4 @@
-import { sym } from "./sym";
+import { sym } from "./symbol";
 import hasOwn from "./has-own";
 
 const MEMOIZE_KEY = sym("memoize");

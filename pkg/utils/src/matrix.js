@@ -1,5 +1,5 @@
-import { padEnd } from "./str";
-import { assign } from "./obj";
+import { padEnd } from "./string";
+import { assign } from "./object";
 import hasOwn from "./has-own";
 
 const matrix = {};

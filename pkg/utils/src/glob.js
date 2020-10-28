@@ -2,17 +2,18 @@ import {
 	createOptionsObject,
 	composeOptionsTemplates
 } from "./internal/options";
+import { LFUCache } from "./internal/cache";
 import {
 	cleanRegex,
 	mkDisallowedWordsRegex
 } from "./regex";
-import { unescape } from "./str";
+import { unescape } from "./string";
 import hasOwn from "./has-own";
 
 const GLOB_REGEX = /\\([^\\/])|(\?|\*{1,2})|\[(?!])(!)?((?:[^\\/]|\\.)*?)\]|([$^()[\]/\\{}.*+?|])/g,
 	GLOB_COMPONENT_REGEX = /(?:[^\\]|^)(?:\?|\*{1,2}|\[(?!])(?:[^\\/]|\\.)*?\])/,
-	GLOB_CACHE = {},
-	BOUNDARY_CACHE = {};
+	GLOB_CACHE = new LFUCache(),
+	BOUNDARY_CACHE = new LFUCache();
 	
 const OPTIONS_TEMPLATES = composeOptionsTemplates({
 	noMatchStart: true,
@@ -50,13 +51,13 @@ function compileGlob(glob, options) {
 		flags = options.flags || "",
 		cacheKey = `${glob}@${flags}/${Number(matchStart)}${Number(matchEnd)}${Number(useGlobstar)}${Number(useCharset)}@@${boundaryKey}`;
 
-	if (hasOwn(GLOB_CACHE, cacheKey))
-		return GLOB_CACHE[cacheKey];
+	if (GLOB_CACHE.has(cacheKey))
+		return GLOB_CACHE.get(cacheKey);
 
 	if (!hasOwn(BOUNDARY_CACHE, boundaryKey))
-		BOUNDARY_CACHE[boundaryPrecursor] = mkDisallowedWordsRegex(boundaryPrecursor, true);
+		BOUNDARY_CACHE.set(boundaryKey, mkDisallowedWordsRegex(boundaryPrecursor, true));
 
-	const boundary = BOUNDARY_CACHE[boundaryPrecursor],
+	const boundary = BOUNDARY_CACHE.get(boundaryPrecursor),
 		boundarySequence = `(?:${boundary}|\\\\.)*`;
 
 	let isGlob = false,
@@ -115,7 +116,7 @@ function compileGlob(glob, options) {
 		isGlob,
 		isGlobCompileResult: true
 	};
-	GLOB_CACHE[cacheKey] = parsed;
+	GLOB_CACHE.set(cacheKey, parsed);
 	return parsed;
 }
 

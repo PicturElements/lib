@@ -3,10 +3,11 @@ import {
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./internal/options";
+import { LFUCache } from "./internal/cache";
 import {
 	escape,
 	unescape
-} from "./str";
+} from "./string";
 import hasOwn from "./has-own";
 
 const REGEX_SOURCES = {
@@ -54,7 +55,7 @@ const REGEXES = {
 const PATH_REGEX = new RegExp(REGEX_SOURCES.path, "gi"),
 	PATH_GLOB_REGEX = new RegExp(REGEX_SOURCES.pathGlob, "gi"),
 	PATH_PERMISSIVE_REGEX = new RegExp(REGEX_SOURCES.pathPermissive, "gi"),
-	SPLIT_CACHE = {};
+	SPLIT_CACHE = new LFUCache();
 
 const SPLIT_PATH_OPTIONS_TEMPLATES = composeOptionsTemplates({
 	recursive: true,
@@ -94,12 +95,14 @@ function splitPath(path, options = null) {
 	if (typeof path != "string" && typeof path != "number")
 		return [];
 
-	const cacheKey = `${path}@${options.separator || ""}`;
+	const cacheKey = options.separator ?
+		`${path}@${getSplitMode(options)}:${options.separator || ""}` :
+		`${path}@${getSplitMode(options)}`;
 
-	if (hasOwn(SPLIT_CACHE, cacheKey)) {
+	if (SPLIT_CACHE.has(cacheKey)) {
 		return options.clone ?
-			SPLIT_CACHE[cacheKey].slice() :
-			SPLIT_CACHE[cacheKey];
+			SPLIT_CACHE.get(cacheKey).slice() :
+			SPLIT_CACHE.get(cacheKey);
 	}
 
 	path = String(path);
@@ -111,7 +114,7 @@ function splitPath(path, options = null) {
 	else
 		out = splitPathAccessor(path, options);
 
-	SPLIT_CACHE[cacheKey] = out;
+	SPLIT_CACHE.set(cacheKey, out);
 
 	return options.clone ?
 		out.slice() :
@@ -194,6 +197,19 @@ function splitPathAccessor(path, options) {
 	}
 
 	return out;
+}
+
+function getSplitMode(options) {
+	if (options.separator)
+		return "separator";
+
+	if (options.permissive)
+		return "permissive-accessor";
+
+	else if (options.glob)
+		return "glob-accessor";
+
+	return "accessor";
 }
 
 function joinPath(...components) {

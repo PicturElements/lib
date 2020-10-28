@@ -1,7 +1,7 @@
 import {
 	sym,
 	setSymbol
-} from "./sym";
+} from "./symbol";
 import {
 	isObj,
 	isObject,

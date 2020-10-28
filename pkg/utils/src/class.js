@@ -12,9 +12,9 @@ import {
 import {
 	anyOf,
 	assign
-} from "./obj";
-import { sym } from "./sym";
-import { untab } from "./str";
+} from "./object";
+import { sym } from "./symbol";
+import { untab } from "./string";
 import hasOwn from "./has-own";
 import forEach from "./for-each";
 import supports from "./supports";

@@ -2,7 +2,7 @@ import {
 	getRegexSource,
 	joinRegexFlags
 } from "./regex";
-import { assign } from "./obj";
+import { assign } from "./object";
 import parseEscapeSequence from "./parse-escape-sequence";
 import lookup from "./lookup";
 import hasOwn from "./has-own";

@@ -6,7 +6,7 @@ import {
 	isArrayLike,
 	isObj
 } from "./is";
-import { keys as objKeys } from "./obj";
+import { keys as objKeys } from "./object";
 import parsePropStr from "./parse-prop-str";
 import matchValue from "./match-value";
 import matchType from "./match-type";

@@ -5,15 +5,15 @@ import {
 	injectRegexFlags,
 	compileStickyCompatibleRegex
 } from "./regex";
+import { LFUCache } from "./internal/cache";
 import {
 	unescape,
 	spliceStr
-} from "./str";
+} from "./string";
 import { isObject } from "./is";
-import { fitNum } from "./num";
-import { assign } from "./obj";
+import { fitNum } from "./number";
+import { assign } from "./object";
 import forEach from "./for-each";
-import hasOwn from "./has-own";
 import type from "./lazy/type";
 
 // Patterns are combinations of regular expressions and blocks.
@@ -27,7 +27,7 @@ import type from "./lazy/type";
 // They do this when the content at the provided cursor is removed
 
 const PATTERN_MATCHER_REGEX = /\/((?:[^\\/[]|\[(?:[^\\\]]|\\.)|\\.)+)\/|(<?>?)((?:[^\\/]|\\.)+)/g,
-	PATTERN_CACHE = {};
+	PATTERN_CACHE = new LFUCache();
 
 function compilePatternMatcher(pattern) {
 	if (pattern && pattern.isPattern)
@@ -36,8 +36,8 @@ function compilePatternMatcher(pattern) {
 	const outPattern = [];
 
 	if (typeof pattern == "string") {
-		if (hasOwn(PATTERN_CACHE, pattern))
-			return PATTERN_CACHE[pattern];
+		if (PATTERN_CACHE.has(pattern))
+			return PATTERN_CACHE.get(pattern);
 
 		while (true) {
 			const ex = PATTERN_MATCHER_REGEX.exec(pattern);
@@ -74,7 +74,7 @@ function compilePatternMatcher(pattern) {
 			}
 		}
 
-		PATTERN_CACHE[pattern] = outPattern;
+		PATTERN_CACHE.set(pattern, outPattern);
 	} else if (Array.isArray(pattern)) {
 		for (let i = 0, l = pattern; i < l; i++) {
 			const precursor = pattern[i];

@@ -16,7 +16,7 @@ import {
 import {
 	keys,
 	assign
-} from "./obj";
+} from "./object";
 import hasOwn from "./has-own";
 
 // Polymorphic forEach

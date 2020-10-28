@@ -1,4 +1,4 @@
-import { fromCodePoint } from "./str";
+import { fromCodePoint } from "./string";
 import { isHexDigit } from "./is";
 import hasOwn from "./has-own";
 

@@ -1,4 +1,4 @@
-import { resolveFunc } from "../func";
+import { resolveFunc } from "../function";
 import getConstructorName from "../get-constructor-name";
 
 const type = {

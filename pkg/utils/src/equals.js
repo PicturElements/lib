@@ -3,7 +3,7 @@ import {
 	createOptionsObject
 } from "./internal/options";
 import { PolySet } from "./internal/poly";
-import { keys } from "./obj";
+import { keys } from "./object";
 import hasOwn from "./has-own";
 
 let eqRuntime = {

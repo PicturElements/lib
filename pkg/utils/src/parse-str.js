@@ -1,4 +1,4 @@
-import { firstChar } from "./str";
+import { firstChar } from "./string";
 import parseStrStr from "./parse-str-str";
 import hasOwn from "./has-own";
 

@@ -19,8 +19,8 @@ import {
 	splitClean,
 	mkStrMatcher,
 	compileTaggedTemplate
-} from "./str";
-import { assign } from "./obj";
+} from "./string";
+import { assign } from "./object";
 import casing from "./casing";
 import hasOwn from "./has-own";
 import forEach from "./for-each";

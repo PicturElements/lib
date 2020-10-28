@@ -3,7 +3,7 @@ import {
 	createOptionsObject
 } from "./internal/options";
 import { isValidIdentifier } from "./is";
-import { assign } from "./obj";
+import { assign } from "./object";
 import parseBranchedConfig from "./parse-branched-config";
 import hasOwn from "./has-own";
 

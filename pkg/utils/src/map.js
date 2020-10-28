@@ -1,4 +1,8 @@
 import {
+	composeOptionsTemplates,
+	createOptionsObject
+} from "./internal/options";
+import {
 	isObj,
 	isPrimitive,
 	isArrayLike,
@@ -13,6 +17,10 @@ import forEach from "./for-each";
 
 class ArrayDataBuffer extends Array {}
 
+const EXPAND_OBJECT_OPTIONS_TEMPLATES = composeOptionsTemplates({
+	nativeSimple: true
+});
+
 export default function map(source, callback, options, target) {
 	if (isPrimitive(source) && typeof source != "string")
 		return source;
@@ -20,6 +28,8 @@ export default function map(source, callback, options, target) {
 	callback = typeof callback == "function" ?
 		callback :
 		v => v;
+
+	options = createOptionsObject(options, EXPAND_OBJECT_OPTIONS_TEMPLATES, true);
 
 	let out = target;
 

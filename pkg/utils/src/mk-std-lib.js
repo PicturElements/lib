@@ -2,7 +2,7 @@ import {
 	isObject,
 	isStandardPropertyDescriptor
 } from "./is";
-import { sym } from "./sym";
+import { sym } from "./symbol";
 import { mkClass } from "./class";
 import hasOwn from "./has-own";
 import resolveArgs from "./resolve-args";

@@ -2,7 +2,7 @@ import {
 	isPrimitive,
 	isValidObjectKey
 } from "./internal/duplicates";
-import { sym } from "./sym";
+import { sym } from "./symbol";
 import { resolveVal } from "./resolve-val";
 import { getGlobalScope } from "./env";
 import forEachDeep from "./for-each-deep";

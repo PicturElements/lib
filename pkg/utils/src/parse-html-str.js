@@ -13,7 +13,7 @@ import {
 	resolveAttribute,
 	resolveInlineRefs
 } from "./dom";
-import { startsWith } from "./str";
+import { startsWith } from "./string";
 import hasOwn from "./has-own";
 import filterMut from "./filter-mut";
 

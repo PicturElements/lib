@@ -1,4 +1,4 @@
-import { resolveKeyCore } from "./obj";
+import { resolveKeyCore } from "./object";
 
 const ANY_RT = {
 	mode: "key",

@@ -1,5 +1,5 @@
 import { matchAll } from "./regex";
-import { splitClean } from "./str";
+import { splitClean } from "./string";
 import { isObject } from "./is";
 import hasOwn from "./has-own";
 import concatMut from "./concat-mut";
