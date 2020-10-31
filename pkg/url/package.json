@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/url",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "description": "Small URL parse/utility library",
   "main": "index.js",
   "scripts": {
@@ -25,7 +25,7 @@
   },
   "homepage": "https://github.com/PicturElements/lib/tree/master/pkg/url#readme",
   "dependencies": {
-    "@qtxr/utils": "^1.69.0"
+    "@qtxr/utils": "^1.75.0"
   },
   "devDependencies": {},
   "files": [
@@ -33,7 +33,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 20,
+    "pushes": 21,
     "expose": {
       "scripts": [
         "connect/feed.js"
