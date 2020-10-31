@@ -295,7 +295,7 @@ function resolveCell(cellOrConfig, parentCell, path) {
 	}
 
 	cell.hook({
-		partitionName: "*",
+		name: "*",
 		namespace: HOOK_SYM,
 		argTemplate: "context",
 		handler: handleHooks
@@ -317,9 +317,9 @@ function wrapParentResponse(cell, response, path) {
 }
 
 function handleHooks(context) {
-	const cell = context.hook.owner;
+	const cell = context.owner;
 
-	switch (context.key) {
+	switch (context.name) {
 		case "loading":
 			bubbleUp(cell, c => {
 				if (c == cell) {

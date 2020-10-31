@@ -33,17 +33,20 @@ const PROCESSSOR_OPTIONS = {
 };
 
 const STATE_TRANSFORMS = {
-	page({ value, newState }) {
-		newState.offset = newState.pageSize * value;
-	},
-	pageSize({ value, oldValue, newState, state }) {
+	page: ({ value, state }) => ({
+		offset: state.pageSize * value
+	}),
+	pageSize: ({ value, oldValue, state }) => {
 		const page = Math.floor((oldValue * state.page) / value);
-		newState.page = page;
-		newState.offset = page * value;
+
+		return {
+			page,
+			offset: page * value
+		};
 	},
-	offset({ value, newState }) {
-		newState.page = Math.floor(value / newState.pageSize);
-	}
+	offset: ({ value, state }) => ({
+		page: Math.floor(value / state.pageSize)
+	})
 };
 
 export default class DataCellPagination extends DataCell {
