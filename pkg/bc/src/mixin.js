@@ -1,6 +1,9 @@
 import {
 	sym,
-	hasOwn
+	hasOwn,
+	mkClass,
+	isValidIdentifier,
+	isNativeConstructor
 } from "@qtxr/utils";
 import {
 	META,
@@ -10,17 +13,38 @@ import {
 const RESOLVED_MIXIN = sym("resolved mixin");
 
 export default function mixin(...constructors) {
-	const resolvePacket = {
-		precedences: [],
-		map: {}
-	};
+	const resolvePacket = mkResolvePacket();
 
 	for (let i = 0, l = constructors.length; i < l; i++)
 		resolvePrecedence(constructors[i], resolvePacket, 0);
 
-	const constr = applyMixin(resolvePacket.precedences);
+	const constr = applyMixin(resolvePacket);
 	constr[RESOLVED_MIXIN] = constructors;
 	return constr;
+}
+
+mixin.as = name => {
+	if (!isValidIdentifier(name))
+		throw new Error(`Cannot create mixin: invalid name '${name}'`);
+
+	return (...constructors) => {
+		const resolvePacket = mkResolvePacket();
+
+		for (let i = 0, l = constructors.length; i < l; i++)
+			resolvePrecedence(constructors[i], resolvePacket, 0);
+
+		const constr = applyMixin(resolvePacket, name);
+		constr[RESOLVED_MIXIN] = constructors;
+		return constr;
+	};
+};
+
+function mkResolvePacket() {
+	return {
+		precedences: [],
+		map: {},
+		extConstructor: null
+	};
 }
 
 function resolvePrecedence(constr, packet, depth = 0) {
@@ -31,8 +55,16 @@ function resolvePrecedence(constr, packet, depth = 0) {
 		return;
 	}
 
-	if (!constr[META])
-		throw new Error("Cannot mixin: constructor isn't a recognized base class");
+	if (!constr[META]) {
+		if (!packet.extConstructor) {
+			packet.extConstructor = constr;
+			return;
+		}
+
+		if (constr != packet.extConstructor)
+			throw new Error("Cannot mixin: constructor isn't a recognized base class and an external constructor has already been defined");
+	}
+
 	const meta = constr[META];
 
 	if (hasOwn(packet.map, meta.namespace)) {
@@ -56,10 +88,11 @@ function resolvePrecedence(constr, packet, depth = 0) {
 	packet.map[meta.namespace] = depth;
 }
 
-function applyMixin(precedences) {
-	let proto = Object,
+function applyMixin({ precedences, extConstructor }, name) {
+	let proto = extConstructor || Object,
 		outConstr = null,
-		constructors = [];
+		constructors = [],
+		instantiate = null;
 
 	for (let a = precedences.length - 1; a >= 0; a--) {
 		const precedence = precedences[a];
@@ -70,20 +103,11 @@ function applyMixin(precedences) {
 				p = toArr(meta.proto),
 				protoProps = {},
 				s = toArr(meta.static),
-				staticProps = {};
+				staticProps = {},
+				top = !a && !b;
 
-			if (!a && !b) {
-				outConstr = Function("constructors", "Manage", `
-					var instantiate = Manage.instantiateAll.bind(null, constructors);
-					return function ${meta.name}(options) { instantiate(this, options) }
-				`)(constructors, Manage);
-			} else
-				outConstr = Function(`function ${meta.name}() {}; return ${meta.name};`)();
-
-			outConstr.prototype = Object.create(proto.prototype);
-			protoProps.constructor = createDescriptor(constr);
-			protoProps[Manage.constructorSymbols[meta.namespace]] = createDescriptor(meta.constructorMethod);
-			staticProps[META] = createDescriptor(constr[META]);
+			if (top)
+				instantiate = Manage.instantiateAll.bind(null, constructors);
 
 			for (let c = 0, l = p.length; c < l; c++)
 				protoProps[p[c]] = createDescriptor(constr.prototype[p[c]]);
@@ -91,8 +115,26 @@ function applyMixin(precedences) {
 			for (let c = 0, l = s.length; c < l; c++)
 				staticProps[s[c]] = createDescriptor(constr[s[c]]);
 
-			Object.defineProperties(outConstr.prototype, protoProps);
-			Object.defineProperties(outConstr, staticProps);
+			protoProps[Manage.constructorSymbols[meta.namespace]] = createDescriptor(meta.constructorMethod);
+			staticProps[META] = createDescriptor(constr[META]);
+
+			outConstr = mkClass({
+				name: top ?
+					name || meta.name :
+					meta.name,
+				constructor: top ?
+					function(options) {
+						instantiate(this, options);
+					} :
+					null,
+				proto: protoProps,
+				static: staticProps,
+				super: proto,
+				superResolveArgs: isNativeConstructor(proto) ?
+					_ => ([]) :
+					null,
+				detectDescriptors: true
+			});
 
 			constructors.push(outConstr);
 			proto = outConstr;
@@ -106,7 +148,9 @@ function toArr(candidate) {
 	if (!candidate)
 		return [];
 
-	return Array.isArray(candidate) ? candidate : [candidate];
+	return Array.isArray(candidate) ?
+		candidate :
+		[candidate];
 }
 
 function createDescriptor(value) {

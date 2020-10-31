@@ -6,22 +6,26 @@ import {
 	queryFilterMut,
 	composeOptionsTemplates
 } from "@qtxr/utils";
+import { Keys } from "@qtxr/ds";
 import {
 	Manage,
 	Options
 } from "../common";
-import { Keys } from "@qtxr/ds";
 import DeferredPromise from "../deferred-promise";
 import Hook from "./hook";
 
 // TODO: in next major version, rename nickname to identifier
 
-const reservedFields = {
+const RESERVED_FIELDS = {
 	last: true,
 	keys: true
 };
 
-const hookParams = [
+const IGNORED_QUERY_KEYS = {
+	rest: true
+};
+
+const HOOK_PARAMS = [
 	{ name: "partitionName", alias: "name", type: "string", required: true },
 	{ name: "handler", type: "function", required: true },
 	{ name: "nickname", alias: "identifier", type: "string|symbol", default: null },
@@ -31,7 +35,7 @@ const hookParams = [
 	{ name: "argTemplate", type: "string", default: null }
 ];
 
-const hookNSParams = [
+const HOOK_NS_PARAMS = [
 	{ name: "namespace", type: "string|symbol", required: true },
 	{ name: "partitionName", alias: "name", type: "string", required: true },
 	{ name: "handler", type: "function", required: true },
@@ -41,7 +45,7 @@ const hookNSParams = [
 	{ name: "argTemplate", type: "string", default: null }
 ];
 
-const unhookParams = [
+const UNHOOK_PARAMS = [
 	{ name: "instance", type: Hook, default: null },
 	{ name: "partitionName", alias: "name", type: "string", default: null},
 	{ name: "handler", type: "function", default: null },
@@ -52,7 +56,7 @@ const unhookParams = [
 	{ name: "argTemplate", type: "string", default: null }
 ];
 
-const unhookNSParams = [
+const UNHOOK_NS_PARAMS = [
 	{ name: "namespace", type: "string|symbol", required: true },
 	{ name: "instance", type: Hook, default: null },
 	{ name: "partitionName", alias: "name", type: "string", default: null },
@@ -69,11 +73,11 @@ export default class Hookable extends DeferredPromise {
 		Manage.instantiate(Hookable, this, options);
 	}
 
-	[Manage.CONSTRUCTOR]() {
+	[Manage.CONSTRUCTOR](opt) {
 		Object.defineProperty(this, "hooks", {
 			value: {
 				last: null,
-				keys: new Keys()
+				keys: new Keys(opt("globCompileConfig"))
 			},
 			configurable: false,
 			enumerable: true,
@@ -82,18 +86,20 @@ export default class Hookable extends DeferredPromise {
 	}
 
 	hook(...args) {
-		addHook(this, hookParams, args);
+		addHook(this, HOOK_PARAMS, args);
 		return this;
 	}
 
-	hookNS(ns, ...args) {
-		addHook(this, hookNSParams, [ns, ...args]);
+	hookNS(...args) {
+		addHook(this, HOOK_NS_PARAMS, ...args);
 		return this;
 	}
 
 	hookAll(hooks, forcedName) {
 		const dispatch = (partitionName, d) => {
-			const handler = typeof d == "function" ? d : d.handler;
+			const handler = typeof d == "function" ?
+				d :
+				d.handler;
 
 			this.hook(
 				partitionName,
@@ -124,46 +130,30 @@ export default class Hookable extends DeferredPromise {
 	}
 
 	unhook(...args) {
-		removeHook(this, unhookParams, args);
+		removeHook(this, UNHOOK_PARAMS, args);
 		return this;
 	}
 
 	unhookNS(...args) {
-		removeHook(this, unhookNSParams, args);
+		removeHook(this, UNHOOK_NS_PARAMS, args);
 		return this;
 	}
 
 	callHooks(partitionName, ...args) {
-		this.hooks.keys.forEach(partitionName, (key, keyType) => {
-			const hooks = this.hooks[key],
-				contextArgs = {
-					key: partitionName,
-					keyType
-				};
+		return dispatch(this, partitionName, args);
+	}
 
-			filterMut(hooks, hook => {
-				if (hook.spent)
-					return false;
+	callHooksWith(partitionName, resolver, alwaysResolve = false) {
+		return dispatch(this, partitionName, resolver, alwaysResolve);
+	}
 
-				if (hook.proceed(args, contextArgs)) {
-					hook.handle(args, contextArgs);
-					return hook.decTTL() > 0;
-				} else
-					return true;
-			});
-
-			if (!hooks.length) {
-				delete this.hooks[key];
-				this.hooks.keys.delete(key);
-			}
-		});
-
-		return this;
+	dispatchHooks(partitionName, resolver, alwaysResolve = false) {
+		return dispatch(this, partitionName, resolver, alwaysResolve);
 	}
 
 	clearHooks() {
 		for (const k in this.hooks) {
-			if (hasOwn(this.hooks, k) && !hasOwn(reservedFields, k)) {
+			if (hasOwn(this.hooks, k) && !hasOwn(RESERVED_FIELDS, k)) {
 				delete this.hooks[k];
 				this.hooks.keys.delete(k);
 			}
@@ -190,7 +180,7 @@ export default class Hookable extends DeferredPromise {
 			return;
 
 		for (const k in this.hooks) {
-			if (!hasOwn(this.hooks, k) || hasOwn(reservedFields, k))
+			if (!hasOwn(this.hooks, k) || hasOwn(RESERVED_FIELDS, k))
 				continue;
 
 			callback(this.hooks[k], k, this.hooks);
@@ -198,7 +188,7 @@ export default class Hookable extends DeferredPromise {
 	}
 
 	getHookPartition(partitionName) {
-		if (!hasOwn(this.hooks, partitionName) || hasOwn(reservedFields, partitionName))
+		if (!hasOwn(this.hooks, partitionName) || hasOwn(RESERVED_FIELDS, partitionName))
 			return null;
 
 		return this.hooks[partitionName];
@@ -214,13 +204,11 @@ export default class Hookable extends DeferredPromise {
 	}
 }
 
-const PromisedHookable = Hookable;
-
 function addHook(inst, paramMap, args) {
 	const data = resolveArgs(args, paramMap, "allowSingleSource"),
 		partitionName = data.partitionName;
 
-	if (hasOwn(reservedFields, partitionName))
+	if (hasOwn(RESERVED_FIELDS, partitionName))
 		return console.warn(`Cannot set hooks at '${partitionName}' because it's a reserved field`);
 
 	const hooks = hasOwn(inst.hooks, partitionName) ?
@@ -233,22 +221,73 @@ function addHook(inst, paramMap, args) {
 		data,
 		Options.mkResolver(Hookable, inst)
 	);
+
 	inst.hooks.keys.add(partitionName);
 	inst.hooks.last = hook;
 	hooks.push(hook);
+
 	return hook;
 }
 
-const ignoredQueryKeys = {
-	rest: true
-};
+function dispatch(inst, partitionName, argsOrResolver, alwaysResolve = false) {
+	let argsResolver = typeof argsOrResolver == "function" ?
+			argsOrResolver :
+			null,
+		args = argsOrResolver;
+
+	if (!inst.hooks.keys.size)
+		return inst;
+
+	inst.hooks.keys.forEach(partitionName, (key, keyType) => {
+		const hooks = inst.hooks[key],
+			contextArgs = {
+				key,
+				keyType,
+				partitionName,
+				name: partitionName
+			};
+
+		if (hooks.length && argsResolver) {
+			args = argsResolver(contextArgs);
+
+			if (!Array.isArray(args))
+				args = [];
+
+			if (!alwaysResolve)
+				argsResolver = null;
+		}
+
+		filterMut(hooks, hook => {
+			if (hook.spent)
+				return false;
+
+			if (hook.proceed(args, contextArgs)) {
+				hook.handle(args, contextArgs);
+				return hook.decTTL() > 0;
+			} else
+				return true;
+		});
+
+		if (!hooks.length) {
+			delete inst.hooks[key];
+			inst.hooks.keys.delete(key);
+		}
+	});
+
+	return inst;
+}
 
 function removeHook(inst, paramMap, args) {
-	const data = resolveArgs(args, paramMap, "allowSingleSource");
+	const unhookArgs = resolveArgs(args, paramMap, "allowSingleSource");
 
-	if (data.instance) {
+	unhookArgs.originalHandler = unhookArgs.handler;
+	unhookArgs.originalGuard = unhookArgs.guard;
+	delete unhookArgs.handler;
+	delete unhookArgs.guard;
+
+	if (unhookArgs.instance) {
 		inst.forEachHookPartition((partition, key) => {
-			filterMut(partition, hook => hook != data.instance);
+			filterMut(partition, hook => hook != unhookArgs.instance);
 
 			if (!partition.length) {
 				delete inst.hooks[key];
@@ -259,32 +298,33 @@ function removeHook(inst, paramMap, args) {
 		return;
 	}
 
-	if (data.partitionName) {
-		const partition = inst.getHookPartition(data.partitionName);
-
-		if (partition)
-			filterPartition(partition, data.partitionName);
-	} else
-		inst.forEachHookPartition(filterPartition);
-
-	function filterPartition(partition, key) {
-		queryFilterMut(partition, data, "invert", {
+	const filterPartition = (partition, key) => {
+		queryFilterMut(partition, unhookArgs, "invert", {
 			noNullish: true,
-			guard: parsedKey => !hasOwn(ignoredQueryKeys, parsedKey.key)
+			plain: true,
+			guard: parsedKey => !hasOwn(IGNORED_QUERY_KEYS, parsedKey.key)
 		});
 
 		if (!partition.length) {
 			delete inst.hooks[key];
 			inst.hooks.keys.delete(key);
 		}
-	}
+	};
+
+	if (unhookArgs.partitionName) {
+		const partition = inst.getHookPartition(unhookArgs.partitionName);
+
+		if (partition)
+			filterPartition(partition, unhookArgs.partitionName);
+	} else
+		inst.forEachHookPartition(filterPartition);
 }
 
 Manage.declare(Hookable, {
 	name: "Hookable",
 	namespace: "hookable",
 	extends: DeferredPromise,
-	proto: ["hook", "hookNS", "hookAll", "unhook", "unhookNS", "callHooks", "clearHooks", "clearHooksNS", "forEachHookPartition", "getHookPartition"],
+	proto: ["hook", "hookNS", "hookAll", "unhook", "unhookNS", "callHooks", "callHooksWith", "dispatchHooks", "clearHooks", "clearHooksNS", "forEachHookPartition", "getHookPartition"],
 	static: ["create", "promised"],
 	optionsTemplates: composeOptionsTemplates({
 		noOwnerArg: true
@@ -292,5 +332,5 @@ Manage.declare(Hookable, {
 });
 
 export {
-	PromisedHookable
+	Hookable as PromisedHookable
 };

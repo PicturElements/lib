@@ -4,6 +4,8 @@ export default class Hook {
 		this.data = data;
 		this.opt = opt;
 
+		this.originalHandler = null;
+		this.originalGuard = null;
 		this.handler = this.data.handler;
 		this.guard = this.data.guard;
 	}
@@ -14,6 +16,7 @@ export default class Hook {
 
 		this.data.handler = bindFunc(func, this);
 		this.data.originalHandler = func;
+		this.originalHandler = func;
 	}
 
 	get handler() {
@@ -26,6 +29,7 @@ export default class Hook {
 
 		this.data.guard = bindFunc(func, this);
 		this.data.originalGuard = func;
+		this.originalGuard = func;
 	}
 
 	get guard() {
@@ -81,6 +85,13 @@ export default class Hook {
 		else
 			return handler == this.data.originalHandler || (Boolean(nickname) && nickname == this.data.nickname);
 	}
+
+	mkContext(contextArgs) {
+		return Object.assign({
+			hook: this,
+			owner: this.owner
+		}, contextArgs);
+	}
 }
 
 function bindFunc(func, hook) {
@@ -100,14 +111,8 @@ function applyFunc(func, hook, args, contextArgs) {
 	// context and first argument is already bound
 	switch (hook.data.argTemplate) {
 		case "context":
-			return func(mkContext(hook, contextArgs), ...args);
+			return func(hook.mkContext(contextArgs), ...args);
 		default:
 			return func.apply(null, args);
 	}
-}
-
-function mkContext(hook, contextArgs) {
-	return Object.assign({
-		hook
-	}, contextArgs);
 }

@@ -1,16 +1,38 @@
 import Hookable from "../src/hookable";
 
-it("correctly instantiates", () => {
-	// Basic class stuff
-	expect(_ => Hookable()).toThrow();
-	const inst = new Hookable();
-	expect(inst).toBeInstanceOf(Hookable);
-	expect(inst.hasOwnProperty("hooks")).toBe(true);
-	expect(_ => delete inst.hooks).toThrow(TypeError);
-});
-
 beforeAll(() => {
 	Object.prototype.ohNo = "polluting the prototype";
+});
+
+describe("instantiation", () => {
+	it("correctly instantiates without options", () => {
+		expect(_ => Hookable()).toThrow();
+		expect(_ => new Hookable()).not.toThrow();
+		const inst = new Hookable();
+		expect(inst).toBeInstanceOf(Hookable);
+		expect(inst.hasOwnProperty("hooks")).toBe(true);
+		expect(_ => delete inst.hooks).toThrow(TypeError);
+	});
+
+	it("correctly instantiates with noOwnerArg option", () => {
+		expect(_ => new Hookable({ hookable: "noOwnerArg" })).not.toThrow();
+		expect(_ => new Hookable({ hookable: { noOwnerArg: true } })).not.toThrow();
+
+		const inst = new Hookable({
+				hookable: "noOwnerArg"
+			}),
+			inst2 = new Hookable({
+				hookable: {
+					noOwnerArg: true
+				}
+			});
+
+		inst.hook("test", firstArg => expect(firstArg).not.toBe(inst));
+		inst2.hook("test", firstArg => expect(firstArg).not.toBe(inst2));
+
+		inst.callHooks("test");
+		inst2.callHooks("test");
+	});
 });
 
 describe("instance methods", () => {
@@ -186,7 +208,7 @@ describe("instance methods", () => {
 	});
 
 	describe("unhook", () => {
-		it("unhooks based on handler refer5ence and deletes partition when empty", () => {
+		it("unhooks based on handler reference and deletes partition when empty", () => {
 			const inst = nh()
 				.hook("test", fn)
 				.hook("test", fn)
@@ -212,7 +234,7 @@ describe("instance methods", () => {
 			}]);
 		});
 
-		it("unhooks strictly based on handler reference and nickname", () => {
+		it("unhooks strictly based on passed arguments", () => {
 			const inst = nh()
 				.hook("test", fn, "nick")
 				.hook("test", fn2, "nick")
@@ -276,9 +298,9 @@ describe("instance methods", () => {
 		it("calls all hooks with the same name with the correct arguments", () => {
 			const func = jest.fn((...args) => args.reduce((sum, v) => sum + v)),
 				inst = nh()
-				.hook("test", func)
-				.hook("test", func)
-				.hook("test", func);
+					.hook("test", func)
+					.hook("test", func)
+					.hook("test", func);
 
 			inst.callHooks("test", 1, 2, 3);
 
@@ -305,7 +327,11 @@ describe("instance methods", () => {
 
 		it("correctly guards hooks", () => {
 			let sum = 0;
-			const inst = nh().hook("test", (inst, num) => sum += num, (inst, num) => num % 2 == 1);
+			const inst = nh().hook(
+				"test",
+				(inst, num) => sum += num,
+				(inst, num) => num % 2 == 1
+			);
 
 			[0, 1, 2, 3, 4].forEach(num => {
 				inst.callHooks("test", num);

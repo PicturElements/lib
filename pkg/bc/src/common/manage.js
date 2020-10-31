@@ -4,11 +4,12 @@ import {
 	hasOwn,
 	isConstructor
 } from "@qtxr/utils";
-import Options from "./options";
 import { META } from "./symbols";
+import Options from "./options";
 
 const Manage = {
 	declare(constr, meta) {
+		// Assertions
 		if (!isConstructor(constr))
 			throw new Error("Cannot declare class: provided value is not constructible");
 		if (!meta)
@@ -20,8 +21,8 @@ const Manage = {
 		if (hasOwn(Manage.constructors, meta.namespace))
 			throw new Error(`Cannot declare class: namespace '${meta.namespace}' already in use by ${Manage.constructors[meta.namespace][META].name}`);
 
-		validate(constr, meta.static);
-		validate(constr.prototype, meta.proto);
+		assertMembers(constr, meta.static);
+		assertMembers(constr.prototype, meta.proto);
 
 		if (typeof constr.prototype[Manage.CONSTRUCTOR] != "function")
 			constr.prototype[Manage.CONSTRUCTOR] = _ => _;
@@ -34,6 +35,11 @@ const Manage = {
 
 		setSymbol(constr.prototype, cSym, constr.prototype[Manage.CONSTRUCTOR]);
 		delete constr.prototype[Manage.CONSTRUCTOR];
+
+		constr.opt = (inst, accessor = "", def = null) => {
+			return Options.resolve(constr, inst, accessor, def);
+		};
+
 		constr[META] = Object.assign({
 			constructorMethod: constr.prototype[cSym]
 		}, meta);
@@ -55,7 +61,7 @@ const Manage = {
 	constructorSymbols: {}
 };
 
-function validate(source, names) {
+function assertMembers(source, names) {
 	names = toArr(names);
 
 	for (let i = 0, l = names.length; i < l; i++) {
