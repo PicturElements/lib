@@ -67,6 +67,13 @@ const UNHOOK_NS_PARAMS = [
 	{ name: "argTemplate", type: "string", default: null }
 ];
 
+const PARAMS_MAP = {
+	hook: HOOK_PARAMS,
+	hookNS: HOOK_NS_PARAMS,
+	unhook: UNHOOK_PARAMS,
+	unhookNS: UNHOOK_NS_PARAMS
+};
+
 export default class Hookable extends DeferredPromise {
 	constructor(options) {
 		super(options);
@@ -86,12 +93,18 @@ export default class Hookable extends DeferredPromise {
 	}
 
 	hook(...args) {
-		addHook(this, HOOK_PARAMS, args);
+		addHook(
+			this,
+			this.resolveHookArgs("hook", args)
+		);
 		return this;
 	}
 
 	hookNS(...args) {
-		addHook(this, HOOK_NS_PARAMS, ...args);
+		addHook(
+			this,
+			this.resolveHookArgs("hookNS", args)
+		);
 		return this;
 	}
 
@@ -107,7 +120,8 @@ export default class Hookable extends DeferredPromise {
 				d.nickname,
 				d.namespace,
 				d.ttl,
-				d.guard
+				d.guard,
+				d.argTemplate
 			);
 		};
 
@@ -130,12 +144,18 @@ export default class Hookable extends DeferredPromise {
 	}
 
 	unhook(...args) {
-		removeHook(this, UNHOOK_PARAMS, args);
+		removeHook(
+			this,
+			this.resolveHookArgs("unhook", args)
+		);
 		return this;
 	}
 
 	unhookNS(...args) {
-		removeHook(this, UNHOOK_NS_PARAMS, args);
+		removeHook(
+			this,
+			this.resolveHookArgs("unhookNS", args)
+		);
 		return this;
 	}
 
@@ -194,6 +214,13 @@ export default class Hookable extends DeferredPromise {
 		return this.hooks[partitionName];
 	}
 
+	resolveHookArgs(type, args) {
+		if (!hasOwn(PARAMS_MAP, type))
+			throw new Error(`Cannot resolve hook arguments: unknown action type '${type}'`);
+
+		return resolveArgs(args, PARAMS_MAP[type], "allowSingleSource");
+	}
+
 	// Legacy
 	static create(...args) {
 		return new this(...args);
@@ -204,9 +231,8 @@ export default class Hookable extends DeferredPromise {
 	}
 }
 
-function addHook(inst, paramMap, args) {
-	const data = resolveArgs(args, paramMap, "allowSingleSource"),
-		partitionName = data.partitionName;
+function addHook(inst, args) {
+	const partitionName = args.partitionName;
 
 	if (hasOwn(RESERVED_FIELDS, partitionName))
 		return console.warn(`Cannot set hooks at '${partitionName}' because it's a reserved field`);
@@ -218,7 +244,7 @@ function addHook(inst, paramMap, args) {
 
 	const hook = new Hook(
 		inst,
-		data,
+		args,
 		Options.mkResolver(Hookable, inst)
 	);
 
@@ -277,17 +303,15 @@ function dispatch(inst, partitionName, argsOrResolver, alwaysResolve = false) {
 	return inst;
 }
 
-function removeHook(inst, paramMap, args) {
-	const unhookArgs = resolveArgs(args, paramMap, "allowSingleSource");
+function removeHook(inst, args) {
+	args.originalHandler = args.handler;
+	args.originalGuard = args.guard;
+	delete args.handler;
+	delete args.guard;
 
-	unhookArgs.originalHandler = unhookArgs.handler;
-	unhookArgs.originalGuard = unhookArgs.guard;
-	delete unhookArgs.handler;
-	delete unhookArgs.guard;
-
-	if (unhookArgs.instance) {
+	if (args.instance) {
 		inst.forEachHookPartition((partition, key) => {
-			filterMut(partition, hook => hook != unhookArgs.instance);
+			filterMut(partition, hook => hook != args.instance);
 
 			if (!partition.length) {
 				delete inst.hooks[key];
@@ -299,7 +323,7 @@ function removeHook(inst, paramMap, args) {
 	}
 
 	const filterPartition = (partition, key) => {
-		queryFilterMut(partition, unhookArgs, "invert", {
+		queryFilterMut(partition, args, "invert", {
 			noNullish: true,
 			plain: true,
 			guard: parsedKey => !hasOwn(IGNORED_QUERY_KEYS, parsedKey.key)
@@ -311,11 +335,11 @@ function removeHook(inst, paramMap, args) {
 		}
 	};
 
-	if (unhookArgs.partitionName) {
-		const partition = inst.getHookPartition(unhookArgs.partitionName);
+	if (args.partitionName) {
+		const partition = inst.getHookPartition(args.partitionName);
 
 		if (partition)
-			filterPartition(partition, unhookArgs.partitionName);
+			filterPartition(partition, args.partitionName);
 	} else
 		inst.forEachHookPartition(filterPartition);
 }

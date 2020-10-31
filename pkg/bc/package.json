@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/bc",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Mixable base classes that provide consistent functionality to any class that extends them",
   "main": "index.js",
   "scripts": {
@@ -33,7 +33,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 22,
+    "pushes": 23,
     "expose": {
       "scripts": [
         "connect/feed.js"

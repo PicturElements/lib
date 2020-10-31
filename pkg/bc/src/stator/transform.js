@@ -22,6 +22,7 @@ export default class Transform {
 
 		const runtime = this.applicationRuntime;
 		runtime.action = action;
+		runtime.state = art.root;
 		runtime.new = runtime.newValue = runtime.value = newValue;
 		runtime.old = runtime.oldValue = oldValue;
 
@@ -44,10 +45,12 @@ export default class Transform {
 function mkApplicationRuntime(inst) {
 	const runtime = {
 		// Fundamental
+		action: null,
+		state: null,
+		stator: inst.owner,
 		targetNode: null,
 		targetRuntime: null,
 		targetParent: null,
-		action: null,
 		// Values and aliases
 		value: null,
 		new: null,
@@ -56,15 +59,13 @@ function mkApplicationRuntime(inst) {
 		oldValue: null
 	};
 
-	const updateRuntime = parent => {
+	const dispatch = (parent, pathOrData, data) => {
+		const art = inst.owner[ACTION_RUNTIME_SYM];
+
 		runtime.targetNode = parent;
 		runtime.targetRuntime = parent && parent[NODE_RUNTIME_SYM];
 		runtime.targetParent = runtime.targetRuntime && runtime.targetRuntime.parent;
-	};
 
-	const dispatch = (parent, pathOrData, data) => {
-		const art = inst.owner[ACTION_RUNTIME_SYM];
-		updateRuntime(parent);
 		assignState(art, parent, pathOrData, data);
 	};
 

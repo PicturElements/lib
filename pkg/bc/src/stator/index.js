@@ -1,5 +1,6 @@
 import {
 	isObject,
+	normalizePath,
 	getCompactObjectLeaves,
 	composeOptionsTemplates
 } from "@qtxr/utils";
@@ -10,8 +11,7 @@ import Hookable from "../hookable";
 import {
 	TRANSFORMS_SYM,
 	NODE_MANAGER_SYM,
-	ACTION_RUNTIME_SYM,
-	toPath
+	ACTION_RUNTIME_SYM
 } from "./common";
 import NodeManager from "./node-manager";
 import {
@@ -32,11 +32,10 @@ export default class Stator extends Hookable {
 			stator: this,
 			root: null,
 			nodeManager: null,
-			actionId: -1,
-			changes: [],
 			flags: {
 				bubble: opt("bubble", false),
 				expandObjects: opt("expandObjects", false),
+				deferTransforms: opt("deferTransforms", false),
 				recursiveDelete: opt("recursiveDelete", false),
 				preserveOldState: opt("preserveOldState", false),
 				track: {
@@ -45,7 +44,12 @@ export default class Stator extends Hookable {
 					delete: opt("track.deletions", false)
 				},
 				trackAny: null
-			}
+			},
+			// Mutable data
+			actionId: -1,
+			changes: [],
+			pendingTransforms: [],
+			visitedTransforms: {}
 		});
 
 		this[NODE_MANAGER_SYM] = new NodeManager(this);
@@ -114,34 +118,28 @@ export default class Stator extends Hookable {
 		return transforms;
 	}
 
-	hook(partitionName, ...args) {
-		super.hook(
-			toPath(partitionName),
-			...args
-		);
+	hook(...args) {
+		const a = this.resolveHookArgs("hook", args);
+		a.partitionName = toPath(a.partitionName);
+		return super.hook(a);
 	}
 
-	hookNS(namespace, partitionName, ...args) {
-		super.hookNS(
-			namespace,
-			toPath(partitionName),
-			...args
-		);
+	hookNS(...args) {
+		const a = this.resolveHookArgs("hookNS", args);
+		a.partitionName = toPath(a.partitionName);
+		return super.hookNS(a);
 	}
 
-	unhook(partitionName, ...args) {
-		super.unhook(
-			toPath(partitionName),
-			...args
-		);
+	unhook(...args) {
+		const a = this.resolveHookArgs("unhook", args);
+		a.partitionName = toPath(a.partitionName);
+		return super.unhook(a);
 	}
 
-	unhookNS(namespace, partitionName, ...args) {
-		super.unhookNS(
-			namespace,
-			toPath(partitionName),
-			...args
-		);
+	unhookNS(...args) {
+		const a = this.resolveHookArgs("unhookNS", args);
+		a.partitionName = toPath(a.partitionName);
+		return super.unhookNS(a);
 	}
 }
 
@@ -161,6 +159,19 @@ function mountTransform(inst, path, handler) {
 	return transform;
 }
 
+function toPath(partitionName) {
+	const ex = /(?:(\w+):)?(.+)/.exec(partitionName);
+	if (!ex)
+		return null;
+
+	const normalized = normalizePath.with({ split: "glob", join: "url" })(ex[2]);
+
+	if (ex[1])
+		return `${ex[1]}:${normalized}`;
+
+	return normalized;
+}
+
 Manage.declare(Stator, {
 	name: "Stator",
 	namespace: "stator",
@@ -171,8 +182,9 @@ Manage.declare(Stator, {
 		selfStore: true,
 		bubble: true,
 		expandObjects: true,
-		preserveOldState: true,
+		deferTransforms: true,
 		recursiveDelete: true,
+		preserveOldState: true,
 		trackAdditions: {
 			track: {
 				additions: true

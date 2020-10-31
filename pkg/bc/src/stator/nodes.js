@@ -113,6 +113,33 @@ function assignState(art, parent, pathOrValue, value) {
 			value
 		);
 	}
+
+	if (!art.flags.deferTransforms)
+		return;
+
+	const pendingTransforms = art.pendingTransforms;
+	art.pendingTransforms = [];
+	art.visitedTransforms = {};
+
+	for (let i = 0, l = pendingTransforms.length; i < l; i++) {
+		const pending = pendingTransforms[i];
+
+		if (!pending)
+			continue;
+
+		const {
+			path,
+			receipt,
+			oldValue
+		} = pending;
+
+		art.stator[TRANSFORMS_SYM][path].apply(
+			art,
+			receipt.action,
+			receipt.value,
+			oldValue
+		);
+	}
 }
 
 function setState(art, parent, value) {
@@ -163,12 +190,24 @@ function setProperty(art, parent, key, value) {
 		receipt = addProperty(art, parent, key, value);
 
 	if (hasTransform && receipt) {
-		art.stator[TRANSFORMS_SYM][path].apply(
-			art,
-			receipt.action,
-			receipt.value,
-			oldValue
-		);
+		if (art.flags.deferTransforms) {
+			if (hasOwn(art.visitedTransforms, path))
+				art.transforms[art.visitedTransforms[path]] = null;
+
+			art.visitedTransforms[path] = art.pendingTransforms.length;
+			art.pendingTransforms.push({
+				path,
+				receipt,
+				oldValue
+			});
+		} else {
+			art.stator[TRANSFORMS_SYM][path].apply(
+				art,
+				receipt.action,
+				receipt.value,
+				oldValue
+			);
+		}
 	}
 
 	return receipt;

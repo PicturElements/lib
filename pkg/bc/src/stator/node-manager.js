@@ -1,8 +1,7 @@
 import { hasOwn } from "@qtxr/utils";
 import {
 	NODE_RUNTIME_SYM,
-	ACTION_RUNTIME_SYM,
-	mkReceipt
+	ACTION_RUNTIME_SYM
 } from "./common";
 
 // Updates nodes and their relation to parents
@@ -39,6 +38,7 @@ export default class NodeManager {
 
 		const receipt = mkReceipt(
 			"add",
+			this.owner,
 			node,
 			runtime,
 			value,
@@ -67,6 +67,7 @@ export default class NodeManager {
 
 		const receipt = mkReceipt(
 			"update",
+			this.owner,
 			node,
 			runtime,
 			value,
@@ -97,6 +98,7 @@ export default class NodeManager {
 
 		const receipt = mkReceipt(
 			"delete",
+			this.owner,
 			node,
 			runtime,
 			value,
@@ -116,4 +118,22 @@ export default class NodeManager {
 		this.owner.callHooks(`${receipt.action}:${receipt.path}`, receipt);
 		this.owner.callHooks(receipt.path, receipt);
 	}
+}
+
+function mkReceipt(action, stator, node, runtime, newValue, oldValue) {
+	return {
+		action,
+		node,
+		runtime,
+		stator,
+		state: stator[ACTION_RUNTIME_SYM].root,
+		key: runtime.key,
+		path: runtime.path,
+		accessor: runtime.accessor,
+		value: newValue,
+		newValue,
+		new: newValue,
+		oldValue,
+		old: oldValue
+	};
 }
