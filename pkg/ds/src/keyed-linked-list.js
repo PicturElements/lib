@@ -1,5 +1,6 @@
 import {
 	alias,
+	hasOwn,
 	forEach,
 	isPrimitive,
 	isArrayLike
@@ -19,7 +20,7 @@ export default class KeyedLinkedList {
 		this.tail = null;
 		this.size = 0;
 		this.enforceUnique = enforceUnique;
-		this.map = Object.create(null);
+		this.map = {};
 
 		forEach(iterable, entry => {
 			if (!isArrayLike(entry))
@@ -184,7 +185,10 @@ export default class KeyedLinkedList {
 	}
 
 	has(key) {
-		return assertValidKey(key) && Boolean(this.map[typeHash(key)]);
+		if (!this.size)
+			return false;
+
+		return assertValidKey(key) && hasOwn(this.map, typeHash(key));
 	}
 
 	get(key, raw = false) {
@@ -194,7 +198,7 @@ export default class KeyedLinkedList {
 			return nullValue;
 
 		const item = this.map[typeHash(key)];
-		if (!item)
+		if (!item || item.owner != this)
 			return nullValue;
 
 		if (raw)
@@ -217,7 +221,11 @@ export default class KeyedLinkedList {
 		if (!assertValidKey(key))
 			return nullValue;
 
-		return this.map[typeHash(key)] || nullValue;
+		const itm = this.map[typeHash(key)];
+
+		return itm && itm.owner == this ?
+			itm :
+			nullValue;
 	}
 
 	delete(key) {
@@ -243,12 +251,15 @@ export default class KeyedLinkedList {
 		this.head = null;
 		this.tail = null;
 		this.size = 0;
-		this.map = Object.create(null);
+		this.map = {};
 	}
 
 	forEach(callback, reverse = false) {
 		if (typeof callback != "function")
 			return false;
+
+		if (!this.size)
+			return true;
 
 		let node = reverse ? this.tail : this.head,
 			idx = reverse ? this.size : 0;

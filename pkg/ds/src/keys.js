@@ -54,6 +54,9 @@ export default class Keys {
 	}
 
 	has(key) {
+		if (!this.size)
+			return false;
+
 		return this.getPartitionKey(key) !== null;
 	}
 

@@ -4,6 +4,7 @@ import {
 	typeHash
 } from "./utils";
 
+// https://en.wikipedia.org/wiki/Min-max_heap
 export default class Heap extends Array {
 	constructor() {
 		super();
