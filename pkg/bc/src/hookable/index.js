@@ -214,11 +214,15 @@ export default class Hookable extends DeferredPromise {
 		return this.hooks[partitionName];
 	}
 
-	resolveHookArgs(type, args) {
+	resolveHookArgs(type, args, options = null) {
 		if (!hasOwn(PARAMS_MAP, type))
 			throw new Error(`Cannot resolve hook arguments: unknown action type '${type}'`);
 
-		return resolveArgs(args, PARAMS_MAP[type], "allowSingleSource");
+		options = options ?
+			["allowSingleSource", options] :
+			"allowSingleSource";
+
+		return resolveArgs(args, PARAMS_MAP[type], options);
 	}
 
 	// Legacy
