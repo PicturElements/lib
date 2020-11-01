@@ -160,7 +160,6 @@ export default function resolveArgs(args, signature, options) {
 			arg = useSingleSource ?
 				resolveArg(args[0], sgn) :
 				args[argPtr],
-			def = sgn.default,
 			key = options.returnArgList ?
 				i :
 				sgn.name;
@@ -201,6 +200,10 @@ export default function resolveArgs(args, signature, options) {
 
 			if (arg == null)
 				argPtr++;
+
+			const def = isObject(options.defaults) && hasOwn(options.defaults, sgn.name) ?
+				options.defaults[sgn.name] :
+				sgn.default;
 
 			argsOut[key] = res(
 				isObj(def) && !sgn.noClone ?
