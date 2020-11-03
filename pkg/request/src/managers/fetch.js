@@ -36,10 +36,9 @@ class FetchManager extends RequestManager {
 		const p = runtime.preset;
 		let timedout = false;
 
-		fetch(runtime.url, {
+		const init = {
 			method: runtime.method,
 			headers: p.headers,
-			body: encodePayload(p.payload, p),
 			mode: p.mode,
 			credentials: p.credentials,
 			cache: p.cache,
@@ -49,7 +48,12 @@ class FetchManager extends RequestManager {
 			integrity: p.integrity,
 			keepalive: p.keepalive,
 			signal: runtime.abortController.signal
-		})
+		};
+
+		if (runtime.method != "GET" && runtime.method != "HEAD")
+			init.body = encodePayload(p.payload, p);
+
+		fetch(runtime.url, init)
 			.then(async response => {
 				runtime.res = response;
 
