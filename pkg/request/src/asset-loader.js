@@ -5,7 +5,7 @@ import {
 	resolveArgs,
 	mkProcessor
 } from "@qtxr/utils";
-import { XHRManager } from "./xhr";
+import { XHRManager } from "./managers/xhr";
 
 // AssetLoader uses predefined processors to format and handle data
 // Additionally, temporary processors can be passed in to any
