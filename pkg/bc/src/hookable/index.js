@@ -2,6 +2,7 @@ import {
 	hasOwn,
 	isObject,
 	filterMut,
+	isThenable,
 	resolveArgs,
 	queryFilterMut,
 	composeOptionsTemplates
@@ -260,10 +261,12 @@ function addHook(inst, args) {
 }
 
 function dispatch(inst, partitionName, argsOrResolver, alwaysResolve = false) {
+	const pending = [];
 	let argsResolver = typeof argsOrResolver == "function" ?
 			argsOrResolver :
 			null,
-		args = argsOrResolver;
+		args = argsOrResolver,
+		runningAsync = false;
 
 	if (!inst.hooks.keys.size)
 		return inst;
@@ -277,34 +280,79 @@ function dispatch(inst, partitionName, argsOrResolver, alwaysResolve = false) {
 				name: partitionName
 			};
 
+		if (runningAsync) {
+			pending.push([
+				hooks,
+				contextArgs
+			]);
+			return;
+		}
+
 		if (hooks.length && argsResolver) {
 			args = argsResolver(contextArgs);
 
-			if (!Array.isArray(args))
-				args = [];
+			if (isThenable(args)) {
+				args.then(a => {
+					if (alwaysResolve) {
+						sendHooksAsync(inst, pending, a, argsResolver);
+						return a;
+					}
 
-			if (!alwaysResolve)
-				argsResolver = null;
+					for (let i = 0, l = pending.length; i < l; i++)
+						sendHook(inst, pending[i][0], pending[i][1], a);
+					
+					return a;
+				});
+
+				pending.push([
+					hooks,
+					contextArgs
+				]);
+				runningAsync = true;
+				return;
+			} else {
+				if (!Array.isArray(args))
+					args = [];
+
+				if (!alwaysResolve)
+					argsResolver = null;
+			}
 		}
 
-		filterMut(hooks, hook => {
-			if (hook.spent)
-				return false;
-
-			if (hook.proceed(args, contextArgs)) {
-				hook.handle(args, contextArgs);
-				return hook.decTTL() > 0;
-			} else
-				return true;
-		});
-
-		if (!hooks.length) {
-			delete inst.hooks[key];
-			inst.hooks.keys.delete(key);
-		}
+		sendHook(inst, hooks, contextArgs, args);
 	});
 
 	return inst;
+}
+
+function sendHook(inst, hooks, contextArgs, args) {
+	filterMut(hooks, hook => {
+		if (hook.spent)
+			return false;
+
+		if (hook.proceed(args, contextArgs)) {
+			hook.handle(args, contextArgs);
+			return hook.decTTL() > 0;
+		} else
+			return true;
+	});
+
+	if (!hooks.length) {
+		delete inst.hooks[contextArgs.key];
+		inst.hooks.keys.delete(contextArgs.key);
+	}
+}
+
+async function sendHooksAsync(inst, pending, args, argsResolver) {
+	let a = args;
+
+	for (let i = 0, l = pending.length; i < l; i++) {
+		const [hooks, contextArgs] = pending[i];
+		sendHook(inst, hooks, contextArgs, a);
+
+		if (i < l - 1)
+			a = await argsResolver(pending[i + 1][1]);
+	}
 }
 
 function removeHook(inst, args) {

@@ -75,15 +75,18 @@ export default class DeferredPromise {
 	}
 
 	then(onFulfilled, onRejected) {
-		return this[PROMISE_RUNTIME].promise.then(onFulfilled, onRejected);
+		this[PROMISE_RUNTIME].promise.then(onFulfilled, onRejected);
+		return this;
 	}
 
 	catch(onRejected) {
-		return this[PROMISE_RUNTIME].promise.catch(onRejected);
+		this[PROMISE_RUNTIME].promise.catch(onRejected);
+		return this;
 	}
 
 	finally(onFinally) {
-		return this[PROMISE_RUNTIME].promise.finally(onFinally);
+		this[PROMISE_RUNTIME].promise.finally(onFinally);
+		return this;
 	}
 
 	dispatchPromise(actionOrConf, confOrPayload) {
