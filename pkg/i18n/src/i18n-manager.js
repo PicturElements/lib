@@ -541,7 +541,7 @@ function mkLoader(constr, inst) {
 				node.locale = locale && locale.valid ? locale : null;
 			}
 		}
-	});
+	}, inst.config.requestManager);
 }
 
 function supplyLocaleData(partition, data, locale, targetLocale) {
@@ -637,7 +637,8 @@ I18NManager.DEF_CONFIG = {
 	files: {
 		structure: "file",
 		defaultExtension: "json"
-	}
+	},
+	requestManager: null
 };
 
 export default I18NManager;

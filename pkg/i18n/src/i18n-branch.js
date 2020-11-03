@@ -29,7 +29,7 @@ export default class I18NBranch extends Hookable {
 		this.parent.hook({
 			name: "*",
 			argTemplate: "context",
-			handler: (ctx, ...args) => this.callHooks(ctx.key, ...args)
+			handler: (ctx, ...args) => this.callHooks(ctx.name, ...args)
 		});
 	}
 
