@@ -1,6 +1,7 @@
 /* global FederatedCredential, PasswordCredential */
 
 import {
+	sym,
 	then,
 	clone,
 	casing,
@@ -125,7 +126,8 @@ const SOURCE_TARGET_REGEX = /^(?:([\w-:]*)\s*->\s*)?([\w-:]+)$/,
 		s: "static",
 		once: "once",
 		static: "static"
-	};
+	},
+	REQUEST_MANAGER_SPECIES_SYM = sym("RequestManager species");
 
 let globalId = 0;
 
@@ -455,6 +457,13 @@ class RequestManager {
 		throw new Error("Failed to send two way request: no handler implemented");
 	}
 
+	getSpecies() {
+		return {
+			type: this.constructor[REQUEST_MANAGER_SPECIES_SYM],
+			feature: "manager"
+		};
+	}
+
 	static isJSONOptimizable(val) {
 		if (Array.isArray(val))
 			return true;
@@ -467,6 +476,17 @@ class RequestManager {
 		}
 
 		return false;
+	}
+
+	static getSpecies(inst) {
+		if (!inst || typeof inst.getSpecies != "function") {
+			return {
+				type: null,
+				feature: null
+			};
+		}
+
+		return inst.getSpecies();
 	}
 }
 
@@ -787,6 +807,13 @@ class RequestState extends Hookable {
 		);
 	}
 
+	getSpecies() {
+		return {
+			type: this.manager.constructor[REQUEST_MANAGER_SPECIES_SYM],
+			feature: "state"
+		};
+	}
+
 	// Postulate function: requires hook arguments to use a runtime
 	static requireRuntime(callback) {
 		return (rtCandidate, ...args) => {
@@ -906,6 +933,13 @@ class RequestResponse {
 
 	get phase() {
 		return this.runtime.phase;
+	}
+
+	getSpecies() {
+		return {
+			type: this.manager.constructor[REQUEST_MANAGER_SPECIES_SYM],
+			feature: "response"
+		};
 	}
 }
 
@@ -1230,6 +1264,7 @@ function warnNoGetter(name) {
 }
 
 RequestState.NULL = new RequestState();
+RequestManager[REQUEST_MANAGER_SPECIES_SYM] = "core";
 
 export {
 	FINALIZEABLE,
@@ -1244,6 +1279,7 @@ export {
 	DEFAULT_HOOK_NAMESPACES,
 	NAMESPACE_OPTIONS,
 	NAMESPACE_ALIASES,
+	REQUEST_MANAGER_SPECIES_SYM,
 	// Classes
 	RequestManager,
 	RequestState,

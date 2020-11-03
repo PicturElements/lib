@@ -6,6 +6,7 @@ import URL from "@qtxr/url";
 
 import {
 	IMPL,
+	REQUEST_MANAGER_SPECIES_SYM,
 	RequestManager,
 	RequestState,
 	RequestResponse,
@@ -300,6 +301,7 @@ FetchState.NULL = new FetchState();
 const Fetch = new FetchManager();
 
 FetchManager.default = Fetch;
+FetchManager[REQUEST_MANAGER_SPECIES_SYM] = "fetch";
 
 export {
 	Fetch,

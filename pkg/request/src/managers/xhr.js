@@ -6,6 +6,7 @@ import URL from "@qtxr/url";
 
 import {
 	IMPL,
+	REQUEST_MANAGER_SPECIES_SYM,
 	RequestManager,
 	RequestState,
 	RequestResponse,
@@ -429,6 +430,7 @@ XHRState.NULL = new XHRState();
 const XHR = new XHRManager();
 
 XHRManager.default = XHR;
+XHRManager[REQUEST_MANAGER_SPECIES_SYM] = "xhr";
 
 export {
 	XHR,
