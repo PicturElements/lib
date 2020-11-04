@@ -2,8 +2,7 @@ import { basicInterpolate } from "@qtxr/utils";
 
 // When adding templates, remember this:
 // https://stackoverflow.com/questions/21177489/selectionstart-selectionend-on-input-type-number-no-longer-allowed-in-chrome
-// If not absolutely necessary, use text, search, password, tel, or url types or else checkWord
-// will not work properly
+// If not absolutely necessary, use text, search, password, tel, or url types or else checkWord will not work properly
 const emailRegex = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/i,
 	dateRegex = /^(\d{1,2})\s*\/\s*(\d{2})$/,
 	nameRegex = /[^\d,./\\"=@#$%^&*(){}[\]!?|~<>;]/;

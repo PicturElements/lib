@@ -62,14 +62,16 @@ const partitionClassifier = {
 const LINK_PARAMS = [
 	{ name: "source", type: "object|function", default: null },
 	{ name: "target", type: "object|function", default: null },
-	{ name: "async", type: "boolean", default: false }
+	{ name: "async", type: "boolean", default: false },
+	{ name: "initExtract", type: "boolean", default: false }
 ];
 
 const LINK_ROWS_PARAMS = [
 	{ name: "rows", type: "Object|Array", required: true },
 	{ name: "source", type: "object|function", default: null },
 	{ name: "target", type: "object|function", default: null },
-	{ name: "async", type: "boolean", default: false }
+	{ name: "async", type: "boolean", default: false },
+	{ name: "initExtract", type: "boolean", default: false }
 ];
 
 const CLASS_RESOLVE_REGEX = /(\w+):\s*((?:[\w-._]+|\s+(?!\w+:))+)/g;
@@ -370,12 +372,13 @@ export default class Form extends Hookable {
 			rows,
 			source,
 			target,
-			async
+			async,
+			initExtract
 		} = resolveArgs(args, LINK_ROWS_PARAMS);
 
 		const dispatch = _ => {
 			const struct = this.connectRows(rows);
-			this.link(source, target);
+			this.link(source, target, false, initExtract);
 			return struct;
 		};
 
@@ -392,11 +395,14 @@ export default class Form extends Hookable {
 		let {
 			source,
 			target,
-			async
+			async,
+			initExtract
 		} = resolveArgs(args, LINK_PARAMS);
 
 		if (!target)
 			target = source;
+		if (!source)
+			source = target;
 
 		const dispatch = _ => {
 			const src = resolveVal(source, this.mkRuntime());
@@ -404,9 +410,16 @@ export default class Form extends Hookable {
 			if (!isObj(src))
 				throw new Error("Cannot link: link source must be an object");
 
+			if (initExtract) {
+				this.forEach(inp => {
+					const targ = resolveVal(target, inp.mkRuntime());
+					this.extractOne(inp, targ, true, true);
+				});
+			}
+
 			this.hook("change", runtime => {
 				const targ = resolveVal(target, runtime);
-				this.extractOne(runtime.input, targ, true);
+				this.extractOne(runtime.input, targ, true, true);
 			});
 
 			this.setValues(src, true, true);

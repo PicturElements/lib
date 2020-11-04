@@ -291,7 +291,7 @@ export default class Input extends Hookable {
 		if (typeof this.handlers.validate == "function")
 			validationResult = this.handlers.validate(this.mkRuntime());
 
-		const validBcVRO = this.required === false && this.form.validateRequiredOnly,
+		const validBcVRO = this.required === false && this.form.options.validateRequiredOnly,
 			validBcNullResult = !validationResult || typeof validationResult != "object";
 
 		if (!validBcVRO && typeof validationResult == "string") {
