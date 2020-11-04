@@ -1046,7 +1046,7 @@ function assignState(cell, states) {
 		const c = cell.state.setState(state);
 
 		for (let j = 0, l2 = c.length; j < l2; j++) {
-			const change = c[i];
+			const change = c[j];
 
 			if (hasOwn(visited, change.path))
 				changes[visited[change.path]] = null;
