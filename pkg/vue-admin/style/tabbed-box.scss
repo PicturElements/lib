@@ -37,6 +37,11 @@ $tabbed-box-params: (
 			position: relative;
 			outline: none;
 			padding: 12px 0;
+			border: none;
+			background: transparent;
+			color: inherit;
+			font: inherit;
+			cursor: pointer;
 
 			+ .tabbed-nav-item {
 				margin-left: 15px;
@@ -55,7 +60,8 @@ $tabbed-box-params: (
 				}
 			}
 
-			&.router-link-exact-active {
+			&.router-link-exact-active,
+			&.selected {
 				color: $highlight;
 				font-weight: bold;
 
