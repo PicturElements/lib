@@ -10,7 +10,6 @@ import {
 	anyOf,
 	equals,
 	inject,
-	mkPath,
 	forEach,
 	mkSuper,
 	mkClass,
@@ -19,6 +18,7 @@ import {
 	resolveVal,
 	resolveArgs,
 	requestFrame,
+	normalizePath,
 	constructorOf,
 	composePresets,
 	addPreset,
@@ -832,7 +832,7 @@ export default class Form extends Hookable {
 
 					case "path":
 						if (hasOwn(options, "path"))
-							options.path = mkPath(groupOptions.path, options.path);
+							options.path = normalizePath(groupOptions.path, options.path);
 						else
 							options.path = groupOptions.path;
 						break;
