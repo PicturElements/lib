@@ -66,6 +66,13 @@ function isCellConfig(candidate) {
 	}, "typed|lazy");
 }
 
+DataCell.getSpecies = function(inst) {
+	if (!inst || typeof inst.getSpecies != "function")
+		return null;
+
+	return inst.getSpecies();
+};
+
 DataCell.prototype.getSpecies = function() {
 	return this.constructor[DATA_CELL_SPECIES_SYM];
 };

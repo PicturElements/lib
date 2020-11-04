@@ -17,7 +17,10 @@ import {
 	addPreset,
 	mergePresets
 } from "@qtxr/utils";
-import { XHRManager } from "@qtxr/request";
+import {
+	RequestManager,
+	XHRManager
+} from "@qtxr/request";
 import {
 	Stator,
 	Hookable
@@ -188,9 +191,9 @@ const DEFAULT_WATCHER_TASK_DISPATCHERS = {
 };
 
 const DEFAULT_PARTITION_CLASSIFIER = {
-	// XHR preset
-	url: "xhrPreset",
-	baseUrl: "xhrPreset",
+	// Request preset
+	url: "requestPreset",
+	baseUrl: "requestPreset",
 	// Irrelevant data
 	type: "garbage",
 	species: "garbage",
@@ -281,11 +284,11 @@ export default class DataCell extends Hookable {
 		const {
 			newConfig,
 			processors,
-			xhrPreset
+			requestPreset
 		} = partition(config, {
 			newConfig: {},
 			processors: {},
-			xhrPreset: {},
+			requestPreset: {},
 			instance: this
 		}, (val, k) => {
 			return k[0] == "$" ? "processors" : classifier[k];
@@ -302,10 +305,10 @@ export default class DataCell extends Hookable {
 		this.args.config = newConfig;
 		this.defaultRuntime = newConfig.runtime || null;
 
-		this.xhrManager = newConfig.xhrManager || new XHRManager();
-		this.xhrPreset = [inject(xhrPreset, newConfig.xhrPreset)];
-		if (newConfig.xhrPreset)
-			this.xhrPreset.push(newConfig.xhrPreset);
+		this.requestManager = newConfig.requestManager || newConfig.xhrManager || new XHRManager();
+		this.requestPreset = [inject(requestPreset, newConfig.requestPreset || newConfig.xhrPreset)];
+		if (newConfig.requestPreset || newConfig.xhrPreset)
+			this.requestPreset.push(newConfig.requestPreset || newConfig.xhrPreset);
 
 		this.fetcher = this.mkFetcherObject(newConfig);
 		this.stateTransforms = inject(
@@ -1109,15 +1112,12 @@ function fetchRequest(a, method = "get", url = null, preset = null) {
 		if (runtimePreset && hasOwn(runtimePreset, "method"))
 			method = runtimePreset.method;
 
-		cell.xhrManager
-			.use(cell.xhrPreset, runtimePreset, preset)
+		cell.requestManager
+			.use(cell.requestPreset, runtimePreset, preset)
 			.request(method, url)
-			.success((response, xhr, xhrState) => {
-				let successResponse = cell.mkSuccessResponse(response, {
-					status: xhr.status,
-					xhr,
-					xhrState
-				});
+			.success((payload, response, state) => {
+				const fields = getRequestFields(response, state);
+				let successResponse = cell.mkSuccessResponse(payload, fields);
 
 				const validation = validate(cell, successResponse);
 
@@ -1125,27 +1125,22 @@ function fetchRequest(a, method = "get", url = null, preset = null) {
 					successResponse = cell.process("success")(successResponse);
 					resolve(successResponse);
 				} else {
-					let failResponse = cell.mkErrorResponse(validation, {
-						status: 0,
-						xhr,
-						xhrState
-					});
+					fields.status = 0;
+					let failResponse = cell.mkErrorResponse(validation, fields);
 
 					failResponse = cell.process("fail")(failResponse);
 					resolve(failResponse);
 				}
 			})
-			.fail((payloadOrStatus, xhr, xhrState) => {
-				const payload = (typeof payloadOrStatus != "number") ?
-					payloadOrStatus :
-					null;
+			.fail((payloadOrStatus, response, state) => {
+				const fields = getRequestFields(response, state),
+					payload = (typeof payloadOrStatus != "number") ?
+						payloadOrStatus :
+						null;
 
-				let failResponse = cell.mkErrorResponse("Unknown Error", {
-					payload,
-					status: xhr.status,
-					xhr,
-					xhrState
-				});
+				fields.payload = payload;
+
+				let failResponse = cell.mkErrorResponse("Unknown Error", fields);
 
 				failResponse = cell.process("fail")(failResponse);
 				const validation = validate(cell, failResponse);
@@ -1181,6 +1176,27 @@ async function fetchCustom(a, handler, ...args) {
 		failResponse.errorMsg = validation;
 		return failResponse;
 	}
+}
+
+function getRequestFields(response, state) {
+	const fields = {
+		state,
+		response: state.response,
+		status: response.status
+	};
+
+	switch (RequestManager.getSpecies(state).type) {
+		case "xhr":
+			fields.xhr = response;
+			fields.xhrState = state;
+			break;
+
+		case "fetch":
+			fields.fetchState = state;
+			break;
+	}
+
+	return fields;
 }
 
 // Validate / notify
