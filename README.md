@@ -93,7 +93,7 @@ There are plenty of opportunities to impress a unique style to libraries as they
 ---
 
 ## Stylistic Choices
-The following are style choices that diverge or differ to some extent, however small, from common style guides (in this case Airbnb). Code should never diverge too far from best practice formatting, but neither should the developer be held to a fixed set of rules. However menial the differences are to common style guides, the importance of applying a pragmatic mindset to code style is impressed on the developer, who is first and foremost responsible for producing a legible and elegant product. If in a certain case diverging from fixed rules means the code becomes more pleasant to read, this is preferred. Perhaps all of this goes without saying, but for transparency reasons, these are the main cases where rules have been found to be fuzzy:
+The following are style choices that diverge or differ to some extent, however small, from common style guides (in this case Airbnb). Code should never diverge too far from best practice formatting, but neither should the developer be held to a fixed set of rules. However minor the differences are to common style guides, the importance of applying a pragmatic mindset to code style is impressed on the developer, who is first and foremost responsible for producing a legible and elegant product. If in a certain case diverging from fixed rules means the code becomes more pleasant to read, this is preferred. Perhaps all of this goes without saying, but for transparency reasons, these are the main cases where rules have been found to be fuzzy:
 
 <details>
   <summary>

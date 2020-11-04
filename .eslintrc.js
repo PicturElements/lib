@@ -38,5 +38,13 @@ module.exports = {
 		],
 		"arrow-parens": ["warn", "as-needed"],
 		"no-unexpected-multiline": "off"
-	}
+	},
+	overrides: [
+		{
+			files: ["*.test.js"],
+			rules: {
+				"no-prototype-builtins": "off"
+			}
+		}
+	]
 };

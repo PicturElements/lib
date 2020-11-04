@@ -79,7 +79,7 @@ module.exports = async function init(options) {
 				content: "// TODO: write export code"
 			}, {
 				path: path.join(pkgPath, "README.md"),
-				content: `## ${writer.get("name")}\n${writer.get("description")}`
+				content: `# ${writer.get("name")}\n${writer.get("description")}`
 			}, {
 				path: path.join(pkgPath, "index.d.ts"),
 				content: `declare module "${writer.get("name")}";`
