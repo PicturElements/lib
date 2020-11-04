@@ -15,7 +15,7 @@ $base-params: (
 		display: flex;
 		align-items: flex-end;
 
-		+ .input-row:not(:empty) {
+		+ .input-row:not(.v-form):not(:empty) {
 			margin-top: $vertical-gap;
 		}
 
@@ -25,12 +25,12 @@ $base-params: (
 	}
 
 	.input-column {
-		+ .input-column:not(:empty) {
+		+ .input-column:not(.v-form):not(:empty) {
 			margin-left: $horizontal-gap;
 		}
 
 		> .input-column {
-			+ .input-column:not(:empty) {
+			+ .input-column:not(.v-form):not(:empty) {
 				margin-top: $vertical-gap;
 				margin-left: 0;
 			}
