@@ -409,7 +409,7 @@ class RequestManager {
 
 		then(this.initRequest(runtime), rt => {
 			assign(runtime, rt);
-			injectStateDependencies(this, runtime);
+			injectStateDependencies(runtime);
 			runtime.response = new this.responseConstructor(this, runtime);
 
 			state.link(this, runtime);
@@ -762,7 +762,7 @@ class RequestState extends Hookable {
 					this.callHooks("lastly", false, ...args, this);
 			},
 			guard: tpe => {
-				if (this.id != refId && refId !== null)
+				if (refId != null && this.id != refId)
 					return false;
 
 				if (tpe.namespace && opts.namespace != tpe.namespace)
@@ -803,7 +803,7 @@ class RequestState extends Hookable {
 		return assign(
 			{},
 			this.runtime,
-			this.state.manager.runtime
+			this.manager.runtime
 		);
 	}
 
@@ -1007,8 +1007,8 @@ function resolvePresetProp(manager, key, value, args) {
 	return value;
 }
 
-function injectStateDependencies(manager, requestRuntime) {
-	const hooks = manager.pendingPreset && manager.pendingPreset.hooks;
+function injectStateDependencies(requestRuntime) {
+	const hooks = requestRuntime.preset && requestRuntime.preset.hooks;
 
 	if (!hooks)
 		return;
