@@ -1075,6 +1075,8 @@ function assignState(cell, states) {
 
 	// Dispatch watch tasks
 	const tasks = watcher.taskQueue;
+	watcher.taskQueue = [];
+
 	for (let i = 0, l = tasks.length; i < l; i++) {
 		const task = tasks[i],
 			dispatcher = resolveDispatcher(task.dispatcher);
@@ -1087,7 +1089,6 @@ function assignState(cell, states) {
 
 	watcher.changeQueue = [];
 	watcher.changeQueueMap = {};
-	watcher.taskQueue = [];
 	watcher.taskQueueMap = [];
 }
 
