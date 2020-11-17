@@ -5,7 +5,7 @@ import {
 import URL from "@qtxr/url";
 
 import {
-	IMPL,
+	IMPLS,
 	REQUEST_MANAGER_SPECIES_SYM,
 	RequestManager,
 	RequestState,
@@ -272,11 +272,11 @@ const PRESET_SCHEMA = {
 	rejectOnError: "boolean",
 	enforceReponseReturn: "boolean",
 	// fetch-centered options fields
-	headers: [Object, IMPL.Headers],
+	headers: [Object, IMPLS.HEADERS],
 	payload: v => typeof v != "function",
 	body: v => typeof v != "function",
 	mode: "string",
-	credentials: ["string", IMPL.FederatedCredential, IMPL.PasswordCredential],
+	credentials: ["string", IMPLS.FEDERATED_CREDENTIAL, IMPLS.PASSWORD_CREDENTIAL],
 	cache: "string",
 	redirect: "string",
 	referrer: "string",

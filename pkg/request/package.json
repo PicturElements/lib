@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/request",
-  "version": "3.9.3",
+  "version": "3.9.4",
   "description": "Collection of libraries for efficient, clean, and intuitive web requests",
   "main": "index.js",
   "scripts": {
@@ -35,7 +35,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 50,
+    "pushes": 51,
     "expose": {
       "scripts": [
         "connect/feed.js"

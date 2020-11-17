@@ -5,7 +5,7 @@ import {
 import URL from "@qtxr/url";
 
 import {
-	IMPL,
+	IMPLS,
 	REQUEST_MANAGER_SPECIES_SYM,
 	RequestManager,
 	RequestState,
@@ -68,7 +68,7 @@ class XHRManager extends RequestManager {
 
 		if (hasOwn(runtime.preset, "responseType"))
 			xhr.responseType = runtime.preset.responseType || "text";
-		else if (typeof Blob != "undefined")
+		else if (IMPLS.BLOB != IMPLS.NULL)
 			xhr.responseType = "blob";
 		else
 			xhr.responseType = "text";
@@ -229,7 +229,7 @@ class XHRResponse extends RequestResponse {
 
 			case "document": {
 				const serializer = new XMLSerializer(),
-					type = typeof XMLDocument != "undefined" ** xhr.response instanceof XMLDocument ?
+					type = xhr.response instanceof IMPLS.XML_DOCUMENT ?
 						"text/xml" :
 						"text/html";
 
@@ -401,7 +401,7 @@ function isInvalidResponse(xhr) {
 
 const PRESET_SCHEMA = {
 	baseUrl: ["string", URL],
-	headers: [Object, IMPL.Headers],
+	headers: [Object, IMPLS.HEADERS],
 	urlParams: Object,
 	payload: v => typeof v != "function",
 	body: v => typeof v != "function",

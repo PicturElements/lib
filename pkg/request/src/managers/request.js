@@ -38,27 +38,45 @@ const METHODS = {
 };
 
 const PHASES = {
-	started: "started",
-	initialized: "initialized",
-	connected: "connected",
-	infod: "infod",
-	redirected: "redirected",
-	succeeded: "succeeded",
-	failed: "failed",
-	timedout: "timedout",
-	aborted: "aborted"
+	STARTED: "STARTED",
+	INITIALIZED: "INITIALIZED",
+	INFOD: "INFOD",
+	REDIRECTED: "REDIRECTED",
+	SUCCEEDED: "SUCCEEDED",
+	FAILED: "FAILED",
+	TIMEDOUT: "TIMEDOUT",
+	ABORTED: "ABORTED"
 };
 
 class NullImpl {}
 
-const IMPL = {
-	Headers: typeof Headers != "undefined" ?
+const IMPLS = {
+	NULL: NullImpl,
+	BLOB: typeof Blob != "undefined" ?
+		Blob :
+		NullImpl,
+	FORM_DATA: typeof FormData != "undefined" ?
+		FormData :
+		NullImpl,
+	URL_SEARCH_PARAMS: typeof URLSearchParams != "undefined" ?
+		URLSearchParams :
+		NullImpl,
+	DATA_VIEW: typeof DataView != "undefined" ?
+		DataView :
+		NullImpl,
+	ARRAY_BUFFER: typeof ArrayBuffer != "undefined" ?
+		ArrayBuffer :
+		NullImpl,
+	HEADERS: typeof Headers != "undefined" ?
 		Headers :
 		NullImpl,
-	FederatedCredential: typeof FederatedCredential != "undefined" ?
+	XML_DOCUMENT: typeof XMLDocument != "undefined" ?
+		XMLDocument :
+		NullImpl,
+	FEDERATED_CREDENTIAL: typeof FederatedCredential != "undefined" ?
 		FederatedCredential :
 		NullImpl,
-	PasswordCredential: typeof PasswordCredential != "undefined" ?
+	PASSWORD_CREDENTIAL: typeof PasswordCredential != "undefined" ?
 		PasswordCredential :
 		NullImpl
 };
@@ -69,7 +87,7 @@ const PRESET_ALIASES = {
 
 const PRESET_TRANSFORMS = {
 	headers: value => {
-		if (value instanceof IMPL.Headers) {
+		if (value instanceof IMPLS.HEADERS) {
 			const headers = {};
 
 			value.forEach((v, k) => {
@@ -386,7 +404,7 @@ class RequestManager {
 			id: globalId++,
 			url: mkUrl(url, preset),
 			payload: data,
-			phase: PHASES.started,
+			phase: PHASES.STARTED,
 			state: null,
 			response: null,
 			finished: false,
@@ -409,12 +427,11 @@ class RequestManager {
 
 		then(this.initRequest(runtime), rt => {
 			assign(runtime, rt);
-			injectStateDependencies(runtime);
 			runtime.response = new this.responseConstructor(this, runtime);
 
 			state.link(this, runtime);
 			state.applyInit(runtime);
-			runtime.phase = PHASES.initialized;
+			runtime.phase = PHASES.INITIALIZED;
 
 			this.sendRequest(runtime);
 		});
@@ -519,7 +536,9 @@ class RequestState extends Hookable {
 		this.response = runtime.response;
 
 		this.setProgress(0, 0);
+
 		flushHooks(this, manager.opts.flush);
+		injectStateDependencies(this, runtime);
 	}
 
 	// Request lifecycle 
@@ -560,23 +579,23 @@ class RequestState extends Hookable {
 
 		switch (Math.floor(response.status / 100)) {
 			case 1:
-				this.runtime.phase = PHASES.infod;
+				this.runtime.phase = PHASES.INFOD;
 				hookType = "info";
 				break;
 
 			case 2:
-				this.runtime.phase = PHASES.succeeded;
+				this.runtime.phase = PHASES.SUCCEEDED;
 				hookType = "success";
 				break;
 
 			case 3:
-				this.runtime.phase = PHASES.redirected;
+				this.runtime.phase = PHASES.REDIRECTED;
 				hookType = "redirect";
 				break;
 
 			case 4:
 			case 5:
-				this.runtime.phase = PHASES.failed;
+				this.runtime.phase = PHASES.FAILED;
 				hookType = "fail";
 				break;
 		}
@@ -590,7 +609,7 @@ class RequestState extends Hookable {
 	}
 	
 	applyFail(response, ...args) {
-		this.runtime.phase = PHASES.failed;
+		this.runtime.phase = PHASES.FAILED;
 
 		if (this.preset.enforceReponseReturn)
 			this.dispatchHooks("fail", mkResponseResolver(response, args));
@@ -599,7 +618,7 @@ class RequestState extends Hookable {
 	}
 	
 	applyTimeout(response, ...args) {
-		this.runtime.phase = PHASES.timedout;
+		this.runtime.phase = PHASES.TIMEDOUT;
 
 		if (this.preset.enforceReponseReturn)
 			this.dispatchHooks("timeout", mkResponseResolver(response, args));
@@ -608,7 +627,7 @@ class RequestState extends Hookable {
 	}
 	
 	applyAbort(response, ...args) {
-		this.runtime.phase = PHASES.aborted;
+		this.runtime.phase = PHASES.ABORTED;
 
 		if (this.preset.enforceReponseReturn)
 			this.dispatchHooks("aborted", mkResponseResolver(response, args));
@@ -789,16 +808,6 @@ class RequestState extends Hookable {
 		});
 	}
 
-	// Strip runtime data to normalize hooks presets, etc
-	static withoutRuntime(callback) {
-		return (rtCandidate, ...args) => {
-			if (rtCandidate && rtCandidate.isRuntime)
-				callback(...args);
-			else
-				callback(rtCandidate, ...args);
-		};
-	}
-
 	mkRuntime() {
 		return assign(
 			{},
@@ -811,6 +820,16 @@ class RequestState extends Hookable {
 		return {
 			type: this.manager.constructor[REQUEST_MANAGER_SPECIES_SYM],
 			feature: "state"
+		};
+	}
+
+	// Strip runtime data to normalize hooks presets, etc
+	static withoutRuntime(callback) {
+		return (rtCandidate, ...args) => {
+			if (rtCandidate && rtCandidate.isRuntime)
+				callback(...args);
+			else
+				callback(rtCandidate, ...args);
 		};
 	}
 
@@ -920,11 +939,11 @@ class RequestResponse {
 	}
 
 	get timedout() {
-		return this.runtime.phase == PHASES.timedout;
+		return this.runtime.phase == PHASES.TIMEDOUT;
 	}
 
 	get aborted() {
-		return this.runtime.phase == PHASES.aborted;
+		return this.runtime.phase == PHASES.ABORTED;
 	}
 
 	get finished() {
@@ -1007,7 +1026,7 @@ function resolvePresetProp(manager, key, value, args) {
 	return value;
 }
 
-function injectStateDependencies(requestRuntime) {
+function injectStateDependencies(state, requestRuntime) {
 	const hooks = requestRuntime.preset && requestRuntime.preset.hooks;
 
 	if (!hooks)
@@ -1018,7 +1037,7 @@ function injectStateDependencies(requestRuntime) {
 		if (!hasOwn(hooks, k) || k == "last" || k == "keys")
 			continue;
 
-		requestRuntime.state.hook(k, hooks[k]);
+		state.hook(k, hooks[k]);
 	}
 }
 
@@ -1129,22 +1148,22 @@ function getPayloadType(payload) {
 	if (typeof payload == "string")
 		return "string";
 
-	if (typeof Blob != "undefined" && payload instanceof Blob)
+	if (payload instanceof IMPLS.BLOB)
 		return "blob";
 
-	if (typeof FormData != "undefined" && payload instanceof FormData)
+	if (payload instanceof IMPLS.FORM_DATA)
 		return "formdata";
 
-	if (typeof URLSearchParams != "undefined" && payload instanceof URLSearchParams)
+	if (payload instanceof IMPLS.URL_SEARCH_PARAMS)
 		return "url-search-params";
 
 	if (isTypedArray(payload))
 		return "buffer-source";
 
-	if (typeof DataView != "undefined" && payload instanceof DataView)
+	if (payload instanceof IMPLS.DATA_VIEW)
 		return "buffer-source";
 
-	if (typeof ArrayBuffer != "undefined" && payload instanceof ArrayBuffer)
+	if (payload instanceof IMPLS.ARRAY_BUFFER)
 		return "buffer-source";
 
 	return null;
@@ -1196,7 +1215,7 @@ function getEncodeContentType(preset) {
 
 	let contentType;
 
-	if (headers instanceof IMPL.Headers)
+	if (headers instanceof IMPLS.HEADERS)
 		contentType = headers.get("content-type");
 	else
 		contentType = headers["content-type"] || headers["Content-Type"];
@@ -1270,7 +1289,7 @@ export {
 	FINALIZEABLE,
 	METHODS,
 	PHASES,
-	IMPL,
+	IMPLS,
 	PRESET_ALIASES,
 	PRESET_TRANSFORMS,
 	SOURCE_TARGET_REGEX,
