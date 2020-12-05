@@ -160,6 +160,10 @@ const isIterable = typeof Symbol == "undefined" ?
 		return Symbol.iterator in candidate;
 	};
 
+function isLoopable(candidate) {
+	return isIterable(candidate) || isObject(candidate) || isArrayLike(candidate);
+}
+
 function isArrayLike(candidate) {
 	// Common array-likes
 	if (Array.isArray(candidate) || typeof candidate == "string" || candidate === DOC_ALL)
@@ -446,6 +450,7 @@ export {
 	isValidObjectKey,
 	isSymbol,
 	isIterable,
+	isLoopable,
 	isArrayLike,
 	isTypedArray,
 	isBigIntArray,

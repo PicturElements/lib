@@ -5,9 +5,12 @@ import {
 	addAttributeData,
 	getTagProperties,
 	setAttribute,
+	getNodeTarget,
 	setTextContent,
+	applyDirective,
 	parseAttributes,
 	resolveAttribute,
+	sanitizeAttributes,
 	resolveInlineRefs
 } from "./dom";
 import hasOwn from "./has-own";
@@ -36,11 +39,12 @@ optionize(parsePugStr, {
 	lazyDynamic: true,			// treat all inline values except functions as constants
 	eagerDynamic: true,			// treat every inline value as a getter (caches, returns compiled object)
 	rawResolve: true,			// resolve every inline value in raw form
+	terminalProps: true,		// Don't pass undeclared props from parent to child
 	functionalTags: true,		// Treat tags as entry points for functional components
 	eagerTemplates: true,		// Treat any inline reference as a template
 	singleContextArg: true,		// Use single context arguments in callbacks (serializer hint)
 	preserveEntities: true,		// Preserve entity strings in their original form
-	preserveNewlines: true,		// Preserve newlines surrounding text blocks
+	preserveNewlines: true		// Preserve newlines surrounding text blocks
 });
 
 // Capturing groups:
@@ -55,7 +59,8 @@ optionize(parsePugStr, {
 // /([\t ]*)(?:\|\s?(.+)|([^#.\s]+)?([\w.#-]+)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\6|[^"'`])+?)\))?)/g
 // /([\t ]*)(?:\|\s?(.+)|([^#.\s]+)?([\w.#-]+)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\6|[^"'`])*?)\))?[\t ]*(.*?)$)/gm
 // /([\t ]*)(?:\/\/-.+|\|\s?(.+)|([^#.\s*(]+)?([\w.#-]*)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\6|[^"'`])*?)\))?[\t ]?(.*?)$)/gm
-const NODE_REGEX = /^([\t ]*)(?:\/\/-(.*(?:\n\1[\t ]+.+)*)|\|\s?(.+)|([^#.\s*(]+)?([\w.#-]*)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\7|[^"'`])*?)\))?[\t ]?(.*?)$)/gm,
+// /^([\t ]*)(?:\/\/-(.*(?:\n\1[\t ]+.+)*)|\|\s?(.+)|([^#.\s*(]+)?([\w.#-]*)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\7|[^"'`])*?)\))?[\t ]?(.*?)$)/gm
+const NODE_REGEX = /^([\t ]*)((?:if|else|elif|switch|case|default|each)[^:\n\r\v]*(?::|[\t ]*$)[\t ]*)?(?:\/\/-(.*(?:\n\2[\t ]+.+)*)|\|\s?([^\n]+)|([^#.\s*(]+)?([\w.#-]*)(?:\(((?:(["'`])(?:[^\\]|\\.)*?\8|[^"'`])*?)\))?[\t ]?(.*?)$)/gm,
 	CLASS_ID_REGEX = /([.#])([^.#]+)/g,
 	WELL_FORMED_INDENT_REGEX = /^(\s)\1*$/;
 
@@ -63,14 +68,18 @@ function parsePugCore(str, meta = null) {
 	const options = (meta && meta.options) || {},
 		mk = options.mkVNode || mkVNode,
 		root = mk("fragment", {
+			meta,
 			raw: str,
 			children: [],
 			static: true
 		}),
-		stack = [root],
+		stack = [{
+			parent: root,
+			indent: -1
+		}],
 		refData = {
 			positions: meta && meta.refPositions,
-			ptr: -1
+			ptr: 0
 		};
 	let lastNode = null,
 		parent = root,
@@ -78,7 +87,8 @@ function parsePugCore(str, meta = null) {
 		// states
 		indent = -1,
 		indentChar = null,
-		line = 0;
+		line = 0,
+		withinCompactDirective = false;
 
 	NODE_REGEX.lastIndex = 0;
 
@@ -90,7 +100,7 @@ function parsePugCore(str, meta = null) {
 		line++;
 
 		if (refData.positions) {
-			while (refData.ptr < refData.positions.length && ex.index < refData.positions[refData.ptr + 1])
+			while (refData.ptr < refData.positions.length && ex.index > refData.positions[refData.ptr])
 				refData.ptr++;
 		}
 
@@ -102,26 +112,26 @@ function parsePugCore(str, meta = null) {
 		if (!ex[0].trim())
 			continue;
 
-		if (options.eagerTemplates && !ex[6] && !ex[6] && refData.ptr > -1 && refData.positions[refData.ptr] == ex.index + ex[1].length) {
-			console.log("found");
-		}
-
+		const valueIdx = ex[1].length + (ex[2] || "").length;
 		let type;
 
-		if (options.eagerTemplates && (refData.ptr > -1 && refData.positions[refData.ptr] == ex.index + ex[1].length))
+		if (options.eagerTemplates && refData.positions[refData.ptr] == ex.index + valueIdx)
 			type = "template";
-		else if (ex[2] != null)
+		else if (ex[3] != null)
 			type = "comment";
-		else if (ex[3])
+		else if (ex[4])
 			type = "text";
+		else if (!ex[5] && !ex[6] && !ex[7] && !ex[9])
+			type = "none";
 		else
 			type = "element";
 
 		const indentStr = ex[1],
 			indentLen = indentStr.length,
 			node = mk(type, {
+				meta,
 				raw: ex[0],
-				tag: ex[4],
+				tag: ex[5],
 				static: true
 			});
 
@@ -135,14 +145,13 @@ function parsePugCore(str, meta = null) {
 			if (indentChar)
 				indentChar = indentStr[0];
 		}
-
+		
 		if (indentLen > indent) {
 			parent = lastNode ?
 				lastNode :
 				root;
-			target = parent.type == "template" ?
-				parent.commonChildren :
-				parent.children;
+
+			target = getNodeTarget(parent);
 			indent = indentLen;
 
 			stack.push({
@@ -151,31 +160,71 @@ function parsePugCore(str, meta = null) {
 			});
 		} else if (indentLen < indent) {
 			while (stack.length && stack[stack.length - 1].indent > indentLen)
-				stack.pop();
+				lastNode = stack.pop().parent;
 
 			if (stack.length < 2)
 				throw new Error(`Fell out of struct stack on line ${line}`);
 
 			({ parent, indent } = stack[stack.length - 1]);
-			target = parent.type == "template" ?
-				parent.commonChildren :
-				parent.children;
+			target = getNodeTarget(parent);
+			withinCompactDirective = false;
+		}
+
+		if (ex[2]) {
+			const stripped = ex[2].replace(/:\s*$/, "");
+
+			const directive = applyDirective(
+				stripped,
+				mk,
+				lastNode,
+				meta, msg => `${msg} on line ${line}`
+			);
+
+			withinCompactDirective = ex[2] != stripped;
+
+			if (directive) {
+				directive.parent = parent;
+				target.push(directive);
+
+				lastNode = directive;
+				parent = directive;
+				indent = indentLen;
+			}
+			
+			if (withinCompactDirective)
+				target = getNodeTarget(lastNode);
+		} else if (withinCompactDirective && lastNode && lastNode.type == "directive" && indent >= stack[stack.length - 1].indent) {
+			lastNode = stack.pop().parent;
+			({ parent, indent } = stack[stack.length - 1]);
+			target = getNodeTarget(parent);
+			withinCompactDirective = false;
 		}
 
 		switch (type) {
 			case "comment":
-				setTextContent(node, ex[2], meta);
+				setTextContent(node, ex[3], meta);
 				break;
 
 			case "text":
-				setTextContent(node, ex[3], meta);
+				setTextContent(node, ex[4], meta);
 				break;
 
 			case "template":
 				node.children = [];
 				node.commonChildren = [];
+				node.tagData = ex[6] || null;
+				node.attrData = ex[7] || null;
 				node.static = false;
+				node.cache = {
+					props: null,
+					attributes: null
+				};
+				node.metaOverride = null;
+
 				addAttributeData(node);
+				parseClassesAndIds(node, meta);
+				parseAttributes(node, meta);
+				sanitizeAttributes(node);
 
 				node.children = resolveInlineRefs(
 					node.tag,
@@ -188,8 +237,8 @@ function parsePugCore(str, meta = null) {
 
 			case "element": {
 				node.children = [];
-				node.tagData = ex[5] || null;
-				node.attrData = ex[6] || null;
+				node.tagData = ex[6] || null;
+				node.attrData = ex[7] || null;
 				addAttributeData(node);
 
 				node.tag = resolveInlineRefs(node.tag, meta, ctx(node, "tag")(
@@ -203,8 +252,9 @@ function parsePugCore(str, meta = null) {
 					node.void = props.void;
 				}
 
-				parseClassesAndIDs(node, meta);
+				parseClassesAndIds(node, meta);
 				parseAttributes(node, meta);
+				sanitizeAttributes(node);
 			
 				if (node.dynamicAttributes.length)
 					filterMut(node.staticAttributes, key => !hasOwn(node.dynamicAttributesMap, key));
@@ -217,12 +267,13 @@ function parsePugCore(str, meta = null) {
 				} else if (parent.namespace && parent.namespace != "http://www.w3.org/1999/xhtml")
 					node.namespace = parent.namespace;
 
-				const textContent = ex[8];
+				const textContent = ex[9];
 
 				if (!textContent)
 					break;
 
 				const textNode = mk("text", {
+					meta,
 					raw: textContent,
 					parent: node
 				});
@@ -243,9 +294,14 @@ function parsePugCore(str, meta = null) {
 			}
 		}
 
-		lastNode = node;
-		node.parent = parent;
-		target.push(node);
+		if (node.type != "none") {
+			lastNode = node;
+			node.parent = parent;
+			target.push(node);
+		}
+
+		if (withinCompactDirective)
+			lastNode = parent;
 	}
 
 	if (root.children.length == 1) {
@@ -259,7 +315,7 @@ function parsePugCore(str, meta = null) {
 	return root;
 }
 
-function parseClassesAndIDs(node, meta = null) {
+function parseClassesAndIds(node, meta = null) {
 	if (!node.tagData)
 		return;
 

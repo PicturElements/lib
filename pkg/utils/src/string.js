@@ -341,7 +341,9 @@ function mkStrMatcher(...sources) {
 	for (let i = 0, l = sources.length; i < l; i++) {
 		const source = sources[i];
 
-		if (Array.isArray(source)) {
+		if (typeof source == "string")
+			add(source, source);
+		else if (Array.isArray(source)) {
 			for (let j = 0, l2 = source.length; j < l2; j += 2)
 				add(source[j], source[j + 1]);
 		} else if (isObject(source)) {
@@ -352,7 +354,7 @@ function mkStrMatcher(...sources) {
 		}
 	}
 
-	return str => {
+	return (str, offset = 0) => {
 		str = String(str);
 
 		let node = trie,
@@ -360,7 +362,7 @@ function mkStrMatcher(...sources) {
 				trie.value :
 				null;
 
-		for (let i = 0, l = str.length; i < l; i++) {
+		for (let i = offset, l = str.length; i < l; i++) {
 			if (!hasOwn(node, str[i]))
 				break;
 

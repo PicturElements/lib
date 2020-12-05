@@ -1,3 +1,4 @@
+import getConstructorName from "./get-constructor-name";
 import getFunctionName from "./get-function-name";
 
 // generate a function parameter string reminiscent of a
@@ -35,8 +36,22 @@ function genTypeStr(type) {
 	return "any";
 }
 
+function genValueTypeStr(value) {
+	switch (typeof value) {
+		case "object":
+			if (value == null)
+				return "null";
+
+			return getConstructorName(value);
+
+		default:
+			return typeof value;
+	}
+}
+
 export {
 	genFuncParamsStr,
 	genParamStr,
-	genTypeStr
+	genTypeStr,
+	genValueTypeStr
 };

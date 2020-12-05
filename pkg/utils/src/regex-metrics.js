@@ -164,7 +164,7 @@ export default function getRegexMetrics(source, flags = "") {
 						res.complexity *= r2.complexity;
 					}
 
-					if (r2.min)
+					if (r2.min && (!node.quantify || node.quantify.min))
 						res.peek = false;
 				}
 			}
@@ -187,7 +187,7 @@ export default function getRegexMetrics(source, flags = "") {
 						res.max += len;
 					}
 
-					if (!node.quantify || !node.quantify.min)
+					if (!node.quantify || node.quantify.min)
 						res.peek = false;
 			}
 		}
