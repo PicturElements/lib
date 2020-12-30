@@ -1,0 +1,5 @@
+const huffman = {};
+
+export {
+	huffman
+};

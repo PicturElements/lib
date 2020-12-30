@@ -18,7 +18,6 @@ import filterMut from "./filter-mut";
 
 const ctx = resolveInlineRefs.ctx;
 
-// Parses a subset of pug (no control flow)
 export default function parsePugStr(...source) {
 	return parseDom(
 		parsePugCore,

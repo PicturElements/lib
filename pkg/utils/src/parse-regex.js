@@ -1,31 +1,73 @@
 import {
+	composeOptionsTemplates,
+	createOptionsObject
+} from "./internal/options";
+import {
+	stickyExec,
 	getRegexSource,
-	joinRegexFlags
+	joinRegexFlags,
+	compileStickyCompatibleRegex
 } from "./regex";
+import {
+	isObject,
+	isAlpha,
+	isAlphanumeric
+} from "./is";
 import { assign } from "./object";
 import parseEscapeSequence from "./parse-escape-sequence";
 import lookup from "./lookup";
 import hasOwn from "./has-own";
 
-const T = {
-	PROGRAM: "program",
-	LITERAL: "literal",
-	SET: "set",
-	BACKREF: "backref",
-	ANY: "any",
-	WORD_BOUNDARY: "word_boundary",
-	NON_WORD_BOUNDARY: "non_word_boundary",
-	ALTERNATION: "alternation",
-	ALTERNATION_TERM: "alternation_term",
-	GROUP: "group",
-	NON_CAPTURING_GROUP: "non_capturing_group",
-	POSITIVE_LOOKAHEAD: "positive_lookahead",
-	NEGATIVE_LOOKAHEAD: "negative_lookahead",
-	POSITIVE_LOOKBEHIND: "positive_lookbehind",
-	NEGATIVE_LOOKBEHIND: "negative_lookbehind",
-	START_ASSERTION: "start_assertion",
-	END_ASSERTION: "end_assertion"
-};
+const TOKEN_SYNTAX_REGEX = /([A-Z_]+)(?:\/(\w+))?\s*(?:'([^']+)')?\s*(?:([\w\s,]+))?/,
+	TOKEN_DATA = {},
+	T = {};
+
+const TOKEN_RAW_DATA = [
+	"PROGRAM",
+	"LITERAL/q",
+	"SET/q 'character set'",
+	"BACKREF/q",
+	"NAMED_BACKREF/q",
+	"ANY/q 'any character'",
+	"WORD_BOUNDARY",
+	"NON_WORD_BOUNDARY 'non-word boundary'",
+	"UNICODE_PROPERTY/q",
+	"NEGATED_UNICODE_PROPERTY/q",
+	"ALTERNATION",
+	"ALTERNATION_TERM",
+	"CAPTURING_GROUP/q",
+	"NAMED_CAPTURING_GROUP/q",
+	"NON_CAPTURING_GROUP/q 'non-capturing group'",
+	"POSITIVE_LOOKAHEAD",
+	"NEGATIVE_LOOKAHEAD",
+	"POSITIVE_LOOKBEHIND",
+	"NEGATIVE_LOOKBEHIND",
+	"START_ASSERTION",
+	"END_ASSERTION",
+	"CUSTOM_RULE"
+];
+
+TOKEN_RAW_DATA.forEach(sx => {
+	const [
+		_,
+		type,
+		flags = "",
+		description = "",
+		flavors = "any"
+	] = TOKEN_SYNTAX_REGEX.exec(sx);
+
+	const data = {
+		enum: type,
+		description: description || type.toLowerCase().replace(/_/g, " "),
+		quantifiable: flags.indexOf("q") > -1,
+		flavors: flavors.trim().split(/\s*,\s*/),
+		flavorsMap: {}
+	};
+
+	data.flavors.forEach(fl => data.flavorsMap[fl] = true);
+	TOKEN_DATA[type] = data;
+	T[type] = type;
+});
 
 const SPECIAL_TOKENS = {
 	s: "\\s",
@@ -36,7 +78,43 @@ const SPECIAL_TOKENS = {
 	W: "\\W"
 };
 
+// Escapable characters in ECMA regexes, within character sets,
+// with the unicode flag enabled
+const ESCAPABLE_CHARACTERS = {
+	b: "backspace",
+	f: "form-feed",
+	n: "newline",
+	"0": "null",
+	r: "carriage return",
+	t: "tab",
+	v: "vertical tab",
+
+	d: "digit",
+	D: "non-digit",
+	w: "word",
+	W: "non-word",
+	s: "whitespace",
+	S: "non-whitespace",
+
+	".": "any",
+	"/": "slash",
+	"\\": "escape",
+
+	"+": "kleene plus",
+	"*": "kleene star",
+	"^": "start assertion",
+	"$": "end assertion",
+	"|": "alternation",
+	"{": "opening brace",
+	"}": "closing brace",
+	"(": "opening parenthesis",
+	")": "closing parenthesis",
+	"[": "opening square bracket",
+	"]": "closing square bracket"
+};
+
 const GROUP_SIGNATURES = {
+	"?<": T.NAMED_CAPTURING_GROUP,
 	"?:": T.NON_CAPTURING_GROUP,
 	"?=": T.POSITIVE_LOOKAHEAD,
 	"?!": T.NEGATIVE_LOOKAHEAD,
@@ -44,7 +122,21 @@ const GROUP_SIGNATURES = {
 	"?<!": T.NEGATIVE_LOOKBEHIND
 };
 
-export default function parseRegex(source, flags = "") {
+const FLAVORS = {
+	ECMA: "ECMA",
+	PCRE: "PCRE"
+};
+
+const OPTIONS_TEMPLATES = composeOptionsTemplates({
+	ecma: {
+		flavor: FLAVORS.ECMA
+	},
+	pcre: {
+		flavor: FLAVORS.PCRE
+	}
+});
+
+export default function parseRegex(source, flags = "", options = null) {
 	if (source instanceof RegExp) {
 		flags = joinRegexFlags(source, flags);
 		source = getRegexSource(source);
@@ -55,16 +147,31 @@ export default function parseRegex(source, flags = "") {
 	if (typeof flags != "string")
 		flags = "";
 
+	options = createOptionsObject(options, OPTIONS_TEMPLATES);
+
 	const err = (msg, col = ptr) => {
 		const e = SyntaxError(`\n\nparser@${col + 1}\n${msg}%end%`);
 		e.stack = e.stack.split("%end%")[0];
 		throw e;
 	};
 
+	const mkRuntime = _ => ({
+		ptr,
+		source,
+		flavor,
+		stack,
+		parentToken,
+		currentToken,
+		flagLookup,
+		ex: null,
+		definition: null
+	});
+
 	const mkToken = type => ({
 		type,
 		start: ptr,
-		end: null
+		end: null,
+		tokenData: TOKEN_DATA[type]
 	});
 
 	const mkTokenWithData = (type, data) => {
@@ -131,8 +238,13 @@ export default function parseRegex(source, flags = "") {
 			return SPECIAL_TOKENS[nextChar];
 		}
 
-		if (nextChar == "u" && flagLookup.has("u") && source[ptr + 2] != "{")
-			err("Meaningless sequence '\\u'");
+		if (flagLookup.has("u")) {
+			if (nextChar == "u" || nextChar == "p") {
+				if (source[ptr + 2] != "{")
+					err(`Meaningless sequence '\\${nextChar}'`);
+			} if (flavor == FLAVORS.ECMA && !hasOwn(ESCAPABLE_CHARACTERS, nextChar))
+				err(`Unnecessary escape sequence '\\${nextChar}' in ECMA2015+ regex`);
+		}
 
 		// Remaining escape sequences
 		const parsed = parseEscapeSequence(source, ptr, {
@@ -224,9 +336,8 @@ export default function parseRegex(source, flags = "") {
 	};
 
 	const addQuantifier = (min, max, p = ptr) => {
-		if (!isQuantifiable(currentToken))
+		if (!currentToken.tokenData.quantifiable)
 			err("Token is not quantifiable");
-
 		if (currentToken.quantify)
 			err("Nothing to repeat");
 
@@ -254,8 +365,155 @@ export default function parseRegex(source, flags = "") {
 			ptr;
 	};
 
+	const peek = (check, exitChar, offset = 0) => {
+		const result = {
+			buffer: "",
+			success: false
+		};
+
+		for (let i = ptr + offset; i < len; i++) {
+			const c = source[i];
+
+			if (c == exitChar) {
+				result.success = true;
+				break;
+			}
+
+			result.buffer += c;
+			
+			if (!check(c))
+				break;
+		}
+
+		return result;
+	};
+
+	const supportsFlavor = tokenOrTokenData => {
+		const tokenData = (tokenOrTokenData && tokenOrTokenData.tokenData) || tokenOrTokenData;
+
+		if (!tokenData || !tokenData.flavorsMap)
+			return false;
+
+		return hasOwn(tokenData.flavorsMap, "any") || hasOwn(tokenData.flavorsMap, flavor);
+	};
+
+	const applyCustomRules = _ => {
+		let rule = null,
+			definition = null;
+
+		if (!customRules)
+			return null;
+
+		if (typeof customRules == "function") {
+			const rt = mkRuntime();
+			rt.definition = customRules;
+			rule = customRules();
+		} else {
+			let rt = null;
+
+			for (let i = 0, l = customRules.length; i < l; i++) {
+				const cr = customRules[i];
+
+				definition = cr;
+
+				if (!supportsFlavor(cr.tokenData))
+					continue;
+
+				if (typeof cr.match == "function") {
+					rt = rt || mkRuntime();
+					rt.ex = null;
+					rt.definition = cr;
+					rule = cr.match(rt);
+				} else {
+					const ex = stickyExec(cr.match, source, ptr);
+					if (!ex)
+						continue;
+
+					if (cr.process) {
+						rt = rt || mkRuntime();
+						rt.ex = ex;
+						rt.definition = cr;
+						rule = cr.process(rt);
+					} else {
+						rule = {
+							match: ex[0],
+							length: ex[0].length
+						};
+					}
+				}
+
+				if (typeof rule == "string" || typeof rule == "number" || isObject(rule))
+					break;
+				
+				rule = null;
+			}
+		}
+
+		if (typeof rule == "string") {
+			rule = {
+				value: rule,
+				length: rule.length
+			};
+		} else if (typeof rule == "number") {
+			rule = {
+				value: source.substring(ptr, ptr + rule),
+				length: rule
+			};
+		}
+
+		if (!isObject(rule))
+			return null;
+
+		if (typeof rule.length != "number") {
+			if (definition)
+				err(`Unbounded match found for rule '${definition.name}'`);
+			err("Unbounded match found for rule");
+		}
+
+		if (!rule.length) {
+			if (definition)
+				err(`Zero-length match found for rule '${definition.name}'`);
+			err("Zero-length match found for rule");
+		}
+
+		const token = mkTokenWithData(T.CUSTOM_RULE, {
+			rule,
+			value: hasOwn(rule, "value") ?
+				rule.value :
+				rule,
+			tokenData: (definition && definition.tokenData) || TOKEN_DATA.CUSTOM_RULE
+		});
+
+		ptr += rule.length;
+		appendToken(token);
+
+		return token;
+	};
+
+	const mkCustomRuleTokenData = (data = {}) => {
+		const d = {
+			enum: T.CUSTOM_RULE,
+			description: data.description || `custom rule: ${data.name}`,
+			quantifiable: hasOwn(data, "quantifiable") ?
+				Boolean(data.quantifiable) :
+				TOKEN_DATA.CUSTOM_RULE.quantifiable,
+			flavors: data.flavors || TOKEN_DATA.CUSTOM_RULE.flavors,
+			flavorsMap: {}
+		};
+
+		if (typeof d.flavors == "string")
+			d.flavors = d.flavors.trim().split(/\s*,\s*/);
+
+		for (let i = 0, l = d.flavors.length; i < l; i++)
+			d.flavorsMap[d.flavors[i]] = true;
+
+		return d;
+	};
+
 	const len = source.length,
+		flavor = options.flavor || FLAVORS.ECMA,
 		groups = [],
+		namedGroups = {},
 		backrefs = [],
 		flagLookup = lookup(flags, "");
 	let ptr = 0,
@@ -264,11 +522,46 @@ export default function parseRegex(source, flags = "") {
 			source,
 			flags,
 			flagLookup,
-			groups
+			groups,
+			namedGroups
 		}),
 		parentToken = program,
 		currentToken = program,
-		stack = [program];
+		stack = [program],
+		customRules = options.rules || options.rule;
+
+	if (customRules && typeof customRules != "function" && !Array.isArray(customRules))
+		customRules = [customRules];
+
+	if (Array.isArray(customRules)) {
+		const tmpRules = [];
+
+		for (let i = 0, l = customRules.length; i < l; i++) {
+			const cr = customRules[i];
+
+			if (!isObject(cr))
+				throw new TypeError("Cannot Non-functional custom rule definitions must be object");
+			if (typeof cr.match != "function" && !(cr.match instanceof RegExp))
+				throw new TypeError("Rule definition must have functional or regex 'match' field");
+			if (typeof cr.name != "string")
+				throw new TypeError("Rule definition must have a 'name' field");
+
+			const definition = {
+				name: cr.name,
+				match: cr.match instanceof RegExp ?
+					compileStickyCompatibleRegex(cr.match) :
+					cr.match,
+				process: typeof cr.process == "function" ?
+					cr.process :
+					null,
+				tokenData: mkCustomRuleTokenData(cr)
+			};
+
+			tmpRules.push(definition);
+		}
+
+		customRules = tmpRules;
+	}
 
 	while (ptr < len) {
 		const char = source[ptr];
@@ -296,23 +589,54 @@ export default function parseRegex(source, flags = "") {
 					break;
 				}
 
+				// Unicode properties
+				if (flagLookup.has("u") && (nextChar == "p" || nextChar == "P") && source[ptr + 2] == "{") {
+					const peeked = peek(c => c == "_" || c == "=" || isAlpha(c), "}", 3);
+
+					if (!peeked.buffer || !peeked.success)
+						err(`Invalid group reference '${peeked.buffer}'`);
+
+					appendToken(mkTokenWithData(
+						nextChar == "p" ? T.UNICODE_PROPERTY : T.NEGATED_UNICODE_PROPERTY,
+						peeked.buffer
+					));
+
+					ptr += (peeked.buffer.length + 4);
+					break;
+				}
+
 				// Backrefs
 				let refId = 0,
-					refIdLen = 0;
-				for (let i = 0; ptr + i + 1 < len; i++) {
-					const c = source[ptr + i + 1],
-						digit = c.charCodeAt(0) - 48;
+					refIdLen = 0,
+					tokenType = null;
+				
+				if (nextChar == "k" && source[ptr + 2] == "<") {
+					tokenType = T.NAMED_BACKREF;
 
-					if (digit < 0 || digit > 9)
-						break;
+					const peeked = peek(isAlphanumeric, ">", 3);
 
-					refId = refId * 10 + digit;
-					refIdLen++;
+					if (!peeked.buffer || !peeked.success)
+						err(`Invalid group reference '${peeked.buffer}'`);
+
+					refId = peeked.buffer;
+					refIdLen = refId.length + 3;
+				} else {
+					tokenType = T.BACKREF;
+
+					for (let i = ptr + 1; i < len; i++) {
+						const digit = source.charCodeAt(i) - 48;
+
+						if (digit < 0 || digit > 9)
+							break;
+
+						refId = refId * 10 + digit;
+						refIdLen++;
+					}
 				}
 
 				if (refId) {
 					const token = appendToken(
-						mkTokenWithData(T.BACKREF, {
+						mkTokenWithData(tokenType, {
 							id: refId,
 							group: null,
 							end: ptr + refIdLen
@@ -348,15 +672,29 @@ export default function parseRegex(source, flags = "") {
 				}
 
 				if (!tokenType) {
-					tokenType = T.GROUP;
+					tokenType = T.CAPTURING_GROUP;
 					groupSignature = "";
 				}
 
 				const group = pushToken(mkTokenWithData(tokenType, []));
 				group.isGroup = true;
-				if (tokenType != T.NON_CAPTURING_GROUP)
+				if (tokenType == T.CAPTURING_GROUP || tokenType == T.NAMED_CAPTURING_GROUP)
 					groups.push(group);
 				ptr += groupSignature.length + 1;
+
+				if (tokenType == T.NAMED_CAPTURING_GROUP) {
+					const peeked = peek(isAlphanumeric, ">");
+
+					if (!peeked.success || !peeked.buffer)
+						err("Invalid capturing group name");
+					if (hasOwn(namedGroups, peeked.buffer))
+						err(`Duplicate capturing group name '${peeked.buffer}'`);
+
+					group.name = peeked.buffer;
+					namedGroups[peeked.buffer] = group;
+					ptr += (peeked.buffer.length + 1);
+				}
+
 				break;
 			}
 
@@ -440,8 +778,10 @@ export default function parseRegex(source, flags = "") {
 				ptr++;
 				break;
 
-			default:
-				consumeNextLiteralChar();
+			default: {
+				if (!applyCustomRules())
+					consumeNextLiteralChar();
+			}
 		}
 	}
 
@@ -451,7 +791,12 @@ export default function parseRegex(source, flags = "") {
 	for (let i = backrefs.length - 1; i >= 0; i--) {
 		const backref = backrefs[i];
 
-		if (backref.id <= groups.length)
+		if (typeof backref.id == "string") {
+			if (!hasOwn(namedGroups, backref.id))
+				err(`Invalid named reference '${backref.id}'`, backref.token.start);
+
+			backref.token.group = namedGroups[backref.id];
+		} else if (backref.id <= groups.length)
 			backref.token.group = groups[backref.id - 1];
 		else {
 			const parsed = parseEscapeSequence(`\\${backref.id}`, null, {
@@ -494,32 +839,15 @@ export default function parseRegex(source, flags = "") {
 		const token = popToken();
 
 		switch (token.type) {
-			case T.GROUP:
-				err("Unterminated group");
-				break;
-
+			case T.CAPTURING_GROUP:
+			case T.NAMED_CAPTURING_GROUP:
 			case T.NON_CAPTURING_GROUP:
-				err("Unterminated non-capturing group");
-				break;
-
 			case T.POSITIVE_LOOKAHEAD:
-				err("Unterminated positive lookahead");
-				break;
-
 			case T.NEGATIVE_LOOKAHEAD:
-				err("Unterminated negative lookahead");
-				break;
-
 			case T.POSITIVE_LOOKBEHIND:
-				err("Unterminated positive lookbehind");
-				break;
-
 			case T.NEGATIVE_LOOKBEHIND:
-				err("Unterminated negative lookbehind");
-				break;
-
 			case T.SET:
-				err("Unterminated character set");
+				err(`Unterminated ${TOKEN_DATA[token.type].description}`);
 				break;
 		}
 	}
@@ -527,22 +855,8 @@ export default function parseRegex(source, flags = "") {
 	return program;
 }
 
+parseRegex.TOKEN_DATA = TOKEN_DATA;
 parseRegex.TOKENS = T;
-
-function isQuantifiable(token) {
-	switch (token.type) {
-		case T.LITERAL:
-		case T.SET:
-		case T.BACKREF:
-		case T.GROUP:
-		case T.NON_CAPTURING_GROUP:
-		case T.POSITIVE_LOOKAHEAD:
-		case T.NEGATIVE_LOOKAHEAD:
-		case T.POSITIVE_LOOKBEHIND:
-		case T.NEGATIVE_LOOKBEHIND:
-		case T.ANY:
-			return true;
-	}
-
-	return false;
-}
+parseRegex.ESCAPABLE_CHARACTERS = ESCAPABLE_CHARACTERS;
+parseRegex.GROUP_SIGNATURES = GROUP_SIGNATURES;
+parseRegex.FLAVORS = FLAVORS;

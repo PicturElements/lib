@@ -1,11 +1,118 @@
 import { padEnd } from "./string";
 import { assign } from "./object";
 import hasOwn from "./has-own";
+import { round } from "./number";
 
-const matrix = {};
+const ROUNDERS = {
+	standard: {
+		identity: value => value,
+		basic: value => {
+			const tolerance = matrix.internal.tolerance,
+				rounded = round(value, matrix.internal.precision + matrix.internal.precisionBuffer);
+		
+			if (rounded > -tolerance && rounded < tolerance)
+				return 0;
+		
+			return rounded;
+		},
+		snap: value => {
+			const rounded = (Math.round(value * matrix.internal.pow) / matrix.internal.pow) || 0,
+				int = Math.round(rounded),
+				diff = rounded - int;
+		
+			if (diff > -matrix.internal.tolerance && diff < matrix.internal.tolerance)
+				return int;
+		
+			return rounded;
+		}
+	},
+	fast: {
+		identity: value => value,
+		basic: value => {
+			return (Math.round(value * matrix.internal.fPow) / matrix.internal.fPow) || 0;
+		}
+	}
+};
+
+const matrix = {
+	config: {
+		// Medium fast, good precision (infrequent rounding)
+		rounding: {
+			get precision() {
+				return matrix.internal.precision;
+			},
+			set precision(value) {
+				matrix.internal.precision = value;
+				updateInternals();
+			},
+			// Buffer to add to precision to provide some
+			// cross-operation precision to be preserved 
+			get precisionBuffer() {
+				return matrix.internal.precisionBuffer;
+			},
+			set precisionBuffer(value) {
+				matrix.internal.precisionBuffer = value;
+				updateInternals();
+			},
+			get rounder() {
+				return matrix.internal.rounder;
+			},
+			set rounder(value) {
+				matrix.internal.rounder = value;
+				updateInternals();
+			}
+		},
+		// Fast rounding, basic precision (frequent rounding)
+		fastRounding: {
+			get precision() {
+				return matrix.internal.fPrecision;
+			},
+			set precision(value) {
+				matrix.internal.fPrecision = value;
+				updateInternals();
+			},
+			get rounder() {
+				return matrix.internal.fRounder;
+			},
+			set rounder(value) {
+				matrix.internal.fRounder = value;
+				updateInternals();
+			}
+		}
+	},
+	internal: {
+		// precision
+		precision: 10,
+		tolerance: 1e-10,
+		precisionBuffer: 2,
+		pow: 1e12,
+		rounder: "snap",
+		// fPrecision
+		fPrecision: null,
+		fPow: null,
+		fRounder: "identity",
+		// Rounders
+		round: ROUNDERS.standard.snap,
+		roundEach: mx => {
+			if (matrix.internal.precision == null)
+				return mx;
+
+			const [m, n] = matrix.dimensions(mx),
+				rd = matrix.internal.round;
+
+			for (let i = 0; i < m; i++) {
+				for (let j = 0; j < n; j++)
+					mx[i][j] = rd(mx[i][j]);
+			}
+
+			return mx;
+		},
+		fRound: ROUNDERS.fast.identity
+	}
+};
 
 matrix.codegen = {
-	multiply: prepopulate([5, 5, 5, 5])
+	multiply: prepopulate([5, 5, 5, 5, 1])
 };
 
 // Matrix generators
@@ -65,7 +172,7 @@ matrix.clone = mx => {
 // specified dimensions.
 // Similarly, if the either the width or height is smaller than the normalized
 // input data, clipping will be done on the data.
-// This implementation is very nested to optimize performance.
+// This implementation is highly nested primarily to optimize performance
 matrix.make = (data, options = {}, clone = true) => {
 	if (typeof data == "number") {
 		if (options.resolve == "function")
@@ -399,6 +506,14 @@ matrix.map = (mx, callback, clone = true) => {
 	return out;
 };
 
+matrix.round = (mx, precision = 2, clone = true) => {
+	const pow = Math.pow(10, precision);
+
+	return matrix.map(mx, value => {
+		return Math.round(value * pow) / pow || 0;
+	}, clone);
+};
+
 // Simple matrix operations
 matrix.add = (mx, mx2) => {
 	if (typeof mx == "number" || typeof mx2 == "number")
@@ -410,13 +525,17 @@ matrix.add = (mx, mx2) => {
 	if (m != m2 || n != n2)
 		return null;
 
-	const out = [];
+	const out = [],
+		rd = matrix.internal.round;
 
 	for (let i = 0; i < m; i++) {
 		const row = [];
 
-		for (let j = 0; j < n; j++)
-			row.push(mx[i][j] + mx2[i][j]);
+		for (let j = 0; j < n; j++) {
+			row.push(
+				rd(mx[i][j] + mx2[i][j])
+			);
+		}
 
 		out.push(row);
 	}
@@ -438,13 +557,17 @@ matrix.subtract = (mx, mx2) => {
 	if (m != m2 || n != n2)
 		return null;
 
-	const out = [];
+	const out = [],
+		rd = matrix.internal.round;
 
 	for (let i = 0; i < m; i++) {
 		const row = [];
 
-		for (let j = 0; j < n; j++)
-			row.push(mx[i][j] - mx2[i][j]);
+		for (let j = 0; j < n; j++) {
+			row.push(
+				rd(mx[i][j] - mx2[i][j])
+			);
+		}
 
 		out.push(row);
 	}
@@ -467,16 +590,19 @@ matrix.multiply = (mx, mx2) => {
 		return null;
 
 	if (m <= 5 && n <= 5 && m2 <= 5 && n2 <= 5) {
-		let gen = matrix.codegen.multiply[m][n][m2][n2];
+		const r = Number(matrix.internal.fPrecision != null);
+
+		let gen = matrix.codegen.multiply[m][n][m2][n2][r];
 		if (gen)
 			return gen(mx, mx2);
 
-		gen = codegenMul(m, n, m2, n2);
-		matrix.codegen.multiply[m][n][m2][n2] = gen;
+		gen = codegenMul(m, n, m2, n2, r);
+		matrix.codegen.multiply[m][n][m2][n2][r] = gen;
 		return gen(mx, mx2);
 	}
 
-	const out = [];
+	const out = [],
+		frd = matrix.internal.fRound;
 
 	for (let i = 0; i < m; i++) {
 		const row = [];
@@ -485,7 +611,7 @@ matrix.multiply = (mx, mx2) => {
 			let sum = 0;
 
 			for (var j = 0; j < n; j++)
-				sum += mx[i][j] * mx2[j][j2];
+				sum += frd(mx[i][j] * mx2[j][j2]);
 
 			row.push(sum);
 		}
@@ -502,7 +628,7 @@ matrix.multiplyScalar = (mx, scalar) => {
 
 function scalarOperation(mx, scalar, callback) {
 	if (typeof mx == "number" && scalar == "number")
-		return mx * scalar;
+		return matrix.internal.round(mx * scalar);
 
 	if (typeof mx == "number") {
 		const tmpScalar = mx;
@@ -510,7 +636,8 @@ function scalarOperation(mx, scalar, callback) {
 		scalar = tmpScalar;
 	}
 
-	return matrix.map(mx, e => callback(e, scalar), true);
+	const rd = matrix.internal.round;
+	return matrix.map(mx, e => rd(callback(e, scalar)), true);
 }
 
 // Non-trivial matrix operations
@@ -518,7 +645,8 @@ matrix.ref = (mx, clone = true, detailed = false) => {
 	if (clone)
 		mx = matrix.clone(mx);
 
-	const [m, n] = matrix.dimensions(mx);
+	const [m, n] = matrix.dimensions(mx),
+		rd = matrix.internal.round;
 	let pr = 0,
 		pc = 0,
 		detC = 1;
@@ -537,6 +665,7 @@ matrix.ref = (mx, clone = true, detailed = false) => {
 			if (mx[pr][pc] == 0) {
 				pr++;
 				pc++;
+				detC = 0;
 				continue;
 			}
 
@@ -545,7 +674,7 @@ matrix.ref = (mx, clone = true, detailed = false) => {
 				mx[i][pc] = 0;
 
 				for (let j = pc + 1; j < n; j++)
-					mx[i][j] -= mx[pr][j] * q;
+					mx[i][j] = rd(mx[i][j] - mx[pr][j] * q);
 			}
 
 			pr++;
@@ -620,6 +749,10 @@ matrix.rref = (mx, aug, clone = true, detailed = false) => {
 				aug[i2][j] -= aug[i][j] * d;
 		}
 	}
+
+	if (detailed)
+		matrix.internal.roundEach(mx);
+	matrix.internal.roundEach(aug);
 
 	if (!detailed)
 		return invertible ? aug : null;
@@ -739,21 +872,26 @@ matrix.det = mx => {
 
 	switch (mx.length) {
 		case 2:
-			return (mx[0][0] * mx[1][1]) - (mx[0][1] * mx[1][0]);
+			return matrix.internal.round(mx[0][0] * mx[1][1]) - (mx[0][1] * mx[1][0]);
 
 		case 3:
-			return (mx[0][0] * mx[1][1] * mx[2][2]) +
+			return matrix.internal.round(
+				(mx[0][0] * mx[1][1] * mx[2][2]) +
 				(mx[0][1] * mx[1][2] * mx[2][0]) +
 				(mx[0][2] * mx[1][0] * mx[2][1]) -
 				(mx[0][2] * mx[1][1] * mx[2][0]) -
 				(mx[0][1] * mx[1][0] * mx[2][2]) -
-				(mx[0][0] * mx[1][2] * mx[2][1]);
-
-		default: {
-			const eliminated = matrix.ref(mx, true, true);
-			return matrix.mulTrace(eliminated.matrix) * eliminated.detC;
-		}
+				(mx[0][0] * mx[1][2] * mx[2][1])
+			);
 	}
+
+	const eliminated = matrix.ref(mx, true, true);
+	if (!eliminated.detC)
+		return 0;
+
+	return matrix.internal.round(
+		matrix.mulTrace(eliminated.matrix) * eliminated.detC
+	);
 };
 
 matrix.trace = mx => {
@@ -765,7 +903,7 @@ matrix.trace = mx => {
 	for (let i = 0, m = mx.length; i < m; i++)
 		sum += mx[i][i];
 
-	return sum;
+	return matrix.internal.round(sum);
 };
 
 matrix.mulTrace = mx => {
@@ -781,7 +919,7 @@ matrix.mulTrace = mx => {
 		product *= mx[i][i];
 	}
 
-	return product;
+	return matrix.internal.round(product);
 };
 
 // Row operations
@@ -918,31 +1056,6 @@ matrix.print = (mx, options = {}) => {
 	return out;
 };
 
-function codegenMul(m, n, m2, n2) {
-	if (n != m2)
-		return _ => null;
-
-	let code = "return [";
-
-	for (let i = 0; i < m; i++) {
-		let rowCode = "[";
-
-		for (let j2 = 0; j2 < n2; j2++) {
-			let elementCode = "";
-
-			for (let j = 0; j < n; j++)
-				elementCode += `${j ? " + " : ""}mx[${i}][${j}] * mx2[${j}][${j2}]`;
-
-			rowCode += (j2 ? ", " : "") + elementCode;
-		}
-
-		code += (i ? ", " : "") + rowCode + "]";
-	}
-
-	code += "]";
-	return Function("mx", "mx2", code);
-}
-
 // Legacy
 const printMatrix = matrix.print;
 
@@ -951,13 +1064,88 @@ function prepopulate(dimensions, idx = 0) {
 	if (idx == dimensions.length)
 		return null;
 
-	const node = [],
+	const node = [null],
 		dimension = dimensions[idx];
 
 	for (let i = 0; i < dimension; i++)
 		node.push(prepopulate(dimensions, idx + 1));
 	
 	return node;
+}
+
+function codegenMul(m, n, m2, n2, performRounding = false) {
+	if (n != m2)
+		return _ => null;
+
+	let code = performRounding ?
+		"return function(mx, mx2) { var r = internal.fRound; return [" :
+		"return [";
+
+	const elementPrefix = performRounding ?
+			"r(" :
+			"",
+		elementPostfix = performRounding ?
+			")" :
+			"";
+
+	for (let i = 0; i < m; i++) {
+		let rowCode = "[";
+
+		for (let j2 = 0; j2 < n2; j2++) {
+			let elementCode = elementPrefix;
+
+			for (let j = 0; j < n; j++)
+				elementCode += `${j ? " + " : ""}mx[${i}][${j}] * mx2[${j}][${j2}]`;
+
+			rowCode += (j2 ? ", " : "") + elementCode + elementPostfix;
+		}
+
+		code += (i ? ", " : "") + rowCode + "]";
+	}
+
+	if (performRounding) {
+		code += "]; }";
+		return Function("internal", code)(matrix.internal);
+	}
+
+	code += "];";
+	return Function("mx", "mx2", code);
+}
+
+// Meta / utilities
+function updateInternals() {
+	const precision = matrix.internal.precision,
+		fPrecision = matrix.internal.fPrecision,
+		buffer = matrix.internal.precisionBuffer || 0;
+
+	if (precision == null) {
+		matrix.internal.tolerance = null;
+		matrix.internal.pow = null;
+	} else {
+		matrix.internal.tolerance = Math.pow(10, -precision);
+		matrix.internal.pow = Math.pow(10, precision + buffer);
+	}
+
+	if (fPrecision == null)
+		matrix.internal.fPow = null;
+	else
+		matrix.internal.fPow = Math.pow(10, fPrecision);
+
+	if (precision != null && hasOwn(ROUNDERS.standard, matrix.internal.rounder))
+		matrix.internal.round = ROUNDERS.standard[matrix.internal.rounder];
+	else {
+		if (precision != null)
+			matrix.internal.rounder = "identity";
+		matrix.internal.round = ROUNDERS.standard.identity;
+	}
+
+	if (fPrecision != null && hasOwn(ROUNDERS.fast, matrix.internal.fRounder))
+		matrix.internal.fRound = ROUNDERS.fast[matrix.internal.fRounder];
+	else {
+		if (fPrecision != null)
+			matrix.internal.fRounder = "identity";
+		matrix.internal.fRound = ROUNDERS.fast.identity;
+	}
 }
 
 export {

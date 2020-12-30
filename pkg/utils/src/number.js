@@ -13,15 +13,15 @@ function isFiniteNum(num) {
 	return typeof num == "number" && !isNaN(num) && isFinite(num);
 }
 
-function round(val, accuracy = 0) {
-	val = Number(val);
-	const div = Math.pow(10, accuracy);
-	return Math.round(val * div) / div || 0;
+function round(num, precision = 0) {
+	num = Number(num);
+	const div = Math.pow(10, precision);
+	return Math.round(num * div) / div || 0;
 }
 
-function roundCustom(val, reference) {
-	val = Number(val);
-	return Math.round(val / reference) * reference || 0;
+function roundCustom(num, reference) {
+	num = Number(num);
+	return Math.round(num / reference) * reference || 0;
 }
 
 function roundToLen(num, length) {
@@ -46,13 +46,70 @@ function numLen(num) {
 	return Math.ceil(log10(num + 1));
 }
 
+// Flexible 
+// Explanation of weights and limits:
+// Iteration:	Maximum number of iterations to run continued fraction calculations
+//				By default, this is set to 25 iterations. At 25, the slowest-approximating
+//				continued fraction, that of phi, has reached an error of less than 1e-10
+// Precision:	Maximum power of any one coefficient, used to control the precision of the
+//				final fraction. This is because higher coefficients contribute a smaller
+//				correction factor than lower ones
+//				By default, this is set to 6, a power which for all intents and purposes would
+//				contribute a minuscule amount to any continued fraction
+// Variance:	Same as precision, but relative to the previous coefficient
+function getFraction(num, options = {}) {
+	const coefficients = [],
+		iterations = typeof options.iterations == "number" ?
+			options.iterations :
+			25,
+		precision = typeof options.precision == "number" ?
+			Math.pow(10, options.precision) :
+			1e6,
+		variance = typeof options.variance == "number" ?
+			Math.pow(10, options.variance) :
+			1e6,
+		sign = num < 0 ? -1 : 1;
+	let n = Math.abs(num),
+		numerator = 1,
+		denominator = 1,
+		flip = true;
+
+	for (let i = 0; i < iterations; i++) {
+		coefficients.push(Math.floor(n));
+		n %= 1;
+
+		if (!n)
+			break;
+
+		n = 1 / n;
+		
+		if (n > precision)
+			break;
+
+		if (i && n / coefficients[coefficients.length - 1] > variance)
+			break;
+	}
+
+	denominator = coefficients[coefficients.length - 1];
+
+	for (let i = coefficients.length - 2; i >= 0; i--) {
+		const tmpDenominator = denominator;
+		denominator = coefficients[i] * denominator + numerator;
+		numerator = tmpDenominator;
+	}
+
+	return flip ?
+		[sign * denominator, numerator] :
+		[sign * numerator, denominator];
+}
+
 // Warning: max 32 bit signed int
 function isPowerOf2(int) {
 	return (int & (int - 1)) == 0;
 }
 
 function isPowerOf2i64(int) {
-	return (int && log2(int)) % 1 == 0;
+	return log2(int) % 1 == 0;
 }
 
 export {
@@ -62,6 +119,7 @@ export {
 	roundCustom,
 	roundToLen,
 	numLen,
+	getFraction,
 	isPowerOf2,
 	isPowerOf2i64
 };

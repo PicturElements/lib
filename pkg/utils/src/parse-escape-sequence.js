@@ -7,7 +7,8 @@ const KEYWORD_ESCAPES = {
 	r: "\r",
 	t: "\t",
 	f: "\f",
-	v: "\v"
+	v: "\v",
+	b: "\b"
 };
 
 export default function parseEscapeSequence(source, offset = 0, options = {}) {

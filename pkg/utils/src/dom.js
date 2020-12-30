@@ -1,4 +1,5 @@
 import {
+	optionize,
 	composeOptionsTemplates,
 	createOptionsObject
 } from "./internal/options";
@@ -1136,7 +1137,7 @@ const GEN_OPTIONS_TEMPLATES = composeOptionsTemplates({
 // 1.	object, object[]
 //		Object representation of a node, as emitted by parsePugStr, etc
 // 2.	Node, Node[]
-//		Native Node DOM tree
+//		Native Node DOM trees
 function genDom(nodes, options = {}) {
 	options = createOptionsObject(options, GEN_OPTIONS_TEMPLATES);
 
@@ -1174,7 +1175,7 @@ function genDom(nodes, options = {}) {
 		processType = typeof options.processType == "function" ?
 			options.processType :
 			null,
-		valueResolver = genValueResolver();
+		valueResolver = options.valueResolver || mkValueResolver();
 
 	if (!nodes.length)
 		return root;
@@ -1526,6 +1527,57 @@ function genDom(nodes, options = {}) {
 	return root;
 }
 
+function serializeDom(nodes, options = {}) {
+	return genDom(nodes, ["raw|minified", options]);
+}
+
+// A DOM capsule is an enclosed system comprised of a template parser
+// and a DOM renderer which provides a runtime used for both parsing
+// and rendering. Primarily, this is a one-time process, that is,
+// it provides no reactivity for the rendered components
+function mkDomCapsuleConstructor(parser, renderer, options = null) {
+	// compile|lazy|eagerDynamic|eagerTemplates
+	// args: {}, raw: true, withProps: true
+
+	const getOptions = opts => {
+		const po = opts && hasOwn(opts, "parseOptions") ?
+			opts.parseOptions :
+				null,
+			ro = opts && hasOwn(opts, "renderOptions") ?
+				opts.renderOptions :
+				null;
+
+		if (!po && !ro) {
+			return {
+				po: null,
+				ro: opts
+			};
+		}
+
+		return {
+			po,
+			ro
+		};
+	};
+
+	const capsule = (...args) => {
+		const opts = capsule.extractOptions(),
+			{ po: pOptions, ro: rOptions } = getOptions(options),
+			{ po: pOptions2, ro: rOptions2 } = getOptions(opts);
+
+		/*const entry = 
+
+		if (isTaggedTemplateArgs(args)) {
+			
+		}*/
+
+		console.log(opts);
+	};
+
+	optionize(capsule);
+	return capsule;
+}
+
 function runDirective(node, args) {
 	switch (node.directiveType) {
 		case "if": {
@@ -1551,7 +1603,7 @@ function runDirective(node, args) {
 					return c.children;
 
 				for (let j = 0, l2 = c.values.length; j < l2; j++) {
-					if (resolveDomValue(c.values[j], args) == compareVal)
+					if (resolveDomValue(c.values[j], args) === compareVal)
 						return c.children;
 				}
 			}
@@ -1621,7 +1673,7 @@ function mkIteratorRunner(node, args) {
 	};
 }
 
-function genValueResolver() {
+function mkValueResolver() {
 	const resolver = (...args) => {
 		const scope = resolver.currentScope;
 		let accessor,
@@ -1741,10 +1793,6 @@ function genValueResolver() {
 
 	resolver.clear();
 	return resolver;
-}
-
-function serializeDom(nodes, options = {}) {
-	return genDom(nodes, ["raw|minified", options]);
 }
 
 function getTagProperties(tag) {
@@ -3367,11 +3415,12 @@ export {
 	printClass,
 	printStyle,
 	genDom,
+	serializeDom,
+	mkDomCapsuleConstructor,
 	runDirective,
 	mkRangeRunner,
 	mkIteratorRunner,
-	genValueResolver,
-	serializeDom,
+	mkValueResolver,
 	// Information
 	getTagProperties,
 	getNodeType,

@@ -134,13 +134,13 @@ const stickyExec = supports.regex.sticky ?
 		r.lastIndex = lastIndex;
 		let ex = r.exec(str);
 
-		if (ex && ex.index > lastIndex)
+		if (ex && ex.index != lastIndex)
 			ex = null;
 
 		if (ex)
 			rx.lastIndex = lastIndex + ex[0].length;
 		else
-			rx.lastIndex = 0;
+			rx.lastIndex = lastIndex;
 
 		return ex;
 	};
