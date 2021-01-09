@@ -210,6 +210,24 @@ function trimStr(str, start, end) {
 	return str.substring(start, str.length - (end || 0));
 }
 
+function atomizeStr(str) {
+	str = String(str);
+
+	const atoms = [];
+
+	for (let i = 0, l = str.length; i < l; i++) {
+		const charCode = CHAR_CODE_AT.call(str, i);
+
+		if (charCode >= 0xd800 && charCode <= 0xdbff && i < l - 1) {
+			atoms.push(str[i] + str[i + 1]);
+			i++;
+		} else
+			atoms.push(str[i]);
+	}
+
+	return atoms;
+}
+
 function splitClean(str, splitter, subTrim = true) {
 	if (!splitter && splitter !== "") {
 		splitter = /\s+/;
@@ -705,8 +723,8 @@ function distance(a = "", b = "", options = {}) {
 		}
 
 		// rowMin gives a lower bound for the distance after each
-		// Operation. At best, it catches an out of bounds distance,
-		// and at worst it lets the algorithm run slightly longer
+		// operation. By this, it can catch out of bounds distances
+		// and terminate the process early
 		if (maxDistance && rowMin > maxDistance)
 			return Infinity;
 
@@ -789,6 +807,7 @@ export {
 	unescape,
 	spliceStr,
 	trimStr,
+	atomizeStr,
 	splitClean,
 	uid,
 	castStr,

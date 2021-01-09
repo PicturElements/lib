@@ -1,4 +1,8 @@
 import { hasOwn } from "./duplicates";
+import {
+	upHeap,
+	addHeapNode
+} from "../binary-heap";
 
 // Simple LFU cache to avoid memory leaks from uncontrolled caching
 // Nodes are inserted into a binary heap until it reaches a predetermined size (maxSize)
@@ -28,19 +32,10 @@ class LFUCache {
 			this.heap.length -= this.buffer;
 		}
 
-		const node = {
-			key,
-			value,
-			index: this.heap.length,
-			uses: 0
-		};
-
 		// Since all nodes that are freshly inserted haven't been used,
 		// they always satisfy the max heap property, removing the need
-		// to up-heap
-		this.heap.push(node);
-		this.map[key] = node;
-		
+		// to up-heap in the first step
+		this.map[key] = addHeapNode(this.heap, key, value)("uses", 0);
 		return this;
 	}
 
@@ -51,29 +46,13 @@ class LFUCache {
 		const node = this.map[key];
 
 		node.uses++;
-		upHeap(this.heap, node);
+		upHeap(this.heap, node, "uses");
 
 		return node.value;
 	}
 
 	has(key) {
 		return hasOwn(this.map, key);
-	}
-}
-
-function upHeap(heap, node) {
-	while (node.index) {
-		const parentIndex = (node.index - 1) >> 1,
-			parent = heap[parentIndex];
-
-		if (parent.uses > node.uses)
-			break;
-
-		heap[parentIndex] = node;
-		heap[node.index] = parent;
-
-		parent.index = node.index;
-		node.index = parentIndex;
 	}
 }
 

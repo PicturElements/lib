@@ -3,6 +3,7 @@ export * from "./src/data/lookups";
 
 export * from "./src/array";
 export * from "./src/binary-search";
+export * from "./src/binary-heap";
 export * from "./src/class";
 export * from "./src/coding";
 export * from "./src/coerce";
