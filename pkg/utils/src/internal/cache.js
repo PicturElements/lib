@@ -1,6 +1,6 @@
 import { hasOwn } from "./duplicates";
 import {
-	upHeap,
+	upHeapMax,
 	addHeapNode
 } from "../binary-heap";
 
@@ -46,7 +46,7 @@ class LFUCache {
 		const node = this.map[key];
 
 		node.uses++;
-		upHeap(this.heap, node, "uses");
+		upHeapMax(this.heap, node, "uses");
 
 		return node.value;
 	}
