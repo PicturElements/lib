@@ -124,7 +124,7 @@ class PolyBase {
 	}
 }
 
-const PolyMap = typeof Map != "undefined" ?
+const PolyMap = typeof Map == "undefined" ?
 	class PolyMap extends PolyBase {
 		constructor(iterable) {
 			super();
@@ -143,7 +143,7 @@ const PolyMap = typeof Map != "undefined" ?
 PolyMap.prototype.add = PolyMap.prototype.set;
 PolyMap.prototype[SYM_ITER_KEY] = PolyMap.prototype.entries;
 
-const PolySet = typeof Set != "undefined" ?
+const PolySet = typeof Set == "undefined" ?
 	class PolySet extends PolyBase {
 		constructor(iterable) {
 			super();

@@ -85,9 +85,9 @@ export default function map(source, callback, options, target) {
 map.from = (source, callback, options, target) => {
 	const cb = callback,
 		opts = options,
-		targ = target;
+		targ = target,
+		fn = (callback, options, target) => map(source, callback || cb, options || opts, target || targ);
 
-	const fn = (callback, options, target) => map(source, callback || cb, options || opts, target || targ);
 	fn.to = (target, callback, options) => {
 		if (isConstructor(target))
 			target = new target();
@@ -103,15 +103,15 @@ map.to = (target, callback, options) => {
 		target = new target();
 
 	const cb = callback,
-		opts = options;
+		opts = options,
+		fn = (source, callback, options) => map(source, callback || cb, options || opts, target);
 
-	const fn = (source, callback, options) => map(source, callback || cb, options || opts, target);
 	fn.from = fn;
 
 	return fn;
 };
 
-map.SKIP = Object.freeze({});
+map.SKIP = Object.freeze({ description: "tells map function to skip property" });
 
 function isOfString(candidate) {
 	return typeof candidate == "string" || candidate == String || candidate instanceof String;

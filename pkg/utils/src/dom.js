@@ -2662,7 +2662,7 @@ function parseAttributes(node, meta = null) {
 					[key]: ref
 				});
 			}
-		} else if (hasOwn(meta.refs, type)) {
+		} else if (meta.refs && hasOwn(meta.refs, type)) {
 			setAttribute(
 				node,
 				"props",

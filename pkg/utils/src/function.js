@@ -58,14 +58,14 @@ function deepBind(struct, thisVal, options) {
 //		Resolves the function and replaces the method on the context
 //		at this[key]. If the value at that property doesn't match
 //		the temporary resolver manager function an error will be logged
-//		If the context value is window, an error will also be logged
-//		as otherwise accidental pollution of the global scope could happen
+//		If the context value is the same as the global scope, an error is logged
+//		as otherwise accidental pollution of the global scope could occur
 //
 // 2:	target substitution (target, resolver, key)
 //		Works like context substitution, but here the target is explicitly given
 //
 // 3:	proxying (resolver)
-//		The function is merely wrapped in a proxy function
+//		The function is simply wrapped in a proxy function
 
 function resolveFunc(resolverOrTarget, keyOrResolver, key = null) {
 	if (typeof resolverOrTarget == "function" && isValidObjectKey(keyOrResolver)) {

@@ -43,28 +43,11 @@ it("supports cloneSymbols option and clones symbol keys", () => {
 	expect(clone(DATA, "cloneSymbols").obj).not.toBe(DATA.obj);
 });
 
-it("doesn't clone instances by default", () => {
-	const set = new Set([1, 2, 3, 4]);
-
-	expect(clone({
-		a: 1,
-		set
-	})).toStrictEqual({
-		a: 1,
-		set
-	});
-});
-
-it("clones instances into appropriate Object or Array", () => {
-	const set = new Set([1, 2, 3, 4]);
-
-	expect(clone({
-		a: 1,
-		set
-	}, "cloneInstances")).toStrictEqual({
-		a: 1,
-		set: [1, 2, 3, 4]
-	});
+it("clones built-in data structures", () => {
+	const set = new Set([1, 2, 3, 4]),
+		cloned = clone(set);
+	
+	expect([...cloned]).toStrictEqual([1, 2, 3, 4]);
 });
 
 it("supports cloning primitives", () => {

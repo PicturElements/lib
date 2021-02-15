@@ -6,8 +6,8 @@ import {
 
 import { SYM_ITER_KEY } from "./data/constants";
 import {
-	isArrayLike,
-	isObject,
+	isObj,
+	isArrayLike
 } from "./is";
 import {
 	isSetLike,
@@ -238,7 +238,7 @@ export default function forEach(src, callback, options) {
 				return brk(options);
 			}
 		}
-	} else if (isObject(src)) {
+	} else if (isObj(src)) {
 		// In V8, the speed difference/memory usage
 		// between Object.keys/for and for-in are
 		// negligible, but in SpiderMonkey the former is

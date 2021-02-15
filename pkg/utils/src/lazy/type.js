@@ -11,6 +11,15 @@ const type = {
 
 		return String(value) == "[object Arguments]";
 	},
+	isNative(value) {
+		if (typeof value == "function")
+			return Boolean(type.getNativeCode(value));
+
+		if (typeof value != "object" || value == null)
+			return true;
+
+		return Boolean(type.getNativeCode(value.constructor));
+	},
 	getNativeCode: resolveFunc(_ => {
 		const PROMISE = typeof Promise != "undefined" ? Promise : null,
 			SET = typeof Set != "undefined" ? Set : null,
@@ -18,6 +27,7 @@ const type = {
 			WEAKMAP = typeof WeakMap != "undefined" ? WeakMap : null,
 			WEAKSET = typeof WeakSet != "undefined" ? WeakSet : null,
 			PROXY = typeof Proxy != "undefined" ? Proxy : null,
+			BUF = typeof Buffer != "undefined" ? Buffer : null,
 			ABUF = typeof ArrayBuffer != "undefined" ? ArrayBuffer : null,
 			I8A = typeof Int8Array != "undefined" ? Int8Array : null,
 			UI8A = typeof Uint8Array != "undefined" ? Uint8Array : null,
@@ -50,6 +60,7 @@ const type = {
 				case WEAKMAP: return "weakmap";
 				case WEAKSET: return "weakset";
 				case PROXY: return "proxy";
+				case BUF: return "buffer";
 				case ABUF: return "arraybuffer";
 				case I8A: return "int8array";
 				case UI8A: return "uint8array";
@@ -63,6 +74,8 @@ const type = {
 				case BI64A: return "bigint64array";
 				case BUI64A: return "biguint64array";
 			}
+
+			return null;
 		};
 	}, "getNativeCode"),
 	of(value, protoDepth = 0) {
@@ -95,7 +108,7 @@ const type = {
 
 			return getConstructorName(value)
 				.toLowerCase()
-				.replace(/\s*/g, "");
+				.replace(/\s+/g, "");
 		}
 
 		return typeof value;
