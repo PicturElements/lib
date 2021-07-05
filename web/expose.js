@@ -1,7 +1,10 @@
 /* eslint-disable no-prototype-builtins */
 
 const webpack = require("webpack");
+
+const { VueLoaderPlugin } = require("vue-loader");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+
 const {
 	join,
 	exists,
@@ -167,11 +170,39 @@ function getWebpackOptions(pkgName, type) {
 		case "scripts":
 			return {
 				mode: "development",
+				module: {
+					rules: [
+						{
+							test: /\.vue$/,
+							loader: "vue-loader"
+						},
+						{
+							test: /\.pug$/,
+							loader: join(__dirname, "pug-loader")
+						},
+						{
+							test: /\.js$/,
+							resourceQuery: /inline/,
+							loader: "babel-loader"
+						},
+						{
+							test: /\.css$/,
+							resourceQuery: /inline/,
+							use: [
+								"vue-style-loader",
+								"css-loader"
+							]
+						}
+					]
+				},
 				entry: {},
 				output: {
 					filename: "[name].js",
 					path: join(__dirname, "bundles", pkgName, type),
-				}
+				},
+				plugins: [
+					new VueLoaderPlugin()
+				]
 			};
 
 		case "styles":
@@ -191,7 +222,7 @@ function getWebpackOptions(pkgName, type) {
 				},
 				entry: {},
 				output: {
-					filename: "[name].css",
+					filename: "[name]-bundle.css",
 					path: join(__dirname, "bundles", pkgName, type)
 				},
 				plugins: [
