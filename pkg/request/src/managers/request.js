@@ -601,7 +601,7 @@ class RequestState extends Hookable {
 		}
 
 		if (hookType) {
-			if (this.preset.enforceReponseReturn || hookType == "success")
+			if (this.preset.enforceResponseReturn || hookType == "success")
 				this.dispatchHooks(hookType, mkResponseResolver(response, args));
 			else
 				this.callHooks(hookType, true, response.status, ...args);
@@ -611,7 +611,7 @@ class RequestState extends Hookable {
 	applyFail(response, ...args) {
 		this.runtime.phase = PHASES.FAILED;
 
-		if (this.preset.enforceReponseReturn)
+		if (this.preset.enforceResponseReturn)
 			this.dispatchHooks("fail", mkResponseResolver(response, args));
 		else
 			this.callHooks("fail", true, response.status, ...args);
@@ -620,7 +620,7 @@ class RequestState extends Hookable {
 	applyTimeout(response, ...args) {
 		this.runtime.phase = PHASES.TIMEDOUT;
 
-		if (this.preset.enforceReponseReturn)
+		if (this.preset.enforceResponseReturn)
 			this.dispatchHooks("timeout", mkResponseResolver(response, args));
 		else
 			this.callHooks("timeout", true, response.status, ...args);
@@ -629,7 +629,7 @@ class RequestState extends Hookable {
 	applyAbort(response, ...args) {
 		this.runtime.phase = PHASES.ABORTED;
 
-		if (this.preset.enforceReponseReturn)
+		if (this.preset.enforceResponseReturn)
 			this.dispatchHooks("aborted", mkResponseResolver(response, args));
 		else
 			this.callHooks("aborted", true, response.status, ...args);

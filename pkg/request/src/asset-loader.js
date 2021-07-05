@@ -1,5 +1,6 @@
 import {
 	hasOwn,
+	assign,
 	getTime,
 	isObject,
 	resolveArgs,
@@ -59,7 +60,7 @@ export default class AssetLoader {
 		};
 
 		const process = mkProcessor(
-			Object.assign({}, DEFAULT_PROCESSORS, processors)
+			assign({}, DEFAULT_PROCESSORS, processors)
 		);
 
 		this.process = (type, processors, path) => {

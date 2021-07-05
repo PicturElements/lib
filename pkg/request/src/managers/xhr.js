@@ -411,7 +411,7 @@ const PRESET_SCHEMA = {
 	decodeTo: "string",
 	lazyDecode: "boolean",
 	rejectOnError: "boolean",
-	enforceReponseReturn: "boolean"
+	enforceResponseReturn: "boolean"
 };
 
 const DEFAULT_XHR_OPTIONS = {

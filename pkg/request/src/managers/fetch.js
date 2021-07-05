@@ -270,7 +270,7 @@ const PRESET_SCHEMA = {
 	decodeTo: "string",
 	lazyDecode: "boolean",
 	rejectOnError: "boolean",
-	enforceReponseReturn: "boolean",
+	enforceResponseReturn: "boolean",
 	// fetch-centered options fields
 	headers: [Object, IMPLS.HEADERS],
 	payload: v => typeof v != "function",
