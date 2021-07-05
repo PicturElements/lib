@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/scroll-stops",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Scroll stops for efficient scrolling events",
   "main": "index.js",
   "scripts": {
@@ -34,7 +34,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 12,
+    "pushes": 13,
     "expose": {
       "scripts": [
         "connect/feed.js"
