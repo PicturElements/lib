@@ -36,21 +36,28 @@ class Commander {
 		if (this.aliases.hasOwnProperty(command))
 			throw new Error(`Cannot add command: alias by name '${command}' already exists`);
 
+		let staged = false;
+
 		if (typeof config == "string") {
 			config = {
 				handle: join(HANDLER_DIR, config)
 			};
+			staged = true;
 		} else if (!config) {
 			config = {
 				handle: join(HANDLER_DIR, command)
 			};
+			staged = true;
 		} else if (isHandler(config)) {
 			config = {
 				handle: config
 			};
 		}
 
-		const cmd = new Command(this, command, config);
+		const cmd = staged ?
+			new StagedCommand(this, command, config) :
+			new Command(this, command, config);
+
 		this.commandsList.push(cmd);
 		this.commands[command] = cmd;
 		this.currentCommandInstance = cmd;
@@ -167,7 +174,7 @@ class Command {
 		await this.callHook("pre", options);
 
 		let retVal = null,
-			handler = resolveHandler(this.handle, this);
+			handler = this.handle;
 		
 		if (await this.expectHook("intercept", options).toBe(true))
 			retVal = true;
@@ -178,7 +185,7 @@ class Command {
 			}
 
 			case "commander":
-				retVal = handler._run(runtime);
+				retVal = await handler._run(runtime);
 				break;
 		}
 
@@ -188,18 +195,22 @@ class Command {
 	}
 
 	help() {
-		let helpText = `No help text has been set for '${this.runtime.getCommandChunk()}'`;
+		let helpText = null;
 
 		switch (typeof this.helpText) {
 			case "string":
 				helpText = this.helpText;
 				break;
+
 			case "function":
 				helpText = this.helpText(this, this.runtime.export(this));
 				break;
 		}
 
-		console.log(helpText);
+		if (!helpText)
+			error(`No help text has been set for '${this.runtime.getCommandChunk()}'`);
+		else
+			console.log(helpText);
 	}
 
 	error(msg) {
@@ -247,6 +258,104 @@ class Command {
 				return val === retVal.result;
 			}
 		};
+	}
+}
+
+class StagedCommand extends Command {
+	constructor(owner, command, config = {}) {
+		super(owner, command, config);
+		this.resolvedCommand = null;
+	}
+
+	invoke(runtime) {
+		const rCommand = this.resolve();
+		if (!rCommand)
+			return false;
+
+		return rCommand.invoke(runtime);
+	}
+
+	help() {
+		const rCommand = this.resolve();
+		if (!rCommand)
+			return false;
+
+		return rCommand.help();
+	}
+
+	resolve(connect = true) {
+		if (this.resolvedCommand)
+			return this.resolvedCommand;
+
+		let config = null;
+
+		if (typeof this.handle == "string")
+			config = require(this.handle);
+
+		if (typeof config == "function" || config instanceof Commander) {
+			config = {
+				handle: config
+			};
+		}
+
+		if (!config) {
+			error(`Failed to resolve command '${this.command}'`);
+			return null;
+		}
+
+		this.resolvedCommand = new Command(
+			this.owner,
+			this.command,
+			config
+		);
+
+		// Update parent connections
+		if (connect)
+			this.connect(this.owner);
+
+		return this.resolvedCommand;
+	}
+
+	connect(owner = this.owner) {
+		if (this.owner != owner)
+			this.disconnect(this.owner);
+
+		const rCommand = this.resolve(false);
+		let replaced = false;
+
+		for (let i = 0, l = owner.commandsList.length; i < l; i++) {
+			const cmd = owner.commandsList[i];
+
+			if (cmd == this) {
+				owner.commandsList[i] = rCommand;
+				replaced = true;
+				break;
+			}
+		}
+
+		if (!replaced)
+			owner.commandsList.push(rCommand);
+		owner.commands[this.command] = rCommand;
+
+		linkHandlerOwner(rCommand, owner);
+		return rCommand;
+	}
+
+	disconnect(owner) {
+		let removed = false;
+
+		for (let i = 0, l = owner.commandsList.length; i < l; i++) {
+			const cmd = owner.commandsList[i];
+
+			if (cmd == this) {
+				owner.commandsList.splice(i, 1);
+				removed = true;
+				break;
+			}
+		}
+
+		delete owner.commands[this.command];
+		return removed;
 	}
 }
 
@@ -359,22 +468,13 @@ function resolvePartitionValue(cmdOrOwner, key, secondaryKey) {
 		if (secondaryKey === undefined) {
 			if (store != null)
 				return store;
-		} else {
+		} else if (store) {
 			if (store.hasOwnProperty(secondaryKey) && store[secondaryKey] != null)
 				return store[secondaryKey];
 		}
 	}
 
 	return null;
-}
-
-function resolveHandler(handler, owner) {
-	if (typeof handler == "string")
-		handler = require(handler);
-	
-	linkHandlerOwner(handler, owner);
-
-	return handler;
 }
 
 function linkHandlerOwner(handler, owner) {

@@ -43,8 +43,8 @@ const commands = new Commander({
 			return true;
 		},
 		intercept(cmd, options) {
-			// ZSH help
-			if (options.keyOptions.indexOf("h") > -1) {
+			// ZSH help (bash-aliased)
+			if (options.args.indexOf("?") > -1) {
 				cmd.help();
 				return true;
 			}
@@ -59,9 +59,16 @@ const commands = new Commander({
 			return false;
 		}
 	})
-	.cmd("init")
+	.cmd("build")
+		.alias("b", "build")
+	.cmd("collect")
+	.cmd("git")
+		.alias("gp", "git push")
+		.alias("p", "git push")
+		.alias("s", "git status")
 	.cmd("i18n")
-	.cmd("webp")
+	.cmd("init")
+	.cmd("jest")
 	.cmd("npm")
 		.alias("i", "npm install")
 		.alias("li", "npm local-install")
@@ -69,20 +76,16 @@ const commands = new Commander({
 	.cmd("vue")
 		.alias("vdp", "vue dev-plugin")
 		.alias("vi", "vue invoke")
-	.cmd("jest")
-	.cmd("git")
-		.alias("gp", "git push")
-		.alias("p", "git push")
-		.alias("s", "git status")
-	.cmd("build")
-		.alias("b", "build")
+	.cmd("webp")
+	.cmd("avif")
 	.cmd("?", {
 		handle(options) {
 			options.root.logCommandsList();
 		},
 		listable: false
 	})
-		.alias("--h", "?");
+		.alias("--h", "?")
+		.alias("--help", "?");
 
 async function run(command, extraArgs) {
 	return await commands.run(command, null, extraArgs);
