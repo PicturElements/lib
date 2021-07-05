@@ -63,7 +63,7 @@ const Ease = {
 			position = 1;
 
 		// Assumes easing is a function
-		// No checks are being made to save time
+		// No checks are being made to reduce processing
 		return easing(position, ...args);
 	},
 	define(name, type, func) {
@@ -102,10 +102,10 @@ const Ease = {
 		},
 		// Easing factories
 		factory: {
-			"cubic-bezier": (x, y, x2, y2, accuracy) => {
-				accuracy = accuracy || 1000;
-				const interpResolution = accuracy * 10,
-					frames = memoize(calcBezier, x, y, x2, y2, accuracy, interpResolution);
+			"cubic-bezier": (x, y, x2, y2, resolution) => {
+				resolution = resolution || 1000;
+				const interpResolution = resolution * 10,
+					frames = memoize(calcBezier, x, y, x2, y2, resolution, interpResolution);
 
 				return at => {
 					const idx = ~~(at * interpResolution),
@@ -158,14 +158,16 @@ const Ease = {
 // Bézier curve approximator
 // This function approximates a Bézier curve as a number of points spread evenly
 // along the X axis so that x-y correspondence can be efficiently interpolated
-const bezOutMap = typeof Float64Array == "undefined" ? Float64Array : Array;
+const BEZ_OUT_MAP_IMPL = typeof Float64Array == "undefined" ?
+	Float64Array :
+	Array;
 
-function calcBezier(adx, ady, offsX, offsY, steps, interpolationResolution) {
+function calcBezier(adx, ady, offsX, offsY, resolution, interpolationResolution) {
 	const bdx = 1 - offsX,
 		bdy = 1 - offsY,
 		cdx = offsX - adx,
 		cdy = offsY - ady,
-		outMap = new bezOutMap(interpolationResolution + 2);
+		outMap = new BEZ_OUT_MAP_IMPL(interpolationResolution + 2);
 
 	let q1x = 0,
 		q2x = 0,
@@ -177,18 +179,17 @@ function calcBezier(adx, ady, offsX, offsY, steps, interpolationResolution) {
 		nextPos = 0,
 		outStep = 0,
 		c = [0, 0],
-		c2 = calcCoordinate(1 / steps);
+		c2 = calcCoordinate(1 / resolution);
 
-	while (step < steps) {
+	while (step < resolution) {
 		if (c2[0] < nextPos) {
 			step++;
 
 			c = c2;
-			c2 = calcCoordinate((step + 1) / steps);
+			c2 = calcCoordinate((step + 1) / resolution);
 			continue;
 		}
 
-		// const perc = (nextPos - c[0]) / (c2[0] - c[0]);
 		outMap[outStep] = (c[1] + ((nextPos - c[0]) / (c2[0] - c[0])) * (c2[1] - c[1]));
 		nextPos = (++outStep) / interpolationResolution;
 	}
