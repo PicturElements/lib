@@ -18,7 +18,7 @@
 <script>
 	import Form from "@qtxr/form";
 
-	import InputBlock from "./core/input-block";
+	import InputBlock from "./core/input-block.vue";
 	import utilMixin from "./util-mixin";
 
 	export default {

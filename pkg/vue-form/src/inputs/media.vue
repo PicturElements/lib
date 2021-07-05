@@ -107,11 +107,11 @@
 					img(
 						v-if="output.mediaType == 'image'"
 						:src="output.data"
-						:key="idx")
+						:key="`img-${idx}`")
 					video(
 						v-else-if="output.mediaType == 'video'"
 						:src="output.data"
-						:key="idx")
+						:key="`video-${idx}`")
 					.remove-output-item(@click="removeOutput(idx)") &times;
 		.validation-msg(:class="validationMsg ? 'active' : null") {{ validationMsg }}
 </template>

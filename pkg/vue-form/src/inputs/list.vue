@@ -8,10 +8,10 @@
 			@click="add(0)")
 			.list-add-click-target
 			.list-row-add-icon
-		template(v-for="(form, idx) in input.value")
-			.list-inp-row-wrapper(
-				:class="{ focused: idx == focusIdx }"
-				:key="form.id")
+		template(
+			v-for="(form, idx) in input.value"
+			:key="form.id")
+			.list-inp-row-wrapper(:class="{ focused: idx == focusIdx }")
 				.list-inp-focus
 				.list-inp-row
 					slot(

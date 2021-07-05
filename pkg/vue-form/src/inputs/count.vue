@@ -48,6 +48,9 @@
 				type="button"
 				@click="up")
 				slot(name="up-symbol") {{ res(symbols.up) || "+" }}
+		ValidationMsg(
+			:input="input"
+			:msg="validationMsg")
 </template>
 
 <script>
@@ -57,6 +60,7 @@
 	} from "@qtxr/utils";
 	import { Count } from "@qtxr/form";
 	import EVT from "@qtxr/evt";
+	import ValidationMsg from "../core/validation-msg.vue";
 	import mixin from "../mixin";
 
 	export default {
@@ -158,6 +162,9 @@
 				default: _ => ({})
 			},
 			compact: [Boolean, Function]
+		},
+		components: {
+			ValidationMsg
 		},
 		mounted() {
 			this.fitCount(this.input.value);

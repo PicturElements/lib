@@ -95,8 +95,6 @@
 		isFiniteNum,
 		requestFrame
 	} from "@qtxr/utils";
-	import EVT from "@qtxr/evt";
-	import { Date as DateInput } from "@qtxr/form";
 	import utilMixin from "../util-mixin";
 
 	export default {
