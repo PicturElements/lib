@@ -1,7 +1,8 @@
+const https = require("https");
+
 /* eslint-disable no-prototype-builtins */
 
 // Miscellaneous pure utilities not pertinent to CLI, the file system, or OS
-
 function promisify(func, paramNamesOrParamMap, returnKeyOrReturnIndex, optionsOrCallback) {
 	const callback = typeof optionsOrCallback == "function" ?
 			optionsOrCallback :
@@ -208,6 +209,120 @@ function calcPrecedenceFromCLIOptions(options, nameMap, def) {
 	return def;
 }
 
+function fetch(url, options) {
+	options = Object.assign({}, options);
+
+	return data => {
+		let payload = data;
+
+		if (typeof data == "object") {
+			payload = JSON.stringify(data);
+			options.headers = Object.assign({}, options.headers);
+			options.headers["Content-Type"] = "application/json";
+			options.headers["Content-Length"] = Buffer.byteLength(payload);
+		}
+
+		return new Promise(resolve => {
+			const req = https.request(url, options, res => {
+				res.setEncoding(options.encoding || "utf8");
+				let data = "";
+	
+				res.on("data", chunk => data += chunk);
+				res.on("end", _ => {
+					if (options.json) {
+						try {
+							resolve(JSON.parse(data));
+						} catch (e) {
+							resolve(null);
+						}
+					} else
+						resolve(data);
+				});
+			});
+	
+			req.on("error", _ => resolve(null));
+	
+			if (payload)
+				req.write(payload);
+			
+			req.end();
+		});
+	};
+}
+
+function untab(str, tabbing = null, trim = false) {
+	if (typeof tabbing == "boolean") {
+		trim = tabbing;
+		tabbing = null;
+	}
+
+	let split = str.split("\n"),
+		indents = [],
+		trimStart = 0,
+		trimEnd = 0,
+		foundStart = false,
+		minIndentLen = Infinity;
+
+	for (let i = 0, l = split.length; i < l; i++) {
+		const s = split[i];
+		let indent = "",
+			tabIdx = 0;
+
+		for (let j = 0, l2 = s.length; j < l2; j++) {
+			const c = s[j];
+
+			if (tabbing == null) {
+				if (!c.trim()) {
+					indent += c;
+					continue;
+				} else
+					break;
+			}
+
+			if (tabbing[tabIdx++] == c) {
+				if (tabIdx >= tabbing.length) {
+					indent += tabbing;
+					tabIdx = 0;
+				}
+			} else
+				break;
+		}
+
+		if (trim && indent == s) {
+			if (!foundStart)
+				trimStart++;
+			else {
+				indents.push(null);
+				trimEnd++;
+			}
+		} else {
+			foundStart = true;
+			trimEnd = 0;
+			indents.push(indent);
+
+			if (indent.length < minIndentLen)
+				minIndentLen = indent.length;
+		}
+	}
+
+	if (trimStart + trimEnd != 0) {
+		split = split.slice(trimStart, split.length - trimEnd);
+		indents.length -= trimEnd;
+	}
+
+	if (!minIndentLen)
+		return split.join("\n");
+
+	for (let i = 0, l = split.length; i < l; i++) {
+		if (!indents[i])
+			continue;
+
+		split[i] = split[i].slice(minIndentLen);
+	}
+
+	return split.join("\n");
+}
+
 module.exports = {
 	promisify,
 	tryify,
@@ -220,5 +335,7 @@ module.exports = {
 	findByKey,
 	BuildStamp,
 	calcPrecedence,
-	calcPrecedenceFromCLIOptions
+	calcPrecedenceFromCLIOptions,
+	fetch,
+	untab
 };

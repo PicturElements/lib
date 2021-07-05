@@ -58,9 +58,13 @@ Lib provides a basic command-line tool. This is made available as `ql` and `qlib
   
   Using `ql git push` or its alias `ql p`, the contents of the current package will be pushed to a remote server. Along with this, the commit will be provided additional information for identification purposes.
 
-* **WEBP**
+* **WebP**
   
-  Using `ql webp`, image contents of a directory can be cloned into a new directory with WEBP assets.
+  Using `ql webp`, image contents of a directory can be cloned into a new directory with WebP assets.
+
+* **AVIF**
+  
+  Using `ql avif`, image contents of a directory can be cloned into a new directory with AVIF assets.
 
 ---
 
@@ -76,9 +80,9 @@ There are plenty of opportunities to impress a unique style to libraries as they
 
 * **Functions Should be Readily Configurable**
   
-  Another central component in the API layer of many utilities and components is configurability, achieved by us of `@qtxr/utils/options`. If the behavior of a function can be altered by the caller, then the callee should support configuration on the forms `@qtxr/utils/options` supports. `@qtxr/utils/options` is a simple system that manages options generation and management. Options templates are created using `composeOptionsTemplates` by passing an object containing named options. If a property is not an object, the property key will be used as an option field, with the property value passed as the field value. For example, `{ circular: true }` becomes `{ circular: { circular: true } }`. This is particularly useful in situations where boolean flags are desired options. The templates emitted by `composeOptionsTemplates` are immutable to avoid tampering. Then, options are resolved using `createOptionsObject`. This function returns an options object, and for externally facing APIs, they are always frozen and lack prototypes. Since `composeOptionsTemplates` can only consume options to create a new object, other data is treated as follows:
+  Another central component in the API layer of many utilities and components is configurability, achieved by us of `@qtxr/utils/options`. If the behavior of a function can be altered by the caller, then the callee should support configuration on the forms `@qtxr/utils/options` supports. `@qtxr/utils/options` is a simple system that handles options generation and management. Options templates are created using `composeOptionsTemplates` by passing an object containing named options. If a property is not an object, the property key will be used as an option field, with the property value passed as the field value. For example, `{ circular: true }` becomes `{ circular: { circular: true } }`. This is particularly useful in situations where boolean flags are desired options. The templates emitted by `composeOptionsTemplates` are immutable to avoid tampering. Then, options are resolved using `createOptionsObject`. This function returns an options object, and for externally facing APIs, they are always frozen and lack prototypes. Since `composeOptionsTemplates` can only consume options to create a new object, other data is treated as follows:
   
-  Strings are references to templates. `"circular"` becomes `{ circular: { circular: true } }`. It is also possible to group references like so: `"circular|otherRef"`. In this case, `otherRef` is an unknown template. To avoid any hard-to-track bugs arising from this, an error is logged to the concole whenever an unknown template is referenced. Together with this, a list of valid templates is logged for reference.
+  Strings are references to templates. `"circular"` resolves to `{ circular: true }`. It is also possible to group references like so: `"circular|otherRef"`. In this case, `otherRef` is an unknown template. To avoid any hard-to-track bugs arising from this, an error is logged to the concole whenever an unknown template is referenced. Along with this, a list of valid templates is logged for reference.
 
   Arrays are considered as options containers. Internally, arrays are flattened before their contents get merged with the output object.
 
@@ -104,7 +108,7 @@ The following are style choices that diverge or differ to some extent, however s
     </b>
   </summary>
 
-  As a general rule, the most pertinent data to the object receives priority over other data, and is put at the top. Similarly, grouping of properties with similar characteristics is also preferred over shorthand definitions.
+  As a general rule, the most pertinent data to the object receives priority over other data, and is put at the top. Similarly, grouping of properties with similar characteristics also take precedence over shorthand definitions.
 </details>
 
 <details>
@@ -134,11 +138,13 @@ The following are style choices that diverge or differ to some extent, however s
 <details>
   <summary>
     <b>
-      <a href="https://github.com/airbnb/javascript#arrays--from-iterable) / [4.5](https://github.com/airbnb/javascript#arrays--from-array-like) / [4.6](https://github.com/airbnb/javascript#arrays--mapping">4.4</a>
+      <a href="https://github.com/airbnb/javascript#arrays--from-iterable) /  / ">4.4</a>
       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
       <code>Array.from</code> and spread
     </b>
   </summary>
+
+  See also: [4.5](https://github.com/airbnb/javascript#arrays--from-array-like) and [4.6](https://github.com/airbnb/javascript#arrays--mapping)
 
   These operations are rarely done, as certain data is usually purposefully stored in a non-array format. Transforms such as these are actively discouraged for iteration. Use an explicit loop, a built-in prototype method, or `@qtxr/utils/forEach` as not to create unnecessary intermediate arrays.
 </details>
@@ -166,7 +172,7 @@ The following are style choices that diverge or differ to some extent, however s
 
   Top-level functions are almost exclusively written in function declaration form. Residing in one file, functions should have high cohesion but as a side effect often have slightly higher coupling between themselves. As such, oftentimes the functions reference and leverage each other to produce an effect. Therefore, such functions are seen as intrinsically interconnected and their internal use should not be thought of strictly sequential. In general, the main functions, or entry points, are placed at the top, with the supporting functions at the bottom, interwoven if there are multiple entry point functions.
 
-  However, callback functions and closures should always be expressions, and preferably constructed using fat arrow notation.
+  However, callback functions and closures should always be expressions, and preferably constructed using fat arrow notation unless specific `function` features are required.
 </details>
 
 <details>
@@ -183,7 +189,7 @@ The following are style choices that diverge or differ to some extent, however s
   1. If it does not conform to the desired type, when throwing an error is not desired.
   2. To apply processing to it. When this is done, keeping track of types is a priority.
   
-  Argument modifications must happen at the start of a function or method, and must not include complex conditional modifications. In effect, the result of argument reassignments must leave the data in a state as if the function had been invoked with it in the first place. Once in the main function body, arguments must be regarded as constant and immutable, as this part of the function should remain ignorant of changes applied to its data. The exception is when a function is created with the explicit purpose of modifying a passed object (see: [7.12](https://github.com/airbnb/javascript#functions--mutate-params)).
+  Argument modifications must happen at the start of a function or method, and must not include complex conditional modifications. In effect, the result of argument reassignments must leave the data in a state as if the function had been invoked with it in the first place. Once in the main function body, arguments must be regarded as constant and immutable, as this part of the function should remain ignorant of changes previously applied to its data. The exception is when a function is created with the explicit purpose of modifying a passed object (see: [7.12](https://github.com/airbnb/javascript#functions--mutate-params)).
   
   At no point do processing in default parameters (see also: [7.8](https://github.com/airbnb/javascript#functions--default-side-effects)).
 </details>
@@ -197,7 +203,7 @@ The following are style choices that diverge or differ to some extent, however s
     </b>
   </summary>
 
-  Creating functions is allowed, but great care must be taken to ensure injection cannot occur. Function construction is used by some libraries (chiefly in `@qtxr/utils/mkCharacterSet`, `@qtxr/utils/matchType` and `@qtxr/utils/matrix/#codegenMul`) to optimize performance in well defined, dynamic situations. All of them impose strict restrictions on what can be input and will fail if data is not provided in the correct form. The burden of assuring data is safe to use lies on the implementer.
+  Creating functions is allowed, but great care must be taken to ensure malicious code injection cannot occur. Function construction is used by some libraries (chiefly in `@qtxr/utils/mkCharacterSet`, `@qtxr/utils/matchType` and `@qtxr/utils/matrix/#codegenMul`) to optimize performance in well defined, dynamic situations. All of them impose strict restrictions on what can be input and will fail if data is not provided in the correct form. The burden of assuring data is safe to use lies on the implementer.
 </details>
 
 <details>
@@ -233,7 +239,7 @@ The following are style choices that diverge or differ to some extent, however s
     </b>
   </summary>
 
-  This rule strictly applies to `.js`, `.mjs`, and `.cjs` modules only. All other files should be given an extension for the sake of clarity (see: `.vue`).
+  This rule strictly applies to `.js`, `.mjs`, `.cjs`, `.jsx`, and `.tsx` modules only. All other files should be given an extension for the sake of clarity (see: `.vue`).
 </details>
 
 <details>
@@ -347,23 +353,25 @@ The following are style choices that diverge or differ to some extent, however s
 <details>
   <summary>
     <b>
-      <a href="https://github.com/airbnb/javascript#accessors--no-getters-setters24.2">24.2</a>
+      <a href="https://github.com/airbnb/javascript#accessors--no-getters-setters">24.2</a>
       &nbsp;&nbsp;
       Do not use JavaScript getters/setters
     </b>
   </summary>
 
-  Getters/setters are used sparsely, and purposefully, for externally facing APIs. They should be used primarily for operations that run in constant time, and have minimal side effects, if any. Internally facing API code should avoid using them as much as possible both for performance reasons and potential issues with internal reflection in code paths, where getter/setter calls are being made left and right in a potentially uncontrollable and wholly unintuitive fashion.
+  Getters/setters are used sparsely, and purposefully, for externally facing APIs. They should be used primarily for operations that run in constant time, and have minimal side effects, if any. Internally facing API code should avoid using them as much as possible both for performance reasons and potential issues with internal reflection/runaway cyclic behavior in code paths, where getter/setter calls are being made left and right in a potentially uncontrollable and wholly unintuitive fashion.
 </details>
 
 <details>
   <summary>
     <b>
-      <a href="https://github.com/airbnb/javascript#standard-library--isnan) / [29.2](https://github.com/airbnb/javascript#standard-library--isfinite">29.1</a>
+      <a href="https://github.com/airbnb/javascript#standard-library--isnan">29.1</a>
       &nbsp;&nbsp;&nbsp;
       The Standard Library contains utilities that are functionally broken but remain for legacy reasons
     </b>
   </summary>
+
+  See also: [29.2](https://github.com/airbnb/javascript#standard-library--isfinite)
 
   To avoid issues with backwards compatibility, it is often easier to add a `typeof` check along with use of `isNaN` / `isFinite` instead of supplying a polyfill or creating a small utility function. While not scalable, these methods are rarely used, and so usually creating something more robust is not needed.
 </details>

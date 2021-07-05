@@ -2,9 +2,15 @@ node_modules
 .DS_Store
 .sass-cache
 .vscode
+.idea
 web/bundles
 coverage
 lib-unprocessed
+
+# Lockfiles are not required as packages will always
+# be built from package.json. Furthermore, these packages
+# only use third-party packages as peer dependencies
+/pkg/**/package-lock.json
 
 # Packages not yet ready to be published
 /pkg/dom
