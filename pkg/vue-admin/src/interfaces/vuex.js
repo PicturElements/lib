@@ -12,6 +12,24 @@ import { Debouncer } from "@qtxr/uc";
 
 import { usePlugin } from "../utils";
 
+// Create a basic polyfill to cover cases where session/localStorage
+// is not available, such as in iframes
+class Storage {
+	setItem(key, data) {
+		this[key] = String(data);
+	}
+
+	getItem(key) {
+		if (hasOwn(this, key))
+			return this[key];
+
+		return null;
+	}
+}
+
+const SESSION_STORAGE = sessionStorage || new Storage(),
+	LOCAL_STORAGE = localStorage || new Storage();
+
 export default {
 	interfaceName: "store",
 	init(admin, store, partitionPath = "admin", key = "vue-admin-storage") {
@@ -42,10 +60,10 @@ export default {
 				st.plugins = st.plugins || [];
 				const sessionKey = key || "vue-admin-session-store",
 					sessionData = admin.jsonManager.parse(
-						sessionStorage.getItem(sessionKey)
+						SESSION_STORAGE.getItem(sessionKey)
 					) || {},
 					set = data => {
-						sessionStorage.setItem(key,
+						SESSION_STORAGE.setItem(key,
 							admin.jsonManager.stringify(data)
 						);
 					},
@@ -66,10 +84,10 @@ export default {
 
 				st.plugins = st.plugins || [];
 				const localData = admin.jsonManager.parse(
-						localStorage.getItem(key)
+						LOCAL_STORAGE.getItem(key)
 					) || {},
 					set = data => {
-						localStorage.setItem(key,
+						LOCAL_STORAGE.setItem(key,
 							admin.jsonManager.stringify(data)
 						);
 					},
@@ -158,19 +176,21 @@ function ensureModules(store, path) {
 	}
 }
 
-// In lieu of Vuex plugins in modules, wrap all mutations
-// in a function that relays the mutation and then runs
-// a callback when completed
+// Wrap all mutations in a function that relays the mutation 
+// and then runs a callback when completed to cover lack of
+// native support by Vuex
 function wrapMutations(store, callback) {
 	if (!isObject(store.mutations))
 		return;
 
 	const mutations = store.mutations;
+
 	for (const k in mutations) {
 		if (!hasOwn(mutations, k))
 			continue;
 
 		const mutation = mutations[k];
+
 		mutations[k] = function(state, ...args) {
 			const retVal = mutation.call(this, state, ...args);
 			callback(state, mutation, k, mutations);

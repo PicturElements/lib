@@ -1,6 +1,6 @@
 {
   "name": "@qtxr/vue-admin",
-  "version": "2.1.13",
+  "version": "2.1.14",
   "description": "Administrator tools for Vue",
   "main": "index.js",
   "scripts": {
@@ -37,11 +37,11 @@
     "@qtxr/vue-wrap-component": "^2.5.7"
   },
   "peerDependencies": {
-    "vue": ">=2.6.0",
     "node-sass": ">=4.14.0",
     "pug": ">=3.0.0",
     "pug-plain-loader": ">=1.0.0",
-    "sass-loader": ">=8.0.2"
+    "sass-loader": ">=8.0.2",
+    "vue": ">=2.6.14"
   },
   "files": [
     "/src",
@@ -50,7 +50,7 @@
     "/index.d.ts"
   ],
   "qlib": {
-    "pushes": 185,
+    "pushes": 186,
     "expose": {
       "scripts": [
         "connect/feed.js"
