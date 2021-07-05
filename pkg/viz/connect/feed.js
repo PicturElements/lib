@@ -34,7 +34,7 @@ feed.add("viz", activeFeed => {
 	const data = [],
 		now = Date.now();
 
-	for (let i = 0; i < 15000; i++) {
+	for (let i = 0; i < 1e5; i++) {
 		data.push({
 			x: now + i * 1000000,
 			y: Math.sin(i / 5) + Math.sin(i / 10) + Math.sin(i / 20)
