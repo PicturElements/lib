@@ -42,11 +42,11 @@ const langStdLib = {
 			return num % 12 || 12;
 		});
 	},
-	round(a, num, accuracy = 2) {
+	round(a, num, precision = 2) {
 		if (isNaN(Number(num)))
 			return num;
 
-		const factor = Math.pow(10, accuracy);
+		const factor = Math.pow(10, precision);
 		return Math.round(num * factor) / factor;
 	},
 	add(a, ...terms) {
