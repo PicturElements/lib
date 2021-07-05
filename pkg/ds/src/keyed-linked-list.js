@@ -96,7 +96,6 @@ export default class KeyedLinkedList {
 					n.next.id = n.id + 1;
 					n = n.next;
 				}
-				console.log("uh");
 			} else
 				node.id = id;
 		}
