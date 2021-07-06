@@ -167,6 +167,10 @@ export default class Viz {
 			events: new UndoableQueue()
 		};
 
+		this.flags = {
+			resizing: false
+		};
+
 		// If the config data includes a night mode style, complement it
 		// with day mode data where needed, and create a day mode clone.
 		if (hasOwn(this.config, "styleAlt"))
@@ -1193,6 +1197,7 @@ export default class Viz {
 			scaleData.startCoords = EVT.getCoords(evt, vWrapper);
 			scaleData.startW = dataset.width;
 			scaleData.startH = dataset.height;
+			this.flags.resizing = true;
 			scale(evt);
 		};
 
@@ -1215,6 +1220,7 @@ export default class Viz {
 			scaleData.scaling = false;
 			scaleData.startW = scaleData.w;
 			scaleData.startH = scaleData.h;
+			this.flags.resizing = false;
 		};
 
 		const add = (type, scalePos) => {
@@ -1465,7 +1471,6 @@ export default class Viz {
 			if (loader)
 				loader.classList.toggle("loading", val);
 		}
-		return this.state.loading;
 	}
 }
 

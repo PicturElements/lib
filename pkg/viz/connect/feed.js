@@ -37,7 +37,11 @@ feed.add("viz", activeFeed => {
 	for (let i = 0; i < 1e5; i++) {
 		data.push({
 			x: now + i * 1000000,
-			y: Math.sin(i / 5) + Math.sin(i / 10) + Math.sin(i / 20)
+			y: Math.sin(i / 5) +
+				Math.sin(i / 10) +
+				Math.sin(i / 20) +
+				(Math.sin(i / 1e4) * 10) +
+				(Math.random() * 0.2 - 0.1)
 		});
 	}
 
@@ -101,20 +105,7 @@ feed.add("viz", activeFeed => {
 					},
 					xAxis: true,	// Simply inherit the default value
 					yAxis: true,
-					tooltip: [],/*{
-						global: [
-							"{{ x | round=2 | prefix='X value: ' | wrap='span.legend-centered-text' }}",
-							"{{ y | round=2 | prefix='Y value: ' | wrap='span.legend-centered-text' }}",
-							// {
-							// 	template: "{{ y | round=3 |  | wrap-before=span.legend-value }}",
-							// 	custom: {
-							// 		unitValue(data){
-							// 			return data.y;
-							// 		}
-							// 	}
-							// }
-						]
-					},*/
+					tooltip: [],
 					overlay: true,
 					loader: true
 				}

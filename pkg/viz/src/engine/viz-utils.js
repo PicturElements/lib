@@ -263,6 +263,8 @@ function addResizeEvt(inst, dataset, mod, wrapper) {
 		const bcrMask = mask.getBoundingClientRect(),
 			bcrWrapper = wrapper.getBoundingClientRect();
 
+		inst.flags.resizing = true;
+
 		maskPoints = {
 			p1: bcrMask.left - bcrWrapper.left,
 			p2: bcrMask.right - bcrWrapper.left
@@ -291,6 +293,7 @@ function addResizeEvt(inst, dataset, mod, wrapper) {
 	function drop() {
 		dragging = false;
 		resizeDir = 0;
+		inst.flags.resizing = false;
 		mask.classList.remove("dragging");
 	}
 
