@@ -105,7 +105,14 @@ function getter(config, assets, r) {
 								set.yAxis.thickness = yAxis.thickness;
 							}
 
-							set.setSize(Math.round(bbcr.width - ((set.yAxis && set.yAxis.thickness) || 0)), set.height);
+							const height = set.autoHeight ?
+								bbcr.height :
+								set.height;
+
+							set.setSize(
+								Math.round(bbcr.width - ((set.yAxis && set.yAxis.thickness) || 0)),
+								height
+							);
 						}
 					},
 					prePaint(inst, mod) {
